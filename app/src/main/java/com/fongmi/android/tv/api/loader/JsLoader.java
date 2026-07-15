@@ -1,5 +1,6 @@
 package com.fongmi.android.tv.api.loader;
 
+import com.fongmi.android.tv.App;
 import com.fongmi.quickjs.crawler.Loader;
 import com.fongmi.quickjs.utils.Module;
 import com.github.catvod.crawler.Spider;
@@ -55,7 +56,7 @@ public class JsLoader {
                 Spider spider = loader.spider(api, BaseLoader.get().dex(jar));
                 spider.siteKey = siteKey;
                 spider.proxyKey = proxyKey;
-                spider.init(ProviderContext.get(), ext);
+                spider.init(App.get(), ext);
                 return spider;
             } catch (Throwable e) {
                 com.github.catvod.crawler.SpiderDebug.log(e);

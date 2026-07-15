@@ -107,6 +107,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     private boolean initialIntentHandled;
     private boolean resetHomeAfterConfig;
     private boolean homeAvailable;
+    private boolean homeSurfaceAvailable;
     private Config rollbackConfig;
     private boolean homeUiRestored;
     private boolean cachedHistoryShown;
@@ -262,6 +263,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         if (histories == null || histories.isEmpty()) return;
         cachedHistories = new ArrayList<>(histories);
         cachedHistoryShown = true;
+        homeSurfaceAvailable = true;
         homeAvailable = true;
         updateHistory(histories);
         binding.recommendSection.setVisibility(View.GONE);
@@ -341,6 +343,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         clearCategoryFragments();
         homeResult = Result.empty();
         allRecommendations = new ArrayList<>();
+        homeSurfaceAvailable = false;
         if (!preserveCachedShell) {
             featuredController.clear();
             posterAdapter.submit(new ArrayList<>());
@@ -390,7 +393,8 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         updateHeroFocusTarget(!histories.isEmpty(), !shelf.isEmpty());
         if (featured.isEmpty()) featured = historyVods(histories);
         featuredController.setInitial(featured, homeState.getFeaturedIndex());
-        homeAvailable = !featured.isEmpty() || !histories.isEmpty();
+        homeSurfaceAvailable = !featured.isEmpty() || !histories.isEmpty();
+        homeAvailable = homeSurfaceAvailable || !categories.isEmpty();
         if (!homeAvailable) pageController.showEmpty();
         else pageController.showHome();
         restorePageAfterLoad();
@@ -474,7 +478,11 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     private void restorePageAfterLoad() {
         Class selected = findCategory(homeState.getSelectedCategoryId());
         if (!homeState.isHome() && selected != null) showCategory(selected, false);
-        else {
+        else if (!homeSurfaceAvailable && !categories.isEmpty()) {
+            Class fallback = categories.get(0);
+            homeState.setSelectedCategoryId(fallback.getTypeId());
+            showCategory(fallback, false);
+        } else {
             homeState.setSelectedCategoryId(HomeState.HOME_ID);
             navigationAdapter.select(HomeState.HOME_ID);
         }
@@ -501,7 +509,8 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         List<Vod> shelf = shelfItems(recommendations);
         updateHeroFocusTarget(!histories.isEmpty(), !shelf.isEmpty());
         if (recommendations.isEmpty()) featuredController.setInitial(historyVods(histories), homeState.getFeaturedIndex());
-        homeAvailable = !recommendations.isEmpty() || !histories.isEmpty();
+        homeSurfaceAvailable = !recommendations.isEmpty() || !histories.isEmpty();
+        homeAvailable = homeSurfaceAvailable || !categories.isEmpty();
         if (!homeState.isHome()) return;
         if (homeState.getPage() == HomeState.Page.EMPTY && homeAvailable) pageController.showHome();
         else if (homeState.getPage() == HomeState.Page.HOME && !homeAvailable) pageController.showEmpty();
@@ -523,6 +532,10 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         saveCurrentCategoryPosition();
         clearFolderBackStack();
         hideVisibleCategory();
+        if (!homeSurfaceAvailable && !categories.isEmpty()) {
+            showCategory(categories.get(0), focusNavigation);
+            return;
+        }
         homeState.setSelectedCategoryId(HomeState.HOME_ID);
         navigationAdapter.select(HomeState.HOME_ID);
         if (homeAvailable) pageController.showHome();

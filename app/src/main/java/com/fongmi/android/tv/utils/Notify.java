@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat;
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.databinding.ViewProgressBinding;
 import com.fongmi.android.tv.security.PromotionFilter;
+import com.fongmi.android.tv.security.ToastPolicy;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public class Notify {
@@ -78,6 +79,6 @@ public class Notify {
     private void makeText(String text) {
         if (mToast != null) mToast.cancel();
         mToast = Toast.makeText(App.get(), text, Toast.LENGTH_LONG);
-        mToast.show();
+        ToastPolicy.runTrusted(mToast::show);
     }
 }

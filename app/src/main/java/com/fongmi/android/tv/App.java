@@ -15,6 +15,7 @@ import androidx.core.os.HandlerCompat;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.cloud.CloudAccountManager;
 import com.fongmi.android.tv.repository.RepositoryManager;
+import com.fongmi.android.tv.security.ToastPolicy;
 import com.fongmi.android.tv.utils.Task;
 import com.fongmi.hook.Hook;
 import com.github.catvod.Init;
@@ -99,6 +100,12 @@ public class App extends Application implements Application.ActivityLifecycleCal
 
     @Override
     public String getPackageName() {
+        return hook != null ? hook.getPackageName() : getBaseContext().getPackageName();
+    }
+
+    @Override
+    public String getOpPackageName() {
+        if (ToastPolicy.shouldRejectPackageLookup()) return null;
         return hook != null ? hook.getPackageName() : getBaseContext().getPackageName();
     }
 
