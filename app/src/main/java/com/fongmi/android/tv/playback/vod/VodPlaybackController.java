@@ -47,6 +47,7 @@ public class VodPlaybackController {
     }
 
     public void onDetailResult(Result result) {
+        if (host.isHostFinishing()) return;
         if (result.getList().isEmpty()) detailEmpty(result.hasMsg());
         else detailLoaded(result.getVod());
         host.showDetailMessage(result.getMsg());
@@ -104,13 +105,17 @@ public class VodPlaybackController {
     }
 
     public void selectEpisode(Episode item) {
+        selectEpisode(item, true);
+    }
+
+    private void selectEpisode(Episode item, boolean startPlayback) {
         if (!state.hasFlags()) return;
         Flag selected = state.getFlag();
         for (Flag flag : state.getFlags()) flag.toggle(flag == selected, item);
         historyPolicy.updateEpisode(state.getHistory(), state.getFlag(), item);
         host.renderEpisodeSelection(item);
         if (host.isFullscreenForPlayback()) host.showEpisodeReady(item);
-        refresh();
+        if (startPlayback) refresh();
     }
 
     public void selectQuality(Result result) {
@@ -121,7 +126,7 @@ public class VodPlaybackController {
     }
 
     public void selectParse(Parse item) {
-        VodConfig.get().setParse(item);
+        VodConfig.get().setPlaybackParse(host.getVodKey(), item);
         refresh();
     }
 
@@ -159,6 +164,10 @@ public class VodPlaybackController {
 
     public void manualSwitchSource() {
         fallbackPolicy.manualSwitchSource();
+    }
+
+    public void cancelFallback() {
+        state.cancelFallback();
     }
 
     public void playbackError(String msg) {
@@ -273,6 +282,7 @@ public class VodPlaybackController {
     }
 
     private void detailEmpty(boolean finish) {
+        if (host.tryNextDetailSource()) return;
         if (host.isFromCollect() || finish) {
             host.finishVod();
         } else if (host.getVodName().isEmpty()) {
@@ -287,6 +297,7 @@ public class VodPlaybackController {
     private void detailLoaded(Vod item) {
         item.checkPic(host.getVodPic());
         item.checkName(host.getVodName());
+        if (host.isFromCollect() && item.getFlags().isEmpty() && host.tryNextDetailSource()) return;
         state.setFlags(item.getFlags());
         state.setHistory(historyPolicy.findOrCreate(host.getHistoryKey(), host.getVodMark(), item));
         lastHistory = state.getHistory();
@@ -295,7 +306,10 @@ public class VodPlaybackController {
         host.renderHistory(state.getHistory());
         host.onDetailFallbackCancelled();
         if (item.getFlags().isEmpty()) {
-            fallbackPolicy.emptyFlag();
+            // Aggregate search already exhausted its ranked repository-scoped candidates above.
+            // Falling through to the legacy default-config search would leak across repositories
+            // and could open a same-id item from an unrelated source.
+            if (!host.isFromCollect()) fallbackPolicy.emptyFlag();
         } else {
             selectFlag(state.getHistory().getFlag(), true);
             if (state.getHistory().isRevSort()) reverseEpisode(true);
@@ -315,7 +329,7 @@ public class VodPlaybackController {
         host.renderQualityVisible(episode != null && episode.isSelected() && state.getQuality().getUrl().isMulti());
         if (episode == null || episode.isSelected()) return;
         history.setVodRemarks(episode.getName());
-        selectEpisode(episode);
+        selectEpisode(episode, host.shouldAutoPlayOnDetail());
     }
 
     private void mergeFlag(Flag activated, Flag item) {

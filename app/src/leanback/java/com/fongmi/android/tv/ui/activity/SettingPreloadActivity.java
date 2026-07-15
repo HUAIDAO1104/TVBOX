@@ -12,11 +12,11 @@ import com.fongmi.android.tv.databinding.ActivitySettingPreloadBinding;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.PreloadSetting;
 import com.fongmi.android.tv.setting.Setting;
-import com.fongmi.android.tv.ui.base.BaseActivity;
+import com.fongmi.android.tv.ui.base.FocusSafeSettingsActivity;
 import com.fongmi.android.tv.ui.dialog.PreloadDialog;
 import com.fongmi.android.tv.utils.FileUtil;
 
-public class SettingPreloadActivity extends BaseActivity {
+public class SettingPreloadActivity extends FocusSafeSettingsActivity {
 
     private ActivitySettingPreloadBinding mBinding;
 
@@ -30,9 +30,14 @@ public class SettingPreloadActivity extends BaseActivity {
     }
 
     @Override
+    protected boolean customWall() {
+        return false;
+    }
+
+    @Override
     protected void initView(Bundle savedInstanceState) {
-        mBinding.preload.requestFocus();
         refresh();
+        initSettingsFocus(savedInstanceState, R.id.preload);
     }
 
     @Override

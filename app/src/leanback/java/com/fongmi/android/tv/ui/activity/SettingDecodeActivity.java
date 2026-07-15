@@ -10,9 +10,10 @@ import androidx.viewbinding.ViewBinding;
 import com.fongmi.android.tv.databinding.ActivitySettingDecodeBinding;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.Setting;
-import com.fongmi.android.tv.ui.base.BaseActivity;
+import com.fongmi.android.tv.R;
+import com.fongmi.android.tv.ui.base.FocusSafeSettingsActivity;
 
-public class SettingDecodeActivity extends BaseActivity {
+public class SettingDecodeActivity extends FocusSafeSettingsActivity {
 
     private ActivitySettingDecodeBinding mBinding;
 
@@ -26,9 +27,14 @@ public class SettingDecodeActivity extends BaseActivity {
     }
 
     @Override
+    protected boolean customWall() {
+        return false;
+    }
+
+    @Override
     protected void initView(Bundle savedInstanceState) {
-        mBinding.tunnel.requestFocus();
         refresh();
+        initSettingsFocus(savedInstanceState, R.id.tunnel);
     }
 
     @Override

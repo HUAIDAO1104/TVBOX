@@ -16,9 +16,15 @@ public class ParseAdapter extends RecyclerView.Adapter<ParseAdapter.ViewHolder> 
 
     private final OnClickListener listener;
     private final List<Parse> mItems;
+    private final String siteKey;
 
     public ParseAdapter(OnClickListener listener) {
-        this.mItems = VodConfig.get().getParses();
+        this(listener, "");
+    }
+
+    public ParseAdapter(OnClickListener listener, String siteKey) {
+        this.siteKey = siteKey == null ? "" : siteKey;
+        this.mItems = VodConfig.get().getPlaybackParses(this.siteKey);
         this.listener = listener;
     }
 
@@ -28,7 +34,8 @@ public class ParseAdapter extends RecyclerView.Adapter<ParseAdapter.ViewHolder> 
     }
 
     public int getPosition() {
-        for (int i = 0; i < mItems.size(); i++) if (mItems.get(i).isSelected()) return i;
+        Parse selected = VodConfig.get().getPlaybackParse(siteKey);
+        for (int i = 0; i < mItems.size(); i++) if (mItems.get(i).equals(selected)) return i;
         return 0;
     }
 
@@ -47,7 +54,7 @@ public class ParseAdapter extends RecyclerView.Adapter<ParseAdapter.ViewHolder> 
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Parse item = mItems.get(position);
         holder.binding.text.setText(item.getName());
-        holder.binding.text.setSelected(item.isSelected());
+        holder.binding.text.setSelected(item.equals(VodConfig.get().getPlaybackParse(siteKey)));
         holder.binding.text.setOnClickListener(v -> listener.onItemClick(item));
     }
 

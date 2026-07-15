@@ -43,6 +43,14 @@ public class Setting {
         Prefers.put("keyword", keyword);
     }
 
+    public static String getSearchSources() {
+        return Prefers.getString("search_sources");
+    }
+
+    public static void putSearchSources(String sources) {
+        Prefers.put("search_sources", sources);
+    }
+
     public static String getHot() {
         return Prefers.getString("hot");
     }

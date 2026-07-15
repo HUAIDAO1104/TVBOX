@@ -16,7 +16,9 @@ import org.json.JSONObject;
 import java.io.File;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,12 +41,21 @@ public class JarLoader {
     }
 
     public void clear() {
-        spiders.values().forEach(Spider::destroy);
+        detach().forEach(Spider::destroy);
+    }
+
+    public List<Spider> detach() {
+        List<Spider> detached = new ArrayList<>(spiders.values());
         loaders.clear();
         methods.clear();
         spiders.clear();
         locks.clear();
         recent = null;
+        return detached;
+    }
+
+    public void discard(String cacheKey, String jar, Spider spider) {
+        spiders.remove(Util.md5(jar) + cacheKey, spider);
     }
 
     public void setRecent(String recent) {
@@ -67,7 +78,7 @@ public class JarLoader {
             Method method = clz.getMethod("init", Context.class);
             method.invoke(clz, App.get());
         } catch (Throwable e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
         }
     }
 
@@ -77,7 +88,7 @@ public class JarLoader {
             Method method = clz.getMethod("proxy", Map.class);
             methods.put(key, method);
         } catch (Throwable e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
         }
     }
 
@@ -107,25 +118,34 @@ public class JarLoader {
             parseJar(jaKey, jar);
             return loaders.get(jaKey);
         } catch (Throwable e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
             return null;
         }
     }
 
     public Spider getSpider(String key, String api, String ext, String jar) {
+        return getSpider(key, key, api, ext, jar);
+    }
+
+    public Spider getSpider(String cacheKey, String siteKey, String api, String ext, String jar) {
+        return getSpider(cacheKey, siteKey, siteKey, api, ext, jar);
+    }
+
+    public Spider getSpider(String cacheKey, String proxyKey, String siteKey, String api, String ext, String jar) {
         String jaKey = Util.md5(jar);
-        String spKey = jaKey + key;
+        String spKey = jaKey + cacheKey;
         return spiders.computeIfAbsent(spKey, k -> {
             try {
                 parseJar(jaKey, jar);
                 DexClassLoader loader = loaders.get(jaKey);
                 if (loader == null) return new SpiderNull();
                 Spider spider = (Spider) loader.loadClass("com.github.catvod.spider." + api.split("csp_")[1]).newInstance();
-                spider.siteKey = key;
+                spider.siteKey = siteKey;
+                spider.proxyKey = proxyKey;
                 spider.init(App.get(), ext);
                 return spider;
             } catch (Throwable e) {
-                e.printStackTrace();
+                com.github.catvod.crawler.SpiderDebug.log(e);
                 return new SpiderNull();
             }
         });
@@ -164,7 +184,7 @@ public class JarLoader {
         try {
             return method == null ? null : (Object[]) method.invoke(null, params);
         } catch (Throwable e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
             return null;
         }
     }

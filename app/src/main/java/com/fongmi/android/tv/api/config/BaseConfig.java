@@ -51,7 +51,7 @@ abstract class BaseConfig {
             Server.get().start();
             load(config);
         } catch (Throwable e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
         }
     }
 
@@ -93,10 +93,9 @@ abstract class BaseConfig {
             load(config);
             if (taskId.get() != id) return;
             if (config.equals(this.config)) config.update();
-            App.post(() -> Notify.show(config.getNotice()));
             App.post(callback::success);
         } catch (Throwable e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
             if (isCanceled(e)) return;
             if (taskId.get() != id) return;
             if (TextUtils.isEmpty(config.getUrl())) App.post(() -> callback.error(""));

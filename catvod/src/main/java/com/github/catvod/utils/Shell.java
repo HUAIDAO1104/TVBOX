@@ -16,10 +16,10 @@ public class Shell {
             BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line;
             while ((line = br.readLine()) != null) sb.append(line).append("\n");
-            Logger.t(TAG).d("Shell command '%s' with exit code '%s'", command, p.waitFor());
+            Logger.t(TAG).d("Shell command '%s' with exit code '%s'", SecretRedactor.redact(command), p.waitFor());
             return Util.substring(sb.toString());
         } catch (Exception e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
             return "";
         }
     }

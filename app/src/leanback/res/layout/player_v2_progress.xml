@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/transparent"
+    android:clickable="false"
+    android:focusable="false">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@drawable/player_v2_loading_surface"
+        android:gravity="center"
+        android:minWidth="200dp"
+        android:orientation="vertical">
+
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:indeterminate="true"
+            app:indicatorColor="@color/tv_accent"
+            app:trackColor="#22FFFFFF" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/stage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/player_v2_stage_preparing"
+            android:textColor="@color/tv_text_primary"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/title"
+            android:layout_width="220dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:maxLines="1"
+            android:textColor="@color/tv_text_secondary"
+            android:textSize="14sp"
+            tools:text="灿如繁星：第8集" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/traffic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:fontFeatureSettings="tnum"
+            android:textColor="@color/tv_text_tertiary"
+            android:textSize="11sp"
+            android:visibility="gone"
+            tools:text="1.2 MB/s"
+            tools:visibility="visible" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/fallbackStatus"
+            android:layout_width="260dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:maxLines="2"
+            android:textColor="@color/tv_warning"
+            android:textSize="13sp"
+            android:visibility="gone"
+            tools:text="第 2 次尝试 · 百度原画#01"
+            tools:visibility="visible" />
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/fallbackActions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/fallbackCancel"
+                style="@style/DetailV2.Button.Secondary"
+                android:layout_height="40dp"
+                android:minWidth="126dp"
+                android:text="@string/player_v2_fallback_cancel" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/fallbackBack"
+                style="@style/DetailV2.Button.Secondary"
+                android:layout_height="40dp"
+                android:layout_marginStart="12dp"
+                android:minWidth="126dp"
+                android:text="@string/player_v2_back_detail" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/bufferActions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/bufferRetry"
+                style="@style/DetailV2.Button.Secondary"
+                android:layout_height="40dp"
+                android:minWidth="112dp"
+                android:text="@string/player_v2_retry" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/bufferSource"
+                style="@style/DetailV2.Button.Secondary"
+                android:layout_height="40dp"
+                android:layout_marginStart="12dp"
+                android:minWidth="126dp"
+                android:text="@string/player_v2_change_source" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+</FrameLayout>

@@ -46,12 +46,20 @@ public class VodFallbackPolicy {
     }
 
     public void onSearchResult(Result result) {
+        // SiteViewModel publishes null to clear the previous LiveData value before starting a
+        // new search. It is a reset sentinel, not a completed empty result, so keep the current
+        // fallback state/progress intact until an actual Result arrives.
+        if (result == null) return;
         List<Vod> items = new ArrayList<>(result.getList());
         items.removeIf(this::mismatch);
         state.setSources(items);
         host.renderSources(state.getSources());
         if (state.isSelectFirstSource()) nextSource();
-        if (items.isEmpty()) return;
+        if (items.isEmpty()) {
+            state.cancelFallback();
+            host.onSearchEmpty();
+            return;
+        }
         host.onSearchResult();
     }
 

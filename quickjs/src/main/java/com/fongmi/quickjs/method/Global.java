@@ -38,6 +38,7 @@ public class Global {
     private final Timer timer;
 
     private volatile boolean destroyed;
+    private volatile String proxyKey = "";
 
     private Global(QuickJSContext ctx, ExecutorService executor) {
         this.executor = executor;
@@ -50,6 +51,10 @@ public class Global {
 
     public static Global create(QuickJSContext ctx, ExecutorService executor) {
         return new Global(ctx, executor);
+    }
+
+    public void setProxyKey(String proxyKey) {
+        this.proxyKey = proxyKey == null ? "" : proxyKey;
     }
 
     public void destroy() {
@@ -110,7 +115,8 @@ public class Global {
     @Keep
     @JSMethod
     public String js2Proxy(Boolean dynamic, Integer siteType, String siteKey, String url, JSObject headers) {
-        return getProxy(!dynamic) + String.format("&from=catvod&siteType=%s&siteKey=%s&header=%s&url=%s", siteType, siteKey, URLEncoder.encode(headers.stringify()), URLEncoder.encode(url));
+        String routingKey = proxyKey.isEmpty() ? siteKey : proxyKey;
+        return getProxy(!dynamic) + String.format("&from=catvod&siteType=%s&siteKey=%s&header=%s&url=%s", siteType, URLEncoder.encode(routingKey), URLEncoder.encode(headers.stringify()), URLEncoder.encode(url));
     }
 
     @Keep
@@ -159,7 +165,7 @@ public class Global {
     @JSMethod
     public String md5X(String text) {
         String result = Crypto.md5(text);
-        Logger.t("md5X").d("text:%s\nresult:\n%s", text, result);
+        Logger.t("md5X").d("inputLength:%s resultLength:%s", text == null ? 0 : text.length(), result == null ? 0 : result.length());
         return result;
     }
 
@@ -167,7 +173,7 @@ public class Global {
     @JSMethod
     public String aesX(String mode, boolean encrypt, String input, boolean inBase64, String key, String iv, boolean outBase64) {
         String result = Crypto.aes(mode, encrypt, input, inBase64, key, iv, outBase64);
-        Logger.t("aesX").d("mode:%s\nencrypt:%s\ninBase64:%s\noutBase64:%s\nkey:%s\niv:%s\ninput:\n%s\nresult:\n%s", mode, encrypt, inBase64, outBase64, key, iv, input, result);
+        Logger.t("aesX").d("mode:%s encrypt:%s inBase64:%s outBase64:%s inputLength:%s resultLength:%s", mode, encrypt, inBase64, outBase64, input == null ? 0 : input.length(), result == null ? 0 : result.length());
         return result;
     }
 
@@ -175,7 +181,7 @@ public class Global {
     @JSMethod
     public String rsaX(String mode, boolean pub, boolean encrypt, String input, boolean inBase64, String key, boolean outBase64) {
         String result = Crypto.rsa(mode, pub, encrypt, input, inBase64, key, outBase64);
-        Logger.t("rsaX").d("mode:%s\npub:%s\nencrypt:%s\ninBase64:%s\noutBase64:%s\nkey:\n%s\ninput:\n%s\nresult:\n%s", mode, pub, encrypt, inBase64, outBase64, key, input, result);
+        Logger.t("rsaX").d("mode:%s pub:%s encrypt:%s inBase64:%s outBase64:%s inputLength:%s resultLength:%s", mode, pub, encrypt, inBase64, outBase64, input == null ? 0 : input.length(), result == null ? 0 : result.length());
         return result;
     }
 

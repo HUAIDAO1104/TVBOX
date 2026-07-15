@@ -106,7 +106,7 @@ public class OkHttp {
         try (Response res = newCall(url).execute()) {
             return res.body().string();
         } catch (Exception e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
             return "";
         }
     }
@@ -116,7 +116,7 @@ public class OkHttp {
         try (Response res = newCall(url, headers).execute()) {
             return res.body().string();
         } catch (Exception e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
             return "";
         }
     }

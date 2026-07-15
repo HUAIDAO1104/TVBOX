@@ -4,19 +4,397 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/progressLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/tv_background"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/detailBackdrop"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0.28"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/detail_v2_background_scrim"
+        android:importantForAccessibility="no" />
+
+    <View
+        android:id="@+id/detailVignette"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/detail_v2_vignette"
+        android:importantForAccessibility="no" />
+
+    <!-- All detail information participates in one vertical measurement/scroll flow. -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:descendantFocusability="afterDescendants"
+        android:fadeScrollbars="false"
+        android:fillViewport="true"
+        android:overScrollMode="never">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/detailHero"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:orientation="vertical"
+            android:paddingStart="@dimen/detail_v2_safe_start"
+            android:paddingTop="28dp"
+            android:paddingEnd="@dimen/detail_v2_safe_end"
+            android:paddingBottom="56dp">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/back"
+                style="@style/DetailV2.Button.Secondary"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:drawableStart="@drawable/detail_v2_ic_back"
+                android:minWidth="94dp"
+                android:minHeight="44dp"
+                android:nextFocusDown="@id/primary"
+                android:text="@string/detail_v2_back" />
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/detailStageRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="top"
+                android:orientation="horizontal">
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:id="@+id/detailCopy"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/name"
+                        style="@style/DetailV2.Text.Shadow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="2"
+                        android:textColor="@color/tv_text_primary"
+                        android:textSize="39sp"
+                        android:textStyle="bold"
+                        tools:text="灿如繁星" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/remark"
+                        style="@style/DetailV2.Text.Shadow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="9dp"
+                        android:ellipsize="end"
+                        android:maxLines="2"
+                        android:textColor="@color/tv_text_secondary"
+                        android:textSize="15sp"
+                        tools:text="2026 · 中国大陆 · 都市爱情 · 更新至21集" />
+
+                    <androidx.appcompat.widget.LinearLayoutCompat
+                        android:id="@+id/row1"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/site"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/tv_text_tertiary"
+                            android:textSize="13sp"
+                            tools:text="来源 · 示例站点" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/year"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:visibility="gone" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/area"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:visibility="gone" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/type"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:visibility="gone" />
+
+                    </androidx.appcompat.widget.LinearLayoutCompat>
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/summary"
+                        style="@style/DetailV2.Text.Shadow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:ellipsize="end"
+                        android:lineSpacingExtra="4dp"
+                        android:maxLines="4"
+                        android:textColor="@color/tv_text_secondary"
+                        android:textSize="15sp"
+                        tools:text="设计师林晚在事业低谷重逢旧日恋人陆沉，命运的齿轮再次转动。他们在现实与理想的交错中互相靠近。" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/director"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:ellipsize="end"
+                        android:maxLines="2"
+                        android:textColor="@color/tv_text_tertiary"
+                        android:textSize="12sp"
+                        tools:text="导演：FongMi" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/actor"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:ellipsize="end"
+                        android:maxLines="2"
+                        android:textColor="@color/tv_text_tertiary"
+                        android:textSize="12sp"
+                        tools:text="演员：FongMi" />
+
+                    <com.google.android.flexbox.FlexboxLayout
+                        android:id="@+id/row2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="18dp"
+                        app:alignItems="center"
+                        app:flexWrap="wrap">
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/primary"
+                            style="@style/DetailV2.Button.Primary"
+                            android:layout_marginBottom="8dp"
+                            android:drawableStart="@drawable/ic_widget_play"
+                            android:nextFocusUp="@id/back"
+                            android:nextFocusDown="@id/flag"
+                            android:text="@string/detail_v2_play_now" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/episodeAction"
+                            style="@style/DetailV2.Button.Secondary"
+                            android:layout_marginStart="12dp"
+                            android:layout_marginBottom="8dp"
+                            android:drawableStart="@drawable/ic_site_list"
+                            android:nextFocusUp="@id/back"
+                            android:nextFocusDown="@id/episode"
+                            android:text="@string/detail_v2_choose_episode" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/keep"
+                            style="@style/DetailV2.Button.Secondary"
+                            android:layout_marginStart="12dp"
+                            android:layout_marginBottom="8dp"
+                            android:drawableStart="@drawable/ic_detail_keep_off"
+                            android:nextFocusUp="@id/back"
+                            android:nextFocusDown="@id/flag"
+                            android:text="@string/keep" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/content"
+                            style="@style/DetailV2.Button.Secondary"
+                            android:layout_marginStart="12dp"
+                            android:layout_marginBottom="8dp"
+                            android:nextFocusUp="@id/back"
+                            android:nextFocusDown="@id/flag"
+                            android:text="@string/detail_v2_full_summary" />
+
+                    </com.google.android.flexbox.FlexboxLayout>
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <!-- Reserves the poster's place in the same measured row. -->
+                <Space
+                    android:id="@+id/detailPosterReserve"
+                    android:layout_width="292dp"
+                    android:layout_height="330dp"
+                    android:importantForAccessibility="no" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/sourceHeader"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:layout_marginBottom="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/sourceTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/detail_v2_source"
+                    android:textColor="@color/tv_text_primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/change"
+                    style="@style/DetailV2.Button.Secondary"
+                    android:layout_height="wrap_content"
+                    android:drawableStart="@drawable/ic_detail_change"
+                    android:minWidth="88dp"
+                    android:minHeight="38dp"
+                    android:nextFocusUp="@id/primary"
+                    android:nextFocusDown="@id/flag"
+                    android:text="@string/play_change" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <androidx.leanback.widget.HorizontalGridView
+                android:id="@+id/flag"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="22dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/qualityTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:text="@string/detail_v2_quality"
+                android:textColor="@color/tv_text_primary"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <androidx.leanback.widget.HorizontalGridView
+                android:id="@+id/quality"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="22dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/episodeTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:text="@string/detail_v2_episode_list"
+                android:textColor="@color/tv_text_primary"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/episode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="18dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false"
+                android:overScrollMode="never"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <androidx.leanback.widget.HorizontalGridView
+                android:id="@+id/array"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:visibility="gone" />
+
+            <androidx.leanback.widget.HorizontalGridView
+                android:id="@+id/part"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:visibility="gone" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/quickTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:text="@string/detail_v2_more_sources"
+                android:textColor="@color/tv_text_primary"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <androidx.leanback.widget.HorizontalGridView
+                android:id="@+id/quick"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:visibility="gone" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Poster/player follows the detail scroll, then expands in-place for fullscreen playback. -->
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/detailPosterAura"
+        android:layout_width="270dp"
+        android:layout_height="365dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="62dp"
+        android:layout_marginEnd="47dp"
+        android:alpha="0.34"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop"
+        android:scaleX="1.08"
+        android:scaleY="1.08" />
 
     <FrameLayout
         android:id="@+id/video"
-        android:layout_width="400dp"
-        android:layout_height="225dp"
-        android:layout_margin="24dp"
-        android:background="@color/black"
+        android:layout_width="@dimen/detail_v2_poster_width"
+        android:layout_height="@dimen/detail_v2_poster_height"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="82dp"
+        android:layout_marginEnd="72dp"
+        android:background="@drawable/detail_v2_poster_surface"
+        android:clipToOutline="true"
+        android:elevation="18dp"
         android:focusable="true"
         android:focusableInTouchMode="true"
         android:foreground="@drawable/selector_video"
-        android:nextFocusLeft="@id/video"
-        android:nextFocusRight="@id/content"
+        android:nextFocusLeft="@id/primary"
+        android:nextFocusRight="@id/video"
         android:nextFocusUp="@id/video"
         android:nextFocusDown="@id/flag">
 
@@ -25,7 +403,19 @@
             style="@style/Player.Vod"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:background="@color/transparent"
+            app:shutter_background_color="@color/transparent"
             app:surface_type="none" />
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/detailPoster"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/detail_v2_poster_surface"
+            android:clipToOutline="true"
+            android:contentDescription="@string/home_featured_poster"
+            android:padding="1dp"
+            android:scaleType="fitCenter" />
 
         <include
             android:id="@+id/widget"
@@ -43,262 +433,11 @@
 
         <include
             android:id="@+id/progress"
-            layout="@layout/view_progress"
+            layout="@layout/player_v2_progress"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:visibility="gone" />
 
     </FrameLayout>
 
-    <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/name"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:layout_marginEnd="24dp"
-        android:layout_toEndOf="@+id/video"
-        android:singleLine="true"
-        android:textColor="@color/white"
-        android:textSize="24sp"
-        tools:text="慶餘年第二季" />
-
-    <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/remark"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/name"
-        android:layout_alignStart="@+id/name"
-        android:layout_marginTop="6dp"
-        android:layout_marginEnd="24dp"
-        android:singleLine="true"
-        android:textColor="@color/white"
-        android:textSize="16sp"
-        tools:text="更新到第二季" />
-
-    <androidx.appcompat.widget.LinearLayoutCompat
-        android:id="@+id/row1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/remark"
-        android:layout_alignStart="@+id/remark"
-        android:layout_marginTop="6dp"
-        android:layout_marginEnd="24dp"
-        android:orientation="horizontal">
-
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/site"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="12dp"
-            android:singleLine="true"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            tools:text="站源：泥巴" />
-
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/year"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="12dp"
-            android:singleLine="true"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            tools:text="年份：2022" />
-
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/area"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="12dp"
-            android:singleLine="true"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            tools:text="地區：台灣" />
-
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/type"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:singleLine="true"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            tools:text="類型：科幻" />
-
-    </androidx.appcompat.widget.LinearLayoutCompat>
-
-    <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/director"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/row1"
-        android:layout_alignStart="@+id/name"
-        android:layout_marginTop="6dp"
-        android:layout_marginEnd="24dp"
-        android:nextFocusDown="@id/actor"
-        android:singleLine="true"
-        android:textColor="@color/white"
-        android:textSize="16sp"
-        tools:text="導演：FongMi" />
-
-    <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/actor"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/director"
-        android:layout_alignStart="@+id/name"
-        android:layout_marginTop="6dp"
-        android:layout_marginEnd="24dp"
-        android:ellipsize="end"
-        android:maxLines="2"
-        android:nextFocusDown="@id/content"
-        android:textColor="@color/white"
-        android:textSize="16sp"
-        tools:text="演員：FongMi" />
-
-    <androidx.appcompat.widget.LinearLayoutCompat
-        android:id="@+id/row2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/name"
-        android:layout_alignBottom="@+id/video"
-        android:orientation="horizontal">
-
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/content"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:background="@drawable/selector_item"
-            android:drawablePadding="6dp"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:gravity="center"
-            android:nextFocusUp="@id/actor"
-            android:nextFocusDown="@id/flag"
-            android:singleLine="true"
-            android:text="@string/detail_desc"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            app:drawableStartCompat="@drawable/ic_detail_desc" />
-
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/keep"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:background="@drawable/selector_item"
-            android:drawablePadding="6dp"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:gravity="center"
-            android:nextFocusUp="@id/actor"
-            android:nextFocusDown="@id/flag"
-            android:singleLine="true"
-            android:text="@string/keep"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            app:drawableStartCompat="@drawable/ic_detail_keep_off" />
-
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/change"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/selector_item"
-            android:drawablePadding="6dp"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:gravity="center"
-            android:nextFocusRight="@id/change"
-            android:nextFocusUp="@id/actor"
-            android:nextFocusDown="@id/flag"
-            android:singleLine="true"
-            android:text="@string/play_change"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            app:drawableStartCompat="@drawable/ic_detail_change" />
-
-    </androidx.appcompat.widget.LinearLayoutCompat>
-
-    <androidx.core.widget.NestedScrollView
-        android:id="@+id/scroll"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@+id/video"
-        android:overScrollMode="never">
-
-        <androidx.appcompat.widget.LinearLayoutCompat
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:paddingBottom="8dp">
-
-            <androidx.leanback.widget.HorizontalGridView
-                android:id="@+id/flag"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:clipChildren="false"
-                android:clipToPadding="false"
-                android:paddingStart="24dp"
-                android:paddingEnd="24dp"
-                android:visibility="gone"
-                tools:visibility="visible" />
-
-            <androidx.leanback.widget.HorizontalGridView
-                android:id="@+id/quality"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:clipChildren="false"
-                android:clipToPadding="false"
-                android:paddingStart="24dp"
-                android:paddingEnd="24dp"
-                android:visibility="gone"
-                tools:visibility="visible" />
-
-            <androidx.leanback.widget.HorizontalGridView
-                android:id="@+id/episode"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:clipChildren="false"
-                android:clipToPadding="false"
-                android:paddingStart="24dp"
-                android:paddingEnd="24dp"
-                android:visibility="gone" />
-
-            <androidx.leanback.widget.HorizontalGridView
-                android:id="@+id/array"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:clipChildren="false"
-                android:clipToPadding="false"
-                android:paddingStart="24dp"
-                android:paddingEnd="24dp"
-                android:visibility="gone" />
-
-            <androidx.leanback.widget.HorizontalGridView
-                android:id="@+id/part"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:clipChildren="false"
-                android:clipToPadding="false"
-                android:paddingStart="24dp"
-                android:paddingEnd="24dp"
-                android:visibility="gone" />
-
-            <androidx.leanback.widget.HorizontalGridView
-                android:id="@+id/quick"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:clipChildren="false"
-                android:clipToPadding="false"
-                android:paddingStart="24dp"
-                android:paddingEnd="24dp"
-                android:visibility="gone" />
-
-        </androidx.appcompat.widget.LinearLayoutCompat>
-    </androidx.core.widget.NestedScrollView>
 </com.fongmi.android.tv.ui.custom.ProgressLayout>

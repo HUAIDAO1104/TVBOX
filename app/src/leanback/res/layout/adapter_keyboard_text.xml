@@ -4,10 +4,11 @@
     android:id="@+id/text"
     android:layout_width="40dp"
     android:layout_height="40dp"
-    android:background="@drawable/selector_keyboard"
+    android:background="@drawable/selector_search_v2_key"
     android:focusable="true"
     android:focusableInTouchMode="true"
     android:gravity="center"
-    android:textColor="@color/white"
+    android:includeFontPadding="false"
+    android:textColor="@color/search_v2_chip_text"
     android:textSize="16sp"
     tools:text="0" />

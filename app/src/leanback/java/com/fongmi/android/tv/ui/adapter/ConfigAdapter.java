@@ -17,6 +17,7 @@ public class ConfigAdapter extends RecyclerView.Adapter<ConfigAdapter.ViewHolder
     private final OnClickListener listener;
     private List<Config> mItems;
     private boolean readOnly;
+    private String currentUrl = "";
 
     public ConfigAdapter(OnClickListener listener) {
         this.listener = listener;
@@ -31,6 +32,11 @@ public class ConfigAdapter extends RecyclerView.Adapter<ConfigAdapter.ViewHolder
 
     public ConfigAdapter readOnly(boolean readOnly) {
         this.readOnly = readOnly;
+        return this;
+    }
+
+    public ConfigAdapter current(Config current) {
+        currentUrl = current == null ? "" : current.getUrl();
         return this;
     }
 
@@ -63,7 +69,9 @@ public class ConfigAdapter extends RecyclerView.Adapter<ConfigAdapter.ViewHolder
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Config item = mItems.get(position);
-        holder.binding.text.setText(item.getDesc());
+        boolean current = item.getUrl().equals(currentUrl);
+        holder.binding.text.setText((current ? "●  " : "    ") + item.getDesc());
+        holder.binding.text.setSelected(current);
         holder.binding.text.setOnClickListener(v -> listener.onTextClick(item));
         holder.binding.delete.setVisibility(readOnly ? View.GONE : View.VISIBLE);
         holder.binding.delete.setOnClickListener(v -> listener.onDeleteClick(item));

@@ -8,7 +8,8 @@
 
     <style name="Theme.Splash" parent="Theme.SplashScreen">
         <item name="postSplashScreenTheme">@style/Theme.App</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenBackground">@color/settings_v2_brand_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/brand_mark</item>
     </style>
 
     <style name="Theme.App" parent="Theme.Base" />

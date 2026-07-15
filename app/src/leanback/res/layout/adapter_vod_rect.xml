@@ -4,22 +4,28 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
+    android:background="@android:color/transparent"
+    android:clipChildren="false"
     android:focusable="true"
     android:focusableInTouchMode="true"
-    android:foreground="@drawable/selector_vod">
+    android:foreground="@drawable/selector_vod"
+    android:stateListAnimator="@animator/tv_poster_focus_scale">
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/image"
         android:layout_width="match_parent"
         android:layout_height="80dp"
         android:background="@color/black_20"
-        app:shapeAppearanceOverlay="@style/Vod.Grid" />
+        android:scaleType="centerCrop"
+        app:shapeAppearanceOverlay="@style/Vod.Grid.Large" />
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/year"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/shape_vod_year"
+        android:layout_alignStart="@id/image"
+        android:layout_alignTop="@id/image"
         android:singleLine="true"
         android:textColor="@color/white"
         android:textSize="14sp"
@@ -32,6 +38,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/shape_vod_site"
+        android:layout_alignEnd="@id/image"
+        android:layout_alignTop="@id/image"
         android:singleLine="true"
         android:textColor="@color/white"
         android:textSize="14sp"
@@ -44,6 +52,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@+id/name"
+        android:layout_alignEnd="@id/image"
         android:background="@drawable/shape_vod_remark"
         android:ellipsize="marquee"
         android:singleLine="true"
@@ -53,18 +62,23 @@
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/name"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/image"
+        android:layout_alignBottom="@+id/image"
         android:layout_alignStart="@+id/image"
         android:layout_alignEnd="@+id/image"
         android:background="@drawable/shape_vod_name"
-        android:ellipsize="marquee"
-        android:gravity="center"
-        android:padding="6dp"
-        android:singleLine="true"
+        android:ellipsize="end"
+        android:gravity="bottom|start"
+        android:maxLines="2"
+        android:minHeight="48dp"
+        android:paddingStart="10dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="8dp"
         android:textColor="@color/white"
-        android:textSize="16sp"
+        android:textSize="14sp"
+        android:textStyle="bold"
         tools:text="蜘蛛人" />
 
 </RelativeLayout>

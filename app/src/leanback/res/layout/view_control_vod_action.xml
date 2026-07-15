@@ -1,137 +1,218 @@
 <?xml version="1.0" encoding="utf-8"?>
-<HorizontalScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:fillViewport="true"
-    android:scrollbars="none">
+    android:orientation="vertical">
 
-    <androidx.appcompat.widget.LinearLayoutCompat
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fillViewport="true"
+        android:scrollbars="none">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/prev"
+                style="@style/PlayerV2.Control.Primary"
+                android:layout_marginEnd="9dp"
+                android:nextFocusLeft="@id/prev"
+                android:nextFocusDown="@id/player"
+                android:text="@string/play_prev" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/next"
+                style="@style/PlayerV2.Control"
+                android:layout_marginEnd="9dp"
+                android:nextFocusDown="@id/decode"
+                android:text="@string/play_next" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/playPause"
+                style="@style/PlayerV2.Control"
+                android:drawableStart="@drawable/player_v2_ic_pause"
+                android:text="@string/pause"
+                android:visibility="gone" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/rewind"
+                style="@style/PlayerV2.Control"
+                android:drawableStart="@drawable/player_v2_ic_rewind"
+                android:text="@string/player_v2_rewind"
+                android:visibility="gone" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/forward"
+                style="@style/PlayerV2.Control"
+                android:drawableEnd="@drawable/player_v2_ic_forward"
+                android:text="@string/player_v2_forward"
+                android:visibility="gone" />
+
+            <com.fongmi.android.tv.ui.custom.CustomUpDownView
+                android:id="@+id/speed"
+                style="@style/PlayerV2.Control"
+                android:layout_marginEnd="9dp"
+                android:fontFeatureSettings="tnum"
+                android:nextFocusDown="@id/replay"
+                android:text="@string/play_speed" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/scale"
+                style="@style/PlayerV2.Control"
+                android:layout_marginEnd="9dp"
+                android:nextFocusDown="@id/replay"
+                android:text="@string/play_scale" />
+
+            <com.fongmi.android.tv.ui.custom.CustomUpDownView
+                android:id="@+id/text"
+                style="@style/PlayerV2.Control"
+                android:layout_marginEnd="9dp"
+                android:nextFocusDown="@id/opening"
+                android:tag="3"
+                android:text="@string/play_track_text" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/audio"
+                style="@style/PlayerV2.Control"
+                android:layout_marginEnd="9dp"
+                android:nextFocusDown="@id/opening"
+                android:tag="1"
+                android:text="@string/play_track_audio" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/danmaku"
+                style="@style/PlayerV2.Control"
+                android:layout_marginEnd="9dp"
+                android:nextFocusDown="@id/ending"
+                android:text="@string/danmaku"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/repeat"
+                style="@style/PlayerV2.Control"
+                android:nextFocusDown="@id/ending"
+                android:nextFocusRight="@id/repeat"
+                android:text="@string/play_repeat" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+    </HorizontalScrollView>
+
+    <com.google.android.material.textview.MaterialTextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="7dp"
+        android:text="@string/player_v2_more_controls"
+        android:textColor="@color/tv_text_tertiary"
+        android:textSize="12sp" />
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/next"
-            style="@style/Control"
-            android:layout_marginEnd="8dp"
-            android:nextFocusLeft="@id/ending"
-            android:text="@string/play_next" />
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fillViewport="true"
+        android:scrollbars="none">
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/prev"
-            style="@style/Control"
-            android:layout_marginEnd="8dp"
-            android:text="@string/play_prev" />
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/parse"
-            style="@style/Control"
-            android:layout_marginEnd="8dp"
-            android:text="@string/parse"
-            android:visibility="gone"
-            tools:visibility="visible" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/player"
+                style="@style/PlayerV2.Control.Secondary"
+                android:layout_marginEnd="8dp"
+                android:nextFocusDown="@id/player"
+                android:nextFocusLeft="@id/player"
+                android:nextFocusUp="@id/prev"
+                android:text="@string/play_exo" />
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/player"
-            style="@style/Control"
-            android:layout_marginEnd="8dp"
-            android:text="@string/play_exo" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/decode"
+                style="@style/PlayerV2.Control.Secondary"
+                android:layout_marginEnd="8dp"
+                android:nextFocusDown="@id/decode"
+                android:nextFocusUp="@id/next"
+                android:text="@string/play_decode" />
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/decode"
-            style="@style/Control"
-            android:layout_marginEnd="8dp"
-            android:text="@string/play_decode" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/parse"
+                style="@style/PlayerV2.Control.Secondary"
+                android:layout_marginEnd="8dp"
+                android:nextFocusDown="@id/parse"
+                android:nextFocusUp="@id/next"
+                android:text="@string/parse"
+                android:visibility="gone"
+                tools:visibility="visible" />
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/reset"
-            style="@style/Control"
-            android:layout_marginEnd="8dp"
-            android:text="@string/play_reset" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/video"
+                style="@style/PlayerV2.Control.Secondary"
+                android:layout_marginEnd="8dp"
+                android:nextFocusDown="@id/video"
+                android:nextFocusUp="@id/next"
+                android:tag="2"
+                android:text="@string/play_track_video" />
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/replay"
-            style="@style/Control"
-            android:layout_marginEnd="8dp"
-            android:text="@string/play_replay" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/reset"
+                style="@style/PlayerV2.Control.Secondary"
+                android:layout_marginEnd="8dp"
+                android:nextFocusDown="@id/reset"
+                android:nextFocusUp="@id/next"
+                android:text="@string/play_reset" />
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/repeat"
-            style="@style/Control"
-            android:layout_marginEnd="8dp"
-            android:text="@string/play_repeat" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/replay"
+                style="@style/PlayerV2.Control.Secondary"
+                android:layout_marginEnd="8dp"
+                android:nextFocusDown="@id/replay"
+                android:nextFocusUp="@id/speed"
+                android:text="@string/play_replay" />
 
-        <com.fongmi.android.tv.ui.custom.CustomUpDownView
-            android:id="@+id/speed"
-            style="@style/Control"
-            android:layout_marginEnd="8dp"
-            android:fontFeatureSettings="tnum"
-            android:text="@string/play_speed" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/edition"
+                style="@style/PlayerV2.Control.Secondary"
+                android:layout_marginEnd="8dp"
+                android:nextFocusDown="@id/edition"
+                android:nextFocusUp="@id/scale"
+                android:text="@string/play_edition"
+                android:visibility="gone"
+                tools:visibility="visible" />
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/scale"
-            style="@style/Control"
-            android:layout_marginEnd="8dp"
-            android:text="@string/play_scale" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/chapter"
+                style="@style/PlayerV2.Control.Secondary"
+                android:layout_marginEnd="8dp"
+                android:nextFocusDown="@id/chapter"
+                android:nextFocusUp="@id/text"
+                android:text="@string/play_chapter"
+                android:visibility="gone"
+                tools:visibility="visible" />
 
-        <com.fongmi.android.tv.ui.custom.CustomUpDownView
-            android:id="@+id/text"
-            style="@style/Control"
-            android:layout_marginEnd="8dp"
-            android:tag="3"
-            android:text="@string/play_track_text" />
+            <com.fongmi.android.tv.ui.custom.CustomUpDownView
+                android:id="@+id/opening"
+                style="@style/PlayerV2.Control.Secondary"
+                android:layout_marginEnd="8dp"
+                android:nextFocusDown="@id/opening"
+                android:nextFocusUp="@id/text"
+                android:text="@string/play_op" />
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/audio"
-            style="@style/Control"
-            android:layout_marginEnd="8dp"
-            android:tag="1"
-            android:text="@string/play_track_audio" />
+            <com.fongmi.android.tv.ui.custom.CustomUpDownView
+                android:id="@+id/ending"
+                style="@style/PlayerV2.Control.Secondary"
+                android:nextFocusDown="@id/ending"
+                android:nextFocusRight="@id/ending"
+                android:nextFocusUp="@id/repeat"
+                android:text="@string/play_ed" />
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/video"
-            style="@style/Control"
-            android:layout_marginEnd="8dp"
-            android:tag="2"
-            android:text="@string/play_track_video" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+    </HorizontalScrollView>
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/danmaku"
-            style="@style/Control"
-            android:layout_marginEnd="8dp"
-            android:text="@string/danmaku"
-            android:visibility="gone"
-            tools:visibility="visible" />
-
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/edition"
-            style="@style/Control"
-            android:layout_marginEnd="8dp"
-            android:text="@string/play_edition"
-            android:visibility="gone"
-            tools:visibility="visible" />
-
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/chapter"
-            style="@style/Control"
-            android:layout_marginEnd="8dp"
-            android:text="@string/play_chapter"
-            android:visibility="gone"
-            tools:visibility="visible" />
-
-        <com.fongmi.android.tv.ui.custom.CustomUpDownView
-            android:id="@+id/opening"
-            style="@style/Control"
-            android:layout_marginEnd="8dp"
-            android:text="@string/play_op" />
-
-        <com.fongmi.android.tv.ui.custom.CustomUpDownView
-            android:id="@+id/ending"
-            style="@style/Control"
-            android:nextFocusRight="@id/next"
-            android:text="@string/play_ed" />
-
-    </androidx.appcompat.widget.LinearLayoutCompat>
-</HorizontalScrollView>
+</androidx.appcompat.widget.LinearLayoutCompat>

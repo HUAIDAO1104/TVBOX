@@ -14,6 +14,7 @@ import com.fongmi.android.tv.utils.UrlUtil;
 import com.github.catvod.utils.Path;
 import com.google.gson.JsonObject;
 import com.orhanobut.logger.Logger;
+import com.github.catvod.utils.SecretRedactor;
 import com.tvbus.engine.Listener;
 import com.tvbus.engine.TVCore;
 
@@ -88,7 +89,7 @@ public class TVBus implements Source.Extractor, Listener {
 
     @Override
     public void onPrepared(String result) {
-        Logger.t(TAG).d(result);
+        Logger.t(TAG).d(SecretRedactor.redact(result));
         JsonObject json = App.gson().fromJson(result, JsonObject.class);
         if (json.get("hls") == null) return;
         hls = json.get("hls").getAsString();
@@ -97,7 +98,7 @@ public class TVBus implements Source.Extractor, Listener {
 
     @Override
     public void onStop(String result) {
-        Logger.t(TAG).d(result);
+        Logger.t(TAG).d(SecretRedactor.redact(result));
         JsonObject json = App.gson().fromJson(result, JsonObject.class);
         hls = json.get("errno").getAsString();
         if (hls.startsWith("-")) latch.countDown();
@@ -105,12 +106,12 @@ public class TVBus implements Source.Extractor, Listener {
 
     @Override
     public void onInited(String result) {
-        Logger.t(TAG).d(result);
+        Logger.t(TAG).d(SecretRedactor.redact(result));
     }
 
     @Override
     public void onStart(String result) {
-        Logger.t(TAG).d(result);
+        Logger.t(TAG).d(SecretRedactor.redact(result));
     }
 
     @Override

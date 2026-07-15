@@ -132,7 +132,7 @@ public class LiveConfig extends BaseConfig {
             LiveApi.parse(getHome());
             LiveApi.parseXml(getHome());
         } catch (Throwable e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
         }
     }
 

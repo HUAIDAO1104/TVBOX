@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.databinding.ViewProgressBinding;
+import com.fongmi.android.tv.security.PromotionFilter;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public class Notify {
@@ -52,7 +53,7 @@ public class Notify {
     }
 
     public static void show(String text) {
-        if (!TextUtils.isEmpty(text)) get().makeText(text);
+        if (!TextUtils.isEmpty(text) && !PromotionFilter.shouldSuppress(text)) get().makeText(text);
     }
 
     public static void progress(Context context) {

@@ -6,7 +6,17 @@ import androidx.preference.PreferenceManager;
 
 import com.github.catvod.Init;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 public class Prefers {
+
+    /*
+     * Ephemeral compatibility values for spiders which still read credentials
+     * through Prefers.getString().  These values deliberately never enter the
+     * SharedPreferences XML file and disappear with the process.
+     */
+    private static final Map<String, String> RUNTIME_STRINGS = new ConcurrentHashMap<>();
 
     public static SharedPreferences getPrefers() {
         return PreferenceManager.getDefaultSharedPreferences(Init.context());
@@ -18,10 +28,24 @@ public class Prefers {
 
     public static String getString(String key, String defaultValue) {
         try {
+            if (RUNTIME_STRINGS.containsKey(key)) return RUNTIME_STRINGS.get(key);
             return getPrefers().getString(key, defaultValue);
         } catch (Exception e) {
             return defaultValue;
         }
+    }
+
+    public static void putRuntimeString(String key, String value) {
+        if (key == null || key.isEmpty() || value == null || value.isEmpty()) return;
+        RUNTIME_STRINGS.put(key, value);
+    }
+
+    public static void removeRuntimeString(String key) {
+        if (key != null) RUNTIME_STRINGS.remove(key);
+    }
+
+    public static void clearRuntimeStrings() {
+        RUNTIME_STRINGS.clear();
     }
 
     public static int getInt(String key) {
@@ -75,6 +99,10 @@ public class Prefers {
     public static void put(String key, Object obj) {
         if (obj == null) return;
         if (obj instanceof String val) {
+            if (RUNTIME_STRINGS.containsKey(key)) {
+                putRuntimeString(key, val);
+                return;
+            }
             getPrefers().edit().putString(key, val).apply();
         } else if (obj instanceof Boolean val) {
             getPrefers().edit().putBoolean(key, val).apply();
@@ -91,6 +119,7 @@ public class Prefers {
     }
 
     public static void remove(String key) {
+        removeRuntimeString(key);
         getPrefers().edit().remove(key).apply();
     }
 }

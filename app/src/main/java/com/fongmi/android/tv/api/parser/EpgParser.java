@@ -63,7 +63,7 @@ public class EpgParser {
         File file = Path.epg(UrlUtil.path(url));
         String reason = refreshReason(file);
         boolean refresh = reason != null;
-        Log.i(TAG, "start url=" + url + " file=" + file.getName() + " refresh=" + refresh + (refresh ? " reason=" + reason : ""));
+        Log.i(TAG, "start url=" + com.github.catvod.utils.SecretRedactor.redact(url) + " file=" + file.getName() + " refresh=" + refresh + (refresh ? " reason=" + reason : ""));
         if (refresh) Download.create(url, file).get();
         boolean gzip = isGzip(file);
         if (gzip) readGzip(live, file, refresh);

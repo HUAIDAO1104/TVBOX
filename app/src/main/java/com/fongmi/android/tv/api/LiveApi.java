@@ -61,7 +61,7 @@ public class LiveApi {
             EpgParser.start(item, url);
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
             return false;
         }
     }

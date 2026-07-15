@@ -65,7 +65,7 @@ public class Updater implements Download.Callback, UpdateListener {
             if (code <= BuildConfig.VERSION_CODE) return;
             App.post(() -> show(activity, name, desc));
         } catch (Exception e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
         }
     }
 

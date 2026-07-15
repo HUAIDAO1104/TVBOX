@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="detail_v2_back">Back</string>
+    <string name="detail_v2_play_now">Play now</string>
+    <string name="detail_v2_resume">Resume · %1$s</string>
+    <string name="detail_v2_resume_plain">Resume playback</string>
+    <string name="detail_v2_choose_episode">Episodes</string>
+    <string name="detail_v2_full_summary">Full summary</string>
+    <string name="detail_v2_source">Playback sources</string>
+    <string name="detail_v2_episode_list">Episodes</string>
+    <string name="detail_v2_quality">Quality</string>
+    <string name="detail_v2_source_value">Source · %1$s</string>
+    <string name="detail_v2_current_source">Current source · %1$s</string>
+    <string name="detail_v2_source_fallback">Source %1$d</string>
+    <string name="detail_v2_meta_separator"> · </string>
+    <string name="detail_repository_resolve_timeout">This source configuration took too long to load. Return and retry, or refresh its repository.</string>
+    <string name="detail_repository_resolve_missing">The repository configuration for this saved source is no longer available.</string>
+    <string name="detail_repository_resolve_failed">This saved source could not be restored. Refresh its repository or choose another source.</string>
+    <string name="player_v2_now_playing">Now playing</string>
+    <string name="player_v2_more_controls">More controls</string>
+    <string name="player_v2_rewind">10 sec</string>
+    <string name="player_v2_forward">10 sec</string>
+    <string name="player_v2_stage_preparing">Preparing playback</string>
+    <string name="player_v2_stage_resolving">Resolving source</string>
+    <string name="player_v2_stage_buffering">Buffering video</string>
+    <string name="player_v2_stage_switching">Switching to another source</string>
+    <string name="player_v2_error_title">Playback interrupted</string>
+    <string name="player_v2_error_source">This source is temporarily unavailable</string>
+    <string name="player_v2_error_parse">Unable to resolve the playback address</string>
+    <string name="player_v2_error_network">Network connection timed out</string>
+    <string name="player_v2_error_credential">Cloud-drive sign-in is required</string>
+    <string name="player_v2_error_credential_expired">Cloud-drive sign-in may have expired</string>
+    <string name="player_v2_error_format">This video format is not supported</string>
+    <string name="player_v2_error_player">Unable to start the player</string>
+    <string name="player_v2_error_subtitle">Subtitles could not be loaded; video playback can continue</string>
+    <string name="player_v2_error_unknown">Something went wrong during playback</string>
+    <string name="player_v2_retry">Retry</string>
+    <string name="player_v2_change_source">Change source</string>
+    <string name="player_v2_cloud_login">Cloud sign-in</string>
+    <string name="player_v2_continue_playing">Continue playback</string>
+    <string name="player_v2_back_detail">Back to details</string>
+    <string name="player_v2_fallback_status">Attempt %1$d · %2$s</string>
+    <string name="player_v2_fallback_search">Searching for an available source</string>
+    <string name="player_v2_fallback_cancel">Cancel switching</string>
+</resources>

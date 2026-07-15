@@ -3,8 +3,11 @@ package com.fongmi.android.tv.ui.activity;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.RenderEffect;
+import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
@@ -13,10 +16,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.util.TypedValue;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
+import androidx.leanback.widget.BaseGridView;
 import androidx.leanback.widget.OnChildViewHolderSelectedListener;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
@@ -52,6 +57,9 @@ import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.impl.CustomTarget;
 import com.fongmi.android.tv.model.VideoViewModel;
 import com.fongmi.android.tv.player.util.PlayerHelper;
+import com.fongmi.android.tv.repository.RepositorySiteKey;
+import com.fongmi.android.tv.repository.RepositorySiteRegistry;
+import com.fongmi.android.tv.repository.RepositorySiteResolver;
 import com.fongmi.android.tv.service.PlaybackService;
 import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.setting.PlayerSetting;
@@ -63,6 +71,8 @@ import com.fongmi.android.tv.ui.adapter.QualityAdapter;
 import com.fongmi.android.tv.ui.adapter.QuickAdapter;
 import com.fongmi.android.tv.ui.custom.CustomKeyDownVod;
 import com.fongmi.android.tv.ui.custom.CustomMovement;
+import com.fongmi.android.tv.ui.detail.DetailTitlePolicy;
+import com.fongmi.android.tv.ui.detail.EpisodeDisplayName;
 import com.fongmi.android.tv.ui.dialog.ChapterDialog;
 import com.fongmi.android.tv.ui.dialog.ContentDialog;
 import com.fongmi.android.tv.ui.dialog.DanmakuDialog;
@@ -71,9 +81,13 @@ import com.fongmi.android.tv.ui.dialog.ParseDialog;
 import com.fongmi.android.tv.ui.dialog.PlayerEngineDialog;
 import com.fongmi.android.tv.ui.dialog.SubtitleDialog;
 import com.fongmi.android.tv.ui.dialog.TrackDialog;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.playback.PlaybackAction;
 import com.fongmi.android.tv.playback.PlaybackReset;
 import com.fongmi.android.tv.playback.vod.VodPlayRequest;
+import com.fongmi.android.tv.playback.vod.PlaybackOverlayPolicy;
+import com.fongmi.android.tv.playback.vod.DetailFocusPolicy;
+import com.fongmi.android.tv.playback.vod.DetailSourceFallbackPolicy;
 import com.fongmi.android.tv.playback.vod.VodPlaybackController;
 import com.fongmi.android.tv.playback.vod.VodPlaybackHost;
 import com.fongmi.android.tv.playback.vod.VodPlaybackMedia;
@@ -89,6 +103,10 @@ import com.fongmi.android.tv.utils.Traffic;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.fongmi.android.tv.utils.Util;
 import com.github.bassaer.library.MDColor;
+import com.google.android.flexbox.FlexDirection;
+import com.google.android.flexbox.FlexWrap;
+import com.google.android.flexbox.FlexboxLayoutManager;
+import com.google.android.flexbox.JustifyContent;
 
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -97,9 +115,25 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.Future;
 
 public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, CustomKeyDownVod.Listener, TrackDialog.Listener, ParseDialog.Listener, ArrayAdapter.OnClickListener, FlagAdapter.OnClickListener, EpisodeAdapter.OnClickListener, QualityAdapter.OnClickListener, QuickAdapter.OnClickListener, Clock.Callback {
+
+    private static final String EXTRA_START_MODE = "start_mode";
+    private static final String MODE_DETAIL = "DETAIL";
+    private static final String MODE_PLAY_NOW = "PLAY_NOW";
+    private static final int REQUEST_CLOUD_LOGIN = 2031;
+    private static final String EXTRA_REPOSITORY_CANDIDATES = "repository_candidates";
+    private static final String STATE_DETAIL_SCROLL = "detail_scroll";
+    private static final String STATE_DETAIL_FOCUS = "detail_focus";
+    private static final String STATE_DETAIL_LIST = "detail_list";
+    private static final String STATE_DETAIL_POSITION = "detail_position";
+    private static final String STATE_FLAG_POSITION = "flag_position";
+    private static final String STATE_EPISODE_POSITION = "episode_position";
+
+    private enum PlaybackErrorType { SOURCE, PARSE, NETWORK, CREDENTIAL, CREDENTIAL_EXPIRED, FORMAT, PLAYER, SUBTITLE, UNKNOWN }
 
     private ActivityVideoBinding mBinding;
     private ViewGroup.LayoutParams mFrameParams;
@@ -122,9 +156,28 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     private Runnable mR2;
     private Runnable mR3;
     private Runnable mR4;
+    private Runnable mR5;
+    private Runnable mR6;
     private Clock mClock;
     private View mFocus1;
     private View mFocus2;
+    private String mDetailPosterUrl = "";
+    private String mCurrentSourceName = "";
+    private PlaybackErrorType mPlaybackErrorType = PlaybackErrorType.UNKNOWN;
+    private int mFallbackAttempt;
+    private boolean mFallbackActive;
+    private boolean mBuffering;
+    private boolean mRestoreDetailPending;
+    private int mDetailScrollY;
+    private int mDetailFocusId = View.NO_ID;
+    private int mDetailListId = View.NO_ID;
+    private int mDetailListPosition = RecyclerView.NO_POSITION;
+    private int mFlagPosition = RecyclerView.NO_POSITION;
+    private int mEpisodePosition = RecyclerView.NO_POSITION;
+    private ArrayList<Vod> mDetailCandidates = new ArrayList<>();
+    private DetailSourceFallbackPolicy mDetailSourceFallback = new DetailSourceFallbackPolicy(0, 0);
+    private Future<?> mRepositorySiteResolve;
+    private String mRepositoryResolveKey = "";
 
     public static void push(FragmentActivity activity, String text) {
         Uri uri = UrlUtil.uri(text);
@@ -143,7 +196,29 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     public static void collect(Activity activity, String key, String id, String name, String pic) {
-        start(activity, key, id, name, pic, null, true, false);
+        // Search results are an information-discovery flow: open the detail
+        // stage first and let the user explicitly start playback.
+        start(activity, key, id, name, pic, null, true, false, MODE_DETAIL);
+    }
+
+    public static void collect(Activity activity, Site site, String id, String name, String pic) {
+        if (site == null) {
+            collect(activity, "", id, name, pic);
+            return;
+        }
+        start(activity, site.getKey(), id, name, pic, null, true, false, MODE_DETAIL, site);
+    }
+
+    public static void collect(Activity activity, ArrayList<Vod> candidates) {
+        if (candidates == null || candidates.isEmpty()) return;
+        Vod selected = candidates.get(0);
+        Site site = selected.getSite();
+        if (site == null) {
+            collect(activity, selected.getSiteKey(), selected.getId(), selected.getName(), selected.getPic());
+            return;
+        }
+        start(activity, site.getKey(), selected.getId(), selected.getName(), selected.getPic(), null,
+                true, false, MODE_DETAIL, site, candidates);
     }
 
     public static void start(Activity activity, String url) {
@@ -155,7 +230,15 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     public static void start(Activity activity, String key, String id, String name, String pic) {
-        start(activity, key, id, name, pic, null);
+        playNow(activity, key, id, name, pic);
+    }
+
+    public static void detail(Activity activity, String key, String id, String name, String pic) {
+        start(activity, key, id, name, pic, null, false, false, MODE_DETAIL);
+    }
+
+    public static void playNow(Activity activity, String key, String id, String name, String pic) {
+        start(activity, key, id, name, pic, null, false, false, MODE_PLAY_NOW);
     }
 
     public static void start(Activity activity, String key, String id, String name, String pic, String mark) {
@@ -163,6 +246,21 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     public static void start(Activity activity, String key, String id, String name, String pic, String mark, boolean collect, boolean cast) {
+        start(activity, key, id, name, pic, mark, collect, cast, MODE_PLAY_NOW);
+    }
+
+    private static void start(Activity activity, String key, String id, String name, String pic, String mark, boolean collect, boolean cast, String startMode) {
+        start(activity, key, id, name, pic, mark, collect, cast, startMode, null);
+    }
+
+    private static void start(Activity activity, String key, String id, String name, String pic, String mark,
+                              boolean collect, boolean cast, String startMode, Site scopedSite) {
+        start(activity, key, id, name, pic, mark, collect, cast, startMode, scopedSite, null);
+    }
+
+    private static void start(Activity activity, String key, String id, String name, String pic, String mark,
+                              boolean collect, boolean cast, String startMode, Site scopedSite,
+                              ArrayList<Vod> candidates) {
         Intent intent = new Intent(activity, VideoActivity.class);
         intent.putExtra("collect", collect);
         intent.putExtra("cast", cast);
@@ -171,6 +269,11 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         intent.putExtra("pic", pic);
         intent.putExtra("key", key);
         intent.putExtra("id", id);
+        intent.putExtra(EXTRA_START_MODE, startMode);
+        if (scopedSite != null) intent.putExtra("repository_site", scopedSite);
+        if (candidates != null && !candidates.isEmpty()) {
+            intent.putParcelableArrayListExtra(EXTRA_REPOSITORY_CANDIDATES, candidates);
+        }
         activity.startActivity(intent);
     }
 
@@ -227,6 +330,11 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     @Override
+    public boolean shouldAutoPlayOnDetail() {
+        return !MODE_DETAIL.equals(getIntent().getStringExtra(EXTRA_START_MODE));
+    }
+
+    @Override
     protected ViewBinding getBinding() {
         return mBinding = ActivityVideoBinding.inflate(getLayoutInflater());
     }
@@ -254,11 +362,15 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     @Override
     protected void onNewIntent(Intent intent) {
         String oldId = getId();
+        String oldKey = getKey();
         super.onNewIntent(intent);
         String id = Objects.toString(intent.getStringExtra("id"), "");
-        if (TextUtils.isEmpty(id) || id.equals(oldId)) return;
+        String key = Objects.toString(intent.getStringExtra("key"), "");
+        if (TextUtils.isEmpty(id) || id.equals(oldId) && key.equals(oldKey)) return;
+        cancelRepositorySiteResolve();
         saveHistory(false);
         getIntent().putExtras(intent);
+        configureRepositoryCandidates(getIntent());
         mVod.reset();
         checkId();
     }
@@ -266,6 +378,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     @Override
     protected void initView(Bundle savedInstanceState) {
         super.initView(savedInstanceState);
+        configureRepositoryCandidates(getIntent());
         mFrameParams = mBinding.video.getLayoutParams();
         mClock = Clock.create(mBinding.widget.clock);
         mKeyDown = CustomKeyDownVod.create(this);
@@ -276,19 +389,50 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         mR2 = this::updateFocus;
         mR3 = this::setTraffic;
         mR4 = this::showEmpty;
+        mR5 = () -> {
+            if (mBuffering) showBufferingProgress();
+        };
+        mR6 = this::showLongBufferingActions;
+        restoreDetailState(savedInstanceState);
         setRecyclerView();
         setVideoView();
         setViewModel();
         checkCast();
     }
 
+    private void configureRepositoryCandidates(Intent intent) {
+        Site scopedSite = intent.getParcelableExtra("repository_site");
+        if (scopedSite != null) RepositorySiteRegistry.register(scopedSite);
+        ArrayList<Vod> candidates = intent.getParcelableArrayListExtra(EXTRA_REPOSITORY_CANDIDATES);
+        mDetailCandidates = candidates == null ? new ArrayList<>() : candidates;
+        for (Vod candidate : mDetailCandidates) {
+            if (candidate.getSite() != null) RepositorySiteRegistry.register(candidate.getSite());
+        }
+        mDetailSourceFallback = new DetailSourceFallbackPolicy(mDetailCandidates.size(), findDetailCandidate());
+    }
+
     @Override
     @SuppressLint("ClickableViewAccessibility")
     protected void initEvent() {
+        mBinding.back.setOnClickListener(view -> onBackInvoked());
+        mBinding.primary.setOnClickListener(view -> onVideo());
+        mBinding.episodeAction.setOnClickListener(view -> focusEpisodes());
         mBinding.keep.setOnClickListener(view -> onKeep());
         mBinding.video.setOnClickListener(view -> onVideo());
         mBinding.change.setOnClickListener(view -> onChange());
         mBinding.content.setOnClickListener(view -> onContent());
+        mBinding.widget.errorRetry.setOnClickListener(view -> retryPlayback());
+        mBinding.widget.errorSource.setOnClickListener(view -> switchPlaybackSource());
+        mBinding.widget.errorLogin.setOnClickListener(view -> CloudAccountActivity.startForResult(this, REQUEST_CLOUD_LOGIN));
+        mBinding.widget.errorContinue.setOnClickListener(view -> continueWithoutSubtitle());
+        mBinding.widget.errorBack.setOnClickListener(view -> returnToDetail());
+        mBinding.progress.fallbackCancel.setOnClickListener(view -> cancelFallback(false));
+        mBinding.progress.fallbackBack.setOnClickListener(view -> cancelFallback(true));
+        mBinding.progress.bufferRetry.setOnClickListener(view -> retryPlayback());
+        mBinding.progress.bufferSource.setOnClickListener(view -> switchPlaybackSource());
+        mBinding.control.action.playPause.setOnClickListener(this::togglePlaybackFromControl);
+        mBinding.control.action.rewind.setOnClickListener(view -> seekFromControl(view, false));
+        mBinding.control.action.forward.setOnClickListener(view -> seekFromControl(view, true));
         mBinding.control.action.text.setOnClickListener(this::onTrack);
         mBinding.control.action.audio.setOnClickListener(this::onTrack);
         mBinding.control.action.video.setOnClickListener(this::onTrack);
@@ -322,28 +466,46 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
             @Override
             public void onChildViewHolderSelected(@NonNull RecyclerView parent, @Nullable RecyclerView.ViewHolder child, int position, int subposition) {
                 if (mFlagAdapter.getItemCount() > 0) onItemClick(mFlagAdapter.get(position));
+                // Binding a source selects its row programmatically. Scrolling the outer detail
+                // page for that non-focused selection clipped the back button on first render.
+                // Only reveal the row when the user has actually moved focus into this list.
+                if (child != null && child.itemView.hasFocus()) ensureFocusVisible(child.itemView);
             }
         });
-        mBinding.episode.addOnChildViewHolderSelectedListener(new OnChildViewHolderSelectedListener() {
+        mBinding.episode.addOnChildAttachStateChangeListener(new RecyclerView.OnChildAttachStateChangeListener() {
             @Override
-            public void onChildViewHolderSelected(@NonNull RecyclerView parent, @Nullable RecyclerView.ViewHolder child, int position, int subposition) {
-                if (child != null && mBinding.video != mFocus1) mFocus1 = child.itemView;
+            public void onChildViewAttachedToWindow(@NonNull View child) {
+                child.setOnFocusChangeListener((view, hasFocus) -> {
+                    if (!hasFocus) return;
+                    if (mBinding.video != mFocus1) mFocus1 = view;
+                    ensureFocusVisible(view);
+                });
+            }
+
+            @Override
+            public void onChildViewDetachedFromWindow(@NonNull View child) {
+                child.setOnFocusChangeListener(null);
             }
         });
         mBinding.array.addOnChildViewHolderSelectedListener(new OnChildViewHolderSelectedListener() {
             @Override
             public void onChildViewHolderSelected(@NonNull RecyclerView parent, @Nullable RecyclerView.ViewHolder child, int position, int subposition) {
-                if (mEpisodeAdapter.getItemCount() > 20 && position > 1) mBinding.episode.setSelectedPosition((position - 2) * 20);
+                if (mEpisodeAdapter.getItemCount() > 20 && position > 1) mBinding.episode.scrollToPosition((position - 2) * 20);
             }
         });
+        mBinding.scroll.setOnScrollChangeListener((androidx.core.widget.NestedScrollView.OnScrollChangeListener)
+                (view, scrollX, scrollY, oldScrollX, oldScrollY) -> syncPosterWithDetailScroll(scrollY));
     }
 
     private void setRecyclerView() {
         mBinding.flag.setHorizontalSpacing(ResUtil.dp2px(8));
         mBinding.flag.setRowHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
         mBinding.flag.setAdapter(mFlagAdapter = new FlagAdapter(this));
-        mBinding.episode.setHorizontalSpacing(ResUtil.dp2px(8));
-        mBinding.episode.setRowHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
+        FlexboxLayoutManager episodeLayout = new FlexboxLayoutManager(this, FlexDirection.ROW, FlexWrap.WRAP);
+        episodeLayout.setJustifyContent(JustifyContent.FLEX_START);
+        mBinding.episode.setLayoutManager(episodeLayout);
+        mBinding.episode.setItemAnimator(null);
+        mBinding.episode.setNestedScrollingEnabled(false);
         mBinding.episode.setAdapter(mEpisodeAdapter = new EpisodeAdapter(this));
         mBinding.quality.setHorizontalSpacing(ResUtil.dp2px(8));
         mBinding.quality.setRowHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -360,10 +522,23 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     private void setVideoView() {
-        setSeekNextFocusDown(R.id.next);
-        setActionFocusBoundary(mBinding.control.action.getRoot());
+        setSeekNextFocusDown(R.id.prev);
         PlayerEngineDialog.setText(mBinding.control.action.player);
         mBinding.control.action.danmaku.setVisibility(DanmakuSetting.isLoad() ? View.VISIBLE : View.GONE);
+        mBinding.control.controlTitle.setText(getName());
+        mBinding.progress.stage.setText(R.string.player_v2_stage_preparing);
+        mBinding.progress.title.setText(getName());
+        setupDetailBackdrop();
+        bindDetailArtwork(getName(), getPic());
+        updatePlaybackControlAction();
+    }
+
+    private void setupDetailBackdrop() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return;
+        float backdropBlur = ResUtil.dp2px(46);
+        float auraBlur = ResUtil.dp2px(34);
+        mBinding.detailBackdrop.setRenderEffect(RenderEffect.createBlurEffect(backdropBlur, backdropBlur, Shader.TileMode.CLAMP));
+        mBinding.detailPosterAura.setRenderEffect(RenderEffect.createBlurEffect(auraBlur, auraBlur, Shader.TileMode.DECAL));
     }
 
     private void setPlaybackMode() {
@@ -455,16 +630,57 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     @Override
+    public boolean tryNextDetailSource() {
+        int index = mDetailSourceFallback.nextIndex();
+        while (index >= 0 && index < mDetailCandidates.size()) {
+            Vod candidate = mDetailCandidates.get(index);
+            Site site = candidate.getSite();
+            if (site != null && !candidate.getId().isEmpty()) {
+                RepositorySiteRegistry.register(site);
+                getIntent().putExtra("key", site.getKey());
+                getIntent().putExtra("id", candidate.getId());
+                getIntent().putExtra("name", candidate.getName());
+                getIntent().putExtra("pic", candidate.getPic());
+                getIntent().putExtra("repository_site", site);
+                mVod.reset();
+                prepareSource(candidate);
+                setDetailTitle(candidate.getName());
+                mBinding.progress.title.setText(candidate.getName());
+                // This remains a detail request. The fullscreen playback fallback overlay would
+                // otherwise survive renderDetail() and keep hiding the successfully loaded page.
+                mBinding.progressLayout.showProgress();
+                requestDetail(site.getKey(), candidate.getId());
+                return true;
+            }
+            index = mDetailSourceFallback.nextIndex();
+        }
+        return false;
+    }
+
+    private int findDetailCandidate() {
+        for (int index = 0; index < mDetailCandidates.size(); index++) {
+            Vod candidate = mDetailCandidates.get(index);
+            if (getKey().equals(candidate.getSiteKey()) && getId().equals(candidate.getId())) return index;
+        }
+        return 0;
+    }
+
+    @Override
     public void requestPlayer(VodPlayRequest request) {
+        if (shouldAutoPlayOnDetail() && !isFullscreen()) enterFullscreen();
         mBinding.widget.title.setText(getString(R.string.detail_title, mBinding.name.getText(), request.getTitle()));
+        mBinding.control.controlTitle.setText(mBinding.widget.title.getText());
+        mBinding.progress.title.setText(mBinding.widget.title.getText());
         mViewModel.playerContent(request.getKey(), request.getFlag(), request.getId());
         mBinding.widget.title.setSelected(true);
-        showProgress();
+        showProgress(getString(R.string.player_v2_stage_resolving));
     }
 
     @Override
     public void requestSearch(List<Site> sites, String keyword) {
         mQuickAdapter.clear();
+        mBinding.quick.setVisibility(View.GONE);
+        mBinding.quickTitle.setVisibility(View.GONE);
         mViewModel.searchContent(sites, keyword, true);
     }
 
@@ -478,6 +694,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         updateNavigationKey();
         player().reset();
         player().stop();
+        mBinding.progress.stage.setText(R.string.player_v2_stage_switching);
     }
 
     @Override
@@ -500,6 +717,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     @Override
     public void startPlayback(Result result, boolean useParse, long startPositionMs, History history, Episode episode) {
+        mBinding.progress.stage.setText(R.string.player_v2_stage_preparing);
         startPlayer(getHistoryKey(), result, useParse, getSite().getTimeout(), startPositionMs, VodPlaybackMedia.metadata(history, episode));
     }
 
@@ -512,13 +730,17 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     public void renderDetail(Vod item, History history) {
         mHistory = history;
         mBinding.progressLayout.showContent();
-        mBinding.name.setText(item.getName());
-        mBinding.video.requestFocus();
+        setDetailTitle(item.getName());
+        if (!mRestoreDetailPending) mBinding.primary.requestFocus();
         App.removeCallbacks(mR4);
+        mDetailPosterUrl = item.getPic();
         setArtwork(item.getPic());
+        bindDetailArtwork(item.getName(), mDetailPosterUrl);
         checkKeepImg();
         setText(item);
+        updatePrimaryAction();
         updateKeep();
+        restoreDetailStateWhenReady(View.NO_ID);
     }
 
     @Override
@@ -528,36 +750,47 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     @Override
     public void renderFallbackName(String name) {
-        mBinding.name.setText(name);
+        setDetailTitle(name);
+        mBinding.control.controlTitle.setText(name);
+        bindDetailArtwork(name, getPic());
     }
 
     @Override
     public void renderFlags(List<Flag> items) {
-        mBinding.flag.setVisibility(items.isEmpty() ? View.GONE : View.VISIBLE);
+        boolean visible = !items.isEmpty();
+        mBinding.flag.setVisibility(visible ? View.VISIBLE : View.GONE);
+        mBinding.sourceHeader.setVisibility(visible ? View.VISIBLE : View.GONE);
         mFlagAdapter.addAll(items);
+        setR2Callback();
+        restoreDetailStateWhenReady(R.id.flag);
     }
 
     @Override
     public void renderEpisodes(List<Episode> items) {
         setEpisodeAdapter(items);
+        restoreDetailStateWhenReady(R.id.episode);
     }
 
     @Override
     public void renderFlagSelection(Flag item) {
         mBinding.flag.setSelectedPosition(mFlagAdapter.indexOf(item));
         notifyItemChanged(mBinding.flag, mFlagAdapter);
+        mCurrentSourceName = cleanSourceName(item.getShow());
+        if (TextUtils.isEmpty(mCurrentSourceName)) mCurrentSourceName = getString(R.string.detail_v2_source_fallback, mFlagAdapter.indexOf(item) + 1);
+        mBinding.control.controlStatus.setText(getString(R.string.detail_v2_current_source, mCurrentSourceName));
     }
 
     @Override
     public void renderEpisodeSelection(Episode item) {
         notifyItemChanged(mBinding.episode, mEpisodeAdapter);
-        mBinding.episode.setSelectedPosition(mEpisodeAdapter.getPosition());
+        mBinding.episode.scrollToPosition(mEpisodeAdapter.getPosition());
+        updatePrimaryAction();
     }
 
     @Override
     public void renderReverseEpisodes(List<Episode> items, boolean scroll) {
         setEpisodeAdapter(items);
-        if (scroll) mBinding.episode.setSelectedPosition(mEpisodeAdapter.getPosition());
+        if (scroll) mBinding.episode.scrollToPosition(mEpisodeAdapter.getPosition());
     }
 
     @Override
@@ -574,7 +807,9 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     @Override
     public void renderSources(List<Vod> items) {
         mQuickAdapter.addAll(items);
-        mBinding.quick.setVisibility(mQuickAdapter.isEmpty() ? View.GONE : View.VISIBLE);
+        boolean visible = !mQuickAdapter.isEmpty();
+        mBinding.quick.setVisibility(visible ? View.VISIBLE : View.GONE);
+        mBinding.quickTitle.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
     @Override
@@ -585,6 +820,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         PlaybackAction.setSpeed(player(), mBinding.control.action.speed, history.getSpeed());
         setScale(getScale());
         setPartAdapter();
+        updatePrimaryAction();
     }
 
     @Override
@@ -601,6 +837,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     @Override
     public void renderDescription(String desc) {
         mBinding.content.setTag(desc);
+        setSummary(desc);
     }
 
     @Override
@@ -616,11 +853,19 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     @Override
     public void onSearchStarted(String keyword) {
         mBinding.part.setTag(keyword);
+        showFallbackProgress(getString(R.string.player_v2_fallback_search), false);
     }
 
     @Override
     public void onSearchResult() {
         App.removeCallbacks(mR4);
+    }
+
+    @Override
+    public void onSearchEmpty() {
+        App.removeCallbacks(mR4);
+        mFallbackActive = false;
+        showError(getString(R.string.player_v2_error_source));
     }
 
     @Override
@@ -630,11 +875,15 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     @Override
     public void showSwitchLine(Flag flag) {
+        mCurrentSourceName = flag.getShow();
+        mBinding.control.controlStatus.setText(getString(R.string.detail_v2_current_source, mCurrentSourceName));
+        showFallbackProgress(cleanSourceName(mCurrentSourceName), true);
         Notify.show(getString(R.string.play_switch_flag, flag.getFlag()));
     }
 
     @Override
     public void showSwitchSource(Vod item) {
+        showFallbackProgress(cleanSourceName(item.getSiteName()), true);
         Notify.show(getString(R.string.play_switch_site, item.getSiteName()));
     }
 
@@ -664,7 +913,50 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     private void checkId() {
+        String key = getKey();
+        if (RepositorySiteKey.isScoped(key) && VodConfig.get().getSite(key).isEmpty()) {
+            resolveRepositorySite(key);
+            return;
+        }
         mVod.checkId();
+    }
+
+    private void resolveRepositorySite(String expectedKey) {
+        if (mRepositorySiteResolve != null && expectedKey.equals(mRepositoryResolveKey)) return;
+        cancelRepositorySiteResolve();
+        mRepositoryResolveKey = expectedKey;
+        mBinding.progressLayout.showProgress();
+        mRepositorySiteResolve = RepositorySiteResolver.resolve(expectedKey, new RepositorySiteResolver.Callback() {
+            @Override
+            public void onResolved(Site site) {
+                if (!expectedKey.equals(mRepositoryResolveKey)) return;
+                mRepositorySiteResolve = null;
+                mRepositoryResolveKey = "";
+                if (isFinishing() || isDestroyed() || !expectedKey.equals(getKey())) return;
+                getIntent().putExtra("repository_site", site);
+                mVod.checkId();
+            }
+
+            @Override
+            public void onFailure(RepositorySiteResolver.Failure failure) {
+                if (!expectedKey.equals(mRepositoryResolveKey)) return;
+                mRepositorySiteResolve = null;
+                mRepositoryResolveKey = "";
+                if (isFinishing() || isDestroyed() || !expectedKey.equals(getKey())) return;
+                int message = switch (failure) {
+                    case TIMEOUT -> R.string.detail_repository_resolve_timeout;
+                    case NOT_FOUND, INVALID_KEY -> R.string.detail_repository_resolve_missing;
+                    case LOAD_FAILED, SITE_UNAVAILABLE -> R.string.detail_repository_resolve_failed;
+                };
+                mBinding.progressLayout.showEmpty(getString(message));
+            }
+        });
+    }
+
+    private void cancelRepositorySiteResolve() {
+        if (mRepositorySiteResolve != null) mRepositorySiteResolve.cancel(true);
+        mRepositorySiteResolve = null;
+        mRepositoryResolveKey = "";
     }
 
     private void showEmpty() {
@@ -673,21 +965,79 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     private void setText(Vod item) {
         mBinding.content.setTag(item.getContent());
-        setText(mBinding.year, R.string.detail_year, item.getYear());
-        setText(mBinding.area, R.string.detail_area, item.getArea());
-        setText(mBinding.type, R.string.detail_type, item.getTypeName());
-        setText(mBinding.site, R.string.detail_site, getSite().getName());
-        setText(mBinding.director, R.string.detail_director, item.getDirector());
-        setText(mBinding.actor, R.string.detail_actor, item.getActor());
-        setText(mBinding.remark, 0, item.getRemarks());
+        List<String> meta = new ArrayList<>();
+        addMeta(meta, item.getYear());
+        addMeta(meta, item.getArea());
+        addMeta(meta, item.getTypeName());
+        addMeta(meta, item.getRemarks());
+        setText(mBinding.remark, 0, TextUtils.join(getString(R.string.detail_v2_meta_separator), meta));
+        setText(mBinding.site, R.string.detail_v2_source_value, cleanSourceName(getSite().getName()));
+        mBinding.row1.setVisibility(mBinding.site.getVisibility());
+        mBinding.year.setVisibility(View.GONE);
+        mBinding.area.setVisibility(View.GONE);
+        mBinding.type.setVisibility(View.GONE);
+        setText(mBinding.director, R.string.detail_director, cleanPerson(item.getDirector()));
+        setText(mBinding.actor, R.string.detail_actor, cleanPerson(item.getActor()));
+        setSummary(item.getContent());
+    }
+
+    private void setDetailTitle(String title) {
+        String value = Objects.toString(title, "").trim();
+        mBinding.name.setText(value);
+        mBinding.name.setTextSize(TypedValue.COMPLEX_UNIT_SP, DetailTitlePolicy.textSizeSp(value));
+        mBinding.name.setMaxLines(DetailTitlePolicy.maxLines(value));
     }
 
     private void setText(TextView view, int resId, String text) {
-        if (TextUtils.isEmpty(text) && !TextUtils.isEmpty(view.getText())) return;
+        if (TextUtils.isEmpty(text)) {
+            view.setText("");
+            view.setVisibility(View.GONE);
+            return;
+        }
         view.setText(Sniffer.buildClickable(resId > 0 ? getString(resId, text) : text, this::clickableSpan), TextView.BufferType.SPANNABLE);
-        view.setVisibility(text.isEmpty() ? View.GONE : View.VISIBLE);
+        view.setVisibility(View.VISIBLE);
         view.setLinkTextColor(MDColor.YELLOW_500);
         CustomMovement.bind(view);
+    }
+
+    private void addMeta(List<String> meta, String value) {
+        if (!TextUtils.isEmpty(value)) meta.add(value.trim());
+    }
+
+    private void setSummary(String summary) {
+        String clean = cleanSummary(summary);
+        boolean visible = !TextUtils.isEmpty(clean);
+        mBinding.summary.setText(visible ? clean : "");
+        mBinding.summary.setVisibility(visible ? View.VISIBLE : View.GONE);
+        mBinding.content.setVisibility(visible ? View.VISIBLE : View.GONE);
+        if (visible) mBinding.content.setTag(TextUtils.isEmpty(summary) ? clean : summary);
+    }
+
+    private String cleanSourceName(String source) {
+        if (TextUtils.isEmpty(source)) return "";
+        String clean = SearchDisplayName.clean(source.replaceAll("(?i)[|┃].*$", ""));
+        String lower = clean.toLowerCase(Locale.ROOT);
+        if (lower.contains("gzh") || lower.contains("公众号") || lower.contains("免费分享") || lower.contains("扫码")) return "";
+        return clean;
+    }
+
+    private String cleanPerson(String value) {
+        if (TextUtils.isEmpty(value)) return "";
+        String lower = value.toLowerCase(Locale.ROOT);
+        return lower.contains("gzh") || lower.contains("公众号") || lower.contains("免费分享") || lower.contains("扫码") ? "" : value.trim();
+    }
+
+    private String cleanSummary(String value) {
+        if (TextUtils.isEmpty(value)) return "";
+        String[] sentences = value.replace('\n', ' ').split("(?<=[。！？!?])");
+        StringBuilder clean = new StringBuilder();
+        for (String sentence : sentences) {
+            String lower = sentence.toLowerCase(Locale.ROOT);
+            if (lower.contains("gzh") || lower.contains("公众号") || lower.contains("免费分享") || lower.contains("加群") || lower.contains("扫码") || lower.contains("秒播") || lower.contains("不卡")) continue;
+            if (!sentence.trim().isEmpty()) clean.append(sentence.trim());
+            if (clean.length() >= 180) break;
+        }
+        return clean.toString().trim();
     }
 
     private ClickableSpan clickableSpan(Result result) {
@@ -706,20 +1056,33 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     private void setEpisodeAdapter(List<Episode> items) {
-        mBinding.episode.setVisibility(items.isEmpty() ? View.GONE : View.VISIBLE);
+        boolean visible = !items.isEmpty();
+        mBinding.episode.setVisibility(visible ? View.VISIBLE : View.GONE);
+        mBinding.episodeTitle.setVisibility(visible ? View.VISIBLE : View.GONE);
+        mBinding.episodeAction.setVisibility(visible ? View.VISIBLE : View.GONE);
         mEpisodeAdapter.addAll(items);
         setArrayAdapter(items.size());
+        updatePrimaryAction();
         setR2Callback();
     }
 
     @Override
     public void onItemClick(Episode item) {
-        if (shouldEnterFullscreen(item)) return;
-        mVod.selectEpisode(item);
+        boolean selected = item.isSelected();
+        if (!isFullscreen()) enterFullscreen();
+        if (!selected) {
+            mVod.selectEpisode(item);
+        } else if (player().isEmpty() || !isOwner()) {
+            showProgress(getString(R.string.player_v2_stage_preparing));
+            mVod.refresh();
+        } else {
+            onPlay();
+        }
     }
 
     private void setQualityVisible(boolean visible) {
         mBinding.quality.setVisibility(visible ? View.VISIBLE : View.GONE);
+        mBinding.qualityTitle.setVisibility(visible ? View.VISIBLE : View.GONE);
         setR2Callback();
     }
 
@@ -755,9 +1118,17 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         mEpisodeAdapter.setNextFocusUp(findFocusUp(2));
         mFlagAdapter.setNextFocusDown(findFocusDown(0));
         mEpisodeAdapter.setNextFocusDown(findFocusDown(2));
+        int firstDetailRow = findFocusDown(-1);
+        if (firstDetailRow == 0) firstDetailRow = R.id.video;
+        mBinding.primary.setNextFocusDownId(firstDetailRow);
+        mBinding.episodeAction.setNextFocusDownId(isVisible(mBinding.episode) ? R.id.episode : firstDetailRow);
+        mBinding.keep.setNextFocusDownId(firstDetailRow);
+        mBinding.content.setNextFocusDownId(firstDetailRow);
+        mBinding.change.setNextFocusDownId(firstDetailRow);
         notifyItemChanged(mBinding.episode, mEpisodeAdapter);
         notifyItemChanged(mBinding.part, mPartAdapter);
         notifyItemChanged(mBinding.flag, mFlagAdapter);
+        if (mRestoreDetailPending) restoreDetailStateWhenReady(mDetailListId);
     }
 
     @Override
@@ -773,14 +1144,231 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         Notify.show(mHistory.getRevPlayHint());
     }
 
-    private boolean shouldEnterFullscreen(Episode item) {
-        boolean enter = !isFullscreen() && item.isSelected();
-        if (enter) enterFullscreen();
-        return enter;
+    private void bindDetailArtwork(String name, String url) {
+        mDetailPosterUrl = Objects.toString(url, "");
+        ImgUtil.loadPoster(name, mDetailPosterUrl, mBinding.detailPoster);
+        boolean hasPoster = !TextUtils.isEmpty(mDetailPosterUrl);
+        mBinding.detailBackdrop.setVisibility(hasPoster ? View.VISIBLE : View.GONE);
+        mBinding.detailPosterAura.setVisibility(hasPoster ? View.VISIBLE : View.GONE);
+        if (hasPoster) {
+            ImgUtil.load(name, mDetailPosterUrl, mBinding.detailBackdrop);
+            ImgUtil.load(name, mDetailPosterUrl, mBinding.detailPosterAura);
+        }
+        syncPosterWithDetailScroll(mBinding.scroll.getScrollY());
+    }
+
+    private void updatePrimaryAction() {
+        if (mHistory == null) {
+            mBinding.primary.setText(R.string.detail_v2_play_now);
+            return;
+        }
+        String episode = EpisodeDisplayName.compactActionLabel(mHistory.getVodRemarks());
+        if (mHistory.getPosition() > 0) {
+            mBinding.primary.setText(TextUtils.isEmpty(episode) ? getString(R.string.detail_v2_resume_plain) : getString(R.string.detail_v2_resume, episode));
+        } else {
+            mBinding.primary.setText(R.string.detail_v2_play_now);
+        }
+    }
+
+    private void focusEpisodes() {
+        if (!isVisible(mBinding.episode)) return;
+        mBinding.scroll.post(() -> {
+            requestEpisodeFocus(mEpisodeAdapter.getPosition());
+        });
+    }
+
+    private void restoreDetailState(@Nullable Bundle state) {
+        if (state == null) return;
+        mDetailScrollY = state.getInt(STATE_DETAIL_SCROLL, 0);
+        mDetailFocusId = state.getInt(STATE_DETAIL_FOCUS, View.NO_ID);
+        mDetailListId = state.getInt(STATE_DETAIL_LIST, View.NO_ID);
+        mDetailListPosition = state.getInt(STATE_DETAIL_POSITION, RecyclerView.NO_POSITION);
+        mFlagPosition = state.getInt(STATE_FLAG_POSITION, RecyclerView.NO_POSITION);
+        mEpisodePosition = state.getInt(STATE_EPISODE_POSITION, RecyclerView.NO_POSITION);
+        mRestoreDetailPending = true;
+    }
+
+    private void captureDetailState(@Nullable View focus) {
+        mDetailScrollY = mBinding.scroll.getScrollY();
+        mFlagPosition = mBinding.flag.getSelectedPosition();
+        mEpisodePosition = mEpisodeAdapter == null ? RecyclerView.NO_POSITION : mEpisodeAdapter.getPosition();
+        RecyclerView list = findContainingRecycler(focus);
+        if (list == null) {
+            mDetailListId = View.NO_ID;
+            mDetailListPosition = RecyclerView.NO_POSITION;
+            mDetailFocusId = focus == null ? View.NO_ID : focus.getId();
+        } else {
+            RecyclerView.ViewHolder holder = list.findContainingViewHolder(focus);
+            mDetailListId = list.getId();
+            mDetailListPosition = holder == null ? RecyclerView.NO_POSITION : holder.getBindingAdapterPosition();
+            mDetailFocusId = View.NO_ID;
+        }
+    }
+
+    @Nullable
+    private RecyclerView findContainingRecycler(@Nullable View view) {
+        View current = view;
+        while (current != null) {
+            if (current instanceof RecyclerView) return (RecyclerView) current;
+            if (!(current.getParent() instanceof View)) return null;
+            current = (View) current.getParent();
+        }
+        return null;
+    }
+
+    private void restoreDetailStateWhenReady(int readyListId) {
+        if (!mRestoreDetailPending) return;
+        if (mDetailListId != readyListId) return;
+        if (readyListId == R.id.flag) mDetailListPosition = DetailFocusPolicy.clampPosition(mDetailListPosition, mFlagAdapter.getItemCount());
+        else if (readyListId == R.id.episode) mDetailListPosition = DetailFocusPolicy.clampPosition(mDetailListPosition, mEpisodeAdapter.getItemCount());
+        else if (readyListId != View.NO_ID) {
+            RecyclerView list = findViewById(readyListId);
+            int count = list == null || list.getAdapter() == null ? 0 : list.getAdapter().getItemCount();
+            mDetailListPosition = DetailFocusPolicy.clampPosition(mDetailListPosition, count);
+        }
+        if (readyListId != View.NO_ID && mDetailListPosition == RecyclerView.NO_POSITION) {
+            mDetailListId = View.NO_ID;
+            mDetailFocusId = R.id.primary;
+        }
+        mRestoreDetailPending = false;
+        restoreDetailSnapshot();
+    }
+
+    private void restoreDetailSnapshot() {
+        mBinding.scroll.post(() -> {
+            selectGridPosition(mBinding.flag, mFlagPosition);
+            if (mEpisodePosition >= 0 && mEpisodePosition < mEpisodeAdapter.getItemCount()) mBinding.episode.scrollToPosition(mEpisodePosition);
+            mBinding.scroll.scrollTo(0, Math.max(0, mDetailScrollY));
+            View target = mDetailFocusId == View.NO_ID ? null : findViewById(mDetailFocusId);
+            if (mDetailListId != View.NO_ID && mDetailListPosition != RecyclerView.NO_POSITION) {
+                RecyclerView list = findViewById(mDetailListId);
+                if (list instanceof BaseGridView) ((BaseGridView) list).setSelectedPosition(mDetailListPosition);
+                if (list != null) {
+                    if (list == mBinding.episode) {
+                        requestEpisodeFocus(mDetailListPosition);
+                        return;
+                    }
+                    list.requestFocus();
+                    RecyclerView.ViewHolder holder = list.findViewHolderForAdapterPosition(mDetailListPosition);
+                    if (holder != null) target = holder.itemView;
+                }
+            }
+            if (target == null || target.getVisibility() != View.VISIBLE || !target.isFocusable()) target = mBinding.primary;
+            target.requestFocus();
+            ensureFocusVisible(target);
+        });
+    }
+
+    private void requestEpisodeFocus(int requestedPosition) {
+        int position = DetailFocusPolicy.clampPosition(requestedPosition, mEpisodeAdapter.getItemCount());
+        if (position == RecyclerView.NO_POSITION) {
+            mBinding.primary.requestFocus();
+            return;
+        }
+        mBinding.episode.scrollToPosition(position);
+        mBinding.episode.post(() -> {
+            RecyclerView.ViewHolder holder = mBinding.episode.findViewHolderForAdapterPosition(position);
+            View target = holder == null ? mBinding.episode : holder.itemView;
+            target.requestFocus();
+            ensureFocusVisible(target);
+        });
+    }
+
+    private void selectGridPosition(BaseGridView grid, int position) {
+        if (position >= 0 && grid.getAdapter() != null && position < grid.getAdapter().getItemCount()) grid.setSelectedPosition(position);
+    }
+
+    private void ensureFocusVisible(@Nullable View target) {
+        if (target == null || !isDescendantOf(target, mBinding.scroll)) return;
+        mBinding.scroll.post(() -> {
+            int[] child = new int[2];
+            int[] viewport = new int[2];
+            target.getLocationOnScreen(child);
+            mBinding.scroll.getLocationOnScreen(viewport);
+            int safe = ResUtil.dp2px(24);
+            int top = viewport[1] + safe;
+            int bottom = viewport[1] + mBinding.scroll.getHeight() - safe;
+            if (child[1] < top) mBinding.scroll.smoothScrollBy(0, child[1] - top);
+            else if (child[1] + target.getHeight() > bottom) mBinding.scroll.smoothScrollBy(0, child[1] + target.getHeight() - bottom);
+        });
+    }
+
+    private boolean isDescendantOf(@Nullable View child, @NonNull ViewGroup ancestor) {
+        View current = child;
+        while (current != null) {
+            if (current == ancestor) return true;
+            if (!(current.getParent() instanceof View)) return false;
+            current = (View) current.getParent();
+        }
+        return false;
+    }
+
+    private void retryPlayback() {
+        stopBufferingUi();
+        mFallbackActive = false;
+        mFallbackAttempt = 0;
+        hideError();
+        if (!isFullscreen()) enterFullscreen();
+        showProgress(getString(R.string.player_v2_stage_preparing));
+        mVod.refresh();
+    }
+
+    private void switchPlaybackSource() {
+        stopBufferingUi();
+        hideError();
+        showFallbackProgress(getString(R.string.player_v2_fallback_search), false);
+        onChange();
+    }
+
+    private void returnToDetail() {
+        mVod.cancelFallback();
+        mViewModel.stopSearch();
+        mFallbackActive = false;
+        hideError();
+        hideProgress();
+        if (isFullscreen()) exitFullscreen();
+        else mBinding.primary.requestFocus();
+    }
+
+    private void showFallbackProgress(String source, boolean increment) {
+        if (!isFullscreen()) enterFullscreen();
+        mFallbackActive = true;
+        if (increment) mFallbackAttempt++;
+        int attempt = Math.max(1, mFallbackAttempt + (increment ? 0 : 1));
+        mBinding.progress.fallbackStatus.setText(getString(R.string.player_v2_fallback_status, attempt, source));
+        mBinding.progress.fallbackStatus.setVisibility(View.VISIBLE);
+        mBinding.progress.fallbackActions.setVisibility(View.VISIBLE);
+        showProgress(getString(R.string.player_v2_stage_switching));
+        mBinding.progress.fallbackCancel.requestFocus();
+    }
+
+    private void cancelFallback(boolean backToDetail) {
+        mVod.cancelFallback();
+        mViewModel.stopSearch();
+        mFallbackActive = false;
+        hideProgress();
+        if (backToDetail) returnToDetail();
+        else showError(getString(R.string.player_v2_error_source));
+    }
+
+    private void continueWithoutSubtitle() {
+        hideError();
+        hideProgress();
+        if (isFullscreen()) mBinding.video.requestFocus();
+        if (controller() != null && !player().isEmpty()) onPlay();
     }
 
     private void enterFullscreen() {
         mFocus1 = getCurrentFocus();
+        captureDetailState(mFocus1);
+        mBinding.video.setTranslationY(0f);
+        mBinding.video.setAlpha(1f);
+        mBinding.video.setClickable(true);
+        mBinding.video.setFocusable(true);
+        mBinding.detailPoster.setVisibility(View.GONE);
+        mBinding.detailPosterAura.setVisibility(View.GONE);
+        mBinding.video.setClipToOutline(false);
+        mBinding.video.bringToFront();
         mBinding.video.requestFocus();
         mBinding.video.setForeground(null);
         mBinding.video.setLayoutParams(new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT));
@@ -793,11 +1381,31 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     private void exitFullscreen() {
         mBinding.video.setForeground(ResUtil.getDrawable(R.drawable.selector_video));
         mBinding.video.setLayoutParams(mFrameParams);
-        getFocus1().requestFocus();
+        mBinding.video.setClipToOutline(true);
+        mBinding.detailPoster.setVisibility(View.VISIBLE);
         mKeyDown.setFull(false);
         setFullscreen(false);
+        mBinding.video.bringToFront();
+        syncPosterWithDetailScroll(mBinding.scroll.getScrollY());
+        restoreDetailSnapshot();
         mFocus2 = null;
         hideInfo();
+    }
+
+    private void syncPosterWithDetailScroll(int scrollY) {
+        if (isFullscreen()) return;
+        float translation = -Math.max(0, scrollY);
+        int fadeStart = ResUtil.dp2px(220);
+        int fadeDistance = ResUtil.dp2px(120);
+        float alpha = DetailFocusPolicy.posterAlpha(scrollY, fadeStart, fadeDistance);
+        boolean focusable = DetailFocusPolicy.posterCanReceiveFocus(alpha);
+        mBinding.video.setTranslationY(translation);
+        mBinding.video.setAlpha(alpha);
+        mBinding.video.setClickable(focusable);
+        mBinding.video.setFocusable(focusable);
+        mBinding.detailPosterAura.setTranslationY(translation);
+        mBinding.detailPosterAura.setAlpha(0.34f * alpha);
+        mBinding.detailPosterAura.setVisibility(!TextUtils.isEmpty(mDetailPosterUrl) && alpha > 0f ? View.VISIBLE : View.GONE);
     }
 
     private void onContent() {
@@ -814,7 +1422,18 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     private void onVideo() {
-        if (!isFullscreen()) enterFullscreen();
+        if (isFullscreen()) return;
+        if (mEpisodeAdapter.getItemCount() == 0) {
+            Notify.show(R.string.error_detail);
+            if (isVisible(mBinding.flag)) mBinding.flag.requestFocus();
+            return;
+        }
+        boolean start = player().isEmpty() || !isOwner();
+        enterFullscreen();
+        if (start) {
+            showProgress(getString(R.string.player_v2_stage_preparing));
+            mVod.refresh();
+        }
     }
 
     private void onChange() {
@@ -878,7 +1497,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     private void onParse() {
-        ParseDialog.create().show(this);
+        ParseDialog.create().siteKey(getKey()).show(this);
         hideControl();
     }
 
@@ -973,28 +1592,147 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         else showControl(getFocus2());
     }
 
+    private void togglePlaybackFromControl(View focus) {
+        togglePlaybackRequest();
+        showControl(focus);
+    }
+
+    private void seekFromControl(View focus, boolean forward) {
+        if (forward) onSeekForward();
+        else onSeekBack();
+        showControl(focus);
+    }
+
+    private void updatePlaybackControlAction() {
+        boolean playing = isPlaybackRequested();
+        mBinding.control.action.playPause.setText(playing ? R.string.pause : R.string.play);
+        mBinding.control.action.playPause.setCompoundDrawablesWithIntrinsicBounds(
+                playing ? R.drawable.player_v2_ic_pause : R.drawable.player_v2_ic_play, 0, 0, 0);
+        mBinding.control.action.playPause.setContentDescription(getString(playing ? R.string.pause : R.string.play));
+    }
+
+    private boolean isPlaybackRequested() {
+        return controller() != null && controller().getPlayWhenReady();
+    }
+
+    private void togglePlaybackRequest() {
+        if (service() == null || controller() == null) return;
+        if (isPlaybackRequested()) onPaused();
+        else if (player().isEmpty()) mVod.refresh();
+        else onPlay();
+        updatePlaybackControlAction();
+    }
+
     private void showProgress() {
+        showProgress(getString(R.string.player_v2_stage_preparing));
+    }
+
+    private void showProgress(String stage) {
+        hideControl();
+        mBinding.progress.stage.setText(stage);
+        mBinding.progress.title.setText(mBinding.widget.title.getText());
+        mBinding.progress.title.setVisibility(View.VISIBLE);
+        mBinding.progress.bufferActions.setVisibility(View.GONE);
+        if (!mFallbackActive) {
+            mBinding.progress.fallbackStatus.setVisibility(View.GONE);
+            mBinding.progress.fallbackActions.setVisibility(View.GONE);
+        }
         mBinding.progress.getRoot().setVisibility(View.VISIBLE);
         App.post(mR3, 0);
         hideCenter();
         hideError();
+        if (isFullscreen() && !hasInteractiveOverlay()) mBinding.video.requestFocus();
+    }
+
+    private void showBufferingProgress() {
+        showProgress(getString(R.string.player_v2_stage_buffering));
+        App.removeCallbacks(mR3);
+        mBinding.progress.title.setVisibility(View.GONE);
+        mBinding.progress.traffic.setVisibility(View.GONE);
     }
 
     private void hideProgress() {
+        boolean restoreVideoFocus = isFullscreen() && isDescendantOf(getCurrentFocus(), mBinding.progress.getRoot());
+        stopBufferingUi();
         mBinding.progress.getRoot().setVisibility(View.GONE);
+        mBinding.progress.traffic.setVisibility(View.GONE);
         App.removeCallbacks(mR3);
         Traffic.reset();
+        if (restoreVideoFocus && !isVisible(mBinding.widget.error)) mBinding.video.requestFocus();
+    }
+
+    private void startBufferingUi() {
+        mBuffering = true;
+        App.removeCallbacks(mR5, mR6);
+        if (isVisible(mBinding.progress.getRoot())) mBinding.progress.stage.setText(R.string.player_v2_stage_buffering);
+        else App.post(mR5, PlaybackOverlayPolicy.BUFFERING_INDICATOR_DELAY_MS);
+        App.post(mR6, PlaybackOverlayPolicy.BUFFERING_ACTION_DELAY_MS);
+    }
+
+    private void stopBufferingUi() {
+        mBuffering = false;
+        App.removeCallbacks(mR5, mR6);
+    }
+
+    private void showLongBufferingActions() {
+        if (!mBuffering) return;
+        showBufferingProgress();
+        mBinding.progress.bufferActions.setVisibility(View.VISIBLE);
+        if (isFullscreen()) mBinding.progress.bufferRetry.requestFocus();
     }
 
     private void showError(String text) {
+        mPlaybackErrorType = classifyPlaybackError(text);
         mBinding.widget.error.setVisibility(View.VISIBLE);
-        mBinding.widget.text.setText(text);
+        mBinding.widget.text.setText(playbackErrorMessage(mPlaybackErrorType));
+        boolean credential = mPlaybackErrorType == PlaybackErrorType.CREDENTIAL || mPlaybackErrorType == PlaybackErrorType.CREDENTIAL_EXPIRED;
+        boolean subtitle = mPlaybackErrorType == PlaybackErrorType.SUBTITLE;
+        mBinding.widget.errorLogin.setVisibility(credential ? View.VISIBLE : View.GONE);
+        mBinding.widget.errorContinue.setVisibility(subtitle ? View.VISIBLE : View.GONE);
+        mBinding.widget.errorRetry.setVisibility(subtitle ? View.GONE : View.VISIBLE);
+        mBinding.widget.errorSource.setVisibility(credential || subtitle ? View.GONE : View.VISIBLE);
+        hideControl();
         hideProgress();
+        configureErrorFocusTrap();
+        focusErrorAction();
+        // Error can be raised while the detail stage still owns focus. Reassert after layout so
+        // RecyclerView focus recovery cannot move it back to an episode in the same frame.
+        mBinding.widget.error.post(() -> {
+            if (isVisible(mBinding.widget.error)) focusErrorAction();
+        });
     }
 
     private void hideError() {
         mBinding.widget.error.setVisibility(View.GONE);
         mBinding.widget.text.setText("");
+    }
+
+    private void configureErrorFocusTrap() {
+        List<View> actions = new ArrayList<>();
+        addVisibleErrorAction(actions, mBinding.widget.errorRetry);
+        addVisibleErrorAction(actions, mBinding.widget.errorSource);
+        addVisibleErrorAction(actions, mBinding.widget.errorLogin);
+        addVisibleErrorAction(actions, mBinding.widget.errorContinue);
+        addVisibleErrorAction(actions, mBinding.widget.errorBack);
+        for (int i = 0; i < actions.size(); i++) {
+            View action = actions.get(i);
+            action.setNextFocusUpId(action.getId());
+            action.setNextFocusDownId(action.getId());
+            action.setNextFocusLeftId(actions.get(Math.max(0, i - 1)).getId());
+            action.setNextFocusRightId(actions.get(Math.min(actions.size() - 1, i + 1)).getId());
+        }
+    }
+
+    private void addVisibleErrorAction(List<View> actions, View action) {
+        if (action.getVisibility() == View.VISIBLE) actions.add(action);
+    }
+
+    private void focusErrorAction() {
+        View target;
+        if (mBinding.widget.errorContinue.getVisibility() == View.VISIBLE) target = mBinding.widget.errorContinue;
+        else if (mBinding.widget.errorLogin.getVisibility() == View.VISIBLE) target = mBinding.widget.errorLogin;
+        else target = mBinding.widget.errorRetry;
+        target.requestFocus();
     }
 
     private void showInfo() {
@@ -1010,14 +1748,26 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     private void showControl(View view) {
+        updatePlaybackControlAction();
+        mBinding.control.controlTitle.setText(mBinding.widget.title.getText());
+        if (!TextUtils.isEmpty(mCurrentSourceName)) mBinding.control.controlStatus.setText(getString(R.string.detail_v2_current_source, mCurrentSourceName));
         mBinding.control.getRoot().setVisibility(View.VISIBLE);
         view.requestFocus();
         setR1Callback();
     }
 
     private void hideControl() {
+        View focused = getCurrentFocus();
+        boolean restoreVideoFocus = isFullscreen() && isDescendantOf(focused, mBinding.control.getRoot());
         mBinding.control.getRoot().setVisibility(View.GONE);
         App.removeCallbacks(mR1);
+        if (restoreVideoFocus && !hasInteractiveOverlay()) mBinding.video.requestFocus();
+    }
+
+    private boolean hasInteractiveOverlay() {
+        return isVisible(mBinding.widget.error)
+                || isVisible(mBinding.progress.fallbackActions)
+                || isVisible(mBinding.progress.bufferActions);
     }
 
     private void hideCenter() {
@@ -1028,6 +1778,33 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     private void setTraffic() {
         Traffic.setSpeed(mBinding.progress.traffic);
         App.post(mR3, 1000);
+    }
+
+    private PlaybackErrorType classifyPlaybackError(String message) {
+        String value = Objects.toString(message, "").toLowerCase(Locale.ROOT);
+        if (value.contains("timeout") || value.contains("timed out") || value.contains("超时")) return PlaybackErrorType.NETWORK;
+        if (value.contains("subtitle") || value.contains("caption") || value.contains("字幕")) return PlaybackErrorType.SUBTITLE;
+        if (value.contains("expired") || value.contains("失效") || value.contains("过期")) return PlaybackErrorType.CREDENTIAL_EXPIRED;
+        if (value.contains("cookie") || value.contains("token") || value.contains("credential") || value.contains("login") || value.contains("网盘") || value.contains("登录")) return PlaybackErrorType.CREDENTIAL;
+        if (value.contains("player init") || value.contains("player start") || value.contains("播放器启动")) return PlaybackErrorType.PLAYER;
+        if (value.contains("drm") || value.contains("codec") || value.contains("format") || value.contains("unsupported") || value.contains("格式")) return PlaybackErrorType.FORMAT;
+        if (value.contains("parse") || value.contains("resolve") || value.contains("url") || value.contains("解析")) return PlaybackErrorType.PARSE;
+        if (value.contains("source") || value.contains("flag") || value.contains("line") || value.contains("线路")) return PlaybackErrorType.SOURCE;
+        return PlaybackErrorType.UNKNOWN;
+    }
+
+    private String playbackErrorMessage(PlaybackErrorType type) {
+        return switch (type) {
+            case SOURCE -> getString(R.string.player_v2_error_source);
+            case PARSE -> getString(R.string.player_v2_error_parse);
+            case NETWORK -> getString(R.string.player_v2_error_network);
+            case CREDENTIAL -> getString(R.string.player_v2_error_credential);
+            case CREDENTIAL_EXPIRED -> getString(R.string.player_v2_error_credential_expired);
+            case FORMAT -> getString(R.string.player_v2_error_format);
+            case PLAYER -> getString(R.string.player_v2_error_player);
+            case SUBTITLE -> getString(R.string.player_v2_error_subtitle);
+            case UNKNOWN -> getString(R.string.player_v2_error_unknown);
+        };
     }
 
     private void setR1Callback() {
@@ -1112,10 +1889,14 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         if (id) getIntent().putExtra("id", item.getId());
         if (id) mHistory.replace(getHistoryKey());
         if (name) mHistory.setVodName(item.getName());
-        if (name) mBinding.name.setText(item.getName());
+        if (name) setDetailTitle(item.getName());
         if (name) mBinding.widget.title.setText(item.getName());
         mVod.mergeFlags(item.getFlags());
-        if (pic) setArtwork(item.getPic());
+        if (pic) {
+            mDetailPosterUrl = item.getPic();
+            setArtwork(item.getPic());
+            bindDetailArtwork(mBinding.name.getText().toString(), mDetailPosterUrl);
+        }
         if (pic || name) setMetadata();
         if (pic || name) syncHistory();
         if (pic || name) updateKeep();
@@ -1185,10 +1966,12 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     protected void onStateChanged(int state) {
         switch (state) {
             case Player.STATE_BUFFERING:
-                showProgress();
+                startBufferingUi();
                 mClock.setCallback(null);
                 break;
             case Player.STATE_READY:
+                mFallbackActive = false;
+                mFallbackAttempt = 0;
                 hideProgress();
                 player().reset();
                 mClock.setCallback(this);
@@ -1199,6 +1982,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
                 mClock.setCallback(null);
                 break;
         }
+        updatePlaybackControlAction();
     }
 
     @Override
@@ -1209,6 +1993,8 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
             if (isFullscreen()) showInfo();
             else hideInfo();
         }
+        updatePrimaryAction();
+        updatePlaybackControlAction();
     }
 
     @Override
@@ -1313,18 +2099,50 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     private View getFocus2() {
-        return mFocus2 == null || mFocus2.getVisibility() != View.VISIBLE || mFocus2 == mBinding.control.action.opening || mFocus2 == mBinding.control.action.ending ? mBinding.control.action.next : mFocus2;
+        return mFocus2 == null || mFocus2.getVisibility() != View.VISIBLE || mFocus2 == mBinding.control.action.opening || mFocus2 == mBinding.control.action.ending ? mBinding.control.action.prev : mFocus2;
     }
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
-        if (isFullscreen() && KeyUtil.isMenuKey(event)) onToggle();
+        boolean progressVisible = isVisible(mBinding.progress.getRoot());
+        boolean errorVisible = isVisible(mBinding.widget.error);
+        boolean playerEmpty = service() == null || player().isEmpty();
+        boolean focusInsideError = isDescendantOf(getCurrentFocus(), mBinding.widget.error);
+        if (PlaybackOverlayPolicy.shouldCaptureErrorFocus(errorVisible, focusInsideError)) {
+            focusErrorAction();
+            if (isErrorFocusKey(event.getKeyCode())) return true;
+        }
+        if (isFullscreen() && !progressVisible && !errorVisible && KeyUtil.isMenuKey(event)) onToggle();
+        if (isFullscreen() && !errorVisible && KeyUtil.isMediaPlayPause(event)) {
+            togglePlaybackRequest();
+            if (!progressVisible) showControl(mBinding.control.action.prev);
+            return true;
+        }
+        if (PlaybackOverlayPolicy.canToggleDuringBuffering(
+                isFullscreen(), progressVisible, mBuffering, playerEmpty, errorVisible)
+                && KeyUtil.isActionUp(event) && KeyUtil.isEnterKey(event)) {
+            togglePlaybackRequest();
+            mBinding.progress.stage.setText(isPlaybackRequested() ? R.string.player_v2_stage_buffering : R.string.pause);
+            return true;
+        }
         if (isVisible(mBinding.control.getRoot())) setR1Callback();
         if (isVisible(mBinding.control.getRoot())) mFocus2 = getCurrentFocus();
-        if (isFullscreen() && isGone(mBinding.control.getRoot()) && mKeyDown.hasEvent(event) && service() != null) return mKeyDown.onKeyDown(event);
-        if (KeyUtil.isMediaFastForward(event)) return onSeekForward();
-        if (KeyUtil.isMediaRewind(event)) return onSeekBack();
+        boolean routePlaybackKeys = PlaybackOverlayPolicy.routeToPlaybackGestures(
+                isFullscreen(), isVisible(mBinding.control.getRoot()), progressVisible, errorVisible);
+        if (routePlaybackKeys && mKeyDown.hasEvent(event) && service() != null) return mKeyDown.onKeyDown(event);
+        if (!progressVisible && !errorVisible && KeyUtil.isMediaFastForward(event)) return onSeekForward();
+        if (!progressVisible && !errorVisible && KeyUtil.isMediaRewind(event)) return onSeekBack();
         return super.dispatchKeyEvent(event);
+    }
+
+    private boolean isErrorFocusKey(int keyCode) {
+        return keyCode == KeyEvent.KEYCODE_DPAD_UP
+                || keyCode == KeyEvent.KEYCODE_DPAD_DOWN
+                || keyCode == KeyEvent.KEYCODE_DPAD_LEFT
+                || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
+                || keyCode == KeyEvent.KEYCODE_DPAD_CENTER
+                || keyCode == KeyEvent.KEYCODE_ENTER
+                || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER;
     }
 
     @Override
@@ -1377,9 +2195,8 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     @Override
     public void onKeyCenter() {
-        if (player().isPlaying()) onPaused();
-        else if (player().isEmpty()) onRefresh();
-        else onPlay();
+        if (player().isEmpty()) onRefresh();
+        else togglePlaybackRequest();
         hideControl();
     }
 
@@ -1396,7 +2213,25 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK && requestCode == 1001) PlayerHelper.onExternalResult(data, service()::dispatchNext, controller()::seekTo);
+        if (resultCode == RESULT_OK && requestCode == REQUEST_CLOUD_LOGIN) {
+            hideError();
+            showProgress(getString(R.string.player_v2_stage_preparing));
+            mVod.refresh();
+        } else if (resultCode == RESULT_OK && requestCode == 1001) {
+            PlayerHelper.onExternalResult(data, service()::dispatchNext, controller()::seekTo);
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        captureDetailState(isFullscreen() ? mFocus1 : getCurrentFocus());
+        outState.putInt(STATE_DETAIL_SCROLL, mDetailScrollY);
+        outState.putInt(STATE_DETAIL_FOCUS, mDetailFocusId);
+        outState.putInt(STATE_DETAIL_LIST, mDetailListId);
+        outState.putInt(STATE_DETAIL_POSITION, mDetailListPosition);
+        outState.putInt(STATE_FLAG_POSITION, mFlagPosition);
+        outState.putInt(STATE_EPISODE_POSITION, mEpisodePosition);
+        super.onSaveInstanceState(outState);
     }
 
     @Override
@@ -1413,8 +2248,17 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     @Override
     protected void onBackInvoked() {
-        if (isVisible(mBinding.control.getRoot())) {
+        if (isVisible(mBinding.progress.getRoot())) {
+            mVod.cancelFallback();
+            mViewModel.stopSearch();
+            mFallbackActive = false;
+            hideProgress();
+            if (isFullscreen()) exitFullscreen();
+            else mBinding.primary.requestFocus();
+        } else if (isVisible(mBinding.control.getRoot())) {
             hideControl();
+        } else if (isVisible(mBinding.widget.error)) {
+            returnToDetail();
         } else if (isVisible(mBinding.widget.center)) {
             hideCenter();
         } else if (isFullscreen()) {
@@ -1428,11 +2272,14 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     @Override
     protected void onDestroy() {
+        cancelRepositorySiteResolve();
+        if (mVod != null) mVod.cancelFallback();
+        if (mViewModel != null) mViewModel.stopSearch();
         mClock.release();
         saveHistory(true);
         DanmakuApi.cancel();
         RefreshEvent.keep();
-        App.removeCallbacks(mR1, mR2, mR3, mR4);
+        App.removeCallbacks(mR1, mR2, mR3, mR4, mR5, mR6);
         super.onDestroy();
     }
 }

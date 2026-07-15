@@ -8,6 +8,7 @@ import com.github.catvod.utils.Json;
 import com.github.catvod.utils.Util;
 
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,6 +17,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
 import okhttp3.Response;
 
 public class Decoder {
@@ -23,7 +25,20 @@ public class Decoder {
     private static final Pattern JS_URI = Pattern.compile("\"(\\.|\\.\\.)/(.?|.+?)\\.js\\?(.?|.+?)\"");
 
     public static String getJson(String url, String tag) throws Exception {
-        try (Response res = OkHttp.newCall(url, tag).execute()) {
+        return getJson(url, tag, OkHttp.client());
+    }
+
+    /** Loads one config with an isolated call/connect/read/write timeout. */
+    public static String getJson(String url, String tag, long timeoutMs) throws Exception {
+        long timeout = Math.max(1, timeoutMs);
+        OkHttpClient client = OkHttp.client(timeout).newBuilder()
+                .callTimeout(timeout, TimeUnit.MILLISECONDS)
+                .build();
+        return getJson(url, tag, client);
+    }
+
+    private static String getJson(String url, String tag, OkHttpClient client) throws Exception {
+        try (Response res = OkHttp.newCall(client, url, tag).execute()) {
             HttpUrl httpUrl = res.request().url();
             int size = HttpUrl.parse(url).querySize();
             if (httpUrl.querySize() == size) url = httpUrl.toString();

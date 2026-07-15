@@ -129,12 +129,12 @@ public class Spider extends com.github.catvod.crawler.Spider {
         try {
             call("destroy");
         } catch (Throwable e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
         }
         try {
             releaseJS();
         } catch (Throwable e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
         } finally {
             executor.shutdownNow();
         }
@@ -179,6 +179,7 @@ public class Spider extends com.github.catvod.crawler.Spider {
     private void createFun() {
         try {
             global = Global.create(ctx, executor);
+            global.setProxyKey(proxyKey);
             Class<?> clz = dex.loadClass("com.github.catvod.js.Function");
             clz.getDeclaredConstructor(QuickJSContext.class).newInstance(ctx);
         } catch (Throwable ignored) {
@@ -200,6 +201,7 @@ public class Spider extends com.github.catvod.crawler.Spider {
         JSObject obj = ctx.createNewJSObject();
         obj.setProperty("stype", 3);
         obj.setProperty("skey", siteKey);
+        obj.setProperty("proxyKey", proxyKey);
         if (!Json.isObj(ext)) obj.setProperty("ext", ext);
         else obj.setProperty("ext", (JSObject) ctx.parse(ext));
         return obj;

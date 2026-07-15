@@ -1,0 +1,7 @@
+<resources>
+
+    <integer name="tv_focus_animation_duration">150</integer>
+    <integer name="home_featured_debounce_ms">220</integer>
+    <integer name="home_max_primary_categories">6</integer>
+
+</resources>

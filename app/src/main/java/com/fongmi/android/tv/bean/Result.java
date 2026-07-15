@@ -14,6 +14,7 @@ import com.fongmi.android.tv.gson.HeaderAdapter;
 import com.fongmi.android.tv.gson.MsgAdapter;
 import com.fongmi.android.tv.gson.UrlAdapter;
 import com.fongmi.android.tv.setting.DanmakuSetting;
+import com.fongmi.android.tv.security.PromotionFilter;
 import com.fongmi.android.tv.utils.Util;
 import com.github.catvod.utils.Trans;
 import com.google.gson.annotations.JsonAdapter;
@@ -200,7 +201,7 @@ public class Result implements Parcelable {
     }
 
     public String getMsg() {
-        return TextUtils.isEmpty(msg) || getCode() != 0 ? "" : msg;
+        return TextUtils.isEmpty(msg) || getCode() != 0 ? "" : PromotionFilter.sanitizeMessage(msg);
     }
 
     public void setMsg(String msg) {
@@ -333,8 +334,9 @@ public class Result implements Parcelable {
     }
 
     public boolean isUseParse() {
-        if (!VodConfig.hasParse()) return false;
-        return (getPlayUrl().isEmpty() && VodConfig.get().getFlags().contains(getFlag())) || getJx() == 1;
+        if (!VodConfig.get().hasPlaybackParse(getKey())) return false;
+        return (getPlayUrl().isEmpty()
+                && VodConfig.get().getPlaybackFlags(getKey()).contains(getFlag())) || getJx() == 1;
     }
 
     public boolean needParse() {

@@ -167,6 +167,12 @@ public class VodPlaybackState {
         this.autoFallback = autoFallback;
     }
 
+    public void cancelFallback() {
+        sources.clear();
+        autoFallback = false;
+        selectFirstSource = false;
+    }
+
     public boolean isUseParse() {
         return useParse;
     }

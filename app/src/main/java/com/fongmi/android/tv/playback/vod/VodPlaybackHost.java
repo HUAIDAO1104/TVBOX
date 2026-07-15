@@ -33,11 +33,16 @@ public interface VodPlaybackHost {
 
     boolean isFullscreenForPlayback();
 
+    boolean shouldAutoPlayOnDetail();
+
     long getPlayerPosition();
 
     void usePushId(String id);
 
     void requestDetail(String key, String id);
+
+    /** Tries the next ranked source after a search-result detail request failed. */
+    boolean tryNextDetailSource();
 
     void requestPlayer(VodPlayRequest request);
 
@@ -92,6 +97,9 @@ public interface VodPlaybackHost {
     void onSearchStarted(String keyword);
 
     void onSearchResult();
+
+    /** Ends source-search progress when no usable candidate survived filtering. */
+    void onSearchEmpty();
 
     void showDetailMessage(String msg);
 

@@ -1,0 +1,42 @@
+<resources>
+
+    <dimen name="tv_space_4">4dp</dimen>
+    <dimen name="tv_space_8">8dp</dimen>
+    <dimen name="tv_space_12">12dp</dimen>
+    <dimen name="tv_space_16">16dp</dimen>
+    <dimen name="tv_space_24">24dp</dimen>
+    <dimen name="tv_space_32">32dp</dimen>
+    <dimen name="tv_space_48">48dp</dimen>
+    <dimen name="tv_space_64">64dp</dimen>
+
+    <dimen name="tv_radius_small">6dp</dimen>
+    <dimen name="tv_radius_normal">10dp</dimen>
+    <dimen name="tv_radius_large">16dp</dimen>
+    <dimen name="tv_focus_border_width">2dp</dimen>
+
+    <dimen name="tv_text_featured">36sp</dimen>
+    <dimen name="tv_text_page_title">28sp</dimen>
+    <dimen name="tv_text_section">16sp</dimen>
+    <dimen name="tv_text_body">14sp</dimen>
+    <dimen name="tv_text_meta">14sp</dimen>
+
+    <dimen name="home_safe_start">54dp</dimen>
+    <dimen name="home_safe_end">32dp</dimen>
+    <dimen name="home_top_height">52dp</dimen>
+    <dimen name="home_featured_height">330dp</dimen>
+    <dimen name="home_featured_copy_width">448dp</dimen>
+    <dimen name="home_featured_left_width">570dp</dimen>
+    <dimen name="home_featured_poster_frame_width">196dp</dimen>
+    <dimen name="home_featured_poster_frame_height">294dp</dimen>
+    <dimen name="home_featured_poster_width">196dp</dimen>
+    <dimen name="home_featured_poster_height">294dp</dimen>
+    <dimen name="home_featured_poster_end">134dp</dimen>
+    <dimen name="home_history_card_width">174dp</dimen>
+    <dimen name="home_history_card_height">54dp</dimen>
+    <dimen name="home_poster_card_width">132dp</dimen>
+    <dimen name="home_poster_card_height">176dp</dimen>
+    <dimen name="home_poster_focus_inset">6dp</dimen>
+    <dimen name="home_poster_row_height">188dp</dimen>
+    <dimen name="home_poster_min_spacing">12dp</dimen>
+
+</resources>

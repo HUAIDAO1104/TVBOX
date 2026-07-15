@@ -13,10 +13,10 @@ import com.fongmi.android.tv.databinding.ActivitySettingDanmakuBinding;
 import com.fongmi.android.tv.impl.DanmakuListener;
 import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.setting.Setting;
-import com.fongmi.android.tv.ui.base.BaseActivity;
+import com.fongmi.android.tv.ui.base.FocusSafeSettingsActivity;
 import com.fongmi.android.tv.ui.dialog.DanmakuApiDialog;
 
-public class SettingDanmakuActivity extends BaseActivity implements DanmakuListener {
+public class SettingDanmakuActivity extends FocusSafeSettingsActivity implements DanmakuListener {
 
     private ActivitySettingDanmakuBinding mBinding;
 
@@ -34,13 +34,18 @@ public class SettingDanmakuActivity extends BaseActivity implements DanmakuListe
     }
 
     @Override
+    protected boolean customWall() {
+        return false;
+    }
+
+    @Override
     protected void initView(Bundle savedInstanceState) {
-        mBinding.danmakuLoad.requestFocus();
         mBinding.danmakuApiText.setText(getApiStatus());
         mBinding.danmakuAutoText.setText(Setting.getSwitch(DanmakuSetting.isAuto()));
         mBinding.danmakuLoadText.setText(Setting.getSwitch(DanmakuSetting.isLoad()));
         mBinding.danmakuSpiderText.setText(Setting.getSwitch(DanmakuSetting.isSpiderFirst()));
         updateApiVisibility();
+        initSettingsFocus(savedInstanceState, R.id.danmakuLoad);
     }
 
     @Override

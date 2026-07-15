@@ -3,6 +3,7 @@ import os
 import json
 import time
 import requests
+from urllib.parse import quote
 from lxml import etree
 from com.github.catvod import Proxy
 from com.chaquo.python import Python
@@ -112,7 +113,8 @@ class Spider(metaclass=ABCMeta):
         return json.dumps(str, ensure_ascii=False)
     
     def getProxyUrl(self, local=True):
-        return f'{Proxy.getUrl(local)}?do=py'
+        proxy_key = getattr(self, 'proxyKey', getattr(self, 'siteKey', ''))
+        return f'{Proxy.getUrl(local)}?do=py&siteKey={quote(str(proxy_key), safe="")}'
 
     def log(self, msg):
         if isinstance(msg, dict) or isinstance(msg, list):

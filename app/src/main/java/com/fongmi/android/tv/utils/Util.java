@@ -94,7 +94,7 @@ public class Util {
             manager.setPrimaryClip(ClipData.newPlainText("", text));
             Notify.show(R.string.copied);
         } catch (Exception e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
         }
     }
 

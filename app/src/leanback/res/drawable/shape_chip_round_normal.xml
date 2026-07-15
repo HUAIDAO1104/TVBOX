@@ -2,7 +2,9 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
 
-    <corners android:radius="28dp" />
+    <solid android:color="@color/tv_surface" />
+
+    <corners android:radius="@dimen/tv_radius_large" />
 
     <padding
         android:bottom="8dp"

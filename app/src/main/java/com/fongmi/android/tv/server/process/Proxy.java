@@ -31,7 +31,7 @@ public class Proxy implements Process {
             params.putAll(files);
             return createResponse(BaseLoader.get().proxy(params));
         } catch (Throwable e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
             return Nano.error(Objects.toString(e.getMessage(), e.toString()));
         }
     }

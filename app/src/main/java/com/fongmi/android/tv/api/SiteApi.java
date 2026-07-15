@@ -13,6 +13,7 @@ import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.player.extractor.Source;
+import com.fongmi.android.tv.repository.RepositorySiteKey;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Sniffer;
 import com.github.catvod.crawler.Spider;
@@ -143,15 +144,19 @@ public class SiteApi {
     public static Result playerContent(@NonNull String key, @NonNull String flag, @NonNull String id) throws Exception {
         SpiderDebug.log("player", "key=%s,flag=%s,id=%s", key, flag, id);
         Site site = VodConfig.get().getSite(key);
+        if (RepositorySiteKey.isScoped(key) && site.isEmpty()) {
+            throw new IOException("Repository site is not resolved");
+        }
         Source.get().stop();
         if (site.getType() == 3) {
-            String playerContent = site.recent().spider().playerContent(flag, id, VodConfig.get().getFlags());
+            String playerContent = site.recent().spider().playerContent(flag, id,
+                    VodConfig.get().getPlaybackFlags(key));
             SpiderDebug.log("player", playerContent);
             Result result = Result.fromJson(playerContent);
+            result.setKey(key);
             if (result.getFlag().isEmpty()) result.setFlag(flag);
             result.setUrl(Source.get().fetch(result));
             result.setHeader(site.getHeader());
-            result.setKey(key);
             return result;
         } else if (site.getType() == 4) {
             ArrayMap<String, String> params = new ArrayMap<>();
@@ -160,12 +165,14 @@ public class SiteApi {
             String playerContent = call(site, params);
             SpiderDebug.log("player", playerContent);
             Result result = Result.fromJson(playerContent);
+            result.setKey(key);
             if (result.getFlag().isEmpty()) result.setFlag(flag);
             result.setUrl(Source.get().fetch(result));
             result.setHeader(site.getHeader());
             return result;
         } else if (site.isEmpty() && "push_agent".equals(key)) {
             Result result = new Result();
+            result.setKey(key);
             result.setUrl(id);
             result.setParse(0);
             result.setFlag(flag);
@@ -174,6 +181,7 @@ public class SiteApi {
             return result;
         } else {
             Result result = new Result();
+            result.setKey(key);
             result.setUrl(id);
             result.setFlag(flag);
             result.setHeader(site.getHeader());

@@ -13,6 +13,11 @@ import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.impl.Callback;
+import com.fongmi.android.tv.repository.RepositoryManager;
+import com.fongmi.android.tv.security.PromotionFilter;
+import com.fongmi.android.tv.repository.RepositoryPlaybackContext;
+import com.fongmi.android.tv.repository.RepositorySiteKey;
+import com.fongmi.android.tv.repository.RepositorySiteRegistry;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.github.catvod.bean.Doh;
 import com.github.catvod.bean.Header;
@@ -22,6 +27,7 @@ import com.google.gson.JsonObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -40,6 +46,13 @@ public class VodConfig extends BaseConfig {
     private List<String> ads;
     private List<String> flags;
     private List<Parse> parses;
+    private final Map<String, String> playbackParseSelections = Collections.synchronizedMap(
+            new LinkedHashMap<>(16, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
+                    return size() > 128;
+                }
+            });
 
     public static VodConfig get() {
         return Loader.INSTANCE;
@@ -131,12 +144,13 @@ public class VodConfig extends BaseConfig {
     }
 
     private void parseDepot(Config config, JsonObject object) throws Throwable {
+        RepositoryManager.get().importLegacy(config, object.toString());
         List<Depot> items = Depot.arrayFrom(object.getAsJsonArray("urls").toString());
         List<Config> configs = new ArrayList<>();
         for (Depot item : items) configs.add(Config.find(item, VOD));
         if (configs.isEmpty()) throw new Exception("Depot urls is empty");
         load(this.config = configs.get(0));
-        Config.delete(config.getUrl());
+        this.config.update();
     }
 
     private void parseConfig(Config config, JsonObject object) {
@@ -146,7 +160,7 @@ public class VodConfig extends BaseConfig {
         initSite(config, object);
         initParse(config, object);
         config.setLogo(Json.safeString(object, "logo"));
-        config.setNotice(Json.safeString(object, "notice"));
+        config.setNotice(PromotionFilter.sanitizeMessage(Json.safeString(object, "notice")));
         config.setDanmaku(Json.safeString(object, "danmaku"));
     }
 
@@ -178,10 +192,18 @@ public class VodConfig extends BaseConfig {
     private void initSite(Config config, JsonObject object) {
         String spider = Json.safeString(object, "spider");
         BaseLoader.get().parseJar(spider, true);
-        setSites(Json.safeListElement(object, "sites").stream().map(e -> Site.objectFrom(e, spider)).distinct().collect(Collectors.toCollection(ArrayList::new)));
+        setSites(Json.safeListElement(object, "sites").stream().map(e -> sanitizeSite(config, Site.objectFrom(e, spider))).distinct().collect(Collectors.toCollection(ArrayList::new)));
         Map<String, Site> items = Site.findAll().stream().collect(Collectors.toMap(Site::getKey, Function.identity()));
         getSites().forEach(site -> site.sync(items.get(site.getKey())));
         setHome(config, getSites().isEmpty() ? new Site() : getSites().stream().filter(item -> item.getKey().equals(config.getHome())).findFirst().orElse(getSites().get(0)), false);
+    }
+
+    private Site sanitizeSite(Config config, Site site) {
+        boolean dynamicSwitch = site.getApi().contains("DouDouGuard") || site.getKey().contains("切源");
+        if (dynamicSwitch && !site.getKey().isEmpty()) site.setName(site.getKey());
+        String fallback = site.isIndex() ? config.getName() : site.getKey();
+        site.setName(PromotionFilter.sanitizeSourceLabel(site.getName(), fallback));
+        return site;
     }
 
     private void initParse(Config config, JsonObject object) {
@@ -199,6 +221,73 @@ public class VodConfig extends BaseConfig {
 
     public List<Parse> getParses() {
         return parses == null ? Collections.emptyList() : parses;
+    }
+
+    /** Parse list owned by the config that declared {@code siteKey}. */
+    public List<Parse> getPlaybackParses(String siteKey) {
+        boolean scoped = RepositorySiteKey.isScoped(siteKey);
+        Site site = getSite(siteKey);
+        List<Parse> items = RepositoryPlaybackContext.select(scoped,
+                site.hasRepositoryPlaybackContext(), site.getRepositoryParses(), getParses());
+        if (!scoped || items.isEmpty() || items.stream().anyMatch(item -> item.getType() == 4)) {
+            return items;
+        }
+        // Keep the same aggregate-parser affordance as the active config without mutating the
+        // immutable repository snapshot stored on Site.
+        List<Parse> decorated = new ArrayList<>(items.size() + 1);
+        decorated.add(Parse.god());
+        decorated.addAll(items);
+        return Collections.unmodifiableList(decorated);
+    }
+
+    public List<Parse> getPlaybackParses(String siteKey, int type) {
+        return getPlaybackParses(siteKey).stream()
+                .filter(item -> item.getType() == type)
+                .toList();
+    }
+
+    public List<Parse> getPlaybackParses(String siteKey, int type, String flag) {
+        List<Parse> items = getPlaybackParses(siteKey, type);
+        List<Parse> filtered = items.stream()
+                .filter(item -> item.getExt().getFlag().contains(flag))
+                .toList();
+        return filtered.isEmpty() ? items : filtered;
+    }
+
+    public boolean hasPlaybackParse(String siteKey) {
+        return !getPlaybackParses(siteKey).isEmpty();
+    }
+
+    public Parse getPlaybackParse(String siteKey) {
+        List<Parse> items = getPlaybackParses(siteKey);
+        if (items.isEmpty()) return new Parse();
+        if (!RepositorySiteKey.isScoped(siteKey)) return getParse();
+        String name = playbackParseSelections.get(siteKey);
+        if (name != null) {
+            Parse selected = getPlaybackParse(siteKey, name);
+            if (!selected.isEmpty()) return selected;
+            playbackParseSelections.remove(siteKey);
+        }
+        // A scoped config never inherits the active config's user selection. Start with its own
+        // aggregate parser so all parsers declared by that repository can participate.
+        return items.stream().filter(item -> item.getType() == 4).findFirst()
+                .orElse(Parse.get(4, ""));
+    }
+
+    public Parse getPlaybackParse(String siteKey, String name) {
+        return getPlaybackParses(siteKey).stream()
+                .filter(item -> item.getName().equals(name))
+                .findFirst()
+                .orElse(new Parse());
+    }
+
+    public void setPlaybackParse(String siteKey, Parse parse) {
+        if (!RepositorySiteKey.isScoped(siteKey)) {
+            setParse(parse);
+            return;
+        }
+        if (parse == null || getPlaybackParses(siteKey).stream().noneMatch(parse::equals)) return;
+        playbackParseSelections.put(siteKey, parse.getName());
     }
 
     private void setParses(List<Parse> parses) {
@@ -241,6 +330,14 @@ public class VodConfig extends BaseConfig {
         return flags == null ? Collections.emptyList() : flags;
     }
 
+    /** Flag list owned by the config that declared {@code siteKey}. */
+    public List<String> getPlaybackFlags(String siteKey) {
+        boolean scoped = RepositorySiteKey.isScoped(siteKey);
+        Site site = getSite(siteKey);
+        return RepositoryPlaybackContext.select(scoped, site.hasRepositoryPlaybackContext(),
+                site.getRepositoryFlags(), getFlags());
+    }
+
     private void setFlags(List<String> flags) {
         this.flags = flags;
     }
@@ -280,7 +377,10 @@ public class VodConfig extends BaseConfig {
     }
 
     public Site getSite(String key) {
-        return getSites().stream().filter(item -> item.getKey().equals(key)).findFirst().orElse(new Site());
+        Site current = getSites().stream().filter(item -> item.getKey().equals(key)).findFirst().orElse(null);
+        if (current != null) return current;
+        Site scoped = RepositorySiteRegistry.find(key);
+        return scoped == null ? new Site() : scoped;
     }
 
     private void setParse(Config config, Parse parse, boolean save) {

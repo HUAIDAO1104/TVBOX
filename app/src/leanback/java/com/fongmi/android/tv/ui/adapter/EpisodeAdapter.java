@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.ui.adapter;
 
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -8,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.fongmi.android.tv.bean.Episode;
 import com.fongmi.android.tv.databinding.AdapterEpisodeBinding;
+import com.fongmi.android.tv.ui.detail.EpisodeDisplayName;
 import com.fongmi.android.tv.utils.ResUtil;
 
 import java.util.ArrayList;
@@ -20,6 +22,7 @@ public class EpisodeAdapter extends RecyclerView.Adapter<EpisodeAdapter.ViewHold
     private final int maxWidth;
     private int nextFocusDown;
     private int nextFocusUp;
+    private boolean wideCells;
 
     public EpisodeAdapter(OnClickListener listener) {
         mListener = listener;
@@ -30,11 +33,13 @@ public class EpisodeAdapter extends RecyclerView.Adapter<EpisodeAdapter.ViewHold
     public void addAll(List<Episode> items) {
         mItems.clear();
         mItems.addAll(items);
+        wideCells = items.stream().anyMatch(item -> EpisodeDisplayName.needsWideCell(item.getDesc().concat(item.getName())));
         notifyDataSetChanged();
     }
 
     public void clear() {
         mItems.clear();
+        wideCells = false;
         notifyDataSetChanged();
     }
 
@@ -84,11 +89,18 @@ public class EpisodeAdapter extends RecyclerView.Adapter<EpisodeAdapter.ViewHold
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Episode item = mItems.get(position);
+        ViewGroup.LayoutParams params = holder.binding.text.getLayoutParams();
+        params.width = wideCells ? ResUtil.dp2px(176) : ResUtil.dp2px(86);
+        holder.binding.text.setLayoutParams(params);
         holder.binding.text.setMaxWidth(maxWidth);
-        holder.binding.text.setNextFocusUpId(nextFocusUp);
-        holder.binding.text.setNextFocusDownId(nextFocusDown);
+        // Keep vertical focus geometric inside the wrapping grid. Explicitly forcing every
+        // episode to the header/footer made DPAD_DOWN skip the following visual row.
+        holder.binding.text.setNextFocusUpId(View.NO_ID);
+        holder.binding.text.setNextFocusDownId(View.NO_ID);
         holder.binding.text.setSelected(item.isSelected());
-        holder.binding.text.setText(item.getDesc().concat(item.getName()));
+        String rawName = item.getDesc().concat(item.getName());
+        holder.binding.text.setText(EpisodeDisplayName.format(rawName));
+        holder.binding.text.setContentDescription(rawName);
         holder.binding.getRoot().setOnClickListener(v -> mListener.onItemClick(item));
     }
 

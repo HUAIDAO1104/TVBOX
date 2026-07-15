@@ -13,11 +13,17 @@ public class VodRectHolder extends BaseVodHolder {
 
     private final VodPresenter.OnClickListener listener;
     private final AdapterVodRectBinding binding;
+    private final boolean fitPoster;
 
     public VodRectHolder(@NonNull AdapterVodRectBinding binding, VodPresenter.OnClickListener listener) {
+        this(binding, listener, false);
+    }
+
+    public VodRectHolder(@NonNull AdapterVodRectBinding binding, VodPresenter.OnClickListener listener, boolean fitPoster) {
         super(binding.getRoot());
         this.binding = binding;
         this.listener = listener;
+        this.fitPoster = fitPoster;
     }
 
     public VodRectHolder size(int[] size) {
@@ -38,7 +44,8 @@ public class VodRectHolder extends BaseVodHolder {
         binding.remark.setVisibility(item.getRemarkVisible());
         binding.getRoot().setOnClickListener(v -> listener.onItemClick(item));
         binding.getRoot().setOnLongClickListener(v -> listener.onLongClick(item));
-        ImgUtil.load(item.getName(), item.getPic(), binding.image);
+        if (fitPoster) ImgUtil.loadPoster(item.getName(), item.getPic(), binding.image);
+        else ImgUtil.load(item.getName(), item.getPic(), binding.image);
     }
 
     @Override

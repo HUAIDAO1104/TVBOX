@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="detail_v2_back">返回</string>
+    <string name="detail_v2_play_now">立即播放</string>
+    <string name="detail_v2_resume">继续播放 · %1$s</string>
+    <string name="detail_v2_resume_plain">继续播放</string>
+    <string name="detail_v2_choose_episode">选集</string>
+    <string name="detail_v2_full_summary">完整简介</string>
+    <string name="detail_v2_source">播放来源</string>
+    <string name="detail_v2_episode_list">剧集列表</string>
+    <string name="detail_v2_quality">清晰度</string>
+    <string name="detail_v2_source_value">来源 · %1$s</string>
+    <string name="detail_v2_current_source">当前线路 · %1$s</string>
+    <string name="detail_v2_source_fallback">线路 %1$d</string>
+    <string name="detail_v2_meta_separator"> · </string>
+    <string name="detail_repository_resolve_timeout">来源配置加载超时，请返回重试，或先在仓库管理中刷新该仓库。</string>
+    <string name="detail_repository_resolve_missing">此历史来源所属的仓库配置已不存在。</string>
+    <string name="detail_repository_resolve_failed">无法恢复此历史来源，请刷新所属仓库或选择其他来源。</string>
+    <string name="player_v2_now_playing">正在播放</string>
+    <string name="player_v2_more_controls">更多控制</string>
+    <string name="player_v2_rewind">快退 10 秒</string>
+    <string name="player_v2_forward">快进 10 秒</string>
+    <string name="player_v2_stage_preparing">正在准备播放</string>
+    <string name="player_v2_stage_resolving">正在解析线路</string>
+    <string name="player_v2_stage_buffering">正在缓冲视频</string>
+    <string name="player_v2_stage_switching">正在切换备用线路</string>
+    <string name="player_v2_error_title">播放被中断</string>
+    <string name="player_v2_error_source">当前线路暂时不可用</string>
+    <string name="player_v2_error_parse">播放地址解析失败</string>
+    <string name="player_v2_error_network">网络连接超时</string>
+    <string name="player_v2_error_credential">需要先登录网盘账户</string>
+    <string name="player_v2_error_credential_expired">网盘登录状态可能已失效</string>
+    <string name="player_v2_error_format">当前视频格式暂不支持</string>
+    <string name="player_v2_error_player">播放器启动失败</string>
+    <string name="player_v2_error_subtitle">字幕加载失败，可忽略并继续播放</string>
+    <string name="player_v2_error_unknown">播放过程中出现问题</string>
+    <string name="player_v2_retry">重试</string>
+    <string name="player_v2_change_source">切换线路</string>
+    <string name="player_v2_cloud_login">登录网盘</string>
+    <string name="player_v2_continue_playing">继续播放</string>
+    <string name="player_v2_back_detail">返回详情</string>
+    <string name="player_v2_fallback_status">第 %1$d 次尝试 · %2$s</string>
+    <string name="player_v2_fallback_search">正在查找可用线路</string>
+    <string name="player_v2_fallback_cancel">取消换源</string>
+</resources>

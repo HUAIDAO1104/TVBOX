@@ -14,6 +14,8 @@ import okhttp3.OkHttpClient;
 public abstract class Spider {
 
     public String siteKey;
+    /** App-owned routing key for local proxy dispatch; third-party spiders still receive siteKey. */
+    public String proxyKey;
 
     public static Dns safeDns() {
         return OkHttp.dns();

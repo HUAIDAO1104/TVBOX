@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <size android:width="320dp" android:height="180dp" />
+            <gradient
+                android:angle="0"
+                android:startColor="#071019"
+                android:centerColor="#0C1C29"
+                android:endColor="#132B3A" />
+        </shape>
+    </item>
+    <item
+        android:width="116dp"
+        android:height="116dp"
+        android:drawable="@drawable/brand_mark"
+        android:gravity="center" />
+</layer-list>

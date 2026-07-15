@@ -1,0 +1,35 @@
+<resources>
+
+    <style name="Theme.Base" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/tv_accent</item>
+        <item name="colorSurface">@color/tv_background_secondary</item>
+        <item name="colorSurfaceVariant">@color/tv_surface</item>
+        <item name="colorOnSurface">@color/tv_text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/tv_text_secondary</item>
+        <item name="colorOutline">@color/tv_card_border</item>
+        <item name="colorError">@color/tv_error</item>
+        <item name="materialAlertDialogTheme">@style/SettingsV2.Dialog</item>
+        <item name="android:colorAccent">@color/tv_accent</item>
+        <item name="android:windowBackground">@color/tv_background</item>
+        <item name="android:navigationBarColor">@color/tv_background</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:windowTranslucentNavigation">true</item>
+        <item name="android:windowAnimationStyle">@style/NoAnim</item>
+    </style>
+
+    <style name="Theme.Splash" parent="Theme.SplashScreen">
+        <item name="postSplashScreenTheme">@style/Theme.App</item>
+        <item name="windowSplashScreenBackground">@color/tv_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/settings_v2_splash_animated</item>
+        <item name="windowSplashScreenAnimationDuration">650</item>
+    </style>
+
+    <style name="Theme.App" parent="Theme.Base" />
+
+    <style name="Theme.Crash" parent="Theme.Base">
+        <item name="android:windowBackground">@color/tv_background_secondary</item>
+        <item name="android:windowDisablePreview">true</item>
+    </style>
+
+</resources>

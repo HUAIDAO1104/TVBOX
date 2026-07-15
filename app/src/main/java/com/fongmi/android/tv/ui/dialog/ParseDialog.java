@@ -1,5 +1,6 @@
 package com.fongmi.android.tv.ui.dialog;
 
+import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
@@ -16,11 +17,20 @@ import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
 
 public class ParseDialog extends BaseBottomSheetDialog implements ParseAdapter.OnClickListener {
 
+    private static final String ARG_SITE_KEY = "siteKey";
     private DialogParseBinding binding;
     private ParseAdapter adapter;
 
     public static ParseDialog create() {
         return new ParseDialog();
+    }
+
+    public ParseDialog siteKey(String siteKey) {
+        Bundle args = getArguments();
+        if (args == null) args = new Bundle();
+        args.putString(ARG_SITE_KEY, siteKey == null ? "" : siteKey);
+        setArguments(args);
+        return this;
     }
 
     public void show(FragmentActivity activity) {
@@ -35,7 +45,8 @@ public class ParseDialog extends BaseBottomSheetDialog implements ParseAdapter.O
 
     @Override
     protected void initView() {
-        adapter = new ParseAdapter(this);
+        Bundle args = getArguments();
+        adapter = new ParseAdapter(this, args == null ? "" : args.getString(ARG_SITE_KEY, ""));
         binding.recycler.setAdapter(adapter);
         binding.recycler.setHasFixedSize(true);
         binding.recycler.setItemAnimator(null);

@@ -46,6 +46,14 @@ import java.util.List;
 
 public class TypeFragment extends BaseFragment implements CustomScroller.Callback, VodPresenter.OnClickListener, SwipeRefreshLayout.OnRefreshListener {
 
+    private static final String STATE_POSITION = "state_position";
+
+    public interface Host {
+        void openCategoryFolder(String key, String typeId, Style style, HashMap<String, String> extend, boolean folder);
+
+        void onCategoryError(String message);
+    }
+
     private HashMap<String, String> mExtends;
     private FragmentTypeBinding mBinding;
     private ArrayObjectAdapter mAdapter;
@@ -57,10 +65,19 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     private boolean filterVisible;
 
     public static TypeFragment newInstance(String key, String typeId, Style style, HashMap<String, String> extend, boolean folder) {
+        return newInstance(key, typeId, style, extend, folder, false);
+    }
+
+    public static TypeFragment newEmbeddedInstance(String key, String typeId, Style style, HashMap<String, String> extend, boolean folder) {
+        return newInstance(key, typeId, style, extend, folder, true);
+    }
+
+    private static TypeFragment newInstance(String key, String typeId, Style style, HashMap<String, String> extend, boolean folder, boolean embedded) {
         Bundle args = new Bundle();
         args.putString("key", key);
         args.putString("typeId", typeId);
         args.putBoolean("folder", folder);
+        args.putBoolean("embedded", embedded);
         args.putParcelable("style", style);
         args.putSerializable("extend", extend);
         TypeFragment fragment = new TypeFragment();
@@ -80,7 +97,12 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         return getArguments().getBoolean("folder");
     }
 
+    private boolean isEmbedded() {
+        return getArguments().getBoolean("embedded");
+    }
+
     private Style getStyle() {
+        if (isEmbedded()) return Style.rect();
         return isFolder() ? Style.list() : getSite().getStyle(getArguments().getParcelable("style"));
     }
 
@@ -113,6 +135,10 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         setRecyclerView();
         setViewModel();
         setFilters();
+        if (isEmbedded() && !mFilters.isEmpty()) {
+            filterVisible = true;
+            showFilter();
+        }
         getVideo();
     }
 
@@ -126,10 +152,10 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     private void setRecyclerView() {
         CustomSelector selector = new CustomSelector();
         selector.addPresenter(Vod.class, new VodPresenter(this, Style.list()));
-        selector.addPresenter(ListRow.class, new CustomRowPresenter(16), VodPresenter.class);
+        selector.addPresenter(ListRow.class, new CustomRowPresenter(16, FocusHighlight.ZOOM_FACTOR_NONE), VodPresenter.class);
         selector.addPresenter(ListRow.class, new CustomRowPresenter(8, FocusHighlight.ZOOM_FACTOR_NONE, HorizontalGridView.FOCUS_SCROLL_ALIGNED), FilterPresenter.class);
         mBinding.recycler.setAdapter(new ItemBridgeAdapter(mAdapter = new ArrayObjectAdapter(selector)));
-        mBinding.recycler.setHeader(getActivity(), R.id.recycler);
+        if (!isEmbedded()) mBinding.recycler.setHeader(getActivity(), R.id.recycler);
         mBinding.recycler.setVerticalSpacing(ResUtil.dp2px(16));
     }
 
@@ -137,6 +163,10 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         mViewModel = new ViewModelProvider(this).get(SiteViewModel.class);
         mViewModel.getResult().observe(getViewLifecycleOwner(), this::setAdapter);
         mViewModel.getAction().observe(getViewLifecycleOwner(), result -> Notify.show(result.getMsg()));
+        mViewModel.getError().observe(getViewLifecycleOwner(), message -> {
+            if (message == null || message.isEmpty()) return;
+            if (isEmbedded() && getActivity() instanceof Host host) host.onCategoryError(message);
+        });
     }
 
     private void setFilters() {
@@ -177,7 +207,7 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     }
 
     private void addVideo(Result result) {
-        Style style = result.getStyle(getStyle());
+        Style style = isEmbedded() ? Style.rect() : result.getStyle(getStyle());
         if (style.isList()) mAdapter.addAll(mAdapter.size(), result.getList());
         else addGrid(result.getList(), style);
         checkMore();
@@ -201,7 +231,7 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     private void addGrid(List<Vod> items, Style style) {
         if (checkLastSize(items, style)) return;
         List<ListRow> rows = new ArrayList<>();
-        VodPresenter presenter = new VodPresenter(this, style);
+        VodPresenter presenter = new VodPresenter(this, style, isEmbedded());
         for (List<Vod> part : Lists.partition(items, Product.getColumn(style))) {
             mLast = new ArrayObjectAdapter(presenter);
             mLast.addAll(0, part);
@@ -253,7 +283,8 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         if (item.isAction()) {
             mViewModel.action(getKey(), item.getAction());
         } else if (item.isFolder()) {
-            getParent().openFolder(item.getId(), mExtends);
+            if (isEmbedded() && getActivity() instanceof Host host) host.openCategoryFolder(getKey(), item.getId(), getStyle(), new HashMap<>(mExtends), isFolder());
+            else getParent().openFolder(item.getId(), mExtends);
             headerVisible = mBinding.recycler.isHeaderVisible();
         } else {
             if (getSite().isIndex()) CollectActivity.start(requireActivity(), item.getName());
@@ -277,6 +308,10 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     @Override
     public void onHiddenChanged(boolean hidden) {
         super.onHiddenChanged(hidden);
+        if (isEmbedded()) {
+            if (!hidden) mBinding.recycler.requestFocus();
+            return;
+        }
         if (hidden) {
             mBinding.recycler.showHeader();
         } else {
@@ -289,6 +324,30 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     @Override
     public void setUserVisibleHint(boolean isVisibleToUser) {
         super.setUserVisibleHint(isVisibleToUser);
-        if (mBinding != null) mBinding.recycler.moveToTop();
+        if (mBinding != null && !isEmbedded()) mBinding.recycler.moveToTop();
+    }
+
+    public int getSelectedPosition() {
+        return mBinding == null ? 0 : Math.max(0, mBinding.recycler.getSelectedPosition());
+    }
+
+    public void restorePosition(int position) {
+        if (mBinding != null) mBinding.recycler.setSelectedPosition(Math.max(0, position));
+    }
+
+    public boolean requestContentFocus() {
+        return mBinding != null && mBinding.recycler.requestFocus();
+    }
+
+    @Override
+    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
+        super.onViewStateRestored(savedInstanceState);
+        if (savedInstanceState != null) restorePosition(savedInstanceState.getInt(STATE_POSITION));
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        outState.putInt(STATE_POSITION, getSelectedPosition());
+        super.onSaveInstanceState(outState);
     }
 }

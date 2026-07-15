@@ -16,6 +16,7 @@ import com.fongmi.android.tv.api.config.WallConfig;
 import com.fongmi.android.tv.bean.Config;
 import com.fongmi.android.tv.bean.Live;
 import com.fongmi.android.tv.bean.Site;
+import com.fongmi.android.tv.cloud.CloudCredentialPriority;
 import com.fongmi.android.tv.databinding.ActivitySettingBinding;
 import com.fongmi.android.tv.db.AppDatabase;
 import com.fongmi.android.tv.event.ConfigEvent;
@@ -26,7 +27,7 @@ import com.fongmi.android.tv.impl.LiveListener;
 import com.fongmi.android.tv.impl.SiteListener;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.Setting;
-import com.fongmi.android.tv.ui.base.BaseActivity;
+import com.fongmi.android.tv.ui.base.FocusSafeSettingsActivity;
 import com.fongmi.android.tv.ui.dialog.ConfigDialog;
 import com.fongmi.android.tv.ui.dialog.DohDialog;
 import com.fongmi.android.tv.ui.dialog.HistoryDialog;
@@ -46,7 +47,7 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SettingActivity extends BaseActivity implements ConfigListener, SiteListener, LiveListener, DohDialog.Listener {
+public class SettingActivity extends FocusSafeSettingsActivity implements ConfigListener, SiteListener, LiveListener, DohDialog.Listener {
 
     private ActivitySettingBinding mBinding;
     private String[] size;
@@ -71,20 +72,31 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Sit
     }
 
     @Override
+    protected boolean customWall() {
+        return false;
+    }
+
+    @Override
     protected void initView(Bundle savedInstanceState) {
-        mBinding.vod.requestFocus();
         mBinding.vodUrl.setText(VodConfig.getDesc());
         mBinding.liveUrl.setText(LiveConfig.getDesc());
         mBinding.wallUrl.setText(WallConfig.getDesc());
         mBinding.versionText.setText(BuildConfig.VERSION_NAME);
         setCacheText();
         setOtherText();
+        initSettingsFocus(savedInstanceState, R.id.vod);
     }
 
     private void setOtherText() {
-        mBinding.dohText.setText(getDohList()[getDohIndex()]);
+        String[] doh = getDohList();
+        boolean hasDoh = doh.length > 0;
+        mBinding.doh.setEnabled(hasDoh);
+        mBinding.doh.setFocusable(hasDoh);
+        mBinding.doh.setAlpha(hasDoh ? 1.0f : 0.55f);
+        mBinding.dohText.setText(hasDoh ? doh[Math.min(getDohIndex(), doh.length - 1)] : getString(R.string.none));
         mBinding.incognitoText.setText(Setting.getSwitch(Setting.isIncognito()));
         mBinding.sizeText.setText((size = ResUtil.getStringArray(R.array.select_size))[PlayerSetting.getSize()]);
+        setCloudPriorityText();
     }
 
     private void setCacheText() {
@@ -99,6 +111,9 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Sit
     @Override
     protected void initEvent() {
         mBinding.vod.setOnClickListener(this::onVod);
+        mBinding.repository.setOnClickListener(v -> RepositoryActivity.start(this));
+        mBinding.cloudAccount.setOnClickListener(v -> CloudAccountActivity.start(this));
+        mBinding.cloudPriority.setOnClickListener(this::setCloudPriority);
         mBinding.doh.setOnClickListener(this::setDoh);
         mBinding.live.setOnClickListener(this::onLive);
         mBinding.wall.setOnClickListener(this::onWall);
@@ -251,6 +266,21 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Sit
     private void setIncognito(View view) {
         Setting.putIncognito(!Setting.isIncognito());
         mBinding.incognitoText.setText(Setting.getSwitch(Setting.isIncognito()));
+    }
+
+    private void setCloudPriority(View view) {
+        CloudCredentialPriority current = CloudCredentialPriority.get();
+        CloudCredentialPriority.set(current == CloudCredentialPriority.APP_ACCOUNT_FIRST
+                ? CloudCredentialPriority.CURRENT_CONFIG_FIRST
+                : CloudCredentialPriority.APP_ACCOUNT_FIRST);
+        setCloudPriorityText();
+    }
+
+    private void setCloudPriorityText() {
+        int text = CloudCredentialPriority.get() == CloudCredentialPriority.APP_ACCOUNT_FIRST
+                ? R.string.settings_v2_cloud_priority_app
+                : R.string.settings_v2_cloud_priority_config;
+        mBinding.cloudPriorityText.setText(text);
     }
 
     private void setSize(View view) {

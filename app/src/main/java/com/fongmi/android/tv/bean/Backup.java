@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.db.AppDatabase;
+import com.fongmi.android.tv.security.SensitiveData;
 import com.github.catvod.utils.Prefers;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -27,17 +28,23 @@ public class Backup {
     private List<Config> config;
     @SerializedName("history")
     private List<History> history;
+    @SerializedName("repository")
+    private List<Repository> repository;
+    @SerializedName("repositoryItem")
+    private List<RepositoryItem> repositoryItem;
     @SerializedName("prefers")
     private Map<String, ?> prefers;
 
     public static Backup create() {
         Backup backup = new Backup();
-        backup.setPrefers(Prefers.getPrefers().getAll());
+        backup.setPrefers(SensitiveData.filterPreferences(Prefers.getPrefers().getAll()));
         backup.setSite(AppDatabase.get().getSiteDao().findAll());
         backup.setLive(AppDatabase.get().getLiveDao().findAll());
         backup.setKeep(AppDatabase.get().getKeepDao().findAll());
         backup.setConfig(AppDatabase.get().getConfigDao().findAll());
         backup.setHistory(AppDatabase.get().getHistoryDao().findAll());
+        backup.setRepository(AppDatabase.get().getRepositoryDao().findAll());
+        backup.setRepositoryItem(AppDatabase.get().getRepositoryItemDao().findAll());
         return backup;
     }
 
@@ -52,13 +59,23 @@ public class Backup {
     }
 
     public void restore() {
-        AppDatabase.get().clearAllTables();
-        AppDatabase.get().getSiteDao().insertOrUpdate(getSite());
-        AppDatabase.get().getLiveDao().insertOrUpdate(getLive());
-        AppDatabase.get().getKeepDao().insertOrUpdate(getKeep());
-        AppDatabase.get().getConfigDao().insertOrUpdate(getConfig());
-        AppDatabase.get().getHistoryDao().insertOrUpdate(getHistory());
-        for (Map.Entry<String, ?> entry : getPrefers().entrySet()) Prefers.put(entry.getKey(), entry.getValue());
+        AppDatabase.get().runInTransaction(() -> {
+            AppDatabase.get().getRepositoryItemDao().deleteAll();
+            AppDatabase.get().getRepositoryDao().deleteAll();
+            AppDatabase.get().getSiteDao().deleteAll();
+            AppDatabase.get().getLiveDao().deleteAll();
+            AppDatabase.get().getKeepDao().deleteAll();
+            AppDatabase.get().getConfigDao().deleteAll();
+            AppDatabase.get().getHistoryDao().deleteAll();
+            AppDatabase.get().getSiteDao().insertOrUpdate(getSite());
+            AppDatabase.get().getLiveDao().insertOrUpdate(getLive());
+            AppDatabase.get().getKeepDao().insertOrUpdate(getKeep());
+            AppDatabase.get().getConfigDao().insertOrUpdate(getConfig());
+            AppDatabase.get().getHistoryDao().insertOrUpdate(getHistory());
+            AppDatabase.get().getRepositoryDao().insertOrUpdate(getRepository());
+            AppDatabase.get().getRepositoryItemDao().insertOrUpdate(getRepositoryItem());
+        });
+        for (Map.Entry<String, ?> entry : SensitiveData.filterPreferences(getPrefers()).entrySet()) Prefers.put(entry.getKey(), entry.getValue());
     }
 
     public List<Site> getSite() {
@@ -101,6 +118,22 @@ public class Backup {
         this.history = history;
     }
 
+    public List<Repository> getRepository() {
+        return repository == null ? Collections.emptyList() : repository;
+    }
+
+    public void setRepository(List<Repository> repository) {
+        this.repository = repository;
+    }
+
+    public List<RepositoryItem> getRepositoryItem() {
+        return repositoryItem == null ? Collections.emptyList() : repositoryItem;
+    }
+
+    public void setRepositoryItem(List<RepositoryItem> repositoryItem) {
+        this.repositoryItem = repositoryItem;
+    }
+
     public Map<String, ?> getPrefers() {
         return prefers == null ? new HashMap<>() : prefers;
     }
@@ -112,6 +145,6 @@ public class Backup {
     @NonNull
     @Override
     public String toString() {
-        return App.gson().toJson(this);
+        return SensitiveData.sanitizeJson(App.gson().toJson(this));
     }
 }

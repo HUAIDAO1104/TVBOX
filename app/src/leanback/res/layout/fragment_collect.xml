@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.fongmi.android.tv.ui.custom.CustomVerticalGridView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/recycler"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:paddingStart="@dimen/home_safe_start"
+    android:paddingTop="12dp"
+    android:paddingEnd="@dimen/home_safe_end"
+    android:paddingBottom="24dp"
+    app:focusOutEnd="true"
+    app:focusOutFront="true" />

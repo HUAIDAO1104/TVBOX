@@ -30,4 +30,7 @@ public abstract class HistoryDao extends BaseDao<History> {
 
     @Query("DELETE FROM History")
     public abstract void delete();
+
+    @Query("DELETE FROM History")
+    public abstract void deleteAll();
 }

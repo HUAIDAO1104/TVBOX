@@ -1,39 +1,308 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:background="@drawable/tv_home_background"
+    android:clipChildren="true"
+    android:clipToPadding="true">
 
-    <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/result"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="24dp"
-        android:layout_marginEnd="24dp"
-        android:layout_marginBottom="16dp"
-        android:singleLine="true"
-        android:textColor="@color/white"
-        android:textSize="24sp"
-        tools:text="@string/collect_result" />
-
-    <androidx.leanback.widget.HorizontalGridView
-        android:id="@+id/recycler"
+    <View
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:clipChildren="false"
-        android:clipToPadding="false"
-        android:paddingStart="24dp"
-        android:paddingEnd="24dp"
-        app:focusOutEnd="false"
-        app:focusOutFront="false" />
+        android:layout_height="match_parent"
+        android:background="@drawable/tv_home_vignette"
+        android:importantForAccessibility="no" />
 
-    <com.fongmi.android.tv.ui.custom.CustomViewPager
-        android:id="@+id/pager"
+    <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:clipChildren="true"
+        android:clipToPadding="true"
+        android:orientation="vertical">
 
-</androidx.appcompat.widget.LinearLayoutCompat>
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/searchHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="@dimen/home_safe_start"
+            android:paddingTop="24dp"
+            android:paddingBottom="14dp"
+            android:paddingEnd="@dimen/home_safe_end">
 
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/back"
+                android:layout_width="96dp"
+                android:layout_height="44dp"
+                android:background="@drawable/selector_search_v2_action"
+                android:drawableStart="@drawable/search_v2_ic_back"
+                android:drawablePadding="8dp"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:text="@string/search_v2_back"
+                android:textColor="@color/search_v2_action_text"
+                android:textSize="15sp" />
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="18dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/result"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="@color/tv_text_primary"
+                    android:textSize="@dimen/tv_text_page_title"
+                    android:textStyle="bold"
+                    tools:text="“庆余年”的搜索结果" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/resultSummary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/tv_text_secondary"
+                    android:textSize="12sp"
+                    tools:text="已找到 12 部相关作品 · 48 个可用来源" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/status"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/tv_text_tertiary"
+                    android:textSize="11sp"
+                    tools:text="参与 79 · 已完成 42 · 搜索中 37 · 超时 2 · 失败 1" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/stateBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="30dp"
+                android:background="@drawable/shape_search_v2_badge"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:textColor="@color/tv_text_secondary"
+                android:textSize="12sp"
+                tools:text="正在搜索" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/sourceFilter"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginStart="10dp"
+                android:background="@drawable/selector_search_v2_action"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:nextFocusDown="@id/resultRecycler"
+                android:paddingStart="15dp"
+                android:paddingEnd="15dp"
+                android:textColor="@color/search_v2_action_text"
+                android:textSize="12sp"
+                tools:text="搜索源 5" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/stop"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginStart="10dp"
+                android:background="@drawable/selector_search_v2_action"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:paddingStart="15dp"
+                android:paddingEnd="15dp"
+                android:text="@string/search_v2_stop"
+                android:textColor="@color/search_v2_action_text"
+                android:textSize="12sp" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <ProgressBar
+            android:id="@+id/progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_marginStart="@dimen/home_safe_start"
+            android:layout_marginTop="0dp"
+            android:layout_marginEnd="@dimen/home_safe_end"
+            android:max="100"
+            android:progressBackgroundTint="@color/tv_card_border"
+            android:progressTint="@color/tv_accent" />
+
+        <FrameLayout
+            android:id="@+id/body"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/resultRecycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:descendantFocusability="afterDescendants"
+                android:overScrollMode="never"
+                android:paddingStart="@dimen/home_safe_start"
+                android:paddingTop="14dp"
+                android:paddingEnd="@dimen/home_safe_end"
+                android:paddingBottom="18dp" />
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/statePanel"
+                android:layout_width="420dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:padding="24dp"
+                android:visibility="gone">
+
+                <ProgressBar
+                    android:id="@+id/stateProgress"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:indeterminateTint="@color/tv_accent" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/stateTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/tv_text_primary"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/stateMessage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:maxLines="3"
+                    android:textColor="@color/tv_text_secondary"
+                    android:textSize="14sp" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/retry"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/selector_search_v2_action"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:paddingStart="22dp"
+                    android:paddingEnd="22dp"
+                    android:text="@string/search_v2_retry"
+                    android:textColor="@color/search_v2_action_text"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <View
+                android:id="@+id/sourceScrim"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#52000000"
+                android:importantForAccessibility="no"
+                android:visibility="gone" />
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/sourcePanel"
+                android:layout_width="288dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="end"
+                android:background="@drawable/shape_search_v2_source_panel"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:elevation="18dp"
+                android:orientation="vertical"
+                android:paddingStart="22dp"
+                android:paddingTop="22dp"
+                android:paddingEnd="22dp"
+                android:paddingBottom="20dp"
+                android:visibility="gone">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/sourceTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="@color/tv_text_primary"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    tools:text="庆余年的来源" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/sourceSubtitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="7dp"
+                    android:includeFontPadding="false"
+                    android:text="@string/search_v2_source_hint"
+                    android:textColor="@color/tv_text_secondary"
+                    android:textSize="12sp" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/sourceRecycler"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="12dp"
+                    android:layout_weight="1"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:overScrollMode="never"
+                    android:paddingStart="5dp"
+                    android:paddingTop="8dp"
+                    android:paddingEnd="5dp"
+                    android:paddingBottom="8dp" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/sourceClose"
+                    android:layout_width="match_parent"
+                    android:layout_height="38dp"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/selector_search_v2_action"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:text="@string/search_v2_close_sources"
+                    android:textColor="@color/search_v2_action_text"
+                    android:textSize="13sp" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+        </FrameLayout>
+    </androidx.appcompat.widget.LinearLayoutCompat>
+</FrameLayout>

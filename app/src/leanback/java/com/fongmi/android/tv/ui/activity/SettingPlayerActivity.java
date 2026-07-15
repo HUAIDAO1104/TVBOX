@@ -14,7 +14,7 @@ import com.fongmi.android.tv.impl.SpeedListener;
 import com.fongmi.android.tv.impl.UaListener;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.Setting;
-import com.fongmi.android.tv.ui.base.BaseActivity;
+import com.fongmi.android.tv.ui.base.FocusSafeSettingsActivity;
 import com.fongmi.android.tv.ui.dialog.MpvConfDialog;
 import com.fongmi.android.tv.ui.dialog.SpeedDialog;
 import com.fongmi.android.tv.ui.dialog.UaDialog;
@@ -22,7 +22,7 @@ import com.fongmi.android.tv.utils.ResUtil;
 
 import java.text.DecimalFormat;
 
-public class SettingPlayerActivity extends BaseActivity implements UaListener, SpeedListener {
+public class SettingPlayerActivity extends FocusSafeSettingsActivity implements UaListener, SpeedListener {
 
     private ActivitySettingPlayerBinding mBinding;
     private DecimalFormat format;
@@ -41,10 +41,14 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, S
     }
 
     @Override
+    protected boolean customWall() {
+        return false;
+    }
+
+    @Override
     protected void initView(Bundle savedInstanceState) {
         setVisible();
         setPlaybackModeText();
-        mBinding.engine.requestFocus();
         format = new DecimalFormat("0.#");
         mBinding.speedText.setText(format.format(PlayerSetting.getSpeed()));
         mBinding.adblockText.setText(Setting.getSwitch(Setting.isAdblock()));
@@ -53,6 +57,7 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, S
         mBinding.backgroundText.setText(Setting.getSwitch(PlayerSetting.isBackgroundOn()));
         mBinding.scaleText.setText((scale = ResUtil.getStringArray(R.array.select_scale))[PlayerSetting.getScale()]);
         mBinding.captionText.setText((caption = ResUtil.getStringArray(R.array.select_caption))[PlayerSetting.isCaption() ? 1 : 0]);
+        initSettingsFocus(savedInstanceState, R.id.engine);
     }
 
     @Override

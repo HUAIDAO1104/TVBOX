@@ -35,6 +35,7 @@ import com.google.common.net.HttpHeaders;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.util.List;
 import java.util.Map;
 
 import okhttp3.Call;
@@ -42,9 +43,16 @@ import okhttp3.Response;
 
 public class SearchActivity extends BaseActivity implements WordAdapter.OnClickListener, RecordAdapter.OnClickListener, CustomKeyboard.Callback {
 
+    private static final String STATE_KEYWORD = "search_v2_keyword";
+    private static final String STATE_SCROLL_Y = "search_v2_scroll_y";
+    private static final String STATE_FOCUS_ZONE = "search_v2_focus_zone";
+    private static final String STATE_FOCUS_POSITION = "search_v2_focus_position";
+
     private ActivitySearchBinding mBinding;
     private RecordAdapter mRecordAdapter;
     private WordAdapter mWordAdapter;
+    private Bundle mSavedState;
+    private boolean mFirstResume;
 
     public static void start(Activity activity) {
         activity.startActivity(new Intent(activity, SearchActivity.class));
@@ -72,10 +80,12 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
 
     @Override
     protected void initView(Bundle savedInstanceState) {
+        mSavedState = savedInstanceState;
+        mFirstResume = true;
         CustomKeyboard.init(this, mBinding);
         setRecyclerView();
-        checkKeyword();
-        onSearch();
+        checkKeyword(savedInstanceState);
+        if (savedInstanceState == null && !getKeyword().isBlank()) onSearch();
     }
 
     @Override
@@ -110,9 +120,23 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
         mBinding.recordRecycler.setAdapter(mRecordAdapter = new RecordAdapter(this));
     }
 
-    private void checkKeyword() {
-        setKeyword(getKeyword());
-        getWord(getKeyword());
+    private void checkKeyword(Bundle state) {
+        String keyword = state == null ? getKeyword() : state.getString(STATE_KEYWORD, getKeyword());
+        if (keyword.isBlank()) keyword = getLastKeyword();
+        setKeyword(keyword);
+        getWord(keyword);
+        if (state != null) mBinding.scroll.post(() -> mBinding.scroll.scrollTo(0, state.getInt(STATE_SCROLL_Y)));
+    }
+
+    private String getLastKeyword() {
+        try {
+            if (Setting.getKeyword().isEmpty()) return "";
+            List<String> items = App.gson().fromJson(Setting.getKeyword(),
+                    com.google.gson.reflect.TypeToken.getParameterized(List.class, String.class).getType());
+            return items == null || items.isEmpty() ? "" : items.get(0);
+        } catch (Exception ignored) {
+            return "";
+        }
     }
 
     private void setKeyword(String text) {
@@ -128,27 +152,29 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
     private void getHot() {
         mBinding.word.setText(R.string.search_hot);
         mWordAdapter.setItems(Word.objectFrom(Setting.getHot()).getData());
-        OkHttp.newCall("https://api.web.360kan.com/v1/rank?cat=1", Map.of(HttpHeaders.REFERER, "https://www.360kan.com/rank/general")).enqueue(getCallback(true));
+        OkHttp.newCall("https://api.web.360kan.com/v1/rank?cat=1", Map.of(HttpHeaders.REFERER, "https://www.360kan.com/rank/general")).enqueue(getCallback(true, ""));
     }
 
     private void getSuggest(String text) {
         mBinding.word.setText(R.string.search_suggest);
-        OkHttp.newCall("https://suggest.video.iqiyi.com/?if=mobile&key=" + URLEncoder.encode(ZhuToPin.get(text))).enqueue(getCallback(false));
+        OkHttp.newCall("https://suggest.video.iqiyi.com/?if=mobile&key=" + URLEncoder.encode(ZhuToPin.get(text))).enqueue(getCallback(false, text));
     }
 
-    private Callback getCallback(boolean hot) {
+    private Callback getCallback(boolean hot, String requestText) {
         return new Callback() {
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 String result = response.body().string();
                 if (TextUtils.isEmpty(result)) return;
-                App.post(() -> setAdapter(result, hot));
+                App.post(() -> setAdapter(result, hot, requestText));
             }
         };
     }
 
-    private void setAdapter(String result, boolean save) {
-        if (!save && empty()) return;
+    private void setAdapter(String result, boolean save, String requestText) {
+        String current = mBinding.keyword.getText().toString().trim();
+        if (save && !current.isEmpty()) return;
+        if (!save && !current.equals(requestText.trim())) return;
         if (save) Setting.putHot(result);
         mWordAdapter.setItems(Word.objectFrom(result).getData());
     }
@@ -259,12 +285,23 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
     }
 
     private boolean handleKeyboardKey(KeyEvent event, View item) {
-        if (KeyUtil.isUpKey(event) && isFirstRow(mBinding.keyboard, item)) {
+        if (KeyUtil.isUpKey(event) && isKeyboardFirstRow(item)) {
             mBinding.keyword.requestFocus();
             return true;
         }
         if (KeyUtil.isLeftKey(event) && isFirstInRow(mBinding.keyboard, item)) return true;
-        return KeyUtil.isDownKey(event) && isLastRow(mBinding.keyboard, item);
+        return KeyUtil.isDownKey(event) && isKeyboardLastRow(item);
+    }
+
+    private boolean isKeyboardFirstRow(View item) {
+        return mBinding.keyboard.getChildAdapterPosition(item) < 7;
+    }
+
+    private boolean isKeyboardLastRow(View item) {
+        if (mBinding.keyboard.getAdapter() == null) return true;
+        int count = mBinding.keyboard.getAdapter().getItemCount();
+        int lastRowSize = count % 7 == 0 ? 7 : count % 7;
+        return mBinding.keyboard.getChildAdapterPosition(item) >= count - lastRowSize;
     }
 
     private boolean handleWordKey(KeyEvent event, View item) {
@@ -308,7 +345,60 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
     protected void onResume() {
         super.onResume();
         mBinding.mic.setFocusable(true);
-        mBinding.keyword.requestFocus();
+        if (!mFirstResume) return;
+        mFirstResume = false;
+        mBinding.getRoot().post(this::restoreFocus);
+    }
+
+    private void restoreFocus() {
+        if (mSavedState == null) {
+            mBinding.keyword.requestFocus();
+            return;
+        }
+        String zone = mSavedState.getString(STATE_FOCUS_ZONE, "keyword");
+        int position = mSavedState.getInt(STATE_FOCUS_POSITION, 0);
+        if ("mic".equals(zone)) mBinding.mic.requestFocus();
+        else if ("keyboard".equals(zone)) focusPosition(mBinding.keyboard, position);
+        else if ("record".equals(zone)) focusPosition(mBinding.recordRecycler, position);
+        else if ("word".equals(zone)) focusPosition(mBinding.wordRecycler, position);
+        else mBinding.keyword.requestFocus();
+        mSavedState = null;
+    }
+
+    private void focusPosition(RecyclerView recyclerView, int position) {
+        if (recyclerView.getAdapter() == null || recyclerView.getAdapter().getItemCount() == 0) {
+            mBinding.keyword.requestFocus();
+            return;
+        }
+        int safePosition = Math.clamp(position, 0, recyclerView.getAdapter().getItemCount() - 1);
+        recyclerView.scrollToPosition(safePosition);
+        recyclerView.post(() -> {
+            RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(safePosition);
+            if (holder != null) holder.itemView.requestFocus();
+            else mBinding.keyword.requestFocus();
+        });
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString(STATE_KEYWORD, mBinding.keyword.getText().toString());
+        outState.putInt(STATE_SCROLL_Y, mBinding.scroll.getScrollY());
+        View focus = getCurrentFocus();
+        if (focus == mBinding.mic) outState.putString(STATE_FOCUS_ZONE, "mic");
+        else if (focus == mBinding.keyword) outState.putString(STATE_FOCUS_ZONE, "keyword");
+        else if (saveRecyclerFocus(outState, mBinding.keyboard, focus, "keyboard")) return;
+        else if (saveRecyclerFocus(outState, mBinding.recordRecycler, focus, "record")) return;
+        else saveRecyclerFocus(outState, mBinding.wordRecycler, focus, "word");
+    }
+
+    private boolean saveRecyclerFocus(Bundle state, RecyclerView recyclerView, View focus, String zone) {
+        if (focus == null) return false;
+        View item = recyclerView.findContainingItemView(focus);
+        if (item == null) return false;
+        state.putString(STATE_FOCUS_ZONE, zone);
+        state.putInt(STATE_FOCUS_POSITION, recyclerView.getChildAdapterPosition(item));
+        return true;
     }
 
     @Override

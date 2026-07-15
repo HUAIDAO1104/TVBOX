@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="86dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/info"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_marginEnd="12dp"
+        android:layout_weight="1"
+        android:background="@drawable/selector_item"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:gravity="center_vertical"
+        android:orientation="vertical">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            tools:text="默认仓库" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/meta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textColor="@color/white_60"
+            android:textSize="14sp"
+            tools:text="已同步 · 3 个配置 · 07-13 10:20 · 内置" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/url"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:ellipsize="middle"
+            android:singleLine="true"
+            android:textColor="@color/white_40"
+            android:textSize="12sp"
+            tools:text="https://example.com/repository.json" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/enable"
+        android:layout_width="72dp"
+        android:layout_height="40dp"
+        android:background="@drawable/selector_chip_round"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:gravity="center"
+        android:textColor="@color/white"
+        android:textSize="15sp"
+        tools:text="停用" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/edit"
+        android:layout_width="64dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="10dp"
+        android:background="@drawable/selector_chip_round"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:gravity="center"
+        android:text="@string/repository_edit"
+        android:textColor="@color/white"
+        android:textSize="15sp" />
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/refresh"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="10dp"
+        android:background="@drawable/selector_chip_round"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:padding="9dp"
+        android:src="@drawable/ic_setting_refresh" />
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/up"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="10dp"
+        android:background="@drawable/selector_chip_round"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:padding="9dp"
+        android:src="@drawable/ic_subtitle_up" />
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/down"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="10dp"
+        android:background="@drawable/selector_chip_round"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:padding="9dp"
+        android:src="@drawable/ic_subtitle_down" />
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/delete"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="10dp"
+        android:background="@drawable/selector_chip_round"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:padding="9dp"
+        android:src="@drawable/ic_setting_delete" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

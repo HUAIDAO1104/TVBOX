@@ -22,6 +22,11 @@ import java.util.List;
 @Entity(indices = @Index(value = {"url", "type"}, unique = true))
 public class Config {
 
+    private static final String DEFAULT_VOD_URL = "https://9280.kstore.vip/newwex.json";
+    private static final String DEFAULT_VOD_NAME = "默认内容源";
+    private static final String REPOSITORY_VOD_URL = "https://raw.githubusercontent.com/qist/tvbox/master/fty.json";
+    private static final String REPOSITORY_VOD_NAME = "仓库源";
+
     @PrimaryKey(autoGenerate = true)
     @SerializedName("id")
     private int id;
@@ -89,7 +94,12 @@ public class Config {
 
     public static Config vod() {
         Config item = AppDatabase.get().getConfigDao().findOne(0);
-        return item == null ? create(0) : item;
+        if (item != null) {
+            if (DEFAULT_VOD_URL.equals(item.getUrl()) && "王二小".equals(item.getName())) item.name(DEFAULT_VOD_NAME).save();
+            return item;
+        }
+        find(REPOSITORY_VOD_URL, REPOSITORY_VOD_NAME, 0).save();
+        return find(DEFAULT_VOD_URL, DEFAULT_VOD_NAME, 0).update();
     }
 
     public static Config live() {

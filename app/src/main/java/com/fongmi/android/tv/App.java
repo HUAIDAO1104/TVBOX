@@ -13,6 +13,9 @@ import androidx.annotation.Nullable;
 import androidx.core.os.HandlerCompat;
 
 import com.fongmi.android.tv.utils.Notify;
+import com.fongmi.android.tv.cloud.CloudAccountManager;
+import com.fongmi.android.tv.repository.RepositoryManager;
+import com.fongmi.android.tv.utils.Task;
 import com.fongmi.hook.Hook;
 import com.github.catvod.Init;
 import com.google.gson.Gson;
@@ -83,6 +86,10 @@ public class App extends Application implements Application.ActivityLifecycleCal
         super.onCreate();
         Notify.createChannel();
         registerActivityLifecycleCallbacks(this);
+        // Keystore access, Room creation/migrations and repository bootstrap all touch disk.
+        // None of them is required to draw the first frame, so keep them off the main thread.
+        Task.execute(CloudAccountManager::migrateLegacyCredentials);
+        RepositoryManager.get().initialize();
     }
 
     @Override

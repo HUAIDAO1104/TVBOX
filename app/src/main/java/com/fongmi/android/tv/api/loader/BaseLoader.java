@@ -6,6 +6,8 @@ import com.fongmi.android.tv.api.config.LiveConfig;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Live;
 import com.fongmi.android.tv.bean.Site;
+import com.fongmi.android.tv.cloud.CloudCredentialBridge;
+import com.fongmi.android.tv.cloud.CloudCredentialPreferences;
 import com.fongmi.android.tv.utils.Task;
 import com.github.catvod.crawler.Spider;
 import com.github.catvod.crawler.SpiderNull;
@@ -14,7 +16,9 @@ import com.github.catvod.utils.Util;
 import org.json.JSONObject;
 
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import dalvik.system.DexClassLoader;
@@ -24,11 +28,15 @@ public class BaseLoader {
     private final JarLoader jarLoader;
     private final PyLoader pyLoader;
     private final JsLoader jsLoader;
+    private final SpiderCacheEpoch cacheEpoch;
+    private final Object cacheLock;
 
     private BaseLoader() {
         jarLoader = new JarLoader();
         pyLoader = new PyLoader();
         jsLoader = new JsLoader();
+        cacheEpoch = new SpiderCacheEpoch();
+        cacheLock = new Object();
     }
 
     public static BaseLoader get() {
@@ -48,18 +56,46 @@ public class BaseLoader {
     }
 
     public void clear() {
-        Task.execute(() -> {
-            jarLoader.clear();
-            pyLoader.clear();
-            jsLoader.clear();
-        });
+        List<Spider> detached = new ArrayList<>();
+        synchronized (cacheLock) {
+            cacheEpoch.advance();
+            CloudCredentialPreferences.clearRuntime();
+            CloudCredentialBridge.clear();
+            detached.addAll(jarLoader.detach());
+            detached.addAll(pyLoader.detach());
+            detached.addAll(jsLoader.detach());
+        }
+        Task.execute(() -> detached.forEach(Spider::destroy));
     }
 
     public Spider getSpider(String key, String api, String ext, String jar) {
-        if (isPy(api)) return pyLoader.getSpider(key, api, ext);
-        else if (isJs(api)) return jsLoader.getSpider(key, api, ext, jar);
-        else if (isCsp(api)) return jarLoader.getSpider(key, api, ext, jar);
-        else return new SpiderNull();
+        return getSpider(key, key, api, ext, jar);
+    }
+
+    public Spider getSpider(String cacheKey, String siteKey, String api, String ext, String jar) {
+        while (true) {
+            long epoch;
+            String scopedCacheKey;
+            String resolvedExt = CloudCredentialBridge.resolve(ext);
+            synchronized (cacheLock) {
+                epoch = cacheEpoch.current();
+                scopedCacheKey = cacheEpoch.scope(epoch, definitionKey(cacheKey, api, resolvedExt, jar));
+            }
+            Spider spider;
+            if (isPy(api)) spider = pyLoader.getSpider(scopedCacheKey, cacheKey, siteKey, api, resolvedExt);
+            else if (isJs(api)) spider = jsLoader.getSpider(scopedCacheKey, cacheKey, siteKey, api, resolvedExt, jar);
+            else if (isCsp(api)) spider = jarLoader.getSpider(scopedCacheKey, cacheKey, siteKey, api, resolvedExt, jar);
+            else return new SpiderNull();
+            if (cacheEpoch.isCurrent(epoch)) return spider;
+            discard(scopedCacheKey, api, jar, spider);
+        }
+    }
+
+    private void discard(String cacheKey, String api, String jar, Spider spider) {
+        if (isPy(api)) pyLoader.discard(cacheKey, spider);
+        else if (isJs(api)) jsLoader.discard(cacheKey, spider);
+        else if (isCsp(api)) jarLoader.discard(cacheKey, jar, spider);
+        Task.execute(spider::destroy);
     }
 
     public Spider getSpider(String key) {
@@ -71,9 +107,21 @@ public class BaseLoader {
     }
 
     public void setRecent(String key, String api, String jar) {
-        if (isJs(api)) jsLoader.setRecent(key);
-        else if (isPy(api)) pyLoader.setRecent(key);
-        else if (isCsp(api)) jarLoader.setRecent(Util.md5(jar));
+        setRecent(key, api, "", jar);
+    }
+
+    public void setRecent(String key, String api, String ext, String jar) {
+        synchronized (cacheLock) {
+            String resolvedExt = CloudCredentialBridge.resolve(ext);
+            String scopedKey = cacheEpoch.scope(cacheEpoch.current(), definitionKey(key, api, resolvedExt, jar));
+            if (isJs(api)) jsLoader.setRecent(scopedKey);
+            else if (isPy(api)) pyLoader.setRecent(scopedKey);
+            else if (isCsp(api)) jarLoader.setRecent(Util.md5(jar));
+        }
+    }
+
+    private String definitionKey(String routingKey, String api, String ext, String jar) {
+        return routingKey + "#" + Util.md5(api + '\n' + ext + '\n' + jar);
     }
 
     public Object[] proxy(Map<String, String> params) throws Exception {

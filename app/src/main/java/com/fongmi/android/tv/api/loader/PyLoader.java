@@ -6,6 +6,8 @@ import com.github.catvod.crawler.Spider;
 import com.github.catvod.crawler.SpiderNull;
 
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PyLoader {
@@ -20,9 +22,18 @@ public class PyLoader {
     }
 
     public void clear() {
-        spiders.values().forEach(Spider::destroy);
+        detach().forEach(Spider::destroy);
+    }
+
+    public List<Spider> detach() {
+        List<Spider> detached = new ArrayList<>(spiders.values());
         spiders.clear();
         recent = null;
+        return detached;
+    }
+
+    public void discard(String cacheKey, Spider spider) {
+        spiders.remove(cacheKey, spider);
     }
 
     public void setRecent(String recent) {
@@ -30,14 +41,23 @@ public class PyLoader {
     }
 
     public Spider getSpider(String key, String api, String ext) {
-        return spiders.computeIfAbsent(key, k -> {
+        return getSpider(key, key, api, ext);
+    }
+
+    public Spider getSpider(String cacheKey, String siteKey, String api, String ext) {
+        return getSpider(cacheKey, siteKey, siteKey, api, ext);
+    }
+
+    public Spider getSpider(String cacheKey, String proxyKey, String siteKey, String api, String ext) {
+        return spiders.computeIfAbsent(cacheKey, k -> {
             try {
                 Spider spider = loader.spider(api);
-                spider.siteKey = key;
+                spider.siteKey = siteKey;
+                spider.proxyKey = proxyKey;
                 spider.init(App.get(), ext);
                 return spider;
             } catch (Throwable e) {
-                e.printStackTrace();
+                com.github.catvod.crawler.SpiderDebug.log(e);
                 return new SpiderNull();
             }
         });

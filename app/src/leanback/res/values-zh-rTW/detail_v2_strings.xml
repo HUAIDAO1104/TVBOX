@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="detail_v2_back">返回</string>
+    <string name="detail_v2_play_now">立即播放</string>
+    <string name="detail_v2_resume">繼續播放 · %1$s</string>
+    <string name="detail_v2_resume_plain">繼續播放</string>
+    <string name="detail_v2_choose_episode">選集</string>
+    <string name="detail_v2_full_summary">完整簡介</string>
+    <string name="detail_v2_source">播放來源</string>
+    <string name="detail_v2_episode_list">劇集列表</string>
+    <string name="detail_v2_quality">清晰度</string>
+    <string name="detail_v2_source_value">來源 · %1$s</string>
+    <string name="detail_v2_current_source">當前線路 · %1$s</string>
+    <string name="detail_v2_source_fallback">線路 %1$d</string>
+    <string name="detail_v2_meta_separator"> · </string>
+    <string name="detail_repository_resolve_timeout">來源設定載入逾時，請返回重試，或先在倉庫管理中重新整理該倉庫。</string>
+    <string name="detail_repository_resolve_missing">此歷史來源所屬的倉庫設定已不存在。</string>
+    <string name="detail_repository_resolve_failed">無法還原此歷史來源，請重新整理所屬倉庫或選擇其他來源。</string>
+    <string name="player_v2_now_playing">正在播放</string>
+    <string name="player_v2_more_controls">更多控制</string>
+    <string name="player_v2_rewind">快退 10 秒</string>
+    <string name="player_v2_forward">快進 10 秒</string>
+    <string name="player_v2_stage_preparing">正在準備播放</string>
+    <string name="player_v2_stage_resolving">正在解析線路</string>
+    <string name="player_v2_stage_buffering">正在緩衝視頻</string>
+    <string name="player_v2_stage_switching">正在切換備用線路</string>
+    <string name="player_v2_error_title">播放被中斷</string>
+    <string name="player_v2_error_source">當前線路暫時不可用</string>
+    <string name="player_v2_error_parse">播放地址解析失敗</string>
+    <string name="player_v2_error_network">網絡連接超時</string>
+    <string name="player_v2_error_credential">需要先登錄網盤賬戶</string>
+    <string name="player_v2_error_credential_expired">網盤登錄狀態可能已失效</string>
+    <string name="player_v2_error_format">當前視頻格式暫不支持</string>
+    <string name="player_v2_error_player">播放器啟動失敗</string>
+    <string name="player_v2_error_subtitle">字幕加載失敗，可忽略並繼續播放</string>
+    <string name="player_v2_error_unknown">播放過程中出現問題</string>
+    <string name="player_v2_retry">重試</string>
+    <string name="player_v2_change_source">切換線路</string>
+    <string name="player_v2_cloud_login">登錄網盤</string>
+    <string name="player_v2_continue_playing">繼續播放</string>
+    <string name="player_v2_back_detail">返回詳情</string>
+    <string name="player_v2_fallback_status">第 %1$d 次嘗試 · %2$s</string>
+    <string name="player_v2_fallback_search">正在查找可用線路</string>
+    <string name="player_v2_fallback_cancel">取消換源</string>
+</resources>

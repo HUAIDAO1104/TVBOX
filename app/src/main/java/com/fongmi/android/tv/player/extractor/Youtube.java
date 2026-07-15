@@ -308,7 +308,7 @@ public class Youtube implements Source.Extractor {
                 try {
                     add(extractor, episodes, extractor.getPage(page.getNextPage()));
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    com.github.catvod.crawler.SpiderDebug.log(e);
                 }
             }
         }

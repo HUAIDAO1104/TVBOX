@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/settings_v2_shape_row_pressed" android:state_pressed="true" />
+    <item android:drawable="@drawable/settings_v2_shape_row_focused" android:state_focused="true" />
+    <item android:drawable="@drawable/settings_v2_shape_row" />
+</selector>

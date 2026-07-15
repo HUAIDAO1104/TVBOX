@@ -7,8 +7,8 @@
     android:orientation="vertical">
 
     <com.airbnb.lottie.LottieAnimationView
-        android:layout_width="200dp"
-        android:layout_height="224dp"
+        android:layout_width="132dp"
+        android:layout_height="148dp"
         app:lottie_autoPlay="true"
         app:lottie_loop="true"
         app:lottie_rawRes="@raw/empty" />
@@ -18,7 +18,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/error_empty"
-        android:textColor="@color/white"
-        android:textSize="16sp" />
+        android:textColor="@color/tv_text_secondary"
+        android:textSize="15sp" />
 
 </androidx.appcompat.widget.LinearLayoutCompat>

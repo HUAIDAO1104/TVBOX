@@ -23,7 +23,6 @@ import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.Target;
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.R;
-import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.impl.CustomTarget;
 import com.github.catvod.utils.Json;
 import com.google.common.net.HttpHeaders;
@@ -40,18 +39,15 @@ public class ImgUtil {
     private static final Set<String> failed = Collections.synchronizedSet(new HashSet<>());
 
     public static void logo(ImageView view) {
-        try {
-            Glide.with(view).load(UrlUtil.convert(VodConfig.get().getConfig().getLogo())).circleCrop().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL).error(R.drawable.ic_logo).into(view);
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
+        Glide.with(view).clear(view);
+        view.setImageResource(R.drawable.brand_mark);
     }
 
     public static void load(String url, CustomTarget<Bitmap> target) {
         try {
             Glide.with(App.get()).asBitmap().load(getUrl(url)).override(ResUtil.dp2px(96), ResUtil.dp2px(96)).error(R.drawable.artwork).into(target);
         } catch (Throwable e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
         }
     }
 
@@ -59,12 +55,26 @@ public class ImgUtil {
         try {
             Glide.with(context).load(getUrl(url)).override(ResUtil.getScreenWidth(), ResUtil.getScreenHeight()).error(R.drawable.artwork).into(target);
         } catch (Throwable e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
         }
     }
 
     public static void load(String text, String url, ImageView view) {
         load(text, url, view, true);
+    }
+
+    public static void loadPoster(String text, String url, ImageView view) {
+        view.setScaleType(FIT_CENTER);
+        view.setVisibility(View.VISIBLE);
+        if (TextUtils.isEmpty(url) || failed.contains(url)) {
+            view.setImageDrawable(getTextDrawable(text, true));
+            return;
+        }
+        try {
+            Glide.with(view).load(getUrl(url)).fitCenter().listener(getListener(text, url, view, true)).into(view);
+        } catch (Throwable e) {
+            view.setImageDrawable(getTextDrawable(text, true));
+        }
     }
 
     public static void load(String text, String url, ImageView view, boolean vod) {
@@ -76,7 +86,7 @@ public class ImgUtil {
             if (vod) builder.centerCrop().into(view);
             else builder.fitCenter().into(view);
         } catch (Throwable e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
         }
     }
 

@@ -16,6 +16,7 @@ android {
         applicationId "com.fongmi.android.tv"
         minSdk libs.versions.minSdk.get().toInteger()
         targetSdk libs.versions.targetSdk.get().toInteger()
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         versionCode 556
         versionName "5.5.6"
         javaCompileOptions {
@@ -49,6 +50,10 @@ android {
         viewBinding = true
     }
 
+    sourceSets {
+        androidTest.assets.srcDirs += files("$projectDir/schemas")
+    }
+
     signingConfigs {
         release {
             storeFile file(localProps['storeFile'])
@@ -73,6 +78,13 @@ android {
         exclude group: 'com.android.support'
         resolutionStrategy {
             force libs.okhttp
+            if (name.toLowerCase().contains('androidtest')) {
+                force 'org.jetbrains.kotlinx:kotlinx-serialization-bom:1.8.1'
+                force 'org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1'
+                force 'org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.8.1'
+                force 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1'
+                force 'org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.8.1'
+            }
         }
     }
 
@@ -136,4 +148,10 @@ dependencies {
     annotationProcessor libs.eventbus.annotation.processor
     annotationProcessor libs.glide.compiler
     coreLibraryDesugaring libs.desugar
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test:core:1.7.0'
+    androidTestImplementation 'androidx.test:runner:1.7.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.3.0'
+    androidTestImplementation 'androidx.room:room-testing:2.8.4'
+    androidTestImplementation 'com.squareup.okhttp3:mockwebserver:5.4.0'
 }

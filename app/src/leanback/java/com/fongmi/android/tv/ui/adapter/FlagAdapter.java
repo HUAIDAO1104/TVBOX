@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Flag;
 import com.fongmi.android.tv.databinding.AdapterFlagBinding;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,10 +69,17 @@ public class FlagAdapter extends RecyclerView.Adapter<FlagAdapter.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Flag item = mItems.get(position);
-        holder.binding.text.setText(item.getShow());
+        holder.binding.text.setText(displayName(holder, item, position));
         holder.binding.text.setSelected(item.isSelected());
         holder.binding.text.setNextFocusDownId(nextFocusDown);
         holder.binding.getRoot().setOnClickListener(v -> mListener.onItemClick(item));
+    }
+
+    private String displayName(ViewHolder holder, Flag item, int position) {
+        String clean = SearchDisplayName.clean(item.getShow().replaceAll("(?i)[|┃].*$", ""));
+        String lower = clean.toLowerCase(java.util.Locale.ROOT);
+        if (lower.contains("gzh") || lower.contains("公众号") || lower.contains("免费分享") || lower.contains("扫码")) clean = "";
+        return clean.isEmpty() ? holder.itemView.getContext().getString(R.string.detail_v2_source_fallback, position + 1) : clean;
     }
 
     public interface OnClickListener {

@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.ViewEmptyBinding;
 import com.fongmi.android.tv.databinding.ViewProgressBinding;
 
@@ -22,6 +23,7 @@ public class ProgressLayout extends RelativeLayout {
     }
 
     private List<View> mContentViews;
+    private ViewEmptyBinding mEmptyBinding;
     private View mProgressView;
     private View mEmptyView;
     private State mState;
@@ -47,7 +49,8 @@ public class ProgressLayout extends RelativeLayout {
     }
 
     private void initView() {
-        mEmptyView = ViewEmptyBinding.inflate(LayoutInflater.from(getContext())).getRoot();
+        mEmptyBinding = ViewEmptyBinding.inflate(LayoutInflater.from(getContext()));
+        mEmptyView = mEmptyBinding.getRoot();
         mEmptyView.setTag(TAG_PROGRESS);
         mEmptyView.setVisibility(GONE);
         mProgressView = ViewProgressBinding.inflate(LayoutInflater.from(getContext())).getRoot();
@@ -72,6 +75,12 @@ public class ProgressLayout extends RelativeLayout {
     }
 
     public void showEmpty() {
+        mEmptyBinding.text.setText(R.string.error_empty);
+        switchState(State.EMPTY);
+    }
+
+    public void showEmpty(CharSequence message) {
+        mEmptyBinding.text.setText(message);
         switchState(State.EMPTY);
     }
 

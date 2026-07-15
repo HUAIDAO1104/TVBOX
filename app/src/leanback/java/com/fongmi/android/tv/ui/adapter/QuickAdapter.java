@@ -6,8 +6,12 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.AdapterQuickBinding;
+import com.fongmi.android.tv.security.PromotionFilter;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
+import com.fongmi.android.tv.utils.ImgUtil;
 import com.fongmi.android.tv.utils.ResUtil;
 
 import java.util.ArrayList;
@@ -66,10 +70,19 @@ public class QuickAdapter extends RecyclerView.Adapter<QuickAdapter.ViewHolder> 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Vod item = mItems.get(position);
-        holder.binding.name.setText(item.getName());
-        holder.binding.site.setText(item.getSiteName());
-        holder.binding.remark.setText(item.getRemarks());
+        String site = SearchDisplayName.clean(item.getSiteName());
+        holder.binding.name.setText(PromotionFilter.sanitizeDisplayText(item.getName()));
+        holder.binding.site.setText(site);
+        holder.binding.site.setVisibility(site.isEmpty() ? android.view.View.GONE : android.view.View.VISIBLE);
+        holder.binding.remark.setText(PromotionFilter.sanitizeDisplayText(item.getRemarks()));
+        ImgUtil.loadPoster(item.getName(), item.getPic(), holder.binding.poster);
         holder.binding.getRoot().setOnClickListener(v -> mListener.onItemClick(item));
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull ViewHolder holder) {
+        Glide.with(holder.binding.poster).clear(holder.binding.poster);
+        super.onViewRecycled(holder);
     }
 
     public interface OnClickListener {

@@ -1,26 +1,5 @@
 <resources>
 
-    <style name="Theme.Base" parent="Theme.Material3.Dark.NoActionBar">
-        <item name="colorPrimary">@color/white</item>
-        <item name="android:windowFullscreen">true</item>
-        <item name="android:windowTranslucentStatus">true</item>
-        <item name="android:windowTranslucentNavigation">true</item>
-        <item name="android:windowAnimationStyle">@style/NoAnim</item>
-    </style>
-
-    <style name="Theme.Splash" parent="Theme.SplashScreen">
-        <item name="postSplashScreenTheme">@style/Theme.App</item>
-        <item name="windowSplashScreenBackground">#141218</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
-    </style>
-
-    <style name="Theme.App" parent="Theme.Base" />
-
-    <style name="Theme.Crash" parent="Theme.Base">
-        <item name="android:windowBackground">@color/grey_800</item>
-        <item name="android:windowDisablePreview">true</item>
-    </style>
-
     <style name="NoAnim">
         <item name="android:activityOpenEnterAnimation">@null</item>
         <item name="android:activityOpenExitAnimation">@null</item>
@@ -44,6 +23,58 @@
         <item name="android:nextFocusUp">@id/exo_progress</item>
         <item name="android:textColor">@color/text</item>
         <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="Tv.Poster" parent="Vod">
+        <item name="cornerSize">@dimen/tv_radius_large</item>
+    </style>
+
+    <style name="Tv.Poster.Small" parent="Vod">
+        <item name="cornerSize">@dimen/tv_radius_small</item>
+    </style>
+
+    <style name="SettingsV2.PageTitle" parent="">
+        <item name="android:textColor">@color/tv_text_primary</item>
+        <item name="android:textSize">30sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.01</item>
+    </style>
+
+    <style name="SettingsV2.PageSubtitle" parent="">
+        <item name="android:textColor">@color/tv_text_secondary</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:lineSpacingExtra">2dp</item>
+    </style>
+
+    <style name="SettingsV2.SectionTitle" parent="">
+        <item name="android:textColor">@color/tv_text_secondary</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.04</item>
+    </style>
+
+    <style name="SettingsV2.RowLabel" parent="">
+        <item name="android:textColor">@color/tv_text_primary</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="SettingsV2.RowValue" parent="">
+        <item name="android:textColor">@color/tv_text_secondary</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="SettingsV2.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorPrimary">@color/tv_accent</item>
+        <item name="colorSurface">@color/tv_background_secondary</item>
+        <item name="colorOnSurface">@color/tv_text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/tv_text_secondary</item>
+        <item name="colorOutline">@color/tv_card_border</item>
+        <item name="shapeAppearanceMediumComponent">@style/SettingsV2.Dialog.Shape</item>
+    </style>
+
+    <style name="SettingsV2.Dialog.Shape" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/tv_radius_large</item>
     </style>
 
 </resources>

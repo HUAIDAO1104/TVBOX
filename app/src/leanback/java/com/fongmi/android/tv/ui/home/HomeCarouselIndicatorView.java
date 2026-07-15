@@ -1,0 +1,105 @@
+package com.fongmi.android.tv.ui.home;
+
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.RectF;
+import android.util.AttributeSet;
+import android.view.KeyEvent;
+import android.view.View;
+
+import androidx.annotation.Nullable;
+
+import com.fongmi.android.tv.R;
+
+/** Compact, remote-friendly progress lines for the home hero carousel. */
+public final class HomeCarouselIndicatorView extends View {
+
+    public interface Listener {
+        void onMove(int direction);
+    }
+
+    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF line = new RectF();
+    private final float inactiveWidth;
+    private final float activeWidth;
+    private final float gap;
+    private final float lineHeight;
+    private int count;
+    private int selected;
+    private Listener listener;
+
+    public HomeCarouselIndicatorView(Context context) {
+        this(context, null);
+    }
+
+    public HomeCarouselIndicatorView(Context context, @Nullable AttributeSet attrs) {
+        this(context, attrs, 0);
+    }
+
+    public HomeCarouselIndicatorView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        float density = getResources().getDisplayMetrics().density;
+        inactiveWidth = 10f * density;
+        activeWidth = 28f * density;
+        gap = 7f * density;
+        lineHeight = 3f * density;
+        setFocusable(true);
+        setFocusableInTouchMode(true);
+        setClickable(true);
+        setContentDescription(getResources().getString(R.string.home_featured_switcher));
+        setOnClickListener(view -> move(1));
+        setOnFocusChangeListener((view, focused) -> view.animate()
+                .alpha(focused ? 1f : 0.78f)
+                .scaleX(focused ? 1.04f : 1f)
+                .scaleY(focused ? 1.04f : 1f)
+                .setDuration(160)
+                .start());
+    }
+
+    public void setListener(Listener listener) {
+        this.listener = listener;
+    }
+
+    public void setState(int count, int selected) {
+        this.count = Math.max(0, count);
+        this.selected = this.count == 0 ? 0 : Math.max(0, Math.min(selected, this.count - 1));
+        setVisibility(this.count > 1 ? VISIBLE : GONE);
+        invalidate();
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+            move(-1);
+            return true;
+        }
+        if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+            move(1);
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    private void move(int direction) {
+        if (count < 2 || listener == null) return;
+        listener.onMove(direction < 0 ? -1 : 1);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        if (count < 2) return;
+        float total = activeWidth + (count - 1) * inactiveWidth + (count - 1) * gap;
+        float left = (getWidth() - total) / 2f;
+        float top = (getHeight() - lineHeight) / 2f;
+        for (int index = 0; index < count; index++) {
+            float width = index == selected ? activeWidth : inactiveWidth;
+            paint.setColor(index == selected ? Color.rgb(255, 187, 130) : Color.argb(92, 255, 255, 255));
+            line.set(left, top, left + width, top + lineHeight);
+            canvas.drawRoundRect(line, lineHeight / 2f, lineHeight / 2f, paint);
+            left += width + gap;
+        }
+    }
+}

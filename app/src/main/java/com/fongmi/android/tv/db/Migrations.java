@@ -49,4 +49,33 @@ public class Migrations {
             database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_Track_key_type` ON `Track` (`key`, `type`)");
         }
     };
+
+    public static final Migration MIGRATION_35_36 = new Migration(35, 36) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("CREATE TABLE IF NOT EXISTS `Repository` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `stableId` TEXT NOT NULL, `name` TEXT NOT NULL, `url` TEXT NOT NULL, `enabled` INTEGER NOT NULL, `priority` INTEGER NOT NULL, `autoSync` INTEGER NOT NULL, `builtIn` INTEGER NOT NULL, `lastSyncAt` INTEGER NOT NULL, `lastSuccessAt` INTEGER NOT NULL, `etag` TEXT NOT NULL, `lastModified` TEXT NOT NULL, `status` TEXT NOT NULL, `errorMessage` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)");
+            database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_Repository_stableId` ON `Repository` (`stableId`)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_Repository_priority` ON `Repository` (`priority`)");
+            database.execSQL("CREATE TABLE IF NOT EXISTS `RepositoryItem` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `repositoryId` INTEGER NOT NULL, `itemId` TEXT NOT NULL, `name` TEXT NOT NULL, `url` TEXT NOT NULL, `type` INTEGER NOT NULL, `sortOrder` INTEGER NOT NULL, `enabled` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, FOREIGN KEY(`repositoryId`) REFERENCES `Repository`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_RepositoryItem_repositoryId` ON `RepositoryItem` (`repositoryId`)");
+            database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_RepositoryItem_repositoryId_url_type` ON `RepositoryItem` (`repositoryId`, `url`, `type`)");
+        }
+    };
+
+    public static final Migration MIGRATION_36_37 = new Migration(36, 37) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("CREATE TABLE IF NOT EXISTS `CloudAccount` (`provider` TEXT NOT NULL, `accountId` TEXT NOT NULL, `displayName` TEXT NOT NULL, `encryptedCredential` TEXT NOT NULL, `credentialType` TEXT NOT NULL, `status` TEXT NOT NULL, `source` TEXT NOT NULL, `updatedAt` INTEGER NOT NULL, `expiresAt` INTEGER NOT NULL, `lastVerifiedAt` INTEGER NOT NULL, PRIMARY KEY(`provider`))");
+        }
+    };
+
+    public static final Migration MIGRATION_37_38 = new Migration(37, 38) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE `Repository` ADD COLUMN `lastFailureAt` INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE `RepositoryItem` ADD COLUMN `checkStatus` TEXT NOT NULL DEFAULT 'UNCHECKED'");
+            database.execSQL("ALTER TABLE `RepositoryItem` ADD COLUMN `lastCheckedAt` INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE `RepositoryItem` ADD COLUMN `errorMessage` TEXT NOT NULL DEFAULT ''");
+        }
+    };
 }

@@ -4,8 +4,10 @@
 
     <corners android:radius="8dp" />
 
+    <solid android:color="#12FFF1DC" />
+
     <stroke
-        android:width="1.5dp"
-        android:color="@color/white" />
+        android:width="2dp"
+        android:color="@color/tv_focus_border" />
 
 </shape>

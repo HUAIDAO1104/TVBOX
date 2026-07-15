@@ -10,7 +10,8 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:indeterminate="true"
-        app:indicatorColor="@color/white" />
+        app:indicatorColor="@color/tv_accent"
+        app:trackColor="@color/tv_progress_track" />
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/traffic"
@@ -18,8 +19,8 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_marginTop="40dp"
-        android:textColor="@color/white"
-        android:textSize="16sp"
+        android:textColor="@color/tv_text_secondary"
+        android:textSize="14sp"
         android:visibility="gone"
         tools:text="120 KB/s"
         tools:visibility="visible" />

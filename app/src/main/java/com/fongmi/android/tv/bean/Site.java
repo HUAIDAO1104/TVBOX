@@ -24,6 +24,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -106,6 +108,40 @@ public class Site implements Parcelable {
     @Ignore
     private boolean selected;
 
+    /**
+     * Runtime-only routing metadata used by aggregate search.  A repository-scoped key is exposed
+     * through {@link #getKey()} so two repositories may safely contain the same original site key,
+     * while {@code originKey} is still passed to third-party Spider implementations that depend on
+     * the key declared by their own configuration.
+     */
+    @Ignore
+    private String originKey;
+
+    @Ignore
+    private long repositoryId;
+
+    @Ignore
+    private String repositoryName;
+
+    @Ignore
+    private String configName;
+
+    @Ignore
+    private String configUrl;
+
+    @Ignore
+    private int repositoryPriority;
+
+    /** Playback settings from the repository config that declared this scoped site. */
+    @Ignore
+    private transient boolean repositoryPlaybackContextBound;
+
+    @Ignore
+    private transient List<String> repositoryFlags;
+
+    @Ignore
+    private transient List<Parse> repositoryParses;
+
     public Site() {
     }
 
@@ -118,13 +154,26 @@ public class Site implements Parcelable {
         this.click = in.readString();
         this.playUrl = in.readString();
         this.type = (Integer) in.readValue(Integer.class.getClassLoader());
+        this.hide = (Integer) in.readValue(Integer.class.getClassLoader());
         this.indexs = (Integer) in.readValue(Integer.class.getClassLoader());
         this.timeout = (Integer) in.readValue(Integer.class.getClassLoader());
         this.searchable = (Integer) in.readValue(Integer.class.getClassLoader());
         this.changeable = (Integer) in.readValue(Integer.class.getClassLoader());
+        this.quickSearch = (Integer) in.readValue(Integer.class.getClassLoader());
         this.categories = in.createStringArrayList();
+        this.header = new HashMap<>();
+        in.readMap(this.header, String.class.getClassLoader());
         this.style = in.readParcelable(Style.class.getClassLoader());
         this.selected = in.readByte() != 0;
+        this.originKey = in.readString();
+        this.repositoryId = in.readLong();
+        this.repositoryName = in.readString();
+        this.configName = in.readString();
+        this.configUrl = in.readString();
+        this.repositoryPriority = in.readInt();
+        this.repositoryPlaybackContextBound = in.readByte() != 0;
+        this.repositoryFlags = immutable(in.createStringArrayList());
+        this.repositoryParses = parseRepositoryParses(in.readString());
     }
 
     public static Site objectFrom(JsonElement element, String spider) {
@@ -156,6 +205,91 @@ public class Site implements Parcelable {
 
     public void setKey(@NonNull String key) {
         this.key = key;
+    }
+
+    public String getOriginKey() {
+        return TextUtils.isEmpty(originKey) ? getKey() : originKey;
+    }
+
+    public void setOriginKey(String originKey) {
+        this.originKey = originKey;
+    }
+
+    public long getRepositoryId() {
+        return repositoryId;
+    }
+
+    public void setRepositoryId(long repositoryId) {
+        this.repositoryId = repositoryId;
+    }
+
+    public String getRepositoryName() {
+        return TextUtils.isEmpty(repositoryName) ? "" : repositoryName;
+    }
+
+    public void setRepositoryName(String repositoryName) {
+        this.repositoryName = repositoryName;
+    }
+
+    public String getConfigName() {
+        return TextUtils.isEmpty(configName) ? "" : configName;
+    }
+
+    public void setConfigName(String configName) {
+        this.configName = configName;
+    }
+
+    public String getConfigUrl() {
+        return TextUtils.isEmpty(configUrl) ? "" : configUrl;
+    }
+
+    public void setConfigUrl(String configUrl) {
+        this.configUrl = configUrl;
+    }
+
+    public int getRepositoryPriority() {
+        return repositoryPriority;
+    }
+
+    public void setRepositoryPriority(int repositoryPriority) {
+        this.repositoryPriority = repositoryPriority;
+    }
+
+    public boolean hasRepositoryPlaybackContext() {
+        return repositoryPlaybackContextBound;
+    }
+
+    public List<String> getRepositoryFlags() {
+        return repositoryFlags == null ? Collections.emptyList() : repositoryFlags;
+    }
+
+    public List<Parse> getRepositoryParses() {
+        return repositoryParses == null ? Collections.emptyList() : repositoryParses;
+    }
+
+    public void setRepositoryPlaybackContext(List<String> flags, List<Parse> parses) {
+        this.repositoryPlaybackContextBound = true;
+        this.repositoryFlags = immutable(flags);
+        this.repositoryParses = immutable(parses);
+    }
+
+    private static <T> List<T> immutable(List<T> items) {
+        if (items == null || items.isEmpty()) return Collections.emptyList();
+        return Collections.unmodifiableList(new ArrayList<>(items));
+    }
+
+    private static List<Parse> parseRepositoryParses(String json) {
+        if (TextUtils.isEmpty(json)) return Collections.emptyList();
+        try {
+            Parse[] parses = App.gson().fromJson(json, Parse[].class);
+            return parses == null ? Collections.emptyList() : immutable(Arrays.asList(parses));
+        } catch (Throwable ignored) {
+            return Collections.emptyList();
+        }
+    }
+
+    public boolean isRepositoryScoped() {
+        return repositoryId != 0 || !TextUtils.isEmpty(originKey);
     }
 
     public String getName() {
@@ -322,12 +456,12 @@ public class Site implements Parcelable {
     }
 
     public Site recent() {
-        BaseLoader.get().setRecent(getKey(), getApi(), getJar());
+        BaseLoader.get().setRecent(getKey(), getApi(), getExt(), getJar());
         return this;
     }
 
     public Spider spider() {
-        return BaseLoader.get().getSpider(getKey(), getApi(), getExt(), getJar());
+        return BaseLoader.get().getSpider(getKey(), getOriginKey(), getApi(), getExt(), getJar());
     }
 
     public void save() {
@@ -361,13 +495,25 @@ public class Site implements Parcelable {
         dest.writeString(this.click);
         dest.writeString(this.playUrl);
         dest.writeValue(this.type);
+        dest.writeValue(this.hide);
         dest.writeValue(this.indexs);
         dest.writeValue(this.timeout);
         dest.writeValue(this.searchable);
         dest.writeValue(this.changeable);
+        dest.writeValue(this.quickSearch);
         dest.writeStringList(this.categories);
+        dest.writeMap(this.header);
         dest.writeParcelable(this.style, flags);
         dest.writeByte(this.selected ? (byte) 1 : (byte) 0);
+        dest.writeString(this.originKey);
+        dest.writeLong(this.repositoryId);
+        dest.writeString(this.repositoryName);
+        dest.writeString(this.configName);
+        dest.writeString(this.configUrl);
+        dest.writeInt(this.repositoryPriority);
+        dest.writeByte(this.repositoryPlaybackContextBound ? (byte) 1 : (byte) 0);
+        dest.writeStringList(getRepositoryFlags());
+        dest.writeString(App.gson().toJson(getRepositoryParses()));
     }
 
     public static final Creator<Site> CREATOR = new Creator<>() {

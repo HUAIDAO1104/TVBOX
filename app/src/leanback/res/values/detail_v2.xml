@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <dimen name="detail_v2_safe_start">64dp</dimen>
+    <dimen name="detail_v2_safe_end">64dp</dimen>
+    <dimen name="detail_v2_copy_width">520dp</dimen>
+    <dimen name="detail_v2_poster_width">220dp</dimen>
+    <dimen name="detail_v2_poster_height">310dp</dimen>
+    <dimen name="detail_v2_button_height">44dp</dimen>
+    <dimen name="detail_v2_episode_height">48dp</dimen>
+    <dimen name="detail_v2_source_height">52dp</dimen>
+
+    <style name="DetailV2.Text.Shadow" parent="">
+        <item name="android:shadowColor">#CC000000</item>
+        <item name="android:shadowDx">0</item>
+        <item name="android:shadowDy">2</item>
+        <item name="android:shadowRadius">5</item>
+    </style>
+
+    <style name="DetailV2.Button.Primary" parent="">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/detail_v2_selector_button_primary</item>
+        <item name="android:drawablePadding">10dp</item>
+        <item name="android:focusable">true</item>
+        <item name="android:focusableInTouchMode">true</item>
+        <item name="android:gravity">center</item>
+        <item name="android:minWidth">176dp</item>
+        <item name="android:minHeight">@dimen/detail_v2_button_height</item>
+        <item name="android:paddingStart">18dp</item>
+        <item name="android:paddingEnd">18dp</item>
+        <item name="android:textColor">@color/tv_text_primary</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="DetailV2.Button.Secondary" parent="">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/detail_v2_selector_button_secondary</item>
+        <item name="android:drawablePadding">8dp</item>
+        <item name="android:focusable">true</item>
+        <item name="android:focusableInTouchMode">true</item>
+        <item name="android:gravity">center</item>
+        <item name="android:minWidth">82dp</item>
+        <item name="android:minHeight">@dimen/detail_v2_button_height</item>
+        <item name="android:paddingStart">13dp</item>
+        <item name="android:paddingEnd">13dp</item>
+        <item name="android:textColor">@color/tv_text_primary</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="PlayerV2.Control" parent="">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:background">@drawable/player_v2_selector_control</item>
+        <item name="android:drawablePadding">8dp</item>
+        <item name="android:focusable">true</item>
+        <item name="android:focusableInTouchMode">true</item>
+        <item name="android:gravity">center</item>
+        <item name="android:minWidth">74dp</item>
+        <item name="android:nextFocusUp">@id/exo_progress</item>
+        <item name="android:paddingStart">15dp</item>
+        <item name="android:paddingEnd">15dp</item>
+        <item name="android:textColor">@color/tv_text_primary</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="PlayerV2.Control.Primary" parent="PlayerV2.Control">
+        <item name="android:minWidth">104dp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="PlayerV2.Control.Secondary" parent="PlayerV2.Control">
+        <item name="android:layout_height">40dp</item>
+        <item name="android:minWidth">66dp</item>
+        <item name="android:textColor">@color/tv_text_secondary</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+</resources>

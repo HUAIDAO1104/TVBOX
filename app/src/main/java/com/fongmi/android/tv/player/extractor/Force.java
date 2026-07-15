@@ -53,7 +53,7 @@ public class Force implements Source.Extractor, ServiceConnection {
         try {
             if (!set.isEmpty()) App.get().unbindService(this);
         } catch (Exception e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
         } finally {
             set.clear();
         }

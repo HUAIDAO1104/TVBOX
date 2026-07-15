@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Unified application mark. The inner glyph is the Apache-2.0 Material Icons
+  "smart_display" path, kept intentionally simple for TV viewing distance.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:name="brand_mark"
+        android:pivotX="54"
+        android:pivotY="54">
+        <path
+            android:fillColor="#18FFFFFF"
+            android:pathData="M54,10A44,44 0,1 1,54 98A44,44 0,1 1,54 10" />
+        <path
+            android:fillColor="#FFAA3B"
+            android:pathData="M30,18H78C84.63,18 90,23.37 90,30V78C90,84.63 84.63,90 78,90H30C23.37,90 18,84.63 18,78V30C18,23.37 23.37,18 30,18Z" />
+        <group
+            android:scaleX="2.4"
+            android:scaleY="2.4"
+            android:translateX="25.2"
+            android:translateY="25.2">
+            <path
+                android:fillColor="#FFFDF8"
+                android:pathData="M21,3H3C1.89,3 1,3.89 1,5V17C1,18.1 1.89,19 3,19H8V21H16V19H21C22.1,19 23,18.1 23,17V5C23,3.89 22.1,3 21,3ZM21,17H3V5H21V17ZM9,8V14L14,11Z" />
+        </group>
+    </group>
+</vector>

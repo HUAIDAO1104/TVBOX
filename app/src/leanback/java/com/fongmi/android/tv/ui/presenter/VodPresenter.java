@@ -23,15 +23,21 @@ public class VodPresenter extends Presenter {
     private final OnClickListener listener;
     private final Style style;
     private final int[] size;
+    private final boolean fitPoster;
 
     public VodPresenter(OnClickListener listener) {
         this(listener, Style.rect());
     }
 
     public VodPresenter(OnClickListener listener, Style style) {
+        this(listener, style, false);
+    }
+
+    public VodPresenter(OnClickListener listener, Style style, boolean fitPoster) {
         this.listener = listener;
         this.style = style;
         this.size = Product.getSpec(style);
+        this.fitPoster = fitPoster;
     }
 
     public interface OnClickListener {
@@ -47,7 +53,7 @@ public class VodPresenter extends Presenter {
         return switch (style.getViewType()) {
             case ViewType.LIST -> new VodListHolder(AdapterVodListBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false), listener);
             case ViewType.OVAL -> new VodOvalHolder(AdapterVodOvalBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false), listener).size(size);
-            default -> new VodRectHolder(AdapterVodRectBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false), listener).size(size);
+            default -> new VodRectHolder(AdapterVodRectBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false), listener, fitPoster).size(size);
         };
     }
 

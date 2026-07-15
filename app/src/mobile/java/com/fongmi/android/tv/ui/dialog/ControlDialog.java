@@ -35,6 +35,7 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
     private List<TextView> scales;
     private PlayerManager player;
     private History history;
+    private String siteKey = "";
     private boolean parse;
 
     public ControlDialog() {
@@ -57,6 +58,11 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
 
     public ControlDialog parse(boolean parse) {
         this.parse = parse;
+        return this;
+    }
+
+    public ControlDialog siteKey(String siteKey) {
+        this.siteKey = siteKey == null ? "" : siteKey;
         return this;
     }
 
@@ -135,7 +141,7 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
         binding.parse.setHasFixedSize(true);
         binding.parse.setItemAnimator(null);
         binding.parse.addItemDecoration(new SpaceItemDecoration(8));
-        binding.parse.setAdapter(new ParseAdapter(this));
+        binding.parse.setAdapter(new ParseAdapter(this, siteKey));
     }
 
     private void setScale(View view) {

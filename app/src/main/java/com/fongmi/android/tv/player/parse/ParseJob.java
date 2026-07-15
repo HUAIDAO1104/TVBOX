@@ -42,12 +42,14 @@ public class ParseJob implements ParseCallback {
     private ExecutorService executor;
     private ExecutorService infinite;
     private ParseCallback callback;
+    private List<Parse> parses;
     private Parse parse;
 
     private ParseJob(ParseCallback callback) {
         this.executor = Executors.newSingleThreadExecutor();
         this.infinite = Executors.newCachedThreadPool();
         this.webViews = new ArrayList<>();
+        this.parses = List.of();
         this.callback = callback;
     }
 
@@ -56,18 +58,33 @@ public class ParseJob implements ParseCallback {
     }
 
     public ParseJob start(Result result, boolean useParse) {
+        parses = new ArrayList<>(VodConfig.get().getPlaybackParses(result.getKey()));
         setParse(result, useParse);
         execute(result);
         return this;
     }
 
     private void setParse(Result result, boolean useParse) {
-        if (useParse) parse = VodConfig.get().getParse();
-        if (result.getPlayUrl().startsWith("json:")) parse = Parse.get(1, result.getPlayUrl().substring(5));
-        if (result.getPlayUrl().startsWith("parse:")) parse = VodConfig.get().getParse(result.getPlayUrl().substring(6));
-        if (parse == null || parse.isEmpty()) parse = Parse.get(0, result.getPlayUrl());
+        Parse selected = useParse ? VodConfig.get().getPlaybackParse(result.getKey()) : null;
+        if (result.getPlayUrl().startsWith("json:")) {
+            selected = Parse.get(1, result.getPlayUrl().substring(5));
+        }
+        if (result.getPlayUrl().startsWith("parse:")) {
+            selected = VodConfig.get().getPlaybackParse(result.getKey(),
+                    result.getPlayUrl().substring(6));
+        }
+        if (selected == null || selected.isEmpty()) selected = Parse.get(0, result.getPlayUrl());
+        parse = copy(selected);
         parse.setHeader(result.getHeader());
         parse.setClick(getClick(result));
+    }
+
+    private Parse copy(Parse source) {
+        try {
+            return Parse.objectFrom(App.gson().toJsonTree(source));
+        } catch (Throwable ignored) {
+            return source;
+        }
     }
 
     private String getClick(Result result) {
@@ -125,19 +142,19 @@ public class ParseJob implements ParseCallback {
 
     private void jsonExtend(String webUrl) throws Throwable {
         LinkedHashMap<String, String> jxs = new LinkedHashMap<>();
-        for (Parse item : VodConfig.get().getParses()) if (item.getType() == 1) jxs.put(item.getName(), item.extUrl());
+        for (Parse item : parses) if (item.getType() == 1) jxs.put(item.getName(), item.extUrl());
         checkResult(Result.fromObject(BaseLoader.get().jsonExt(parse.getUrl(), jxs, webUrl)));
     }
 
     private void jsonMix(String webUrl, String flag) throws Throwable {
         LinkedHashMap<String, HashMap<String, String>> jxs = new LinkedHashMap<>();
-        for (Parse item : VodConfig.get().getParses()) jxs.put(item.getName(), item.mixMap());
+        for (Parse item : parses) jxs.put(item.getName(), item.mixMap());
         checkResult(Result.fromObject(BaseLoader.get().jsonExtMix(flag, parse.getUrl(), parse.getName(), jxs, webUrl)));
     }
 
     private void superParse(String webUrl, String flag) throws Exception {
-        List<Parse> json = VodConfig.get().getParses(1, flag);
-        List<Parse> webs = VodConfig.get().getParses(0, flag);
+        List<Parse> json = filterParses(1, flag);
+        List<Parse> webs = filterParses(0, flag);
         int count = json.size() + (webs.isEmpty() ? 0 : 1);
         CountDownLatch latch = new CountDownLatch(count);
         for (Parse item : json) infinite.execute(() -> jsonParse(latch, item, webUrl));
@@ -146,11 +163,19 @@ public class ParseJob implements ParseCallback {
         onParseError();
     }
 
+    private List<Parse> filterParses(int type, String flag) {
+        List<Parse> items = parses.stream().filter(item -> item.getType() == type).toList();
+        List<Parse> filtered = items.stream()
+                .filter(item -> item.getExt().getFlag().contains(flag))
+                .toList();
+        return filtered.isEmpty() ? items : filtered;
+    }
+
     private void jsonParse(CountDownLatch latch, Parse item, String webUrl) {
         try {
             jsonParse(item, webUrl, false);
         } catch (Exception e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
         } finally {
             latch.countDown();
         }

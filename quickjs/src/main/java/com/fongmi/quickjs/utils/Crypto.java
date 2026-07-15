@@ -21,7 +21,7 @@ public class Crypto {
         try {
             return Util.md5(text);
         } catch (Exception e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
             return "";
         }
     }
@@ -39,7 +39,7 @@ public class Crypto {
             byte[] inBuf = inBase64 ? Base64.decode(input.replaceAll("_", "/").replaceAll("-", "+"), Base64.DEFAULT) : input.getBytes(StandardCharsets.UTF_8);
             return outBase64 ? Base64.encodeToString(cipher.doFinal(inBuf), Base64.NO_WRAP) : new String(cipher.doFinal(inBuf), StandardCharsets.UTF_8);
         } catch (Exception e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
             return "";
         }
     }
@@ -56,7 +56,7 @@ public class Crypto {
             byte[] outBytes = cipher.doFinal(inBytes);
             return outBase64 ? Base64.encodeToString(outBytes, Base64.NO_WRAP) : new String(outBytes, StandardCharsets.UTF_8);
         } catch (Exception e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
             return "";
         }
     }

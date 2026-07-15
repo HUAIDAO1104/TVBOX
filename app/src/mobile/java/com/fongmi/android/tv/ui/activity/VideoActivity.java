@@ -234,6 +234,11 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         return getIntent().getBooleanExtra("collect", false);
     }
 
+    @Override
+    public boolean shouldAutoPlayOnDetail() {
+        return true;
+    }
+
     private boolean isAutoRotate() {
         return Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0) == 1;
     }
@@ -496,6 +501,13 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     @Override
+    public boolean tryNextDetailSource() {
+        // Ranked cross-repository candidates are only attached by the TV aggregate-search flow.
+        // Mobile keeps its existing detail fallback/search behavior.
+        return false;
+    }
+
+    @Override
     public void requestPlayer(VodPlayRequest request) {
         mBinding.control.title.setText(getString(R.string.detail_title, mBinding.name.getText(), request.getTitle()));
         mViewModel.playerContent(request.getKey(), request.getFlag(), request.getId());
@@ -664,6 +676,12 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     @Override
     public void onSearchResult() {
         App.removeCallbacks(mR4);
+    }
+
+    @Override
+    public void onSearchEmpty() {
+        App.removeCallbacks(mR4);
+        showError(getString(R.string.error_detail));
     }
 
     @Override
@@ -873,7 +891,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void onSetting() {
-        ControlDialog.create().parent(mBinding).history(mHistory).parse(isUseParse()).player(player()).show(this);
+        ControlDialog.create().parent(mBinding).history(mHistory).siteKey(getKey()).parse(isUseParse()).player(player()).show(this);
     }
 
     private void onLock() {
@@ -944,7 +962,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void onParse() {
-        ParseDialog.create().show(this);
+        ParseDialog.create().siteKey(getKey()).show(this);
         hideControl();
     }
 

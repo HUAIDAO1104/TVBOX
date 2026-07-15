@@ -1,0 +1,24 @@
+{
+  "version": 4,
+  "repositories": [
+    {
+      "stableId": "default-qist-tvbox",
+      "name": "内置内容仓库",
+      "url": "https://raw.githubusercontent.com/qist/tvbox/master/fty.json",
+      "enabled": true,
+      "priority": 0,
+      "autoSync": true,
+      "builtIn": true,
+      "items": [
+        {
+          "id": "direct",
+          "name": "饭太硬",
+          "url": "https://raw.githubusercontent.com/qist/tvbox/master/fty.json",
+          "type": 0,
+          "enabled": true,
+          "order": 0
+        }
+      ]
+    }
+  ]
+}

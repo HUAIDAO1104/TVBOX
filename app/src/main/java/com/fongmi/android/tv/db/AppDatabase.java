@@ -7,21 +7,32 @@ import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
 import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.api.config.LiveConfig;
+import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Backup;
 import com.fongmi.android.tv.bean.Config;
+import com.fongmi.android.tv.bean.CloudAccount;
 import com.fongmi.android.tv.bean.Device;
 import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.bean.Keep;
 import com.fongmi.android.tv.bean.Live;
+import com.fongmi.android.tv.bean.Repository;
+import com.fongmi.android.tv.bean.RepositoryItem;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.bean.Track;
+import com.fongmi.android.tv.cloud.CloudCredentialBridge;
 import com.fongmi.android.tv.db.dao.ConfigDao;
+import com.fongmi.android.tv.db.dao.CloudAccountDao;
 import com.fongmi.android.tv.db.dao.DeviceDao;
 import com.fongmi.android.tv.db.dao.HistoryDao;
 import com.fongmi.android.tv.db.dao.KeepDao;
 import com.fongmi.android.tv.db.dao.LiveDao;
+import com.fongmi.android.tv.db.dao.RepositoryDao;
+import com.fongmi.android.tv.db.dao.RepositoryItemDao;
 import com.fongmi.android.tv.db.dao.SiteDao;
 import com.fongmi.android.tv.db.dao.TrackDao;
+import com.fongmi.android.tv.event.RefreshEvent;
+import com.fongmi.android.tv.repository.RepositoryManager;
 import com.fongmi.android.tv.utils.FileUtil;
 import com.fongmi.android.tv.utils.Formatters;
 import com.fongmi.android.tv.utils.Task;
@@ -32,10 +43,10 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-@Database(entities = {Keep.class, Site.class, Live.class, Track.class, Config.class, Device.class, History.class}, version = AppDatabase.VERSION)
+@Database(entities = {Keep.class, Site.class, Live.class, Track.class, Config.class, Device.class, History.class, Repository.class, RepositoryItem.class, CloudAccount.class}, version = AppDatabase.VERSION)
 public abstract class AppDatabase extends RoomDatabase {
 
-    public static final int VERSION = 35;
+    public static final int VERSION = 38;
     public static final String NAME = "tv";
     public static final String SYMBOL = "@@@";
 
@@ -68,14 +79,38 @@ public abstract class AppDatabase extends RoomDatabase {
     public static void restore(File file, com.fongmi.android.tv.impl.Callback callback) {
         Task.execute(() -> {
             File restore = Path.cache("restore");
-            FileUtil.gzipDecompress(file, restore);
-            Backup backup = Backup.objectFrom(Path.read(restore));
-            if (backup.getConfig().isEmpty()) {
-                App.post(callback::error);
-            } else {
+            try {
+                FileUtil.gzipDecompress(file, restore);
+                Backup backup = Backup.objectFrom(Path.read(restore));
+                if (backup.getConfig().isEmpty()) {
+                    App.post(callback::error);
+                    return;
+                }
                 backup.restore();
+                CloudCredentialBridge.clear();
+                RepositoryManager.get().reinitializeAfterRestore();
+                LiveConfig.load(Config.live(), new com.fongmi.android.tv.impl.Callback());
+                VodConfig.load(Config.vod(), new com.fongmi.android.tv.impl.Callback() {
+                    private void complete() {
+                        RefreshEvent.home();
+                        RefreshEvent.category();
+                        App.post(callback::success);
+                    }
+
+                    @Override
+                    public void success() {
+                        complete();
+                    }
+
+                    @Override
+                    public void error(String msg) {
+                        complete();
+                    }
+                });
+            } catch (Throwable error) {
+                App.post(callback::error);
+            } finally {
                 Path.clear(restore);
-                App.post(callback::success);
             }
         });
     }
@@ -96,7 +131,9 @@ public abstract class AppDatabase extends RoomDatabase {
                 .addMigrations(Migrations.MIGRATION_32_33)
                 .addMigrations(Migrations.MIGRATION_33_34)
                 .addMigrations(Migrations.MIGRATION_34_35)
-                .fallbackToDestructiveMigration(true)
+                .addMigrations(Migrations.MIGRATION_35_36)
+                .addMigrations(Migrations.MIGRATION_36_37)
+                .addMigrations(Migrations.MIGRATION_37_38)
                 .allowMainThreadQueries().build();
     }
 
@@ -113,4 +150,10 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract DeviceDao getDeviceDao();
 
     public abstract HistoryDao getHistoryDao();
+
+    public abstract RepositoryDao getRepositoryDao();
+
+    public abstract RepositoryItemDao getRepositoryItemDao();
+
+    public abstract CloudAccountDao getCloudAccountDao();
 }

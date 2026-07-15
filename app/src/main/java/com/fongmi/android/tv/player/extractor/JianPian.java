@@ -49,7 +49,7 @@ public class JianPian implements Source.Extractor {
             path = path.replace("xg://", "ftp://").replace("xgplay://", "ftp://");
             p2p.P2Pdoxstart(path.getBytes("GBK"));
         } catch (Exception e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
         }
     }
 
@@ -59,7 +59,7 @@ public class JianPian implements Source.Extractor {
             if (p2p == null || path == null) return;
             p2p.P2Pdoxpause(path.getBytes("GBK"));
         } catch (Exception e) {
-            e.printStackTrace();
+            com.github.catvod.crawler.SpiderDebug.log(e);
         } finally {
             path = null;
         }
