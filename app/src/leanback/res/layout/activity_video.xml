@@ -407,15 +407,15 @@
             app:shutter_background_color="@color/transparent"
             app:surface_type="none" />
 
-        <androidx.appcompat.widget.AppCompatImageView
+        <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/detailPoster"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@drawable/detail_v2_poster_surface"
-            android:clipToOutline="true"
+            android:background="@android:color/transparent"
             android:contentDescription="@string/home_featured_poster"
             android:padding="1dp"
-            android:scaleType="fitCenter" />
+            android:scaleType="centerCrop"
+            app:shapeAppearanceOverlay="@style/Tv.Poster" />
 
         <include
             android:id="@+id/widget"

@@ -35,6 +35,7 @@ import com.fongmi.android.tv.model.SearchSnapshot;
 import com.fongmi.android.tv.model.SiteViewModel;
 import com.fongmi.android.tv.playback.vod.DetailSourceFallbackPolicy;
 import com.fongmi.android.tv.setting.Setting;
+import com.fongmi.android.tv.ui.adapter.SearchSourceFamilyAdapter;
 import com.fongmi.android.tv.ui.adapter.SearchSourcePanelAdapter;
 import com.fongmi.android.tv.ui.adapter.SearchWorkAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
@@ -53,26 +54,32 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class CollectActivity extends BaseActivity implements SearchWorkAdapter.Listener, SearchSourcePanelAdapter.Listener {
+public class CollectActivity extends BaseActivity implements SearchWorkAdapter.Listener,
+        SearchSourcePanelAdapter.Listener, SearchSourceFamilyAdapter.Listener {
 
     // Five columns keep 3:4 posters readable at TV distance while retaining two visible rows.
     private static final int COLUMN_COUNT = 5;
     private static final String STATE_WORK_ID = "aggregate_search_work_id";
     private static final String STATE_SOURCE_ID = "aggregate_search_source_id";
     private static final String STATE_LAYOUT = "aggregate_search_layout";
+    private static final String STATE_SOURCE_FAMILY = "aggregate_search_source_family";
+    private static final String SOURCE_FAMILY_ALL = "source-family-all";
     private static final Pattern EPISODE_COUNT = Pattern.compile("(?:全|更新至|至)?\\s*(\\d{1,4})\\s*(?:集|期)");
 
     private ActivityCollectBinding binding;
     private SiteViewModel viewModel;
     private SearchWorkAdapter workAdapter;
     private SearchSourcePanelAdapter sourceAdapter;
+    private SearchSourceFamilyAdapter sourceFamilyAdapter;
     private SearchAggregator aggregator;
+    private SearchSnapshot latestSnapshot;
     private SearchProgress progress = SearchProgress.idle();
     private final Map<String, Vod> vodBySource = new LinkedHashMap<>();
     private String selectedWorkId;
@@ -81,6 +88,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
     private String pendingRestoreWorkId;
     private String pendingRestoreSourceId;
     private Parcelable pendingLayoutState;
+    private String activeSourceFamily = SOURCE_FAMILY_ALL;
 
     private enum SearchUiState {
         IDLE, SEARCHING, PARTIAL_SUCCESS, SUCCESS, EMPTY, CANCELLED, ERROR
@@ -107,6 +115,9 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         pendingRestoreWorkId = savedInstanceState == null ? null : savedInstanceState.getString(STATE_WORK_ID);
         pendingRestoreSourceId = savedInstanceState == null ? null : savedInstanceState.getString(STATE_SOURCE_ID);
         pendingLayoutState = savedInstanceState == null ? null : savedInstanceState.getParcelable(STATE_LAYOUT);
+        activeSourceFamily = savedInstanceState == null
+                ? SOURCE_FAMILY_ALL
+                : savedInstanceState.getString(STATE_SOURCE_FAMILY, SOURCE_FAMILY_ALL);
         setupLists();
         setupViewModel();
         saveKeyword();
@@ -135,6 +146,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         pendingRestoreWorkId = null;
         pendingRestoreSourceId = null;
         pendingLayoutState = null;
+        activeSourceFamily = SOURCE_FAMILY_ALL;
         resetAndSearch(false);
         binding.back.requestFocus();
     }
@@ -151,6 +163,11 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         binding.resultRecycler.setItemViewCacheSize(COLUMN_COUNT * 2);
         binding.resultRecycler.setAdapter(workAdapter = new SearchWorkAdapter(this, COLUMN_COUNT));
 
+        binding.sourceFamilyRecycler.setItemAnimator(null);
+        binding.sourceFamilyRecycler.setPreserveFocusAfterLayout(true);
+        binding.sourceFamilyRecycler.setLayoutManager(new LinearLayoutManager(this));
+        binding.sourceFamilyRecycler.setAdapter(sourceFamilyAdapter = new SearchSourceFamilyAdapter(this));
+
         binding.sourceRecycler.setItemAnimator(null);
         binding.sourceRecycler.setPreserveFocusAfterLayout(true);
         binding.sourceRecycler.setLayoutManager(new LinearLayoutManager(this));
@@ -164,6 +181,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
             if (value == null) return;
             progress = value;
             renderState(resolveState(value));
+            updateSourceFamilyLane();
             restoreFocusIfPossible();
         });
     }
@@ -172,6 +190,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         viewModel.stopSearch();
         closeSourcePanel(false);
         aggregator = new SearchAggregator(getKeyword());
+        latestSnapshot = null;
         vodBySource.clear();
         selectedWorkId = null;
         selectedSourceId = null;
@@ -179,6 +198,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         progress = SearchProgress.idle();
         binding.result.setText(getString(R.string.collect_result, getKeyword()));
         updateSourceFilterLabel();
+        updateSourceFamilyLane();
         renderState(SearchUiState.IDLE);
         Set<String> selectedSources = SearchSourcePreference.parse(Setting.getSearchSources());
         viewModel.searchAllContent(getKeyword(), false,
@@ -266,13 +286,21 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
 
     private void applySearchSnapshot(SearchSnapshot snapshot) {
         if (snapshot == null || aggregator == null) return;
+        latestSnapshot = snapshot;
+        rebuildForActiveSource();
+    }
+
+    private void rebuildForActiveSource() {
         SearchAggregator rebuilt = new SearchAggregator(getKeyword());
         Map<String, Vod> rebuiltSources = new LinkedHashMap<>();
         SearchRelevance relevance = new SearchRelevance();
-        for (Result result : snapshot.results()) {
+        List<Result> results = latestSnapshot == null ? List.of() : latestSnapshot.results();
+        for (Result result : results) {
             List<Vod> items = new ArrayList<>(result.getList());
             items.sort(Comparator.comparingInt((Vod vod) -> relevance.score(getKeyword(), vod.getName())).reversed());
             for (Vod vod : items) {
+                Site site = vod.getSite() == null ? new Site() : vod.getSite();
+                if (!matchesSourceFamily(site, activeSourceFamily)) continue;
                 SearchSource source = sourceFrom(vod);
                 SearchAggregator.Update update = rebuilt.add(source);
                 if (update.changed()) rebuiltSources.put(source.stableId(), vod);
@@ -282,6 +310,79 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         vodBySource.clear();
         vodBySource.putAll(rebuiltSources);
         submitWorks();
+        updateSourceFamilyLane();
+        renderState(resolveState(progress));
+    }
+
+    private boolean matchesSourceFamily(Site site, String family) {
+        if (SOURCE_FAMILY_ALL.equals(family)) return true;
+        if (SearchSourcePreference.ALL_OTHER_SOURCES.equals(family)) {
+            for (String preferred : SearchSourcePreference.DEFAULT_SOURCES) {
+                if (SearchSourcePreference.isEnabled(site, Set.of(preferred))) return false;
+            }
+            return true;
+        }
+        return SearchSourcePreference.isEnabled(site, Set.of(family));
+    }
+
+    private void updateSourceFamilyLane() {
+        if (sourceFamilyAdapter == null) return;
+        Set<String> enabled = SearchSourcePreference.parse(Setting.getSearchSources());
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        counts.put(SOURCE_FAMILY_ALL, 0);
+        for (String family : enabled) counts.put(family, 0);
+        if (latestSnapshot != null) {
+            for (Result result : latestSnapshot.results()) {
+                for (Vod vod : result.getList()) {
+                    Site site = vod.getSite() == null ? new Site() : vod.getSite();
+                    counts.computeIfPresent(SOURCE_FAMILY_ALL, (key, count) -> count + 1);
+                    for (String family : enabled) {
+                        if (matchesSourceFamily(site, family)) {
+                            counts.computeIfPresent(family, (key, count) -> count + 1);
+                        }
+                    }
+                }
+            }
+        }
+        if (!SOURCE_FAMILY_ALL.equals(activeSourceFamily) && !enabled.contains(activeSourceFamily)) {
+            activeSourceFamily = SOURCE_FAMILY_ALL;
+        }
+        List<SearchSourceFamilyAdapter.Item> items = new ArrayList<>();
+        items.add(sourceFamilyItem(SOURCE_FAMILY_ALL, getString(R.string.search_v2_source_lane_all),
+                counts.getOrDefault(SOURCE_FAMILY_ALL, 0)));
+        for (String family : enabled) {
+            String label;
+            if (SearchSourcePreference.ALL_OTHER_SOURCES.equals(family)) {
+                label = getString(R.string.search_v2_source_filter_other);
+            } else {
+                label = family + (SearchSourcePreference.isFourKDefault(family) ? " · 4K" : "");
+            }
+            items.add(sourceFamilyItem(family, label, counts.getOrDefault(family, 0)));
+        }
+        sourceFamilyAdapter.submit(items);
+    }
+
+    private SearchSourceFamilyAdapter.Item sourceFamilyItem(String id, String label, int count) {
+        String status = progress.running() && count == 0
+                ? getString(R.string.search_v2_source_lane_searching)
+                : String.valueOf(count);
+        return new SearchSourceFamilyAdapter.Item(id, label, status, id.equals(activeSourceFamily));
+    }
+
+    @Override
+    public void onSelect(SearchSourceFamilyAdapter.Item item) {
+        if (item == null || item.id().equals(activeSourceFamily)) return;
+        closeSourcePanel(false);
+        activeSourceFamily = item.id();
+        selectedWorkId = null;
+        selectedSourceId = null;
+        binding.resultArea.animate().cancel();
+        binding.resultArea.animate().alpha(0.18f).setDuration(90).withEndAction(() -> {
+            rebuildForActiveSource();
+            binding.resultRecycler.scrollToPosition(0);
+            binding.resultArea.animate().alpha(1f).setDuration(180).start();
+            if (workAdapter.getItemCount() > 0) focusWork(null, null);
+        }).start();
     }
 
     private SearchSource sourceFrom(Vod vod) {
@@ -326,7 +427,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
     }
 
     private boolean requiresLogin(Site site) {
-        String value = (site.getName() + " " + site.getConfigName()).toLowerCase();
+        String value = (site.getName() + " " + site.getConfigName()).toLowerCase(Locale.ROOT);
         return value.contains("网盘") || value.contains("云盘") || value.contains("夸克")
                 || value.contains("uc") || value.contains("阿里") || value.contains("迅雷");
     }
@@ -403,6 +504,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
             return value.failed() + value.timedOut() > 0 ? SearchUiState.PARTIAL_SUCCESS : SearchUiState.SUCCESS;
         }
         if (value.session() == 0) return SearchUiState.IDLE;
+        if (!SOURCE_FAMILY_ALL.equals(activeSourceFamily)) return SearchUiState.EMPTY;
         if (value.failed() + value.timedOut() > 0) return SearchUiState.ERROR;
         return SearchUiState.EMPTY;
     }
@@ -661,6 +763,18 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         }
     }
 
+    private void focusActiveSourceFamily() {
+        int position = sourceFamilyAdapter.positionOf(activeSourceFamily);
+        if (position < 0) position = 0;
+        int target = position;
+        binding.sourceFamilyRecycler.scrollToPosition(target);
+        binding.sourceFamilyRecycler.post(() -> {
+            RecyclerView.ViewHolder holder = binding.sourceFamilyRecycler.findViewHolderForAdapterPosition(target);
+            if (holder != null) holder.itemView.requestFocus();
+            else binding.sourceFamilyRecycler.requestFocus();
+        });
+    }
+
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
@@ -674,13 +788,28 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
                 return true;
             }
             View focus = getCurrentFocus();
-            if ((focus == binding.back || focus == binding.stop || focus == binding.sourceFilter)
-                    && code == KeyEvent.KEYCODE_DPAD_DOWN) {
+            if (focus == binding.back && code == KeyEvent.KEYCODE_DPAD_DOWN) {
+                focusActiveSourceFamily();
+                return true;
+            }
+            if ((focus == binding.stop || focus == binding.sourceFilter) && code == KeyEvent.KEYCODE_DPAD_DOWN) {
                 focusPrimaryContent();
                 return true;
             }
             RecyclerView.ViewHolder holder = focus == null ? null : binding.resultRecycler.findContainingViewHolder(focus);
             if (holder != null && holder.getBindingAdapterPosition() < COLUMN_COUNT && code == KeyEvent.KEYCODE_DPAD_UP) {
+                binding.back.requestFocus();
+                return true;
+            }
+            if (holder != null && holder.getBindingAdapterPosition() % COLUMN_COUNT == 0
+                    && code == KeyEvent.KEYCODE_DPAD_LEFT) {
+                focusActiveSourceFamily();
+                return true;
+            }
+            RecyclerView.ViewHolder familyHolder = focus == null
+                    ? null : binding.sourceFamilyRecycler.findContainingViewHolder(focus);
+            if (familyHolder != null && familyHolder.getBindingAdapterPosition() == 0
+                    && code == KeyEvent.KEYCODE_DPAD_UP) {
                 binding.back.requestFocus();
                 return true;
             }
@@ -695,6 +824,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         if (workId != null) outState.putString(STATE_WORK_ID, workId);
         String sourceId = focusedWorkSourceId();
         if (sourceId != null) outState.putString(STATE_SOURCE_ID, sourceId);
+        outState.putString(STATE_SOURCE_FAMILY, activeSourceFamily);
         RecyclerView.LayoutManager manager = binding.resultRecycler.getLayoutManager();
         if (manager != null) outState.putParcelable(STATE_LAYOUT, manager.onSaveInstanceState());
     }

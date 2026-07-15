@@ -214,6 +214,9 @@
     <string name="search_v2_network_title">网络未连接</string>
     <string name="search_v2_network_message">请恢复设备网络后重新搜索；页面不会用无关推荐代替结果。</string>
     <string name="search_v2_source_filter_title">选择搜索源</string>
+    <string name="search_v2_source_lane_title">播放源</string>
+    <string name="search_v2_source_lane_all">全部</string>
+    <string name="search_v2_source_lane_searching">搜索中</string>
     <string name="search_v2_source_filter_count">搜索源 %1$d</string>
     <string name="search_v2_source_filter_apply">应用并搜索</string>
     <string name="search_v2_source_filter_default">恢复默认</string>

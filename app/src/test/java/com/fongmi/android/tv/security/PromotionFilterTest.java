@@ -16,6 +16,8 @@ public class PromotionFilterTest {
         assertTrue(PromotionFilter.shouldSuppress("请关注王小二"));
         assertTrue(PromotionFilter.shouldSuppress("请关注公众号"));
         assertTrue(PromotionFilter.shouldSuppress("关注gzh获取最新消息"));
+        assertTrue(PromotionFilter.shouldSuppress("本接口完全免费，请勿上当"));
+        assertTrue(PromotionFilter.shouldSuppress("王二小 · 免费线路"));
         assertTrue(PromotionFilter.shouldSuppress("请扫码加群"));
         assertFalse(PromotionFilter.shouldSuppress("配置加载失败，请重试"));
         assertFalse(PromotionFilter.shouldSuppress("仓库刷新失败，已使用缓存"));

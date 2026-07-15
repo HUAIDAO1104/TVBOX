@@ -372,18 +372,17 @@
                                 android:layout_gravity="center"
                                 android:background="@android:color/transparent"
                                 android:contentDescription="@string/home_featured_poster"
-                                android:scaleType="fitCenter"
+                                android:scaleType="centerCrop"
                                 app:shapeAppearanceOverlay="@style/Tv.Poster.Small" />
 
                         </FrameLayout>
 
                         <com.fongmi.android.tv.ui.home.HomeCarouselIndicatorView
                             android:id="@+id/featuredIndicator"
-                            android:layout_width="154dp"
+                            android:layout_width="138dp"
                             android:layout_height="28dp"
-                            android:layout_gravity="bottom|end"
-                            android:layout_marginEnd="155dp"
-                            android:layout_marginBottom="2dp"
+                            android:layout_gravity="bottom|center_horizontal"
+                            android:layout_marginBottom="12dp"
                             android:alpha="0.78"
                             android:nextFocusLeft="@id/detail"
                             android:nextFocusUp="@id/detail"

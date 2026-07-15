@@ -215,6 +215,9 @@
     <string name="search_v2_network_title">Network unavailable</string>
     <string name="search_v2_network_message">Reconnect the device, then search again. No unrelated recommendations were inserted.</string>
     <string name="search_v2_source_filter_title">Search sources</string>
+    <string name="search_v2_source_lane_title">Playback sources</string>
+    <string name="search_v2_source_lane_all">All</string>
+    <string name="search_v2_source_lane_searching">Searching</string>
     <string name="search_v2_source_filter_count">Sources %1$d</string>
     <string name="search_v2_source_filter_apply">Apply and search</string>
     <string name="search_v2_source_filter_default">Restore defaults</string>

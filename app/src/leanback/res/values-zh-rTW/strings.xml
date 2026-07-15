@@ -214,6 +214,9 @@
     <string name="search_v2_network_title">網路未連線</string>
     <string name="search_v2_network_message">請恢復裝置網路後重新搜尋；頁面不會以無關推薦取代結果。</string>
     <string name="search_v2_source_filter_title">選擇搜尋來源</string>
+    <string name="search_v2_source_lane_title">播放來源</string>
+    <string name="search_v2_source_lane_all">全部</string>
+    <string name="search_v2_source_lane_searching">搜尋中</string>
     <string name="search_v2_source_filter_count">搜尋來源 %1$d</string>
     <string name="search_v2_source_filter_apply">套用並搜尋</string>
     <string name="search_v2_source_filter_default">恢復預設</string>

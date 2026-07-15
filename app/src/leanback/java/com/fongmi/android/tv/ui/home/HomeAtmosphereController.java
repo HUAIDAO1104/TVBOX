@@ -13,6 +13,7 @@ import androidx.core.graphics.ColorUtils;
 import androidx.palette.graphics.Palette;
 
 import com.bumptech.glide.Glide;
+import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.impl.CustomTarget;
@@ -112,7 +113,7 @@ public class HomeAtmosphereController {
 
     private void clearTarget() {
         if (paletteTarget == null) return;
-        Glide.with(baseTarget).clear(paletteTarget);
+        Glide.with(App.get()).clear(paletteTarget);
         paletteTarget = null;
     }
 

@@ -7,9 +7,11 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.TextUtils;
 import android.view.View;
+import android.view.animation.Interpolator;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.transition.Transition;
@@ -36,6 +38,7 @@ public class HomeFeaturedController {
     private static final int MAX_CAROUSEL_ITEMS = 6;
     private static final long AUTO_INTERVAL_MS = 8000L;
     private static final long INTERACTION_HOLD_MS = 12000L;
+    private static final Interpolator HERO_EASING = new FastOutSlowInInterpolator();
 
     public interface Listener {
         void onFeaturedOpen(Vod item);
@@ -52,6 +55,7 @@ public class HomeFeaturedController {
     private final int debounceMs;
     private final List<Vod> carouselItems = new ArrayList<>();
     private final Runnable autoAdvance = this::advance;
+    private final Runnable preloadNext = this::preloadNextPoster;
     private CustomTarget<Bitmap> auraTarget;
     private String auraKey = "";
     private Runnable pendingFocus;
@@ -138,6 +142,8 @@ public class HomeFeaturedController {
         Vod cached = detailCache.get(key(item));
         transitionTo(cached == null ? item : cached);
         if (cached == null) requestDetail(item);
+        App.removeCallbacks(preloadNext);
+        App.post(preloadNext, 1200L);
     }
 
     private void advance() {
@@ -178,6 +184,14 @@ public class HomeFeaturedController {
 
     private void transitionTo(Vod item) {
         if (item == null) return;
+        if (current == null) {
+            bind(item);
+            binding.featuredInfo.setAlpha(1f);
+            binding.featuredPoster.setAlpha(1f);
+            binding.featuredPoster.setScaleX(1f);
+            binding.featuredPoster.setScaleY(1f);
+            return;
+        }
         if (current != null && key(current).equals(key(item))) {
             bind(item);
             return;
@@ -185,17 +199,43 @@ public class HomeFeaturedController {
         int token = ++renderToken;
         binding.featuredInfo.animate().cancel();
         binding.featuredPoster.animate().cancel();
-        binding.featuredInfo.animate().alpha(0.58f).translationX(-8f).setDuration(105).withEndAction(() -> {
+        binding.featuredPoster.animate()
+                .alpha(0.16f)
+                .scaleX(0.985f)
+                .scaleY(0.985f)
+                .setInterpolator(HERO_EASING)
+                .setDuration(150)
+                .start();
+        binding.featuredInfo.animate()
+                .alpha(0.12f)
+                .setInterpolator(HERO_EASING)
+                .setDuration(145)
+                .withEndAction(() -> {
             if (token != renderToken) return;
             bind(item);
-            binding.featuredInfo.setTranslationX(10f);
-            binding.featuredInfo.animate().alpha(1f).translationX(0f).setDuration(260).start();
+            binding.featuredInfo.animate()
+                    .alpha(1f)
+                    .setInterpolator(HERO_EASING)
+                    .setDuration(300)
+                    .start();
+            binding.featuredPoster.animate()
+                    .alpha(1f)
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .setInterpolator(HERO_EASING)
+                    .setDuration(320)
+                    .start();
         }).start();
-        binding.featuredPoster.animate().alpha(0.42f).scaleX(0.985f).scaleY(0.985f).setDuration(105)
-                .withEndAction(() -> {
-                    if (token != renderToken) return;
-                    binding.featuredPoster.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(280).start();
-                }).start();
+    }
+
+    private void preloadNextPoster() {
+        if (carouselItems.size() < 2) return;
+        Vod next = carouselItems.get((currentIndex + 1) % carouselItems.size());
+        if (next.getPic().isEmpty()) return;
+        Glide.with(binding.featuredPoster)
+                .load(ImgUtil.getUrl(next.getPic()))
+                .centerCrop()
+                .preload();
     }
 
     private void bind(Vod item) {
@@ -309,7 +349,7 @@ public class HomeFeaturedController {
     private void clearAuraTarget() {
         auraKey = "";
         if (auraTarget == null) return;
-        Glide.with(binding.featuredPosterAura).clear(auraTarget);
+        Glide.with(App.get()).clear(auraTarget);
         auraTarget = null;
     }
 
@@ -351,6 +391,7 @@ public class HomeFeaturedController {
         current = null;
         renderToken++;
         cancelAuto();
+        App.removeCallbacks(preloadNext);
         clearAuraTarget();
         binding.featuredIndicator.setState(0, 0);
         binding.heroStage.setVisibility(View.GONE);
@@ -359,8 +400,9 @@ public class HomeFeaturedController {
 
     public void destroy() {
         stopAuto();
+        App.removeCallbacks(preloadNext);
         if (pendingFocus != null) App.removeCallbacks(pendingFocus);
-        Glide.with(binding.featuredPoster).clear(binding.featuredPoster);
+        Glide.with(App.get()).clear(binding.featuredPoster);
         clearAuraTarget();
         atmosphere.destroy();
     }

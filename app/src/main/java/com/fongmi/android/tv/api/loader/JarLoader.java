@@ -76,7 +76,7 @@ public class JarLoader {
         try {
             Class<?> clz = loader.loadClass("com.github.catvod.spider.Init");
             Method method = clz.getMethod("init", Context.class);
-            method.invoke(clz, App.get());
+            method.invoke(clz, ProviderContext.get());
         } catch (Throwable e) {
             com.github.catvod.crawler.SpiderDebug.log(e);
         }
@@ -142,7 +142,7 @@ public class JarLoader {
                 Spider spider = (Spider) loader.loadClass("com.github.catvod.spider." + api.split("csp_")[1]).newInstance();
                 spider.siteKey = siteKey;
                 spider.proxyKey = proxyKey;
-                spider.init(App.get(), ext);
+                spider.init(ProviderContext.get(), ext);
                 return spider;
             } catch (Throwable e) {
                 com.github.catvod.crawler.SpiderDebug.log(e);

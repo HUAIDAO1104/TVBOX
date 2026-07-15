@@ -110,6 +110,13 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     private Config rollbackConfig;
     private boolean homeUiRestored;
     private boolean cachedHistoryShown;
+    private List<History> cachedHistories = new ArrayList<>();
+    private final Runnable deferredStartup = () -> {
+        if (isFinishing() || isDestroyed()) return;
+        PermissionUtil.requestNotify(this);
+        DLNARendererService.start(this);
+        Updater.create().start(this);
+    };
 
     private Site getHome() {
         return VodConfig.get().getHome();
@@ -138,14 +145,13 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         restoreState(savedInstanceState);
         pageController = new HomePageController(binding, homeState);
         featuredController = new HomeFeaturedController(binding, this);
-        PermissionUtil.requestNotify(this);
-        DLNARendererService.start(this);
-        Updater.create().start(this);
         setRecyclerViews();
         setViewModels();
         setInitialNavigation();
         pageController.showLoading(false);
         initConfig();
+        // Notification/service/update initialization must not compete with the first TV frame.
+        binding.getRoot().postDelayed(deferredStartup, 1400L);
     }
 
     @Override
@@ -200,9 +206,8 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         homeViewModel.getError().observe(this, message -> {
             if (message != null && !message.isEmpty()) showHomeContentError();
         });
-        homeViewModel.getAction().observe(this, result -> {
-            if (result != null && result.hasMsg()) Notify.show(result.getMsg());
-        });
+        // Remote home actions are intentionally not surfaced as Toasts. Repository messages
+        // have historically been used for announcements and marketing overlays.
         detailViewModel.getResult().observe(this, result -> {
             if (result != null && !result.hasMsg()) featuredController.onDetail(result);
         });
@@ -226,13 +231,15 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     private void initConfig() {
         configReady = false;
         Task.execute(() -> {
+            List<History> histories = History.get();
+            App.post(() -> onCachedHistoryLoaded(histories));
+        });
+        Task.execute(() -> {
             VodConfig.get().init();
             LiveConfig.get().init();
             WallConfig.get().init();
-            List<History> histories = History.get();
             App.post(() -> {
                 if (isFinishing() || isDestroyed()) return;
-                showCachedHistoryWhileLoading(histories);
                 VodConfig.get().load(configCallback(false));
                 LiveConfig.get().load();
                 WallConfig.get().load();
@@ -240,8 +247,20 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         });
     }
 
+    private void onCachedHistoryLoaded(List<History> histories) {
+        if (isFinishing() || isDestroyed()) return;
+        cachedHistories = histories == null ? new ArrayList<>() : new ArrayList<>(histories);
+        if (!homeResult.getList().isEmpty()) {
+            updateHistory(cachedHistories);
+            updateHeroFocusTarget(!cachedHistories.isEmpty(), !allRecommendations.isEmpty());
+            return;
+        }
+        showCachedHistoryWhileLoading(cachedHistories);
+    }
+
     private void showCachedHistoryWhileLoading(List<History> histories) {
         if (histories == null || histories.isEmpty()) return;
+        cachedHistories = new ArrayList<>(histories);
         cachedHistoryShown = true;
         homeAvailable = true;
         updateHistory(histories);
@@ -270,7 +289,6 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
             @Override
             public void error(String msg) {
                 configReady = false;
-                if (!TextUtils.isEmpty(msg)) Notify.show(msg);
                 if (cachedHistoryShown) {
                     pageController.showHome();
                     return;
@@ -294,6 +312,9 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         } else if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
             String keyword = intent.getStringExtra(SearchManager.QUERY);
             if (!TextUtils.isEmpty(keyword)) SearchActivity.start(this, keyword);
+            else SearchActivity.startVoice(this);
+        } else if (Intent.ACTION_VOICE_COMMAND.equals(intent.getAction())) {
+            SearchActivity.startVoice(this);
         }
     }
 
@@ -315,13 +336,17 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     }
 
     private void onConfigLoaded() {
+        boolean preserveCachedShell = cachedHistoryShown && !resetHomeAfterConfig;
         cachedHistoryShown = false;
         clearCategoryFragments();
-        featuredController.clear();
         homeResult = Result.empty();
         allRecommendations = new ArrayList<>();
-        posterAdapter.submit(new ArrayList<>());
-        binding.recommendMore.setVisibility(View.GONE);
+        if (!preserveCachedShell) {
+            featuredController.clear();
+            posterAdapter.submit(new ArrayList<>());
+            binding.recommendSection.setVisibility(View.GONE);
+            binding.recommendMore.setVisibility(View.GONE);
+        }
         if (resetHomeAfterConfig) {
             homeState.setSelectedCategoryId(HomeState.HOME_ID);
             homeState.setHomeScrollY(0);
@@ -360,7 +385,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         submitRecommendationShelf(shelf);
         binding.recommendSection.setVisibility(shelf.isEmpty() ? View.GONE : View.VISIBLE);
         binding.recommendMore.setVisibility(recommendations.isEmpty() ? View.GONE : View.VISIBLE);
-        List<History> histories = History.get();
+        List<History> histories = new ArrayList<>(cachedHistories);
         updateHistory(histories);
         updateHeroFocusTarget(!histories.isEmpty(), !shelf.isEmpty());
         if (featured.isEmpty()) featured = historyVods(histories);
@@ -461,7 +486,16 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     }
 
     private void loadHistory() {
-        List<History> histories = History.get();
+        Task.execute(() -> {
+            List<History> histories = History.get();
+            App.post(() -> applyHistory(histories));
+        });
+    }
+
+    private void applyHistory(List<History> histories) {
+        if (isFinishing() || isDestroyed()) return;
+        cachedHistories = histories == null ? new ArrayList<>() : new ArrayList<>(histories);
+        histories = cachedHistories;
         updateHistory(histories);
         List<Vod> recommendations = validVods(homeResult.getList());
         List<Vod> shelf = shelfItems(recommendations);
@@ -658,7 +692,6 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
 
             @Override
             public void error(String msg) {
-                if (!TextUtils.isEmpty(msg)) Notify.show(msg);
                 Config fallback = rollbackConfig;
                 rollbackConfig = null;
                 if (fallback == null) {
@@ -682,7 +715,6 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
             @Override
             public void error(String msg) {
                 configReady = false;
-                if (!TextUtils.isEmpty(msg)) Notify.show(msg);
                 showError();
             }
         };
@@ -896,6 +928,13 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        if (event.getAction() == KeyEvent.ACTION_DOWN
+                && (event.getKeyCode() == KeyEvent.KEYCODE_SEARCH
+                || event.getKeyCode() == KeyEvent.KEYCODE_VOICE_ASSIST
+                || event.getKeyCode() == KeyEvent.KEYCODE_ASSIST)) {
+            SearchActivity.startVoice(this);
+            return true;
+        }
         if (KeyUtil.isMenuKey(event)) SiteDialog.create().show(this);
         if (KeyUtil.isActionDown(event) && KeyUtil.isDownKey(event) && isTopFocus(getCurrentFocus()) && focusContentFromTop()) return true;
         return super.dispatchKeyEvent(event);
@@ -948,6 +987,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
 
     @Override
     protected void onDestroy() {
+        binding.getRoot().removeCallbacks(deferredStartup);
         featuredController.destroy();
         DLNARendererService.stop(this);
         LiveConfig.get().clear();

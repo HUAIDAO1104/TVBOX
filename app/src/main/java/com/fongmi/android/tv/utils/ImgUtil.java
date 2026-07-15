@@ -19,6 +19,7 @@ import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.load.model.GlideUrl;
 import com.bumptech.glide.load.model.LazyHeaders;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.Target;
 import com.fongmi.android.tv.App;
@@ -64,14 +65,21 @@ public class ImgUtil {
     }
 
     public static void loadPoster(String text, String url, ImageView view) {
-        view.setScaleType(FIT_CENTER);
+        // Poster cards own their crop. FIT_CENTER leaked the card background around
+        // provider images whose source ratio was not exactly the same as the TV slot.
+        view.setScaleType(CENTER_CROP);
         view.setVisibility(View.VISIBLE);
         if (TextUtils.isEmpty(url) || failed.contains(url)) {
             view.setImageDrawable(getTextDrawable(text, true));
             return;
         }
         try {
-            Glide.with(view).load(getUrl(url)).fitCenter().listener(getListener(text, url, view, true)).into(view);
+            Glide.with(view)
+                    .load(getUrl(url))
+                    .centerCrop()
+                    .transition(DrawableTransitionOptions.withCrossFade(220))
+                    .listener(getListener(text, url, view, true))
+                    .into(view);
         } catch (Throwable e) {
             view.setImageDrawable(getTextDrawable(text, true));
         }

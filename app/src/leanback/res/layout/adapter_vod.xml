@@ -13,6 +13,7 @@
         android:layout_width="match_parent"
         android:layout_height="80dp"
         android:background="@color/black_20"
+        android:scaleType="centerCrop"
         app:shapeAppearanceOverlay="@style/Vod.Grid" />
 
     <com.google.android.material.imageview.ShapeableImageView

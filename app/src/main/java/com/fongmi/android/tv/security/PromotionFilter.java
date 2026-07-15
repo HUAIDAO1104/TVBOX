@@ -21,7 +21,9 @@ public final class PromotionFilter {
         boolean followBrand = text.contains("关注") && sourceBrand;
         boolean marketingAction = containsAny(text, "扫码", "领取", "回复")
                 && (sourceBrand || containsAny(text, "免费", "不迷路", "推广", "福利", "容量"));
-        return explicitSolicitation || (community && promotion) || followBrand || (sourceBrand && promotion) || marketingAction;
+        boolean unsolicitedInterfaceAd = containsAny(text, "接口免费", "免费接口", "免费线路", "线路免费", "请勿上当", "谨防受骗");
+        return explicitSolicitation || (community && promotion) || followBrand || (sourceBrand && promotion)
+                || marketingAction || unsolicitedInterfaceAd;
     }
 
     /**

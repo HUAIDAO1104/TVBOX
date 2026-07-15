@@ -43,6 +43,7 @@ import okhttp3.Response;
 
 public class SearchActivity extends BaseActivity implements WordAdapter.OnClickListener, RecordAdapter.OnClickListener, CustomKeyboard.Callback {
 
+    private static final String EXTRA_START_VOICE = "start_voice_search";
     private static final String STATE_KEYWORD = "search_v2_keyword";
     private static final String STATE_SCROLL_Y = "search_v2_scroll_y";
     private static final String STATE_FOCUS_ZONE = "search_v2_focus_zone";
@@ -61,6 +62,12 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
     public static void start(Activity activity, String keyword) {
         Intent intent = new Intent(activity, SearchActivity.class);
         intent.putExtra("keyword", keyword);
+        activity.startActivity(intent);
+    }
+
+    public static void startVoice(Activity activity) {
+        Intent intent = new Intent(activity, SearchActivity.class);
+        intent.putExtra(EXTRA_START_VOICE, true);
         activity.startActivity(intent);
     }
 
@@ -108,6 +115,9 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
                 mBinding.keyword.requestFocus();
             }
         });
+        if (getIntent().getBooleanExtra(EXTRA_START_VOICE, false)) {
+            mBinding.mic.post(mBinding.mic::start);
+        }
     }
 
     private void setRecyclerView() {
@@ -212,6 +222,13 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        if (event.getAction() == KeyEvent.ACTION_DOWN
+                && (event.getKeyCode() == KeyEvent.KEYCODE_SEARCH
+                || event.getKeyCode() == KeyEvent.KEYCODE_VOICE_ASSIST
+                || event.getKeyCode() == KeyEvent.KEYCODE_ASSIST)) {
+            mBinding.mic.start();
+            return true;
+        }
         if (KeyUtil.isMenuKey(event)) showDialog();
         if (KeyUtil.isActionDown(event) && findFocus(event)) return true;
         return super.dispatchKeyEvent(event);
