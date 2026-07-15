@@ -17,6 +17,7 @@ import com.fongmi.android.tv.repository.RepositoryManager;
 import com.fongmi.android.tv.repository.RepositorySiteParser;
 import com.fongmi.android.tv.repository.RepositorySiteRegistry;
 import com.fongmi.android.tv.ui.search.SearchSourceHealthStore;
+import com.fongmi.android.tv.ui.search.SearchFailurePolicy;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.github.catvod.utils.Trans;
 import com.google.common.util.concurrent.FluentFuture;
@@ -370,7 +371,17 @@ public class SiteViewModel extends ViewModel {
         @Override
         public Result call() throws Exception {
             if (quick && !site.isQuickSearch()) return Result.empty();
-            return SiteApi.searchContent(site, keyword, quick, page);
+            try {
+                return SiteApi.searchContent(site, keyword, quick, page);
+            } catch (Exception first) {
+                if (!SearchFailurePolicy.isEmptyPayload(first)) throw first;
+                try {
+                    return SiteApi.searchContent(site, keyword, quick, page);
+                } catch (Exception second) {
+                    if (SearchFailurePolicy.isEmptyPayload(second)) return Result.empty();
+                    throw second;
+                }
+            }
         }
     }
 

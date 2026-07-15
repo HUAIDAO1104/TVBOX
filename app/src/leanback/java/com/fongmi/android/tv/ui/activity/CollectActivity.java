@@ -513,8 +513,20 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         View previousFocus = getCurrentFocus();
         binding.stateBadge.setText(getStateLabel(state));
         binding.stateBadge.setTextColor(ContextCompat.getColor(this, getStateColor(state)));
-        binding.resultSummary.setText(getString(R.string.search_v2_result_summary,
-                aggregator == null ? 0 : aggregator.workCount(), aggregator == null ? 0 : aggregator.sourceCount()));
+        int workCount = aggregator == null ? 0 : aggregator.workCount();
+        int sourceCount = aggregator == null ? 0 : aggregator.sourceCount();
+        int unavailable = progress.failed() + progress.timedOut();
+        if (progress.running()) {
+            binding.resultSummary.setText(getString(R.string.search_v2_compact_searching,
+                    workCount, sourceCount, progress.completed(), progress.total()));
+        } else if (unavailable > 0 && workCount > 0) {
+            binding.resultSummary.setText(getResources().getQuantityString(
+                    R.plurals.search_v2_compact_complete_with_unavailable, unavailable,
+                    workCount, sourceCount, progress.completed(), progress.total(), unavailable));
+        } else {
+            binding.resultSummary.setText(getString(R.string.search_v2_compact_complete,
+                    workCount, sourceCount, progress.completed(), progress.total()));
+        }
         binding.status.setText(getString(R.string.search_v2_source_progress, progress.total(),
                 progress.completed(), progress.pending(), progress.timedOut(), progress.failed()));
         binding.progress.setMax(Math.max(1, progress.total()));

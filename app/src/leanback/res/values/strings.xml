@@ -192,6 +192,12 @@
     <string name="search_v2_no_source_message">The current configuration has no searchable source.</string>
     <string name="search_v2_back">Back</string>
     <string name="search_v2_result_summary"><xliff:g name="works">%1$d</xliff:g> related titles · <xliff:g name="sources">%2$d</xliff:g> available sources</string>
+    <string name="search_v2_compact_searching">%1$d titles · %2$d sources · Searching %3$d/%4$d</string>
+    <string name="search_v2_compact_complete">%1$d titles · %2$d sources · Complete %3$d/%4$d</string>
+    <plurals name="search_v2_compact_complete_with_unavailable">
+        <item quantity="one">%1$d titles · %2$d sources · Complete %3$d/%4$d · %5$d source unavailable</item>
+        <item quantity="other">%1$d titles · %2$d sources · Complete %3$d/%4$d · %5$d sources unavailable</item>
+    </plurals>
     <string name="search_v2_source_progress"><xliff:g name="total">%1$d</xliff:g> participating · <xliff:g name="completed">%2$d</xliff:g> completed · <xliff:g name="pending">%3$d</xliff:g> searching · <xliff:g name="timeout">%4$d</xliff:g> timed out · <xliff:g name="failed">%5$d</xliff:g> failed</string>
     <string name="search_v2_recommended">Recommended</string>
     <string name="search_v2_source_hint">Choose a source to open its details. Press Left or Back to close.</string>
@@ -217,7 +223,7 @@
     <string name="search_v2_source_filter_title">Search sources</string>
     <string name="search_v2_source_lane_title">Playback sources</string>
     <string name="search_v2_source_lane_all">All</string>
-    <string name="search_v2_source_lane_searching">Searching</string>
+    <string name="search_v2_source_lane_searching">…</string>
     <string name="search_v2_source_filter_count">Sources %1$d</string>
     <string name="search_v2_source_filter_apply">Apply and search</string>
     <string name="search_v2_source_filter_default">Restore defaults</string>

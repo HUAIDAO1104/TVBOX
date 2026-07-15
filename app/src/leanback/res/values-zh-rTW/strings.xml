@@ -192,6 +192,11 @@
     <string name="search_v2_no_source_message">目前配置沒有可搜尋的來源。</string>
     <string name="search_v2_back">返回</string>
     <string name="search_v2_result_summary">已找到 <xliff:g name="works">%1$d</xliff:g> 部相關作品 · <xliff:g name="sources">%2$d</xliff:g> 個可用來源</string>
+    <string name="search_v2_compact_searching">%1$d 部相關作品 · %2$d 個來源 · 搜尋 %3$d/%4$d</string>
+    <string name="search_v2_compact_complete">%1$d 部相關作品 · %2$d 個來源 · 完成 %3$d/%4$d</string>
+    <plurals name="search_v2_compact_complete_with_unavailable">
+        <item quantity="other">%1$d 部相關作品 · %2$d 個來源 · 完成 %3$d/%4$d · %5$d 個來源暫不可用</item>
+    </plurals>
     <string name="search_v2_source_progress">參與來源 <xliff:g name="total">%1$d</xliff:g> · 已完成 <xliff:g name="completed">%2$d</xliff:g> · 搜尋中 <xliff:g name="pending">%3$d</xliff:g> · 逾時 <xliff:g name="timeout">%4$d</xliff:g> · 失敗 <xliff:g name="failed">%5$d</xliff:g></string>
     <string name="search_v2_recommended">推薦</string>
     <string name="search_v2_source_hint">選擇來源後進入其詳情頁；按左鍵或返回鍵關閉。</string>
@@ -216,7 +221,7 @@
     <string name="search_v2_source_filter_title">選擇搜尋來源</string>
     <string name="search_v2_source_lane_title">播放來源</string>
     <string name="search_v2_source_lane_all">全部</string>
-    <string name="search_v2_source_lane_searching">搜尋中</string>
+    <string name="search_v2_source_lane_searching">…</string>
     <string name="search_v2_source_filter_count">搜尋來源 %1$d</string>
     <string name="search_v2_source_filter_apply">套用並搜尋</string>
     <string name="search_v2_source_filter_default">恢復預設</string>
