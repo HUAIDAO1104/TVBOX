@@ -400,15 +400,15 @@
 
                         <com.fongmi.android.tv.ui.home.HomeCarouselIndicatorView
                             android:id="@+id/featuredIndicator"
-                            android:layout_width="138dp"
-                            android:layout_height="28dp"
-                            android:layout_gravity="bottom|start"
-                            android:layout_marginStart="@dimen/home_featured_indicator_start"
-                            android:layout_marginBottom="12dp"
+                            android:layout_width="100dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="bottom|end"
+                            android:layout_marginEnd="154dp"
                             android:alpha="0.78"
                             android:nextFocusLeft="@id/detail"
                             android:nextFocusUp="@id/detail"
-                            android:nextFocusDown="@id/historyRecycler" />
+                            android:nextFocusDown="@id/historyRecycler"
+                            android:translationY="7dp" />
 
                     </FrameLayout>
 

@@ -14,7 +14,7 @@
     <dimen name="tv_radius_large">16dp</dimen>
     <dimen name="tv_focus_border_width">2dp</dimen>
 
-    <dimen name="tv_text_featured">32sp</dimen>
+    <dimen name="tv_text_featured">26sp</dimen>
     <dimen name="tv_text_page_title">28sp</dimen>
     <dimen name="tv_text_section">16sp</dimen>
     <dimen name="tv_text_body">14sp</dimen>
@@ -26,7 +26,6 @@
     <dimen name="home_featured_height">286dp</dimen>
     <dimen name="home_featured_copy_width">448dp</dimen>
     <dimen name="home_featured_left_width">570dp</dimen>
-    <dimen name="home_featured_indicator_start">646dp</dimen>
     <dimen name="home_featured_poster_frame_width">168dp</dimen>
     <dimen name="home_featured_poster_frame_height">252dp</dimen>
     <dimen name="home_featured_poster_width">168dp</dimen>

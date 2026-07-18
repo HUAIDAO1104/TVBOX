@@ -33,25 +33,9 @@
             android:paddingBottom="6dp"
             android:paddingEnd="14dp">
 
-            <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/back"
-                android:layout_width="68dp"
-                android:layout_height="32dp"
-                android:background="@drawable/selector_search_v2_action"
-                android:drawableStart="@drawable/search_v2_ic_back"
-                android:drawablePadding="6dp"
-                android:focusable="true"
-                android:focusableInTouchMode="true"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:text="@string/search_v2_back"
-                android:textColor="@color/search_v2_action_text"
-                android:textSize="12sp" />
-
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
                 android:layout_weight="1"
                 android:orientation="vertical">
 
@@ -157,15 +141,15 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:clipChildren="false"
-            android:clipToPadding="false">
+            android:clipChildren="true"
+            android:clipToPadding="true">
 
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/searchContent"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:clipChildren="false"
-                android:clipToPadding="false"
+                android:clipChildren="true"
+                android:clipToPadding="true"
                 android:orientation="horizontal"
                 android:paddingStart="6dp"
                 android:paddingTop="5dp"
@@ -215,8 +199,8 @@
                     android:layout_height="match_parent"
                     android:layout_marginStart="7dp"
                     android:layout_weight="1"
-                    android:clipChildren="false"
-                    android:clipToPadding="false">
+                    android:clipChildren="true"
+                    android:clipToPadding="true">
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/resultRecycler"
@@ -227,9 +211,9 @@
                         android:descendantFocusability="afterDescendants"
                         android:overScrollMode="never"
                         android:paddingStart="4dp"
-                        android:paddingTop="4dp"
+                        android:paddingTop="9dp"
                         android:paddingEnd="7dp"
-                        android:paddingBottom="10dp" />
+                        android:paddingBottom="15dp" />
 
                     <androidx.appcompat.widget.LinearLayoutCompat
                         android:id="@+id/statePanel"

@@ -79,11 +79,14 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
     private SearchAggregator aggregator;
     private SearchSnapshot latestSnapshot;
     private SearchProgress progress = SearchProgress.idle();
-    private final Map<String, Vod> vodBySource = new LinkedHashMap<>();
+    private Map<String, Vod> vodBySource = new LinkedHashMap<>();
     private final Map<String, Vod> allVodBySource = new LinkedHashMap<>();
     private final Map<String, List<Vod>> fallbackCandidatesBySource = new LinkedHashMap<>();
     private final Map<String, SearchSource> sourceCache = new LinkedHashMap<>();
     private final Map<String, Integer> sourceFamilyCounts = new LinkedHashMap<>();
+    private final Map<String, SearchAggregator> aggregatorsByFamily = new LinkedHashMap<>();
+    private final Map<String, Map<String, Vod>> vodByFamily = new LinkedHashMap<>();
+    private final Map<String, String> borrowedPosterBySource = new LinkedHashMap<>();
     private final Set<String> enabledSearchFamilies = new LinkedHashSet<>();
     private SearchAggregator fallbackAggregator;
     private String selectedWorkId;
@@ -129,12 +132,11 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         setupViewModel();
         saveKeyword();
         resetAndSearch(false);
-        binding.back.requestFocus();
+        binding.body.post(this::focusActiveSourceFamily);
     }
 
     @Override
     protected void initEvent() {
-        binding.back.setOnClickListener(view -> finish());
         binding.stop.setOnClickListener(view -> {
             if (progress.running()) viewModel.stopSearch();
             else resetAndSearch(true);
@@ -155,7 +157,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         pendingLayoutState = null;
         activeSourceFamily = "";
         resetAndSearch(false);
-        binding.back.requestFocus();
+        binding.body.post(this::focusActiveSourceFamily);
     }
 
     private void setupLists() {
@@ -206,17 +208,20 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
     private void resetAndSearch(boolean focusStop) {
         viewModel.stopSearch();
         closeSourcePanel(false);
-        aggregator = new SearchAggregator(getKeyword());
         fallbackAggregator = new SearchAggregator(getKeyword());
         latestSnapshot = null;
         pendingSnapshot = null;
         snapshotRenderScheduled = false;
         if (binding != null) binding.resultArea.removeCallbacks(renderPendingSnapshot);
-        vodBySource.clear();
+        vodBySource = new LinkedHashMap<>();
         allVodBySource.clear();
         fallbackCandidatesBySource.clear();
         sourceCache.clear();
         sourceFamilyCounts.clear();
+        aggregatorsByFamily.clear();
+        vodByFamily.clear();
+        borrowedPosterBySource.clear();
+        workAdapter.updatePosterOverrides(Map.of());
         selectedWorkId = null;
         selectedSourceId = null;
         workAdapter.submit(List.of());
@@ -225,6 +230,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         enabledSearchFamilies.addAll(resolveSelectedSourceFamilies());
         Setting.putSearchSources(searchSourceScope(), SearchSourcePreference.serialize(enabledSearchFamilies));
         ensureActiveSourceFamily();
+        initializeFamilyCaches();
         binding.result.setText(getString(R.string.collect_result, getKeyword()));
         updateSourceFilterLabel();
         updateSourceFamilyLane();
@@ -354,7 +360,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
             snapshotRenderScheduled = true;
             // Coalesce closely spaced provider callbacks into one frame. The data remains
             // incremental; this only avoids repeated layout/Diff work on the main thread.
-            binding.resultArea.postDelayed(renderPendingSnapshot, 220);
+            binding.resultArea.postDelayed(renderPendingSnapshot, 320);
         }
     }
 
@@ -394,6 +400,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
     private void appendResults(List<Result> results) {
         if (results == null || results.isEmpty()) return;
         Set<String> enabledFamilies = visibleSourceFamilies();
+        ensureFamilyCaches(enabledFamilies);
         ensureSourceFamilyCountKeys(enabledFamilies);
         for (Result result : results) {
             for (Vod vod : result.getList()) {
@@ -401,20 +408,24 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
                 incrementSourceFamilyCounts(site, enabledFamilies);
                 SearchSource source = sourceCache.computeIfAbsent(rawSourceKey(vod), ignored -> sourceFrom(vod));
                 allVodBySource.put(source.stableId(), vod);
-                fallbackAggregator.add(source);
+                refreshBorrowedPosters(fallbackAggregator.add(source).work());
                 if (progress.running()) fallbackCandidatesBySource.put(source.stableId(), List.of(vod));
-                if (!matchesSourceFamily(site, activeSourceFamily)) continue;
-                SearchAggregator.Update update = aggregator.addUnaggregated(source);
-                if (update.changed()) vodBySource.put(source.stableId(), vod);
+                addToFamily(SOURCE_FAMILY_ALL, source, vod);
+                for (String family : enabledFamilies) {
+                    if (matchesSourceFamily(site, family)) addToFamily(family, source, vod);
+                }
             }
         }
+        workAdapter.updatePosterOverrides(borrowedPosterBySource);
     }
 
     private void rebuildForActiveSource() {
-        SearchAggregator rebuilt = new SearchAggregator(getKeyword());
         SearchAggregator fallbackGroups = new SearchAggregator(getKeyword());
-        Map<String, Vod> rebuiltSources = new LinkedHashMap<>();
         Map<String, Vod> allSources = new LinkedHashMap<>();
+        aggregatorsByFamily.clear();
+        vodByFamily.clear();
+        borrowedPosterBySource.clear();
+        initializeFamilyCaches();
         boolean buildCrossSourceFallback = !progress.running();
         List<Result> results = latestSnapshot == null ? List.of() : latestSnapshot.results();
         for (Result result : results) {
@@ -423,18 +434,18 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
                 Site site = vod.getSite() == null ? new Site() : vod.getSite();
                 SearchSource source = sourceCache.computeIfAbsent(rawSourceKey(vod), ignored -> sourceFrom(vod));
                 allSources.put(source.stableId(), vod);
-                fallbackGroups.add(source);
-                if (!matchesSourceFamily(site, activeSourceFamily)) continue;
-                SearchAggregator.Update update = rebuilt.addUnaggregated(source);
-                if (update.changed()) rebuiltSources.put(source.stableId(), vod);
+                refreshBorrowedPosters(fallbackGroups.add(source).work());
+                addToFamily(SOURCE_FAMILY_ALL, source, vod);
+                for (String family : visibleSourceFamilies()) {
+                    if (matchesSourceFamily(site, family)) addToFamily(family, source, vod);
+                }
             }
         }
-        aggregator = rebuilt;
         fallbackAggregator = fallbackGroups;
-        vodBySource.clear();
-        vodBySource.putAll(rebuiltSources);
+        activateFamily(activeSourceFamily);
         allVodBySource.clear();
         allVodBySource.putAll(allSources);
+        workAdapter.updatePosterOverrides(borrowedPosterBySource);
         rebuildSourceFamilyCounts();
         if (buildCrossSourceFallback) {
             rebuildFallbackCandidates(fallbackGroups, allSources);
@@ -448,6 +459,57 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         submitWorks();
         updateSourceFamilyLane();
         renderState(resolveState(progress));
+    }
+
+    private void initializeFamilyCaches() {
+        ensureFamilyCaches(visibleSourceFamilies());
+        activateFamily(activeSourceFamily);
+    }
+
+    private void ensureFamilyCaches(Set<String> families) {
+        aggregatorsByFamily.computeIfAbsent(SOURCE_FAMILY_ALL, ignored -> new SearchAggregator(getKeyword()));
+        vodByFamily.computeIfAbsent(SOURCE_FAMILY_ALL, ignored -> new LinkedHashMap<>());
+        for (String family : families) {
+            aggregatorsByFamily.computeIfAbsent(family, ignored -> new SearchAggregator(getKeyword()));
+            vodByFamily.computeIfAbsent(family, ignored -> new LinkedHashMap<>());
+        }
+    }
+
+    private void addToFamily(String family, SearchSource source, Vod vod) {
+        SearchAggregator familyAggregator = aggregatorsByFamily.get(family);
+        Map<String, Vod> familySources = vodByFamily.get(family);
+        if (familyAggregator == null || familySources == null) return;
+        SearchAggregator.Update update = familyAggregator.addUnaggregated(source);
+        if (update.changed()) familySources.put(source.stableId(), vod);
+    }
+
+    private void activateFamily(String family) {
+        String target = aggregatorsByFamily.containsKey(family) ? family : SOURCE_FAMILY_ALL;
+        activeSourceFamily = target;
+        aggregator = aggregatorsByFamily.computeIfAbsent(target, ignored -> new SearchAggregator(getKeyword()));
+        vodBySource = vodByFamily.computeIfAbsent(target, ignored -> new LinkedHashMap<>());
+    }
+
+    /** Shares a real poster only inside a cautiously normalized cross-source work group. */
+    private void refreshBorrowedPosters(SearchWork work) {
+        if (work == null || work.sources().isEmpty()) return;
+        String poster = "";
+        for (SearchSource source : work.rankedSources()) {
+            if (!source.requiresLogin() && source.posterUrl() != null && !source.posterUrl().isBlank()) {
+                poster = source.posterUrl();
+                break;
+            }
+        }
+        if (poster.isBlank()) {
+            for (SearchSource source : work.rankedSources()) {
+                if (source.posterUrl() != null && !source.posterUrl().isBlank()) {
+                    poster = source.posterUrl();
+                    break;
+                }
+            }
+        }
+        if (poster.isBlank()) return;
+        for (SearchSource source : work.sources()) borrowedPosterBySource.put(source.stableId(), poster);
     }
 
     private void finalizeFallbackCandidates() {
@@ -555,10 +617,13 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         selectedWorkId = null;
         selectedSourceId = null;
         binding.resultArea.animate().cancel();
-        binding.resultArea.setAlpha(0.18f);
-        rebuildForActiveSource();
+        binding.resultArea.setAlpha(0.72f);
+        activateFamily(activeSourceFamily);
+        updateSourceFamilyLane();
+        submitWorks();
+        renderState(resolveState(progress));
         binding.resultRecycler.scrollToPosition(0);
-        binding.resultArea.animate().alpha(1f).setDuration(180).start();
+        binding.resultArea.animate().alpha(1f).setDuration(120).start();
         if (!keepSourceFocus && workAdapter.getItemCount() > 0) focusWork(null, null);
     }
 
@@ -933,7 +998,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         if (position < 0) position = workAdapter.positionContainingSource(sourceStableId);
         if (position < 0 && workAdapter.getItemCount() > 0) position = 0;
         if (position < 0) {
-            binding.back.requestFocus();
+            focusActiveSourceFamily();
             return;
         }
         SearchWork targetWork = workAdapter.get(position);
@@ -956,7 +1021,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         } else if (binding.stop.getVisibility() == View.VISIBLE) {
             binding.stop.requestFocus();
         } else {
-            binding.back.requestFocus();
+            focusActiveSourceFamily();
         }
     }
 
@@ -975,8 +1040,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
     private void focusSearchCompletionTarget() {
         if (isSourcePanelOpen()) return;
         View focus = getCurrentFocus();
-        boolean headerHasFocus = focus == null || focus == binding.back
-                || focus == binding.stop || focus == binding.sourceFilter;
+        boolean headerHasFocus = focus == null || focus == binding.stop || focus == binding.sourceFilter;
         if (!headerHasFocus || selectedWorkId != null) return;
         if (workAdapter.getItemCount() > 0) {
             activeSourceFamily = SOURCE_FAMILY_ALL;
@@ -1000,17 +1064,13 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
                 return true;
             }
             View focus = getCurrentFocus();
-            if (focus == binding.back && code == KeyEvent.KEYCODE_DPAD_DOWN) {
-                focusActiveSourceFamily();
-                return true;
-            }
             if ((focus == binding.stop || focus == binding.sourceFilter) && code == KeyEvent.KEYCODE_DPAD_DOWN) {
-                focusPrimaryContent();
+                focusActiveSourceFamily();
                 return true;
             }
             RecyclerView.ViewHolder holder = focus == null ? null : binding.resultRecycler.findContainingViewHolder(focus);
             if (holder != null && holder.getBindingAdapterPosition() < COLUMN_COUNT && code == KeyEvent.KEYCODE_DPAD_UP) {
-                binding.back.requestFocus();
+                binding.sourceFilter.requestFocus();
                 return true;
             }
             if (holder != null && holder.getBindingAdapterPosition() % COLUMN_COUNT == 0
@@ -1022,7 +1082,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
                     ? null : binding.sourceFamilyRecycler.findContainingViewHolder(focus);
             if (familyHolder != null && familyHolder.getBindingAdapterPosition() == 0
                     && code == KeyEvent.KEYCODE_DPAD_UP) {
-                binding.back.requestFocus();
+                binding.sourceFilter.requestFocus();
                 return true;
             }
         }

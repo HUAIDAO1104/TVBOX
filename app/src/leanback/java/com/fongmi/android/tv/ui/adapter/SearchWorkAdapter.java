@@ -20,6 +20,8 @@ import com.fongmi.android.tv.utils.ImgUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 public final class SearchWorkAdapter extends RecyclerView.Adapter<SearchWorkAdapter.ViewHolder> {
@@ -36,6 +38,7 @@ public final class SearchWorkAdapter extends RecyclerView.Adapter<SearchWorkAdap
     private final Listener listener;
     private final int columns;
     private List<SearchWork> items = List.of();
+    private Map<String, String> posterOverrides = Map.of();
 
     public SearchWorkAdapter(Listener listener, int columns) {
         this.listener = listener;
@@ -76,6 +79,19 @@ public final class SearchWorkAdapter extends RecyclerView.Adapter<SearchWorkAdap
 
     public SearchWork get(int position) {
         return items.get(position);
+    }
+
+    public void updatePosterOverrides(Map<String, String> next) {
+        Map<String, String> safe = next == null || next.isEmpty() ? Map.of() : Map.copyOf(next);
+        Map<String, String> previous = posterOverrides;
+        if (previous.equals(safe)) return;
+        posterOverrides = safe;
+        for (int index = 0; index < items.size(); index++) {
+            SearchWork work = items.get(index);
+            if (!Objects.equals(resolvePoster(work, previous), resolvePoster(work, safe))) {
+                notifyItemChanged(index, "poster");
+            }
+        }
     }
 
     public int positionOf(String stableId) {
@@ -149,7 +165,32 @@ public final class SearchWorkAdapter extends RecyclerView.Adapter<SearchWorkAdap
             listener.onShowSources(work);
             return true;
         });
-        ImgUtil.loadPoster(work.displayTitle(), work.posterUrl(), holder.binding.poster);
+        ImgUtil.loadPoster(work.displayTitle(), resolvePoster(work, posterOverrides), holder.binding.poster);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position, @NonNull List<Object> payloads) {
+        if (!payloads.isEmpty()) {
+            SearchWork work = items.get(position);
+            ImgUtil.loadPoster(work.displayTitle(), resolvePoster(work, posterOverrides), holder.binding.poster);
+            return;
+        }
+        super.onBindViewHolder(holder, position, payloads);
+    }
+
+    private static String resolvePoster(SearchWork work, Map<String, String> overrides) {
+        SearchSource recommended = work.recommendedSource();
+        String borrowed = "";
+        for (SearchSource source : work.sources()) {
+            String candidate = overrides.get(source.stableId());
+            if (candidate != null && !candidate.isBlank()) {
+                borrowed = candidate;
+                break;
+            }
+        }
+        if (!borrowed.isBlank() && (work.posterUrl() == null || work.posterUrl().isBlank()
+                || recommended != null && recommended.requiresLogin())) return borrowed;
+        return work.posterUrl();
     }
 
     private static String displayUpdate(SearchWork work, ViewHolder holder) {

@@ -62,8 +62,6 @@ public class HomeFeaturedActivity extends BaseActivity implements HomePosterAdap
             selectedPosition = Math.min(selectedPosition, adapter.getItemCount() - 1);
             binding.recycler.setSelectedPosition(selectedPosition);
             binding.recycler.requestFocus();
-        } else {
-            binding.back.requestFocus();
         }
         viewModel = new ViewModelProvider(this).get(SiteViewModel.class);
         viewModel.getAction().observe(this, result -> {
@@ -73,12 +71,6 @@ public class HomeFeaturedActivity extends BaseActivity implements HomePosterAdap
 
     @Override
     protected void initEvent() {
-        binding.back.setOnClickListener(view -> finish());
-        binding.back.setOnFocusChangeListener((view, focused) -> {
-            view.setTranslationZ(focused ? ResUtil.dp2px(8) : 0);
-            float scale = focused ? 1.025f : 1f;
-            view.animate().scaleX(scale).scaleY(scale).setDuration(getResources().getInteger(R.integer.tv_focus_animation_duration)).start();
-        });
     }
 
     private void updateGridLayout() {

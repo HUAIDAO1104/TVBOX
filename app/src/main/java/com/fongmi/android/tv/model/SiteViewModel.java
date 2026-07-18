@@ -37,7 +37,8 @@ public class SiteViewModel extends ViewModel {
     private final MutableLiveData<SearchProgress> searchProgress;
 
     private final ViewModelTaskRunner<TaskType> tasks;
-    private final ViewModelSearchRunner searches;
+    private final ViewModelSearchRunner spiderSearches;
+    private final ViewModelSearchRunner networkSearches;
     private final AtomicInteger searchSession;
     private final List<Result> aggregateResults;
     private SearchProgress currentSearchProgress;
@@ -51,7 +52,8 @@ public class SiteViewModel extends ViewModel {
         error = new MutableLiveData<>();
         searchProgress = new MutableLiveData<>(SearchProgress.idle());
         tasks = new ViewModelTaskRunner<>(TaskType.class);
-        searches = new ViewModelSearchRunner();
+        spiderSearches = new ViewModelSearchRunner();
+        networkSearches = new ViewModelSearchRunner(Constant.TIMEOUT_SEARCH, 3);
         searchSession = new AtomicInteger();
         aggregateResults = new ArrayList<>();
         currentSearchProgress = SearchProgress.idle();
@@ -123,12 +125,25 @@ public class SiteViewModel extends ViewModel {
     public void searchContent(List<Site> sites, String keyword, boolean quick) {
         cancelCatalogDiscovery();
         int session = searchSession.incrementAndGet();
+        List<Site> safeSites = sites == null ? List.of() : sites;
+        List<Site> nativeSites = safeSites.stream().filter(SiteViewModel::usesNativeSpider).toList();
+        List<Site> httpSites = safeSites.stream().filter(site -> !usesNativeSpider(site)).toList();
         search.setValue(null);
         resetAggregateSearch(session);
-        setSearchProgress(SearchProgress.started(session, sites.size()));
-        searches.start(sites, site -> trackedSearchTask(site, keyword, quick),
+        setSearchProgress(SearchProgress.started(session, safeSites.size()));
+        // Third-party Spider/Jar sources remain physically serial because many share native state.
+        // Plain HTTP/XML/JSON sources use a small independent pool so slow endpoints no longer
+        // block safe providers behind them.
+        spiderSearches.start(nativeSites, site -> trackedSearchTask(site, keyword, quick),
                 (site, result) -> onSearchResult(session, site, result, keyword),
                 (site, throwable) -> onSearchFailure(session, site, throwable));
+        networkSearches.start(httpSites, site -> trackedSearchTask(site, keyword, quick),
+                (site, result) -> onSearchResult(session, site, result, keyword),
+                (site, throwable) -> onSearchFailure(session, site, throwable));
+    }
+
+    static boolean usesNativeSpider(Site site) {
+        return site != null && site.getType() == 3;
     }
 
     /**
@@ -280,7 +295,8 @@ public class SiteViewModel extends ViewModel {
 
     public void stopSearch() {
         cancelCatalogDiscovery();
-        searches.stop();
+        spiderSearches.stop();
+        networkSearches.stop();
         synchronized (this) {
             setSearchProgress(currentSearchProgress.cancel());
         }
@@ -294,7 +310,8 @@ public class SiteViewModel extends ViewModel {
     @Override
     protected void onCleared() {
         stopSearch();
-        searches.close();
+        spiderSearches.close();
+        networkSearches.close();
         tasks.cancelAll();
     }
 

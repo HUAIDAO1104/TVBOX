@@ -71,7 +71,6 @@ public class CloudAccountActivity extends BaseActivity implements CloudAccountAd
 
     @Override
     protected void initEvent() {
-        binding.back.setOnClickListener(v -> finish());
         binding.refresh.setOnClickListener(v -> loadRepositoryLoginRoutes());
         loadRepositoryLoginRoutes();
     }

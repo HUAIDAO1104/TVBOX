@@ -23,33 +23,9 @@
             android:paddingStart="@dimen/home_safe_start"
             android:paddingEnd="@dimen/home_safe_end">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/back"
-                android:layout_width="88dp"
-                android:layout_height="36dp"
-                android:background="@drawable/selector_tv_button"
-                android:focusable="true"
-                android:focusableInTouchMode="true"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:insetBottom="0dp"
-                android:insetLeft="0dp"
-                android:insetRight="0dp"
-                android:insetTop="0dp"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:padding="0dp"
-                android:stateListAnimator="@null"
-                android:text="@string/detail_v2_back"
-                android:textAllCaps="false"
-                android:textColor="@color/tv_button_text"
-                android:textSize="14sp"
-                app:backgroundTint="@null" />
-
             <com.google.android.material.textview.MaterialTextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
                 android:layout_weight="1"
                 android:includeFontPadding="false"
                 android:text="@string/home_hot_recommend"

@@ -38,6 +38,7 @@ public final class SearchAggregator {
     private final List<SearchWork> works;
     private final Map<String, Integer> workPositions;
     private final Map<String, String> sourceToWork;
+    private final Map<String, List<Integer>> positionsByBaseKey;
 
     public SearchAggregator(String keyword) {
         this(keyword, new SearchRelevance(), new SourceRanker(), System::currentTimeMillis);
@@ -52,6 +53,7 @@ public final class SearchAggregator {
         this.works = new ArrayList<>();
         this.workPositions = new LinkedHashMap<>();
         this.sourceToWork = new HashMap<>();
+        this.positionsByBaseKey = new HashMap<>();
     }
 
     public synchronized Update add(SearchSource source) {
@@ -76,6 +78,7 @@ public final class SearchAggregator {
         int position = works.size();
         works.add(work);
         workPositions.put(workId, position);
+        positionsByBaseKey.computeIfAbsent(groupingTitle.baseKey(), ignored -> new ArrayList<>()).add(position);
         sourceToWork.put(source.stableId(), workId);
         return new Update(UpdateType.ADDED_WORK, position, work);
     }
@@ -149,7 +152,7 @@ public final class SearchAggregator {
         int bestPosition = -1;
         int bestScore = -1;
         boolean ambiguous = false;
-        for (int position = 0; position < works.size(); position++) {
+        for (int position : positionsByBaseKey.getOrDefault(groupingTitle.baseKey(), List.of())) {
             int score = works.get(position).compatibility(source, groupingTitle);
             if (score < 0) continue;
             if (score > bestScore) {

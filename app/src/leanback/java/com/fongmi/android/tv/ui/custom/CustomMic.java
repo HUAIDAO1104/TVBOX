@@ -51,6 +51,10 @@ public class CustomMic extends AppCompatImageView {
         return mListen;
     }
 
+    public boolean canRecognize() {
+        return mAvailable && mRecognizer != null || mLauncher != null;
+    }
+
     private Intent getIntent() {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);

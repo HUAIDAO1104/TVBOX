@@ -58,6 +58,7 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
     private boolean mFirstResume;
     private boolean mStartVoiceRequested;
     private boolean mSearchLaunching;
+    private String mDefaultKeyword = "";
 
     public static void start(Activity activity) {
         activity.startActivity(new Intent(activity, SearchActivity.class));
@@ -81,7 +82,12 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
     }
 
     private boolean empty() {
-        return mBinding.keyword.getText().toString().trim().isEmpty();
+        return effectiveKeyword().isEmpty();
+    }
+
+    private String effectiveKeyword() {
+        String typed = mBinding.keyword.getText().toString().trim();
+        return typed.isEmpty() ? mDefaultKeyword : typed;
     }
 
     @Override
@@ -95,6 +101,7 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
         mFirstResume = true;
         mStartVoiceRequested = savedInstanceState == null && getIntent().getBooleanExtra(EXTRA_START_VOICE, false);
         CustomKeyboard.init(this, mBinding);
+        mBinding.keyword.setShowSoftInputOnFocus(false);
         setRecyclerView();
         checkKeyword(savedInstanceState);
         if (savedInstanceState == null && !getKeyword().isBlank()) onSearch();
@@ -146,13 +153,18 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
 
             @Override
             public void onUnavailable() {
-                Notify.show(R.string.search_v2_voice_unavailable);
-                restoreVoiceFocus();
+                mBinding.keyword.requestFocus();
             }
         });
     }
 
     private void startVoiceSearch() {
+        if (!mBinding.mic.canRecognize()) {
+            // Android TV boxes without a SpeechRecognizer cannot provide microphone text to an
+            // app. Use the existing phone-input channel instead of showing a dead-end error.
+            onRemote();
+            return;
+        }
         mBinding.voiceAction.requestFocus();
         mBinding.mic.start();
     }
@@ -177,8 +189,9 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
 
     private void checkKeyword(Bundle state) {
         String keyword = state == null ? getKeyword() : state.getString(STATE_KEYWORD, getKeyword());
-        if (keyword.isBlank()) keyword = getLastKeyword();
+        mDefaultKeyword = keyword.isBlank() ? getLastKeyword() : "";
         setKeyword(keyword);
+        mBinding.keyword.setHint(mDefaultKeyword.isBlank() ? getString(R.string.search_keyword) : mDefaultKeyword);
         getWord(keyword);
         if (state != null) mBinding.scroll.post(() -> mBinding.scroll.scrollTo(0, state.getInt(STATE_SCROLL_Y)));
     }
@@ -254,7 +267,7 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
         // native/Jar state. Re-enable submission only after this screen is actually resumed.
         if (empty() || mSearchLaunching) return;
         mSearchLaunching = true;
-        String keyword = mBinding.keyword.getText().toString().trim();
+        String keyword = effectiveKeyword();
         App.post(() -> mRecordAdapter.add(keyword), 250);
         Util.hideKeyboard(mBinding.keyword);
         CollectActivity.start(this, keyword);
@@ -280,7 +293,11 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
         if (event.getAction() == KeyEvent.ACTION_DOWN
                 && event.getRepeatCount() == 0
                 && VoiceSearchPolicy.isActivationKey(event.getKeyCode())) {
-            startVoiceSearch();
+            if (mBinding.mic.canRecognize()) {
+                startVoiceSearch();
+                return true;
+            }
+            onRemote();
             return true;
         }
         if (KeyUtil.isMenuKey(event)) showDialog();
@@ -349,6 +366,10 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
     }
 
     private boolean handleKeywordKey(KeyEvent event) {
+        if (KeyUtil.isEnterKey(event)) {
+            onSearch();
+            return true;
+        }
         if (!KeyUtil.isRightKey(event)) return false;
         if (mBinding.keyword.getSelectionEnd() < mBinding.keyword.getText().length()) return false;
         boolean hasRecord = mBinding.recordLayout.getVisibility() == View.VISIBLE;

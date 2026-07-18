@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.View;
@@ -13,7 +12,7 @@ import androidx.annotation.Nullable;
 
 import com.fongmi.android.tv.R;
 
-/** Compact, remote-friendly progress lines for the home hero carousel. */
+/** Compact, remote-friendly dots centered below the home hero poster. */
 public final class HomeCarouselIndicatorView extends View {
 
     public interface Listener {
@@ -21,11 +20,9 @@ public final class HomeCarouselIndicatorView extends View {
     }
 
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final RectF line = new RectF();
-    private final float inactiveWidth;
-    private final float activeWidth;
+    private final float inactiveRadius;
+    private final float activeRadius;
     private final float gap;
-    private final float lineHeight;
     private int count;
     private int selected;
     private Listener listener;
@@ -41,10 +38,9 @@ public final class HomeCarouselIndicatorView extends View {
     public HomeCarouselIndicatorView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         float density = getResources().getDisplayMetrics().density;
-        inactiveWidth = 10f * density;
-        activeWidth = 28f * density;
-        gap = 7f * density;
-        lineHeight = 3f * density;
+        inactiveRadius = 2.5f * density;
+        activeRadius = 3.7f * density;
+        gap = 9f * density;
         setFocusable(true);
         setFocusableInTouchMode(true);
         setClickable(true);
@@ -91,15 +87,14 @@ public final class HomeCarouselIndicatorView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (count < 2) return;
-        float total = activeWidth + (count - 1) * inactiveWidth + (count - 1) * gap;
+        float total = activeRadius * 2f + (count - 1) * inactiveRadius * 2f + (count - 1) * gap;
         float left = (getWidth() - total) / 2f;
-        float top = (getHeight() - lineHeight) / 2f;
+        float centerY = getHeight() / 2f;
         for (int index = 0; index < count; index++) {
-            float width = index == selected ? activeWidth : inactiveWidth;
-            paint.setColor(index == selected ? Color.rgb(255, 187, 130) : Color.argb(92, 255, 255, 255));
-            line.set(left, top, left + width, top + lineHeight);
-            canvas.drawRoundRect(line, lineHeight / 2f, lineHeight / 2f, paint);
-            left += width + gap;
+            float radius = index == selected ? activeRadius : inactiveRadius;
+            paint.setColor(index == selected ? Color.rgb(255, 78, 78) : Color.argb(104, 255, 255, 255));
+            canvas.drawCircle(left + radius, centerY, radius, paint);
+            left += radius * 2f + gap;
         }
     }
 }

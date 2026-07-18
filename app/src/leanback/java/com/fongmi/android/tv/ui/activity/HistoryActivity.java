@@ -45,7 +45,6 @@ public final class HistoryActivity extends BaseActivity implements HistoryAdapte
 
     @Override
     protected void initEvent() {
-        binding.back.setOnClickListener(view -> onBackInvoked());
         binding.clear.setOnClickListener(view -> {
             History.delete(VodConfig.getCid());
             adapter.setDeleteMode(false);
@@ -61,6 +60,7 @@ public final class HistoryActivity extends BaseActivity implements HistoryAdapte
                 adapter.submit(items);
                 binding.clear.setEnabled(!items.isEmpty());
                 binding.progressLayout.showContent(true, items.size());
+                if (!items.isEmpty() && getCurrentFocus() == null) binding.recycler.requestFocus();
             });
         });
     }

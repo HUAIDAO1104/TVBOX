@@ -93,4 +93,33 @@ public class ViewModelSearchRunnerTest {
         assertEquals(2, started.get());
         runner.close();
     }
+
+    @Test
+    public void explicitNetworkPoolRunsSafeRequestsInParallelWithinItsLimit() throws Exception {
+        int limit = 3;
+        ViewModelSearchRunner runner = new ViewModelSearchRunner(2_000, limit);
+        List<Site> sites = new ArrayList<>();
+        for (int i = 0; i < 9; i++) sites.add(new Site());
+        AtomicInteger running = new AtomicInteger();
+        AtomicInteger maximum = new AtomicInteger();
+        CountDownLatch firstWave = new CountDownLatch(limit);
+        CountDownLatch release = new CountDownLatch(1);
+        CountDownLatch finished = new CountDownLatch(sites.size());
+
+        runner.start(sites, site -> () -> {
+            int active = running.incrementAndGet();
+            maximum.accumulateAndGet(active, Math::max);
+            firstWave.countDown();
+            assertTrue(release.await(5, TimeUnit.SECONDS));
+            running.decrementAndGet();
+            return new Result();
+        }, (site, result) -> finished.countDown(), (site, error) -> finished.countDown());
+
+        assertTrue(firstWave.await(5, TimeUnit.SECONDS));
+        assertEquals(limit, running.get());
+        release.countDown();
+        assertTrue(finished.await(10, TimeUnit.SECONDS));
+        assertEquals(limit, maximum.get());
+        runner.close();
+    }
 }

@@ -23,16 +23,8 @@
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/back"
-                style="@style/DetailV2.Button.Link"
-                android:drawableStart="@drawable/detail_v2_ic_back"
-                android:nextFocusDown="@id/recycler"
-                android:text="@string/detail_v2_back" />
-
-            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="18dp"
                 android:layout_weight="1"
                 android:text="@string/home_history"
                 android:textColor="@color/tv_text_primary"

@@ -6,7 +6,10 @@ import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.utils.Task;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
@@ -40,7 +43,8 @@ final class ViewModelSearchRunner {
     private final ExecutorService executor;
     private final Object lock = new Object();
     private final long timeoutMs;
-    private Request running;
+    private final int maxConcurrentSearches;
+    private final Set<Request> running = new LinkedHashSet<>();
     private boolean closed;
 
     ViewModelSearchRunner() {
@@ -48,9 +52,15 @@ final class ViewModelSearchRunner {
     }
 
     ViewModelSearchRunner(long timeoutMs) {
+        this(timeoutMs, MAX_CONCURRENT_SEARCHES);
+    }
+
+    ViewModelSearchRunner(long timeoutMs, int maxConcurrentSearches) {
         this.timeoutMs = timeoutMs;
-        this.executor = Executors.newSingleThreadExecutor(runnable -> {
-            Thread thread = new Thread(runnable, "site-search-serial");
+        this.maxConcurrentSearches = Math.max(1, maxConcurrentSearches);
+        this.executor = Executors.newFixedThreadPool(this.maxConcurrentSearches, runnable -> {
+            Thread thread = new Thread(runnable, this.maxConcurrentSearches == 1
+                    ? "site-search-serial" : "site-search-network");
             thread.setPriority(Thread.NORM_PRIORITY - 1);
             return thread;
         });
@@ -59,51 +69,51 @@ final class ViewModelSearchRunner {
     int start(List<Site> sites, Function<Site, Callable<Result>> taskFactory,
               BiConsumer<Site, Result> onResult, BiConsumer<Site, Throwable> onFailure) {
         int current = epoch.incrementAndGet();
-        Request previous;
-        Request launch;
+        List<Request> previous;
+        List<Request> launches;
         synchronized (lock) {
             if (closed) return current;
             queue.clear();
-            previous = running;
+            previous = new ArrayList<>(running);
             enqueueLocked(sites, taskFactory, current, onResult, onFailure);
-            launch = takeNextLocked();
+            launches = takeNextBatchLocked();
         }
-        cancel(previous);
-        launch(launch);
+        previous.forEach(this::cancel);
+        launch(launches);
         return current;
     }
 
     void add(List<Site> sites, int expectedEpoch, Function<Site, Callable<Result>> taskFactory,
              BiConsumer<Site, Result> onResult, BiConsumer<Site, Throwable> onFailure) {
-        Request launch;
+        List<Request> launches;
         synchronized (lock) {
             if (closed || epoch.get() != expectedEpoch) return;
             enqueueLocked(sites, taskFactory, expectedEpoch, onResult, onFailure);
-            launch = takeNextLocked();
+            launches = takeNextBatchLocked();
         }
-        launch(launch);
+        launch(launches);
     }
 
     void stop() {
         epoch.incrementAndGet();
-        Request previous;
+        List<Request> previous;
         synchronized (lock) {
             queue.clear();
-            previous = running;
+            previous = new ArrayList<>(running);
         }
-        cancel(previous);
+        previous.forEach(this::cancel);
     }
 
     void close() {
-        Request previous;
+        List<Request> previous;
         synchronized (lock) {
             if (closed) return;
             closed = true;
             epoch.incrementAndGet();
             queue.clear();
-            previous = running;
+            previous = new ArrayList<>(running);
         }
-        cancel(previous);
+        previous.forEach(this::cancel);
         executor.shutdownNow();
     }
 
@@ -119,11 +129,11 @@ final class ViewModelSearchRunner {
 
     /** Must be called with {@link #lock} held. */
     private Request takeNextLocked() {
-        if (closed || running != null) return null;
+        if (closed || running.size() >= maxConcurrentSearches) return null;
         while (!queue.isEmpty()) {
             Request request = queue.remove();
             if (request.epoch != epoch.get()) continue;
-            running = request;
+            running.add(request);
             request.future = new FutureTask<>(() -> {
                 run(request);
                 return null;
@@ -131,6 +141,19 @@ final class ViewModelSearchRunner {
             return request;
         }
         return null;
+    }
+
+    /** Must be called with {@link #lock} held. */
+    private List<Request> takeNextBatchLocked() {
+        List<Request> launches = new ArrayList<>();
+        Request request;
+        while ((request = takeNextLocked()) != null) launches.add(request);
+        return launches;
+    }
+
+    private void launch(List<Request> requests) {
+        if (requests == null) return;
+        for (Request request : requests) launch(request);
     }
 
     private void launch(Request request) {
@@ -180,13 +203,12 @@ final class ViewModelSearchRunner {
     }
 
     private void finishPhysical(Request request) {
-        Request launch;
+        List<Request> launches;
         synchronized (lock) {
-            if (running != request) return;
-            running = null;
-            launch = takeNextLocked();
+            if (!running.remove(request)) return;
+            launches = takeNextBatchLocked();
         }
-        launch(launch);
+        launch(launches);
     }
 
     private void cancel(Request request) {
