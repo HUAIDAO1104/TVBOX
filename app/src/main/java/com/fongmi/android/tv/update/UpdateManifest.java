@@ -16,7 +16,9 @@ public class UpdateManifest {
     private String versionName;
     @SerializedName(value = "releaseNotes", alternate = {"notes", "desc"})
     private String releaseNotes;
+    @SerializedName("mandatory")
     private boolean mandatory;
+    @SerializedName("apks")
     private Map<String, Asset> apks;
 
     public static UpdateManifest parse(Gson gson, String text) {
@@ -71,10 +73,15 @@ public class UpdateManifest {
 
     public static class Asset {
 
+        @SerializedName("url")
         private String url;
+        @SerializedName("fileName")
         private String fileName;
+        @SerializedName("sha256")
         private String sha256;
+        @SerializedName("size")
         private long size;
+        @SerializedName("mirrors")
         private List<String> mirrors;
 
         public String url() {

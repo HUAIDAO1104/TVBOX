@@ -5,6 +5,10 @@
 
 # Gson
 -keep class com.google.gson.** { *; }
+# OTA manifests are parsed reflectively. Keep the model and its nested asset fields so
+# release minification cannot turn a valid update into an "unsupported device" result.
+-keep class com.fongmi.android.tv.update.UpdateManifest { *; }
+-keep class com.fongmi.android.tv.update.UpdateManifest$Asset { *; }
 
 # SimpleXML
 -keep interface org.simpleframework.xml.core.Label { public *; }
