@@ -1,1 +1,2 @@
-lib-*.aar
+# These customized Media3 release artifacts are required by clean CI builds.
+# Keep them tracked with the app instead of relying on workstation-only files.
