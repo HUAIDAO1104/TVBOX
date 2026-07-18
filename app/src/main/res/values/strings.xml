@@ -1,7 +1,8 @@
 <resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
 
     <!-- App -->
-    <string name="app_name">TV</string>
+    <string name="app_name">片多多</string>
+    <string name="brand_tagline">好片汇聚，一点即播</string>
 
     <!-- Live -->
     <string name="live_pass">Pass</string>
@@ -66,8 +67,15 @@
 
     <!-- Danmaku Setting -->
     <string name="danmaku">Danmaku</string>
+    <string name="danmaku_on">Danmaku on</string>
+    <string name="danmaku_off">Danmaku off</string>
+    <string name="danmaku_on_description">Danmaku is on. Long press for settings; press Menu to choose a source.</string>
+    <string name="danmaku_off_description">Danmaku is off. Long press for settings; press Menu to choose a source.</string>
     <string name="danmaku_select">Select danmaku</string>
     <string name="danmaku_setting">Danmaku setting</string>
+    <string name="danmaku_manual_search">Search danmaku</string>
+    <string name="danmaku_search_no_playback">Play a video before manually matching danmaku</string>
+    <string name="danmaku_search_configure_api">Configure a danmaku search API in Settings first</string>
     <string name="danmaku_text_size">Text scale</string>
     <string name="danmaku_transparency">Opacity</string>
     <string name="danmaku_text_bold">Bold</string>
@@ -212,12 +220,21 @@
     <string name="error_decode_fallback">Hardware decoding failed, switched to software decoding</string>
     <string name="error_play_tvbus">Error code: <xliff:g name="name">%s</xliff:g></string>
     <string name="error_detail">No play data</string>
-    <string name="error_empty">Nothing here 👀</string>
+    <string name="error_empty">Nothing here</string>
 
     <!-- Update -->
     <string name="update_version">New version <xliff:g name="name">%s</xliff:g></string>
     <string name="update_check">Checking for updates…</string>
     <string name="update_confirm">Update</string>
+    <string name="update_later">Later</string>
+    <string name="update_latest">You already have the latest version</string>
+    <string name="update_failed">Unable to reach the update mirrors. Try again later.</string>
+    <string name="update_unsupported">This release has no package for the current device</string>
+    <string name="update_default_notes">Stability and compatibility improvements</string>
+    <string name="update_invalid">The update failed security verification and was deleted</string>
+    <string name="update_permission">Allow PianduoDuo to install updates, then return to continue</string>
+    <string name="update_permission_denied">Installation permission was not granted. You can try again in Settings.</string>
+    <string name="update_install_failed">Unable to open the system installer</string>
 
     <!-- Crash -->
     <string name="crash_info">An unexpected error occurred.\nSorry for the inconvenience.</string>

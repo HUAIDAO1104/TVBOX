@@ -34,6 +34,7 @@ import com.fongmi.android.tv.ui.dialog.HistoryDialog;
 import com.fongmi.android.tv.ui.dialog.LiveDialog;
 import com.fongmi.android.tv.ui.dialog.RestoreDialog;
 import com.fongmi.android.tv.ui.dialog.SiteDialog;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.utils.FileUtil;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.PermissionUtil;
@@ -62,7 +63,7 @@ public class SettingActivity extends FocusSafeSettingsActivity implements Config
 
     private String[] getDohList() {
         List<String> list = new ArrayList<>();
-        for (Doh item : VodConfig.get().getDoh()) list.add(item.getName());
+        for (Doh item : VodConfig.get().getDoh()) list.add(SearchDisplayName.removeEmoji(item.getName()));
         return list.toArray(new String[0]);
     }
 
@@ -78,9 +79,9 @@ public class SettingActivity extends FocusSafeSettingsActivity implements Config
 
     @Override
     protected void initView(Bundle savedInstanceState) {
-        mBinding.vodUrl.setText(VodConfig.getDesc());
-        mBinding.liveUrl.setText(LiveConfig.getDesc());
-        mBinding.wallUrl.setText(WallConfig.getDesc());
+        mBinding.vodUrl.setText(SearchDisplayName.removeEmoji(VodConfig.getDesc()));
+        mBinding.liveUrl.setText(SearchDisplayName.removeEmoji(LiveConfig.getDesc()));
+        mBinding.wallUrl.setText(SearchDisplayName.removeEmoji(WallConfig.getDesc()));
         mBinding.versionText.setText(BuildConfig.VERSION_NAME);
         setCacheText();
         setOtherText();
@@ -298,7 +299,7 @@ public class SettingActivity extends FocusSafeSettingsActivity implements Config
     public void setDoh(Doh doh) {
         OkHttp.dns().setDoh(doh);
         Setting.putDoh(doh.toString());
-        mBinding.dohText.setText(doh.getName());
+        mBinding.dohText.setText(SearchDisplayName.removeEmoji(doh.getName()));
     }
 
     private void onCache(View view) {

@@ -268,9 +268,17 @@ function showPanel(id) {
     if (id === 5 && document.getElementById('file_list').innerHTML === '') listFile('');
 }
 
-const tab = parseInt(new URLSearchParams(window.location.search).get('tab')) || 1;
+const queryParams = new URLSearchParams(window.location.search);
+const tab = parseInt(queryParams.get('tab')) || 1;
 history.replaceState(null, '');
 showPanel(tab);
+
+if (queryParams.get('mode') === 'repository') {
+    $('#setting_name').attr('placeholder', '倉庫名稱（選填）');
+    $('#setting_text').attr('placeholder', '貼上倉庫網址');
+    $('#setting_submit').text('新增並同步');
+    $('#setting_tab_label').text('倉庫');
+}
 
 window.addEventListener('popstate', function () {
     if (dialogClosing) { dialogClosing = false; return; }

@@ -10,6 +10,7 @@ import com.fongmi.android.tv.bean.Repository;
 import com.fongmi.android.tv.bean.RepositoryItem;
 import com.fongmi.android.tv.databinding.AdapterRepositoryItemBinding;
 import com.fongmi.android.tv.repository.RepositoryManager;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,8 +53,8 @@ public class RepositoryItemAdapter extends RecyclerView.Adapter<RepositoryItemAd
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Entry entry = entries.get(position);
-        holder.binding.name.setText(entry.item.getName());
-        holder.binding.repository.setText(entry.repository);
+        holder.binding.name.setText(SearchDisplayName.removeEmoji(entry.item.getName()));
+        holder.binding.repository.setText(SearchDisplayName.removeEmoji(entry.repository));
         holder.binding.getRoot().setOnClickListener(v -> listener.onClick(entry.item));
     }
 

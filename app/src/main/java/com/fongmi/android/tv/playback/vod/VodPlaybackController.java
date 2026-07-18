@@ -364,7 +364,7 @@ public class VodPlaybackController {
     private Episode getRelativeEpisode(int offset) {
         List<Episode> episodes = state.getFlag().getEpisodes();
         int current = state.getFlag().getPosition();
-        int position = Math.clamp(current + offset, 0, episodes.size() - 1);
+        int position = Math.max(0, Math.min(current + offset, episodes.size() - 1));
         return episodes.get(position);
     }
 }

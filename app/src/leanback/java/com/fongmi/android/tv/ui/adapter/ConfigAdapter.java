@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.fongmi.android.tv.bean.Config;
 import com.fongmi.android.tv.databinding.AdapterConfigBinding;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 
 import java.util.List;
 
@@ -70,7 +71,7 @@ public class ConfigAdapter extends RecyclerView.Adapter<ConfigAdapter.ViewHolder
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Config item = mItems.get(position);
         boolean current = item.getUrl().equals(currentUrl);
-        holder.binding.text.setText((current ? "●  " : "    ") + item.getDesc());
+        holder.binding.text.setText((current ? "●  " : "    ") + SearchDisplayName.removeEmoji(item.getDesc()));
         holder.binding.text.setSelected(current);
         holder.binding.text.setOnClickListener(v -> listener.onTextClick(item));
         holder.binding.delete.setVisibility(readOnly ? View.GONE : View.VISIBLE);

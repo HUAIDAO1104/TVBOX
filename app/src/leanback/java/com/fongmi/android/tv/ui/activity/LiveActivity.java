@@ -63,6 +63,7 @@ import com.fongmi.android.tv.ui.dialog.PassDialog;
 import com.fongmi.android.tv.ui.dialog.PlayerEngineDialog;
 import com.fongmi.android.tv.ui.dialog.SubtitleDialog;
 import com.fongmi.android.tv.ui.dialog.TrackDialog;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.playback.PlaybackAction;
 import com.fongmi.android.tv.utils.Clock;
 import com.fongmi.android.tv.utils.ImgUtil;
@@ -277,7 +278,7 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
     }
 
     private void getLive() {
-        mBinding.control.action.home.setText(LiveConfig.isOnly() ? getString(R.string.live_refresh) : getHome().getName());
+        mBinding.control.action.home.setText(LiveConfig.isOnly() ? getString(R.string.live_refresh) : SearchDisplayName.removeEmoji(getHome().getName()));
         mViewModel.parse(getHome());
         showProgress();
     }
@@ -691,8 +692,8 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
         mChannel.loadLogo(mBinding.widget.logo);
         mBinding.widget.title.setSelected(true);
         mBinding.widget.line.setText(mChannel.getLine());
-        mBinding.widget.name.setText(mChannel.getShow());
-        mBinding.widget.title.setText(mChannel.getShow());
+        mBinding.widget.name.setText(SearchDisplayName.removeEmoji(mChannel.getShow()));
+        mBinding.widget.title.setText(SearchDisplayName.removeEmoji(mChannel.getShow()));
         mBinding.control.action.line.setText(mChannel.getLine());
         mBinding.widget.number.setText(mChannel.getNumber());
         mBinding.widget.line.setVisibility(mChannel.getLineVisible());
@@ -704,7 +705,8 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
         EpgData data = epg.getEpgData();
         boolean hasTitle = !data.getTitle().isEmpty();
         mEpgDataAdapter.addAll(epg.getList());
-        if (hasTitle) mBinding.widget.title.setText(getString(R.string.detail_title, mChannel.getShow(), data.getTitle()));
+        if (hasTitle) mBinding.widget.title.setText(getString(R.string.detail_title,
+                SearchDisplayName.removeEmoji(mChannel.getShow()), SearchDisplayName.removeEmoji(data.getTitle())));
         mBinding.widget.name.setMaxEms(hasTitle ? 12 : 48);
         mBinding.widget.play.setText(data.format());
         setWidth(epg);
@@ -810,7 +812,8 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
 
     @Override
     public void showCatchupReady(Channel channel, EpgData data) {
-        mBinding.widget.title.setText(getString(R.string.detail_title, channel.getShow(), data.getTitle()));
+        mBinding.widget.title.setText(getString(R.string.detail_title,
+                SearchDisplayName.removeEmoji(channel.getShow()), SearchDisplayName.removeEmoji(data.getTitle())));
         Notify.show(getString(R.string.play_ready, data.getTitle()));
     }
 

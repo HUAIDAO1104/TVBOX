@@ -1,9 +1,9 @@
 {
-  "version": 4,
+  "version": 6,
   "repositories": [
     {
       "stableId": "default-qist-tvbox",
-      "name": "内置内容仓库",
+      "name": "默认内容仓库",
       "url": "https://raw.githubusercontent.com/qist/tvbox/master/fty.json",
       "enabled": true,
       "priority": 0,
@@ -18,6 +18,32 @@
           "enabled": true,
           "order": 0
         }
+      ]
+    },
+    {
+      "stableId": "backup-tomorrow-lmw",
+      "name": "备用多仓仓库",
+      "url": "https://gh.llkk.cc/https://raw.githubusercontent.com/tushen6/Tomorrow/master/lmw.json",
+      "enabled": true,
+      "priority": 1,
+      "autoSync": true,
+      "builtIn": true,
+      "items": [
+        { "id": "network", "name": "网络接口", "url": "https://8815.kstore.vip/tvbox/wmz", "type": 0, "enabled": true, "order": 0 },
+        { "id": "feimao", "name": "肥猫", "url": "http://肥猫.net/tv", "type": 0, "enabled": true, "order": 1 },
+        { "id": "wangerxiao", "name": "线路 03", "url": "https://9280.kstore.vip/newwex.json", "type": 0, "enabled": true, "order": 2 },
+        { "id": "xiaosa", "name": "潇洒", "url": "https://9877.kstore.space/ONE/one.json", "type": 0, "enabled": true, "order": 3 },
+        { "id": "moyu", "name": "摸鱼", "url": "http://www.小不点.com", "type": 0, "enabled": true, "order": 4 },
+        { "id": "fantaiying", "name": "饭太硬", "url": "https://www.饭太硬.cc/tv", "type": 0, "enabled": true, "order": 5 },
+        { "id": "dongli", "name": "东篱", "url": "https://16151.kstore.space", "type": 0, "enabled": true, "order": 6 },
+        { "id": "xiaomi", "name": "小米", "url": "https://gh-proxy.org/https://raw.githubusercontent.com/ggrrttyyiii/CatVodSpider/refs/heads/main/json/demo.json", "type": 0, "enabled": true, "order": 7 },
+        { "id": "qiaoji", "name": "巧记", "url": "http://cdn.qiaoji8.com/tvbox.json", "type": 0, "enabled": true, "order": 8 },
+        { "id": "xiaohuban", "name": "小虎斑", "url": "http://hb.小虎斑.site:25252/仅供测试", "type": 0, "enabled": true, "order": 9 },
+        { "id": "ouge", "name": "欧歌", "url": "https://欧歌.v.nxog.top/m/", "type": 0, "enabled": true, "order": 10 },
+        { "id": "nanfeng", "name": "南风", "url": "https://gh-proxy.com/https://raw.githubusercontent.com/yoursmile66/TVBox/main/XC.json", "type": 0, "enabled": true, "order": 11 },
+        { "id": "pg", "name": "PG", "url": "https://www.252035.xyz/p/jsm.json", "type": 0, "enabled": true, "order": 12 },
+        { "id": "zhenxin", "name": "真心", "url": "https://www.252035.xyz/z/FongMi.json", "type": 0, "enabled": true, "order": 13 },
+        { "id": "daozhang", "name": "道长", "url": "https://gitlab.com/duomv/dzhipy/-/raw/main/index.json", "type": 0, "enabled": true, "order": 14 }
       ]
     }
   ]

@@ -10,30 +10,54 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Future;
 
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 public class Download {
 
     private final File file;
-    private final String url;
+    private final List<String> urls;
     private Callback callback;
     private Future<?> future;
+    private String sha256;
+    private long timeout;
     private String tag;
 
     public static Download create(String url, File file) {
-        return new Download(url, file);
+        return new Download(List.of(url), file);
+    }
+
+    public static Download create(List<String> urls, File file) {
+        return new Download(urls, file);
     }
 
     public Download(String url, File file) {
-        this.tag = url;
-        this.url = url;
+        this(List.of(url), file);
+    }
+
+    public Download(List<String> urls, File file) {
+        this.urls = new ArrayList<>(urls);
+        this.tag = this.urls.isEmpty() ? "download" : this.urls.get(0);
         this.file = file;
     }
 
     public Download tag(String tag) {
         this.tag = tag;
+        return this;
+    }
+
+    public Download sha256(String sha256) {
+        this.sha256 = sha256;
+        return this;
+    }
+
+    public Download timeout(long timeout) {
+        this.timeout = timeout;
         return this;
     }
 
@@ -55,14 +79,27 @@ public class Download {
     }
 
     private void doInBackground() {
-        try (Response res = OkHttp.newCall(url, tag).execute()) {
-            download(res.body().byteStream(), getLength(res));
-            if (callback != null) App.post(() -> callback.success(file));
-        } catch (Exception e) {
-            Path.clear(file);
-            if (callback != null) App.post(() -> callback.error(e.getMessage()));
-            else throw new RuntimeException(e.getMessage(), e);
+        Exception last = null;
+        for (String url : urls) {
+            if (Thread.currentThread().isInterrupted()) return;
+            try (Response res = timeout > 0 ? OkHttp.newCall(OkHttp.client(timeout), url, tag).execute() : OkHttp.newCall(url, tag).execute()) {
+                ResponseBody body = res.body();
+                if (!res.isSuccessful() || body == null) throw new IOException("HTTP " + res.code());
+                download(body.byteStream(), getLength(res));
+                if (sha256 != null && !sha256.isBlank() && !com.fongmi.android.tv.update.UpdateVerifier.checksumMatches(file, sha256)) {
+                    throw new IOException("APK checksum mismatch");
+                }
+                if (callback != null) App.post(() -> callback.success(file));
+                return;
+            } catch (Exception e) {
+                last = e;
+                Path.clear(file);
+            }
         }
+        if (Thread.currentThread().isInterrupted()) return;
+        Exception error = last == null ? new IOException("No download source") : last;
+        if (callback != null) App.post(() -> callback.error(error.getMessage()));
+        else throw new RuntimeException(error.getMessage(), error);
     }
 
     private void download(InputStream is, double length) throws IOException {
@@ -71,7 +108,7 @@ public class Download {
             int readBytes;
             long totalBytes = 0;
             while ((readBytes = input.read(buffer)) != -1) {
-                if (Thread.interrupted()) return;
+                if (Thread.currentThread().isInterrupted()) throw new InterruptedIOException("Download cancelled");
                 totalBytes += readBytes;
                 os.write(buffer, 0, readBytes);
                 if (length <= 0) continue;

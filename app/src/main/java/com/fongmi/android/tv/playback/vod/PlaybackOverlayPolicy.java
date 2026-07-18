@@ -21,6 +21,26 @@ public final class PlaybackOverlayPolicy {
         return fullscreen && !controlVisible && !progressVisible && !errorVisible;
     }
 
+    /** Horizontal keys keep their direct-seek behavior while the fullscreen controller is hidden. */
+    public static boolean shouldSeekWithHiddenControls(boolean fullscreen, boolean controlVisible,
+                                                       boolean progressVisible, boolean errorVisible,
+                                                       boolean horizontalKey) {
+        return routeToPlaybackGestures(fullscreen, controlVisible, progressVisible, errorVisible)
+                && horizontalKey;
+    }
+
+    /** The first non-seek D-pad direction reveals the controller without also navigating. */
+    public static boolean shouldRevealControls(boolean fullscreen, boolean controlVisible, boolean progressVisible,
+                                               boolean errorVisible, boolean revealKey) {
+        return fullscreen && !controlVisible && !progressVisible && !errorVisible && revealKey;
+    }
+
+    /** Buffer actions stay passive until the user explicitly presses a direction key. */
+    public static boolean shouldEnterProgressActions(boolean progressVisible, boolean actionsVisible,
+                                                     boolean focusInsideActions, boolean directionalKey) {
+        return progressVisible && actionsVisible && !focusInsideActions && directionalKey;
+    }
+
     /** A rebuffering overlay may still toggle an already prepared item with the confirm key. */
     public static boolean canToggleDuringBuffering(boolean fullscreen, boolean progressVisible, boolean buffering,
                                                    boolean playerEmpty, boolean errorVisible) {

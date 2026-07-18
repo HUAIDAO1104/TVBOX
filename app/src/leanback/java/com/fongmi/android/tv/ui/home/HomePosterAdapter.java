@@ -13,6 +13,7 @@ import com.bumptech.glide.Glide;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.AdapterHomePosterBinding;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.utils.ImgUtil;
 
 import java.util.ArrayList;
@@ -104,7 +105,7 @@ public class HomePosterAdapter extends RecyclerView.Adapter<HomePosterAdapter.Vi
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Vod item = items.get(position);
         applyCardSize(holder.binding.getRoot());
-        holder.binding.name.setText(item.getName());
+        holder.binding.name.setText(SearchDisplayName.removeEmoji(item.getName()));
         String metadata = metadata(item);
         holder.binding.remark.setText(metadata);
         holder.binding.remark.setVisibility(metadata.isEmpty() ? View.GONE : View.VISIBLE);

@@ -59,7 +59,7 @@ public class CollectAdapter extends RecyclerView.Adapter<CollectAdapter.ViewHold
         Collect item = mItems.get(position);
         holder.binding.getRoot().setOnClickListener(null);
         String name = SearchDisplayName.clean(item.getSite().getName());
-        holder.binding.text.setText(name.isEmpty() ? item.getSite().getName() : name);
+        holder.binding.text.setText(name.isEmpty() ? SearchDisplayName.removeEmoji(item.getSite().getName()) : name);
         holder.binding.text.setContentDescription(holder.binding.text.getText());
     }
 

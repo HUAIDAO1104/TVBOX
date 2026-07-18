@@ -22,6 +22,7 @@ import com.fongmi.android.tv.repository.RepositoryStatus;
 import com.fongmi.android.tv.ui.adapter.RepositoryManageAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.utils.Notify;
 import com.github.catvod.utils.SecretRedactor;
 
@@ -75,7 +76,7 @@ public class RepositoryDetailActivity extends BaseActivity implements Repository
     }
 
     private void render() {
-        binding.title.setText(repository.getName());
+        binding.title.setText(SearchDisplayName.removeEmoji(repository.getName()));
         binding.url.setText(SecretRedactor.redact(repository.getUrl()));
         binding.type.setText(repository.getUrl().startsWith("http") ? (repository.getUrl().startsWith("https") ? "HTTPS" : "HTTP · " + getString(R.string.repository_insecure)) : getString(R.string.repository_local));
         binding.status.setText(switch (repository.getStatus()) {

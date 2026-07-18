@@ -17,10 +17,10 @@ android {
         minSdk libs.versions.minSdk.get().toInteger()
         targetSdk libs.versions.targetSdk.get().toInteger()
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        // Keep custom TV builds distinguishable from upstream 5.5.6 so Android TV installers
-        // do not silently retain an already-installed APK with the same version code.
-        versionCode 559
-        versionName "5.5.9-search-fix"
+        // Keep compatibility fixes on a strictly newer version so TV installers do not retain
+        // the previous APK while preserving its database for the migration chain below.
+        versionCode 570
+        versionName "5.5.19-ota-mirror"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
@@ -60,7 +60,7 @@ android {
         release {
             storeFile file(localProps['storeFile'])
             keyAlias localProps['keyAlias']
-            keyPassword localProps['storePassword']
+            keyPassword localProps['keyPassword'] ?: localProps['storePassword']
             storePassword localProps['storePassword']
         }
     }

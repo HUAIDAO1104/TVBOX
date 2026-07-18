@@ -260,6 +260,22 @@ public class SearchAggregatorTest {
         assertEquals(titles.size(), aggregator.sourceCount());
     }
 
+    @Test
+    public void unaggregatedModeKeepsEquivalentProviderResultsAsSeparateCards() {
+        SearchAggregator aggregator = aggregator("庆余年");
+        SearchSource first = source("repo-a", "site-a", "1", "庆余年第二部", "2024", "电视剧", "张若昀");
+        SearchSource second = source("repo-b", "site-b", "2", "庆余年 第2部", "2024", "电视剧", "张若昀");
+
+        aggregator.addUnaggregated(first);
+        aggregator.addUnaggregated(second);
+
+        assertEquals(2, aggregator.workCount());
+        assertEquals(2, aggregator.sourceCount());
+        assertEquals(1, aggregator.snapshot().get(0).sourceCount());
+        assertEquals(1, aggregator.snapshot().get(1).sourceCount());
+        assertNotEquals(aggregator.snapshot().get(0).stableId(), aggregator.snapshot().get(1).stableId());
+    }
+
     private SearchAggregator aggregator(String keyword) {
         return new SearchAggregator(keyword, new SearchRelevance(), new SourceRanker(), () -> NOW);
     }

@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.PorterDuff;
-import android.graphics.Rect;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.util.AttributeSet;
@@ -15,15 +14,16 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatImageView;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.utils.KeyUtil;
 import com.fongmi.android.tv.utils.PermissionUtil;
 import com.fongmi.android.tv.utils.ResUtil;
-import com.github.bassaer.library.MDColor;
 
 import java.util.List;
+import java.util.Locale;
 
 public class CustomMic extends AppCompatImageView {
 
@@ -32,6 +32,7 @@ public class CustomMic extends AppCompatImageView {
     private SpeechRecognizer mRecognizer;
     private FragmentActivity mActivity;
     private boolean mAvailable;
+    private boolean mExternalAvailable;
     private boolean mListen;
 
     public CustomMic(@NonNull Context context) {
@@ -46,13 +47,16 @@ public class CustomMic extends AppCompatImageView {
         return mAvailable;
     }
 
-    private boolean isListen() {
+    public boolean isListening() {
         return mListen;
     }
 
     private Intent getIntent() {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag());
+        intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, getContext().getString(R.string.search_v2_voice_prompt));
         return intent;
     }
 
@@ -61,13 +65,14 @@ public class CustomMic extends AppCompatImageView {
         mListener = listener;
         mListener.setDone(() -> updateUI(false));
         mAvailable = SpeechRecognizer.isRecognitionAvailable(activity);
+        mExternalAvailable = hasResolveActivity();
         initSpeech();
     }
 
     private void initSpeech() {
+        setVisibility(VISIBLE);
         if (isAvailable()) initRecognizer();
-        else if (hasResolveActivity()) initLauncher();
-        else setVisibility(GONE);
+        if (mExternalAvailable) initLauncher();
     }
 
     private boolean hasResolveActivity() {
@@ -75,28 +80,49 @@ public class CustomMic extends AppCompatImageView {
     }
 
     private void initRecognizer() {
-        if (mRecognizer == null) mRecognizer = SpeechRecognizer.createSpeechRecognizer(mActivity);
-        mRecognizer.setRecognitionListener(mListener);
+        try {
+            if (mRecognizer == null) mRecognizer = SpeechRecognizer.createSpeechRecognizer(mActivity);
+            mRecognizer.setRecognitionListener(mListener);
+        } catch (RuntimeException ignored) {
+            mRecognizer = null;
+            mAvailable = false;
+        }
     }
 
     private void initLauncher() {
         mLauncher = mActivity.registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
-            if (result.getResultCode() != Activity.RESULT_OK || result.getData() == null) return;
+            updateUI(false);
+            if (result.getResultCode() != Activity.RESULT_OK) {
+                mListener.onCancelled();
+                return;
+            }
+            if (result.getData() == null) {
+                mListener.onNoMatch();
+                return;
+            }
             List<String> texts = result.getData().getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-            if (texts != null && !texts.isEmpty()) mListener.onResults(texts.get(0));
+            String text = com.fongmi.android.tv.ui.search.VoiceSearchPolicy.firstResult(texts);
+            if (text.isEmpty()) mListener.onNoMatch();
+            else mListener.onResults(text);
         });
     }
 
     public void start() {
         if (mActivity == null) return;
-        if (isAvailable()) startRecognizer();
-        else launchIntent();
+        if (isListening()) {
+            stop();
+            return;
+        }
+        if (isAvailable() && mRecognizer != null) startRecognizer();
+        else if (mLauncher != null) launchIntent();
+        else mListener.onUnavailable();
     }
 
     private void startRecognizer() {
         if (mRecognizer == null) return;
         PermissionUtil.requestAudio(mActivity, allGranted -> {
             if (allGranted) startListening();
+            else mListener.onPermissionDenied();
         });
     }
 
@@ -106,20 +132,29 @@ public class CustomMic extends AppCompatImageView {
             requestFocus();
             updateUI(true);
         } catch (Exception ignored) {
+            updateUI(false);
+            if (mLauncher != null) launchIntent();
+            else mListener.onFailure(SpeechRecognizer.ERROR_CLIENT);
         }
     }
 
     private void launchIntent() {
         try {
-            if (mLauncher == null) return;
+            if (mLauncher == null) {
+                mListener.onUnavailable();
+                return;
+            }
+            updateUI(true);
             mLauncher.launch(getIntent());
         } catch (Exception ignored) {
+            updateUI(false);
+            mListener.onFailure(SpeechRecognizer.ERROR_CLIENT);
         }
     }
 
     public void stop() {
-        if (mRecognizer == null) return;
-        mRecognizer.stopListening();
+        if (!isListening()) return;
+        if (mRecognizer != null) mRecognizer.cancel();
         updateUI(false);
     }
 
@@ -138,24 +173,17 @@ public class CustomMic extends AppCompatImageView {
         mListen = listening;
         if (listening) {
             startAnimation(ResUtil.getAnim(R.anim.flicker));
-            setColorFilter(MDColor.RED_500, PorterDuff.Mode.SRC_IN);
+            setColorFilter(ContextCompat.getColor(getContext(), R.color.tv_accent_focused), PorterDuff.Mode.SRC_IN);
         } else {
             clearAnimation();
-            setColorFilter(MDColor.WHITE, PorterDuff.Mode.SRC_IN);
+            setColorFilter(ContextCompat.getColor(getContext(), R.color.tv_text_primary), PorterDuff.Mode.SRC_IN);
         }
     }
 
     private boolean onBackKey(KeyEvent event) {
-        if (!isListen() || !KeyUtil.isBackKey(event)) return false;
+        if (!isListening() || !KeyUtil.isBackKey(event)) return false;
         stop();
         return true;
-    }
-
-    @Override
-    protected void onFocusChanged(boolean gainFocus, int direction, @Nullable Rect previouslyFocusedRect) {
-        super.onFocusChanged(gainFocus, direction, previouslyFocusedRect);
-        if (gainFocus && isAvailable()) start();
-        else if (!gainFocus) stop();
     }
 
     @Override

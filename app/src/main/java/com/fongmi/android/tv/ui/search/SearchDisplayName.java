@@ -20,13 +20,15 @@ public final class SearchDisplayName {
             "^(?:[\\p{So}\\p{Sk}\\p{Cf}\\p{M}]+\\s*)+|(?:\\s*[\\p{So}\\p{Sk}\\p{Cf}\\p{M}]+)+$");
     private static final Pattern TRAILING_SEPARATOR = Pattern.compile("\\s*[-|·•_/]+\\s*$");
     private static final Pattern EXTRA_SPACE = Pattern.compile("\\s{2,}");
+    private static final Pattern EMOJI = Pattern.compile(
+            "[\\x{1F000}-\\x{1FAFF}\\x{2600}-\\x{27BF}\\x{FE0F}\\x{20E3}]");
 
     private SearchDisplayName() {
     }
 
     public static String clean(String value) {
         if (value == null || value.isBlank()) return "";
-        String result = BRACKETED_PROMOTION.matcher(value.trim()).replaceAll(" ");
+        String result = BRACKETED_PROMOTION.matcher(removeEmoji(value).trim()).replaceAll(" ");
         String previous;
         do {
             previous = result;
@@ -36,5 +38,10 @@ public final class SearchDisplayName {
         result = TRAILING_SEPARATOR.matcher(result).replaceFirst("");
         result = EDGE_DECORATION.matcher(result).replaceAll("");
         return EXTRA_SPACE.matcher(result).replaceAll(" ").trim();
+    }
+
+    public static String removeEmoji(String value) {
+        if (value == null || value.isEmpty()) return "";
+        return EXTRA_SPACE.matcher(EMOJI.matcher(value).replaceAll(" ")).replaceAll(" ").trim();
     }
 }

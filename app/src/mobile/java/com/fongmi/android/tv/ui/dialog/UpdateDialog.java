@@ -15,6 +15,7 @@ public class UpdateDialog extends BaseAlertDialog {
 
     private DialogUpdateBinding binding;
     private UpdateListener listener;
+    private boolean mandatory;
     private String title;
     private String desc;
 
@@ -37,6 +38,11 @@ public class UpdateDialog extends BaseAlertDialog {
         return this;
     }
 
+    public UpdateDialog mandatory(boolean mandatory) {
+        this.mandatory = mandatory;
+        return this;
+    }
+
     public UpdateDialog show(FragmentActivity activity) {
         show(activity.getSupportFragmentManager(), null);
         return this;
@@ -49,7 +55,8 @@ public class UpdateDialog extends BaseAlertDialog {
 
     @Override
     protected MaterialAlertDialogBuilder getBuilder() {
-        return builder().setTitle(title).setView(getBinding().getRoot()).setPositiveButton(R.string.update_confirm, null).setNegativeButton(R.string.dialog_negative, null).setCancelable(false);
+        MaterialAlertDialogBuilder builder = builder().setTitle(title).setView(getBinding().getRoot()).setPositiveButton(R.string.update_confirm, null).setCancelable(!mandatory);
+        return mandatory ? builder : builder.setNegativeButton(R.string.update_later, null);
     }
 
     @Override
@@ -61,7 +68,7 @@ public class UpdateDialog extends BaseAlertDialog {
     public void onStart() {
         super.onStart();
         AlertDialog dialog = (AlertDialog) getDialog();
-        if (dialog != null) dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(view -> listener.onCancel(view));
+        if (dialog != null && !mandatory) dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(view -> listener.onCancel(view));
         if (dialog != null) dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> listener.onConfirm(view));
     }
 

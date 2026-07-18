@@ -57,31 +57,19 @@ public class RepositorySyncManager {
         try {
             if (!repository.isEnabled()) throw new IllegalStateException("Repository is disabled");
             if (TextUtils.isEmpty(repository.getUrl())) throw new IllegalArgumentException("Repository URL is empty");
-            Request.Builder builder = new Request.Builder().url(repository.getUrl());
-            if (!repository.getEtag().isEmpty()) builder.header("If-None-Match", repository.getEtag());
-            if (!repository.getLastModified().isEmpty()) builder.header("If-Modified-Since", repository.getLastModified());
-            try (Response response = OkHttp.client(TIMEOUT_MS).newCall(builder.build()).execute()) {
-                if (response.code() == 304) {
-                    markSuccess(repository, response, true);
-                    App.post(() -> listener.onSuccess(repository, true));
+            Throwable lastError = null;
+            for (String candidate : RepositoryUrlResolver.candidates(repository.getUrl())) {
+                try {
+                    boolean cached = syncCandidate(repository, candidate);
+                    App.post(() -> listener.onSuccess(repository, cached));
                     return;
+                } catch (Throwable error) {
+                    lastError = error;
                 }
-                if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
-                ResponseBody body = response.body();
-                if (body == null) throw new IOException("Empty response");
-                if (body.contentLength() > MAX_BYTES) throw new IOException("Repository is larger than 2 MB");
-                String json = body.string();
-                if (json.length() > MAX_BYTES) throw new IOException("Repository is larger than 2 MB");
-                List<RepositoryItem> items = RepositoryParser.parse(repository, json);
-                List<RepositoryItem> cached = AppDatabase.get().getRepositoryItemDao().findByRepository(repository.getId());
-                List<Long> staleIds = RepositoryItemMerge.reconcile(cached, items, repository.getName());
-                AppDatabase.get().runInTransaction(() -> {
-                    for (long id : staleIds) AppDatabase.get().getRepositoryItemDao().delete(id);
-                    AppDatabase.get().getRepositoryItemDao().insertOrUpdate(items);
-                });
-                markSuccess(repository, response, false);
-                App.post(() -> listener.onSuccess(repository, false));
             }
+            if (lastError instanceof Exception exception) throw exception;
+            if (lastError != null) throw new IOException(lastError);
+            throw new IOException("Repository URL is empty");
         } catch (Throwable e) {
             String message = safeMessage(e);
             repository.setLastFailureAt(System.currentTimeMillis());
@@ -93,6 +81,36 @@ public class RepositorySyncManager {
             App.post(() -> listener.onError(repository, message, hasCache));
         } finally {
             syncing.remove(repository.getId());
+        }
+    }
+
+    private boolean syncCandidate(Repository repository, String url) throws IOException {
+        Request.Builder builder = new Request.Builder().url(url);
+        if (!repository.getEtag().isEmpty()) builder.header("If-None-Match", repository.getEtag());
+        if (!repository.getLastModified().isEmpty()) builder.header("If-Modified-Since", repository.getLastModified());
+        try (Response response = OkHttp.client(TIMEOUT_MS).newCall(builder.build()).execute()) {
+            if (response.code() == 304) {
+                if (AppDatabase.get().getRepositoryItemDao().count(repository.getId()) == 0) {
+                    throw new IOException("Repository returned 304 without a local cache");
+                }
+                markSuccess(repository, response, true);
+                return true;
+            }
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code() + " from " + response.request().url().host());
+            ResponseBody body = response.body();
+            if (body == null) throw new IOException("Empty response");
+            if (body.contentLength() > MAX_BYTES) throw new IOException("Repository is larger than 2 MB");
+            String json = body.string();
+            if (json.length() > MAX_BYTES) throw new IOException("Repository is larger than 2 MB");
+            List<RepositoryItem> items = RepositoryParser.parse(repository, json);
+            List<RepositoryItem> cached = AppDatabase.get().getRepositoryItemDao().findByRepository(repository.getId());
+            List<Long> staleIds = RepositoryItemMerge.reconcile(cached, items, repository.getName());
+            AppDatabase.get().runInTransaction(() -> {
+                for (long id : staleIds) AppDatabase.get().getRepositoryItemDao().delete(id);
+                AppDatabase.get().getRepositoryItemDao().insertOrUpdate(items);
+            });
+            markSuccess(repository, response, false);
+            return false;
         }
     }
 
@@ -112,7 +130,13 @@ public class RepositorySyncManager {
     private String safeMessage(Throwable error) {
         String message = error.getMessage();
         if (TextUtils.isEmpty(message)) return error.getClass().getSimpleName();
-        message = SecretRedactor.redact(message);
+        try {
+            message = SecretRedactor.redact(message);
+        } catch (Throwable ignored) {
+            // Error reporting must never turn a recoverable repository failure into an app crash.
+            // Do not return the original message here because it may contain a cookie or token.
+            return error.getClass().getSimpleName();
+        }
         return message.length() > 160 ? message.substring(0, 160) : message;
     }
 }

@@ -33,6 +33,7 @@ import com.fongmi.android.tv.ui.custom.CustomKeyDownVod;
 import com.fongmi.android.tv.ui.dialog.PlayerEngineDialog;
 import com.fongmi.android.tv.ui.dialog.SubtitleDialog;
 import com.fongmi.android.tv.ui.dialog.TrackDialog;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.utils.Clock;
 import com.fongmi.android.tv.utils.KeyUtil;
 import com.fongmi.android.tv.utils.ResUtil;
@@ -150,7 +151,7 @@ public class CastActivity extends PlaybackActivity implements CustomKeyDownVod.L
     private void setAction(Intent intent) {
         mAction = intent.getParcelableExtra(CastAction.KEY_EXTRA);
         if (mAction == null) return;
-        mBinding.widget.title.setText(getName());
+        mBinding.widget.title.setText(SearchDisplayName.removeEmoji(getName()));
         mBinding.widget.title.setSelected(true);
         resetMedia();
         start();
@@ -390,7 +391,7 @@ public class CastActivity extends PlaybackActivity implements CustomKeyDownVod.L
         CastAction next = mRenderer != null ? mRenderer.consumeNext() : null;
         if (next == null) return;
         mAction = next;
-        mBinding.widget.title.setText(getName());
+        mBinding.widget.title.setText(SearchDisplayName.removeEmoji(getName()));
         mBinding.widget.title.setSelected(true);
         resetMedia();
         start();

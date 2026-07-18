@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Parse;
 import com.fongmi.android.tv.databinding.AdapterParseBinding;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 
 import java.util.List;
 
@@ -48,7 +49,7 @@ public class ParseAdapter extends RecyclerView.Adapter<ParseAdapter.ViewHolder> 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Parse item = mItems.get(position);
-        holder.binding.text.setText(item.getName());
+        holder.binding.text.setText(SearchDisplayName.removeEmoji(item.getName()));
         holder.binding.text.setSelected(item.equals(VodConfig.get().getPlaybackParse(mSiteKey)));
         holder.binding.getRoot().setOnClickListener(v -> mListener.onItemClick(item));
     }

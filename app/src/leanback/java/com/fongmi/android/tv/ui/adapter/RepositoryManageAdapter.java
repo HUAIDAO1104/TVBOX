@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.RepositoryItem;
 import com.fongmi.android.tv.databinding.AdapterRepositoryManageItemBinding;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.github.catvod.utils.SecretRedactor;
 
 import java.util.ArrayList;
@@ -52,7 +53,7 @@ public class RepositoryManageAdapter extends RecyclerView.Adapter<RepositoryMana
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         RepositoryItem item = items.get(position);
-        holder.binding.name.setText(item.getName());
+        holder.binding.name.setText(SearchDisplayName.removeEmoji(item.getName()));
         holder.binding.type.setText(item.getItemId().startsWith("spider-") ? R.string.repository_dynamic_line : R.string.repository_static_config);
         holder.binding.url.setText(SecretRedactor.redact(item.getUrl()));
         String status = switch (item.getCheckStatus()) {

@@ -7,6 +7,7 @@ import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.AdapterVodRectBinding;
 import com.fongmi.android.tv.ui.base.BaseVodHolder;
 import com.fongmi.android.tv.ui.presenter.VodPresenter;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.utils.ImgUtil;
 
 public class VodRectHolder extends BaseVodHolder {
@@ -34,10 +35,10 @@ public class VodRectHolder extends BaseVodHolder {
 
     @Override
     public void initView(Vod item) {
-        binding.name.setText(item.getName());
-        binding.year.setText(item.getYear());
-        binding.site.setText(item.getSiteName());
-        binding.remark.setText(item.getRemarks());
+        binding.name.setText(SearchDisplayName.removeEmoji(item.getName()));
+        binding.year.setText(SearchDisplayName.removeEmoji(item.getYear()));
+        binding.site.setText(SearchDisplayName.removeEmoji(item.getSiteName()));
+        binding.remark.setText(SearchDisplayName.removeEmoji(item.getRemarks()));
         binding.site.setVisibility(item.getSiteVisible());
         binding.year.setVisibility(item.getYearVisible());
         binding.name.setVisibility(item.getNameVisible());

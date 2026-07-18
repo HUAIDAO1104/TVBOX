@@ -36,4 +36,12 @@ public class SecretRedactorTest {
         String source = "Repository refresh failed at https://fixture.invalid/list.json with status 503";
         assertEquals(source, SecretRedactor.redact(source));
     }
+
+    @Test
+    public void preservesJsonSyntaxWhenMaskingQuotedAndUnquotedValues() {
+        String source = "{\"cookie\":\"sid=abc\",\"token\":xyz,\"secret\":\"value\"}";
+        String expected = "{\"cookie\":\"[REDACTED]\",\"token\":[REDACTED],\"secret\":\"[REDACTED]\"}";
+
+        assertEquals(expected, SecretRedactor.redact(source));
+    }
 }

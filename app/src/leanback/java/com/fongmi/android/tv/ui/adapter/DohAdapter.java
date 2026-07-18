@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.databinding.AdapterDohBinding;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.github.catvod.bean.Doh;
 
 import java.util.List;
@@ -50,7 +51,7 @@ public class DohAdapter extends RecyclerView.Adapter<DohAdapter.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Doh item = mItems.get(position);
-        holder.binding.text.setText(item.getName());
+        holder.binding.text.setText(SearchDisplayName.removeEmoji(item.getName()));
         holder.binding.text.setSelected(select == position);
         holder.binding.text.setOnClickListener(v -> listener.onItemClick(item));
     }

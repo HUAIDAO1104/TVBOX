@@ -21,7 +21,7 @@ public final class DetailSourceFallbackPolicy {
 
     public DetailSourceFallbackPolicy(int size, int position) {
         this.size = Math.max(0, size);
-        this.position = Math.clamp(position, 0, Math.max(0, this.size - 1));
+        this.position = Math.max(0, Math.min(position, Math.max(0, this.size - 1)));
     }
 
     public int nextIndex() {

@@ -122,6 +122,48 @@ public class AppDatabaseMigrationTest {
         database.close();
     }
 
+    @Test
+    public void migration21To38PreservesLongLivedTvData() throws Exception {
+        SupportSQLiteDatabase database = helper.createDatabase(TEST_DB, 21);
+        insertVersion21Fixtures(database);
+        database.close();
+
+        database = helper.runMigrationsAndValidate(
+                TEST_DB,
+                38,
+                true,
+                Migrations.MIGRATION_21_22,
+                Migrations.MIGRATION_22_23,
+                Migrations.MIGRATION_23_24,
+                Migrations.MIGRATION_24_25,
+                Migrations.MIGRATION_25_26,
+                Migrations.MIGRATION_26_27,
+                Migrations.MIGRATION_27_28,
+                Migrations.MIGRATION_28_29,
+                Migrations.MIGRATION_29_30,
+                Migrations.MIGRATION_30_31,
+                Migrations.MIGRATION_31_32,
+                Migrations.MIGRATION_32_33,
+                Migrations.MIGRATION_33_34,
+                Migrations.MIGRATION_34_35,
+                Migrations.MIGRATION_35_36,
+                Migrations.MIGRATION_36_37,
+                Migrations.MIGRATION_37_38);
+
+        assertCoreFixtures(database);
+        assertTrue(tableExists(database, "Repository"));
+        assertTrue(tableExists(database, "RepositoryItem"));
+        assertTrue(tableExists(database, "CloudAccount"));
+        assertEquals(0, scalarInt(database, "SELECT COUNT(*) FROM Repository"));
+        database.close();
+    }
+
+    private static void insertVersion21Fixtures(SupportSQLiteDatabase database) {
+        database.execSQL("INSERT INTO Config (id,type,time,url,json,name,home,parse) VALUES (1,0,123,'https://fixture.invalid/config.json','{}','Fixture config','home','')");
+        database.execSQL("INSERT INTO Keep (`key`,siteName,vodName,vodPic,createTime,type,cid) VALUES ('keep-key','fixture-site','Fixture keep','poster',123,0,0)");
+        database.execSQL("INSERT INTO History (`key`,vodPic,vodName,vodFlag,vodRemarks,episodeUrl,revSort,revPlay,createTime,opening,ending,position,duration,speed,player,scale,cid) VALUES ('history-key','poster','Fixture history','line','Episode 8','episode-url',0,0,123,0,0,456,1000,1.0,2,0,0)");
+    }
+
     private static void insertCoreFixtures(SupportSQLiteDatabase database) {
         database.execSQL("INSERT INTO Config (id,type,time,url,json,name,logo,home,parse) VALUES (1,0,123,'https://fixture.invalid/config.json','{}','Fixture config','','home','')");
         database.execSQL("INSERT INTO Keep (`key`,siteName,vodName,vodPic,createTime,type,cid) VALUES ('keep-key','fixture-site','Fixture keep','poster',123,0,0)");

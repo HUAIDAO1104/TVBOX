@@ -20,6 +20,7 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.ActivityHomeBinding;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.impl.CustomTarget;
 import com.fongmi.android.tv.security.PromotionFilter;
 import com.fongmi.android.tv.utils.ImgUtil;
@@ -240,7 +241,7 @@ public class HomeFeaturedController {
 
     private void bind(Vod item) {
         current = item;
-        binding.featuredName.setText(item.getName());
+        binding.featuredName.setText(SearchDisplayName.removeEmoji(item.getName()));
         binding.featuredMeta.setText(meta(item));
         binding.featuredMeta.setVisibility(binding.featuredMeta.getText().length() == 0 ? View.GONE : View.VISIBLE);
         String score = score(item.getRemarks());

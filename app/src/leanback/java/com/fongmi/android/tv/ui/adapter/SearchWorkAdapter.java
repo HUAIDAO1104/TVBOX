@@ -46,6 +46,12 @@ public final class SearchWorkAdapter extends RecyclerView.Adapter<SearchWorkAdap
     public void submit(List<SearchWork> next) {
         List<SearchWork> safe = next == null ? List.of() : List.copyOf(next);
         List<SearchWork> previous = items;
+        if (previous.equals(safe)) return;
+        if (isPureAppend(previous, safe)) {
+            items = safe;
+            notifyItemRangeInserted(previous.size(), safe.size() - previous.size());
+            return;
+        }
         DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
             @Override public int getOldListSize() { return previous.size(); }
             @Override public int getNewListSize() { return safe.size(); }
@@ -58,6 +64,14 @@ public final class SearchWorkAdapter extends RecyclerView.Adapter<SearchWorkAdap
         }, false);
         items = safe;
         diff.dispatchUpdatesTo(this);
+    }
+
+    private static boolean isPureAppend(List<SearchWork> previous, List<SearchWork> next) {
+        if (next.size() <= previous.size()) return false;
+        for (int index = 0; index < previous.size(); index++) {
+            if (!previous.get(index).equals(next.get(index))) return false;
+        }
+        return true;
     }
 
     public SearchWork get(int position) {
@@ -114,10 +128,10 @@ public final class SearchWorkAdapter extends RecyclerView.Adapter<SearchWorkAdap
         holder.binding.meta.setVisibility(meta.isEmpty() ? View.GONE : View.VISIBLE);
         holder.binding.update.setText(update);
         holder.binding.update.setVisibility(update.isEmpty() ? View.GONE : View.VISIBLE);
-        holder.binding.source.setText(holder.itemView.getContext().getString(
-                R.string.search_v2_card_recommended, sourceName));
+        holder.binding.source.setText(sourceName);
         holder.binding.sourceCount.setText(holder.itemView.getContext().getResources().getQuantityString(
                 R.plurals.search_v2_card_source_count, work.sourceCount(), work.sourceCount()));
+        holder.binding.sourceCount.setVisibility(work.sourceCount() > 1 ? View.VISIBLE : View.GONE);
         holder.binding.getRoot().setContentDescription(join(work.displayTitle(), meta, update,
                 holder.binding.source.getText().toString(), holder.binding.sourceCount.getText().toString()));
         holder.binding.getRoot().setOnClickListener(view -> listener.onOpen(work));

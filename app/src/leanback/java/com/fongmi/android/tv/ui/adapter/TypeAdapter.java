@@ -10,6 +10,7 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Cache;
 import com.fongmi.android.tv.bean.Class;
 import com.fongmi.android.tv.databinding.AdapterTypeBinding;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.utils.ResUtil;
 
 import java.util.ArrayList;
@@ -53,7 +54,7 @@ public class TypeAdapter extends RecyclerView.Adapter<TypeAdapter.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Class item = mItems.get(position);
-        holder.binding.text.setText(item.getTypeName());
+        holder.binding.text.setText(SearchDisplayName.removeEmoji(item.getTypeName()));
         holder.binding.text.setCompoundDrawablePadding(ResUtil.dp2px(4));
         holder.binding.text.setCompoundDrawablesWithIntrinsicBounds(0, 0, getIcon(item), 0);
         holder.binding.text.setListener(() -> mListener.onRefresh(item));

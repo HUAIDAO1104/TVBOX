@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="#ED28313B" />
+    <solid android:color="#ED35171D" />
     <corners android:radius="11dp" />
-    <stroke android:width="2dp" android:color="#FF8ED1F2" />
+    <stroke android:width="2dp" android:color="@color/tv_focus_border" />
 </shape>

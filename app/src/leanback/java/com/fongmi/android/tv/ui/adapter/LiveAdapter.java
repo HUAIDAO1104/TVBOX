@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.fongmi.android.tv.api.config.LiveConfig;
 import com.fongmi.android.tv.bean.Live;
 import com.fongmi.android.tv.databinding.AdapterLiveBinding;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 
 import java.util.List;
 
@@ -55,7 +56,7 @@ public class LiveAdapter extends RecyclerView.Adapter<LiveAdapter.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Live item = mItems.get(position);
-        holder.binding.text.setText(item.getName());
+        holder.binding.text.setText(SearchDisplayName.removeEmoji(item.getName()));
         holder.binding.text.setSelected(item.isSelected());
         holder.binding.boot.setImageResource(item.getBootIcon());
         holder.binding.pass.setImageResource(item.getPassIcon());

@@ -3,6 +3,7 @@ package com.fongmi.android.tv.setting;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.github.catvod.utils.Prefers;
+import com.github.catvod.utils.Util;
 
 public class Setting {
 
@@ -49,6 +50,23 @@ public class Setting {
 
     public static void putSearchSources(String sources) {
         Prefers.put("search_sources", sources);
+    }
+
+    /**
+     * The checked search sources are a warehouse-scoped allow-list. Keeping the scope local means
+     * a source name from one warehouse is never applied to an unrelated warehouse after switching.
+     */
+    public static String getSearchSources(String scope) {
+        return Prefers.getString(searchSourceKey(scope));
+    }
+
+    public static void putSearchSources(String scope, String sources) {
+        Prefers.put(searchSourceKey(scope), sources);
+    }
+
+    private static String searchSourceKey(String scope) {
+        String value = scope == null || scope.isBlank() ? "active-default" : scope.trim();
+        return "search_sources_" + Util.md5(value);
     }
 
     public static String getHot() {
@@ -127,6 +145,14 @@ public class Setting {
 
     public static void putUpdate(boolean update) {
         Prefers.put("update", update);
+    }
+
+    public static long getUpdateCheckTime() {
+        return Prefers.getLong("update_check_time", 0L);
+    }
+
+    public static void putUpdateCheckTime(long time) {
+        Prefers.put("update_check_time", time);
     }
 
     public static boolean isAdblock() {

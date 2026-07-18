@@ -15,6 +15,12 @@
     <string name="home_view_detail">查看详情</string>
     <string name="home_featured_poster">精选影片海报</string>
     <string name="home_continue_watching">继续观看</string>
+    <string name="home_view_all">查看全部</string>
+    <string name="history_clear_all">清空历史</string>
+    <string name="danmaku_manual_search">手动搜索弹幕</string>
+    <string name="danmaku_manual_search_hint">重新匹配当前视频</string>
+    <string name="danmaku_search_no_playback">请先播放视频，再手动匹配弹幕</string>
+    <string name="danmaku_search_enable_first">请先开启加载弹幕，再进行手动匹配</string>
     <string name="home_hot_recommend">首页精选</string>
     <string name="home_featured_empty">暂无精选内容</string>
     <string name="home_score_douban">豆瓣 %1$s</string>
@@ -40,6 +46,7 @@
     <string name="repository_add">添加仓库</string>
     <string name="repository_sync_all">全部刷新</string>
     <string name="repository_empty">暂无仓库，可添加一个仓库开始使用</string>
+    <string name="repository_load_failed">暂时无法读取已保存仓库，请安装兼容更新后重新启动</string>
     <string name="repository_enable">启用</string>
     <string name="repository_disable">停用</string>
     <string name="repository_delete_title">删除仓库</string>
@@ -50,6 +57,9 @@
     <string name="repository_edit_title">配置仓库</string>
     <string name="repository_name">名称（可选）</string>
     <string name="repository_url">仓库地址</string>
+    <string name="repository_scan_title">手机扫码添加</string>
+    <string name="repository_scan_info">手机与电视连接同一网络，扫码后在网页中粘贴仓库名称和地址并提交。</string>
+    <string name="repository_manual_input">或使用遥控器输入</string>
     <string name="setting_repository">配置与仓库</string>
     <string name="setting_repository_desc">添加、排序、停用与刷新</string>
     <string name="setting_cloud_account">网盘账户</string>
@@ -169,6 +179,12 @@
     <string name="collect_result">“<xliff:g name="name">%s</xliff:g>”的搜索结果</string>
     <string name="search_v2_title">搜索</string>
     <string name="search_v2_voice">语音搜索</string>
+    <string name="search_v2_voice_short">语音</string>
+    <string name="search_v2_voice_prompt">请说出影片或剧集名称</string>
+    <string name="search_v2_voice_unavailable">此设备没有可用的语音识别服务</string>
+    <string name="search_v2_voice_permission_denied">语音搜索需要麦克风权限，请允许后重试</string>
+    <string name="search_v2_voice_no_match">没有识别到片名，请重试</string>
+    <string name="search_v2_voice_failed">语音识别暂时不可用，请稍后重试</string>
     <string name="search_v2_hint">按确认键开始搜索</string>
     <string name="search_v2_keyboard">电视键盘</string>
     <string name="search_v2_stop">停止搜索</string>
@@ -223,7 +239,8 @@
     <string name="search_v2_source_lane_all">全部</string>
     <string name="search_v2_source_lane_searching">…</string>
     <string name="search_v2_source_filter_count">搜索源 %1$d</string>
-    <string name="search_v2_source_filter_apply">应用并搜索</string>
+    <string name="search_v2_source_filter_all">搜索源：全部</string>
+    <string name="search_v2_source_filter_apply">应用</string>
     <string name="search_v2_source_filter_default">恢复默认</string>
     <string name="search_v2_source_filter_other">其他已启用来源</string>
     <string name="detail_v2_more_sources">同片其他来源</string>

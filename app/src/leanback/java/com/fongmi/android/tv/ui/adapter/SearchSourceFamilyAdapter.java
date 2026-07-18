@@ -34,6 +34,7 @@ public final class SearchSourceFamilyAdapter extends RecyclerView.Adapter<Search
     public void submit(List<Item> next) {
         List<Item> safe = next == null ? List.of() : List.copyOf(next);
         List<Item> previous = items;
+        if (previous.equals(safe)) return;
         DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
             @Override public int getOldListSize() { return previous.size(); }
             @Override public int getNewListSize() { return safe.size(); }
@@ -86,6 +87,12 @@ public final class SearchSourceFamilyAdapter extends RecyclerView.Adapter<Search
         holder.binding.name.setText(item.name());
         holder.binding.status.setText(item.status());
         holder.binding.getRoot().setOnClickListener(view -> listener.onSelect(item));
+        holder.binding.getRoot().setOnFocusChangeListener((view, focused) -> {
+            view.animate().cancel();
+            view.animate().scaleX(focused ? 1.025f : 1f).scaleY(focused ? 1.025f : 1f)
+                    .setDuration(focused ? 150 : 100).start();
+            if (focused) listener.onSelect(item);
+        });
         holder.binding.getRoot().setContentDescription(item.name() + " " + item.status());
     }
 

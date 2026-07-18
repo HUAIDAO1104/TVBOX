@@ -68,7 +68,8 @@ public final class DanmakuSearchDialog extends BaseBottomSheetDialog implements 
         binding.recycler.setItemAnimator(null);
         binding.recycler.setHasFixedSize(false);
         binding.recycler.addItemDecoration(new SpaceItemDecoration(1, 16));
-        setKeyword(player.getMetadata().title);
+        CharSequence title = player.getMetadata().title;
+        setKeyword(title == null ? "" : title);
         Util.showKeyboard(binding.keyword);
     }
 
@@ -109,7 +110,8 @@ public final class DanmakuSearchDialog extends BaseBottomSheetDialog implements 
         showProgress();
         adapter.clear();
         Util.hideKeyboard(binding.keyword);
-        DanmakuApi.newCall(binding.keyword.getText().toString().trim(), player.getMetadata().artist.toString().trim()).enqueue(this);
+        CharSequence artist = player.getMetadata().artist;
+        DanmakuApi.newCall(binding.keyword.getText().toString().trim(), artist == null ? "" : artist.toString().trim()).enqueue(this);
     }
 
     private void onSuccess(List<Danmaku> items) {

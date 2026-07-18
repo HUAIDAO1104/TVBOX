@@ -11,6 +11,7 @@ import com.fongmi.android.tv.bean.Repository;
 import com.fongmi.android.tv.databinding.AdapterRepositoryBinding;
 import com.fongmi.android.tv.repository.RepositoryManager;
 import com.fongmi.android.tv.repository.RepositoryStatus;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.github.catvod.utils.SecretRedactor;
 
 import java.time.Instant;
@@ -64,7 +65,7 @@ public class RepositoryAdapter extends RecyclerView.Adapter<RepositoryAdapter.Vi
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Repository item = items.get(position);
-        holder.binding.name.setText(item.getName());
+        holder.binding.name.setText(SearchDisplayName.removeEmoji(item.getName()));
         holder.binding.url.setText(SecretRedactor.redact(item.getUrl()));
         holder.binding.meta.setText(meta(item));
         holder.binding.enable.setText(item.isEnabled() ? R.string.repository_disable : R.string.repository_enable);

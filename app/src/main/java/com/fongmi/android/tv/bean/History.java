@@ -128,7 +128,7 @@ public class History implements Diffable<History> {
     }
 
     public String getVodPic() {
-        return vodPic;
+        return vodPic == null ? "" : vodPic;
     }
 
     public void setVodPic(String vodPic) {
@@ -136,7 +136,7 @@ public class History implements Diffable<History> {
     }
 
     public String getVodName() {
-        return vodName;
+        return vodName == null ? "" : vodName;
     }
 
     public void setVodName(String vodName) {
@@ -144,7 +144,7 @@ public class History implements Diffable<History> {
     }
 
     public String getVodFlag() {
-        return vodFlag;
+        return vodFlag == null ? "" : vodFlag;
     }
 
     public void setVodFlag(String vodFlag) {
@@ -387,6 +387,8 @@ public class History implements Diffable<History> {
 
     @Override
     public boolean isSameContent(History other) {
-        return getVodName().equals(other.getVodName()) && getVodPic().equals(other.getVodPic()) && getCreateTime() == other.getCreateTime();
+        return other != null && Objects.equals(getVodName(), other.getVodName())
+                && Objects.equals(getVodPic(), other.getVodPic())
+                && getCreateTime() == other.getCreateTime();
     }
 }

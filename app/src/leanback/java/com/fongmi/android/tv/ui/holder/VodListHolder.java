@@ -7,6 +7,7 @@ import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.AdapterVodListBinding;
 import com.fongmi.android.tv.ui.base.BaseVodHolder;
 import com.fongmi.android.tv.ui.presenter.VodPresenter;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.utils.ImgUtil;
 
 public class VodListHolder extends BaseVodHolder {
@@ -22,8 +23,8 @@ public class VodListHolder extends BaseVodHolder {
 
     @Override
     public void initView(Vod item) {
-        binding.name.setText(item.getName());
-        binding.remark.setText(item.getRemarks());
+        binding.name.setText(SearchDisplayName.removeEmoji(item.getName()));
+        binding.remark.setText(SearchDisplayName.removeEmoji(item.getRemarks()));
         binding.name.setVisibility(item.getNameVisible());
         binding.remark.setVisibility(item.getRemarkVisible());
         binding.getRoot().setOnClickListener(v -> listener.onItemClick(item));

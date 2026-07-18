@@ -71,7 +71,7 @@ public class QuickAdapter extends RecyclerView.Adapter<QuickAdapter.ViewHolder> 
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Vod item = mItems.get(position);
         String site = SearchDisplayName.clean(item.getSiteName());
-        holder.binding.name.setText(PromotionFilter.sanitizeDisplayText(item.getName()));
+        holder.binding.name.setText(SearchDisplayName.removeEmoji(PromotionFilter.sanitizeDisplayText(item.getName())));
         holder.binding.site.setText(site);
         holder.binding.site.setVisibility(site.isEmpty() ? android.view.View.GONE : android.view.View.VISIBLE);
         holder.binding.remark.setText(PromotionFilter.sanitizeDisplayText(item.getRemarks()));

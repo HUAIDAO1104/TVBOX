@@ -1,7 +1,8 @@
 <resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
 
     <!-- App -->
-    <string name="app_name">影視</string>
+    <string name="app_name">片多多</string>
+    <string name="brand_tagline">好片匯聚，一點即播</string>
 
     <!-- Live -->
     <string name="live_pass">密碼</string>
@@ -66,8 +67,15 @@
 
     <!-- Danmaku Setting -->
     <string name="danmaku">彈幕</string>
+    <string name="danmaku_on">彈幕開</string>
+    <string name="danmaku_off">彈幕關</string>
+    <string name="danmaku_on_description">彈幕已開啟，長按開啟設定，選單鍵選擇彈幕源</string>
+    <string name="danmaku_off_description">彈幕已關閉，長按開啟設定，選單鍵選擇彈幕源</string>
     <string name="danmaku_select">選擇彈幕</string>
     <string name="danmaku_setting">彈幕設定</string>
+    <string name="danmaku_manual_search">搜尋彈幕</string>
+    <string name="danmaku_search_no_playback">請先播放影片，再手動匹配彈幕</string>
+    <string name="danmaku_search_configure_api">請先在設定的彈幕頁面配置搜尋接口</string>
     <string name="danmaku_text_size">字體縮放</string>
     <string name="danmaku_transparency">透明度</string>
     <string name="danmaku_text_bold">粗體</string>
@@ -211,12 +219,21 @@
     <string name="error_decode_fallback">硬解失敗，已切換軟解</string>
     <string name="error_play_tvbus">錯誤代碼：<xliff:g name="name">%s</xliff:g></string>
     <string name="error_detail">暫無播放資料</string>
-    <string name="error_empty">這裡什麼都沒有 👀</string>
+    <string name="error_empty">這裡暫無內容</string>
 
     <!-- Update -->
     <string name="update_version">發現新版本 <xliff:g name="name">%s</xliff:g></string>
     <string name="update_check">正在檢查更新…</string>
     <string name="update_confirm">更新</string>
+    <string name="update_later">稍後</string>
+    <string name="update_latest">目前已經是最新版本</string>
+    <string name="update_failed">暫時無法連線更新鏡像，請稍後重試</string>
+    <string name="update_unsupported">新版本暫未提供適合目前裝置的安裝包</string>
+    <string name="update_default_notes">穩定性與裝置相容性最佳化</string>
+    <string name="update_invalid">安裝包未通過安全驗證，已自動刪除</string>
+    <string name="update_permission">請允許片多多安裝更新，授權後返回即可繼續</string>
+    <string name="update_permission_denied">未取得安裝權限，可在設定中授權後重新更新</string>
+    <string name="update_install_failed">無法開啟系統安裝程式</string>
 
     <!-- Crash -->
     <string name="crash_info">發生意外錯誤\n抱歉給您帶來不便</string>

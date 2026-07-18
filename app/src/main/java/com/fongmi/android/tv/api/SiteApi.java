@@ -199,9 +199,9 @@ public class SiteApi {
         boolean hasPage = !page.equals("1");
         if (isSpider(site)) {
             String searchContent = hasPage ? site.spider().searchContent(keyword, quick, page) : site.spider().searchContent(keyword, quick);
-            SpiderDebug.log("search", searchContent);
             Result result = Result.fromJson(searchContent);
             for (Vod vod : result.getList()) vod.setSite(site);
+            SpiderDebug.log("search", "site=%s,resultCount=%s", site.getName(), result.getList().size());
             return result;
         } else {
             ArrayMap<String, String> params = new ArrayMap<>();
@@ -210,9 +210,9 @@ public class SiteApi {
             params.put("extend", "");
             if (hasPage) params.put("pg", page);
             String searchContent = call(site, params);
-            SpiderDebug.log("search", searchContent);
             Result result = fetchPic(site, Result.fromType(site.getType(), searchContent));
             for (Vod vod : result.getList()) vod.setSite(site);
+            SpiderDebug.log("search", "site=%s,resultCount=%s", site.getName(), result.getList().size());
             return result;
         }
     }

@@ -15,6 +15,7 @@ public class UpdateDialog extends BaseAlertDialog {
 
     private DialogUpdateBinding binding;
     private UpdateListener listener;
+    private boolean mandatory;
     private String title;
     private String desc;
 
@@ -37,6 +38,11 @@ public class UpdateDialog extends BaseAlertDialog {
         return this;
     }
 
+    public UpdateDialog mandatory(boolean mandatory) {
+        this.mandatory = mandatory;
+        return this;
+    }
+
     public UpdateDialog show(FragmentActivity activity) {
         show(activity.getSupportFragmentManager(), null);
         return this;
@@ -49,13 +55,14 @@ public class UpdateDialog extends BaseAlertDialog {
 
     @Override
     protected MaterialAlertDialogBuilder getBuilder() {
-        return builder().setView(getBinding().getRoot()).setCancelable(false);
+        return builder().setView(getBinding().getRoot()).setCancelable(!mandatory);
     }
 
     @Override
     protected void initView() {
         binding.version.setText(title);
         binding.desc.setText(desc);
+        binding.cancel.setVisibility(mandatory ? View.GONE : View.VISIBLE);
     }
 
     @Override

@@ -38,6 +38,35 @@ public final class SearchRelevance {
         return score(keyword, title) >= threshold;
     }
 
+    /**
+     * Fast strict gate for untrusted provider result sets. This method deliberately stays free of
+     * {@code java.util.regex}: some providers return hundreds of noisy rows, and allocating a
+     * matcher for every title adds avoidable native/Java pressure on older TV devices. The full
+     * relevance check still runs later in {@link SearchAggregator}, after this inexpensive
+     * containment gate has discarded catalog noise.
+     */
+    public boolean isPotentiallyRelevant(String keyword, String title) {
+        String expected = SearchTitleNormalizer.fastKey(keyword);
+        String actual = SearchTitleNormalizer.fastKey(title);
+        if (expected.isEmpty() || actual.isEmpty()) return false;
+        if (actual.contains(expected) || expected.contains(actual)) return true;
+        String expectedStem = installmentStem(expected);
+        String actualStem = installmentStem(actual);
+        return expectedStem.length() >= 2 && actualStem.length() >= 2
+                && (actualStem.contains(expectedStem) || expectedStem.contains(actualStem));
+    }
+
+    private String installmentStem(String value) {
+        String numbers = "零〇一二两三四五六七八九十百千万第季部";
+        StringBuilder result = new StringBuilder(value.length());
+        for (int offset = 0; offset < value.length(); ) {
+            int codePoint = value.codePointAt(offset);
+            if (!Character.isDigit(codePoint) && numbers.indexOf(codePoint) < 0) result.appendCodePoint(codePoint);
+            offset += Character.charCount(codePoint);
+        }
+        return result.toString();
+    }
+
     public int score(String keyword, SearchSource source) {
         if (source == null) return 0;
         NormalizedTitle query = SearchTitleNormalizer.parse(keyword);

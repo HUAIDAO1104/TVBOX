@@ -14,6 +14,7 @@ import com.fongmi.android.tv.ui.activity.RepositoryActivity;
 import com.fongmi.android.tv.ui.adapter.ConfigAdapter;
 import com.fongmi.android.tv.ui.adapter.RepositoryItemAdapter;
 import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public class ConfigQuickDialog extends BaseAlertDialog implements ConfigAdapter.OnClickListener {
@@ -43,7 +44,7 @@ public class ConfigQuickDialog extends BaseAlertDialog implements ConfigAdapter.
     @Override
     protected void initView() {
         Config current = VodConfig.get().getConfig();
-        binding.current.setText(current.getDesc());
+        binding.current.setText(SearchDisplayName.removeEmoji(current.getDesc()));
         adapter = new ConfigAdapter(this).readOnly(true).current(current).addAll(0);
         binding.recycler.setItemAnimator(null);
         binding.recycler.setHasFixedSize(false);

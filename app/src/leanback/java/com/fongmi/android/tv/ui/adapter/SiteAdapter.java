@@ -12,6 +12,7 @@ import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.databinding.AdapterSiteBinding;
 import com.fongmi.android.tv.setting.Setting;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,7 +69,7 @@ public class SiteAdapter extends RecyclerView.Adapter<SiteAdapter.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Site item = mItems.get(position);
-        holder.binding.text.setText(item.getName());
+        holder.binding.text.setText(SearchDisplayName.removeEmoji(item.getName()));
         holder.binding.check.setChecked(getChecked(item));
         holder.binding.text.setSelected(item.isSelected());
         holder.binding.check.setVisibility(type == 0 ? View.GONE : View.VISIBLE);

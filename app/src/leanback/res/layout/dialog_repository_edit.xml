@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -13,66 +14,117 @@
         android:textSize="22sp"
         android:textStyle="bold" />
 
-    <com.google.android.material.textfield.TextInputEditText
-        android:id="@+id/name"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="18dp"
-        android:background="@drawable/selector_item"
-        android:hint="@string/repository_name"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:singleLine="true"
-        android:textColor="@color/white"
-        android:textColorHint="@color/white_40"
-        android:textSize="16sp" />
-
-    <com.google.android.material.textfield.TextInputEditText
-        android:id="@+id/url"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="12dp"
-        android:background="@drawable/selector_item"
-        android:hint="@string/repository_url"
-        android:inputType="textUri"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:singleLine="true"
-        android:textColor="@color/white"
-        android:textColorHint="@color/white_40"
-        android:textSize="16sp" />
-
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="18dp"
-        android:gravity="end"
+        android:gravity="top"
         android:orientation="horizontal">
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/negative"
-            android:layout_width="96dp"
-            android:layout_height="40dp"
-            android:background="@drawable/selector_chip_round"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:gravity="center"
-            android:text="@string/dialog_negative"
-            android:textColor="@color/white"
-            android:textSize="16sp" />
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="188dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/positive"
-            android:layout_width="96dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="12dp"
-            android:background="@drawable/selector_chip_round"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:gravity="center"
-            android:text="@string/dialog_positive"
-            android:textColor="@color/white"
-            android:textSize="16sp" />
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/code"
+                android:layout_width="168dp"
+                android:layout_height="168dp"
+                android:contentDescription="@string/repository_scan_title"
+                android:scaleType="centerCrop" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/scanInfo"
+                android:layout_width="168dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:lineSpacingExtra="2dp"
+                android:maxLines="5"
+                android:text="@string/repository_scan_info"
+                android:textColor="@color/white_60"
+                android:textSize="13sp"
+                tools:text="手机扫码后，在网页中粘贴仓库名称和地址并提交" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/repository_manual_input"
+                android:textColor="@color/white_60"
+                android:textSize="14sp" />
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/name"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/selector_item"
+                android:hint="@string/repository_name"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:singleLine="true"
+                android:textColor="@color/white"
+                android:textColorHint="@color/white_40"
+                android:textSize="16sp" />
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/url"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/selector_item"
+                android:hint="@string/repository_url"
+                android:imeOptions="actionDone"
+                android:inputType="textUri"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:singleLine="true"
+                android:textColor="@color/white"
+                android:textColorHint="@color/white_40"
+                android:textSize="16sp" />
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:gravity="end"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/negative"
+                    android:layout_width="96dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/selector_chip_round"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:gravity="center"
+                    android:text="@string/dialog_negative"
+                    android:textColor="@color/white"
+                    android:textSize="16sp" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/positive"
+                    android:layout_width="96dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="12dp"
+                    android:background="@drawable/selector_chip_round"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:gravity="center"
+                    android:text="@string/dialog_positive"
+                    android:textColor="@color/white"
+                    android:textSize="16sp" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 

@@ -29,4 +29,10 @@ public class SearchDisplayNameTest {
         assertEquals("闪电", SearchDisplayName.clean("闪电秒播"));
         assertEquals("", SearchDisplayName.clean("4K"));
     }
+
+    @Test
+    public void removesEmojiAnywhereInVisibleLabels() {
+        assertEquals("玩偶 片库", SearchDisplayName.removeEmoji("玩偶 💓 片库"));
+        assertEquals("配置中心", SearchDisplayName.removeEmoji("🐮配置中心🐮"));
+    }
 }

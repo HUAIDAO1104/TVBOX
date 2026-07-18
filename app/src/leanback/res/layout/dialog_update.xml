@@ -67,7 +67,7 @@
             android:focusable="true"
             android:focusableInTouchMode="true"
             android:gravity="center"
-            android:text="@string/dialog_negative"
+            android:text="@string/update_later"
             android:textColor="@color/white" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>

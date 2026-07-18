@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.fongmi.android.tv.databinding.AdapterHomeNavBinding;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +18,8 @@ public class HomeNavigationAdapter extends RecyclerView.Adapter<HomeNavigationAd
 
     public interface Listener {
         void onNavClick(HomeNavItem item);
+
+        void onNavFocus(HomeNavItem item);
     }
 
     private final List<HomeNavItem> items = new ArrayList<>();
@@ -88,7 +91,7 @@ public class HomeNavigationAdapter extends RecyclerView.Adapter<HomeNavigationAd
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         HomeNavItem item = items.get(position);
-        holder.binding.text.setText(item.title());
+        holder.binding.text.setText(SearchDisplayName.removeEmoji(item.title()));
         boolean selected = item.id().equals(selectedId);
         holder.binding.text.setSelected(selected);
         holder.binding.text.setTypeface(Typeface.DEFAULT, selected ? Typeface.BOLD : Typeface.NORMAL);
@@ -97,7 +100,8 @@ public class HomeNavigationAdapter extends RecyclerView.Adapter<HomeNavigationAd
         holder.binding.getRoot().setOnFocusChangeListener((view, focused) -> {
             view.setTranslationZ(focused ? 6f : 0f);
             float scale = focused ? 1.02f : 1f;
-            view.animate().scaleX(scale).scaleY(scale).setDuration(120).start();
+            view.animate().scaleX(scale).scaleY(scale).setDuration(focused ? 150 : 110).start();
+            if (focused) listener.onNavFocus(item);
         });
     }
 

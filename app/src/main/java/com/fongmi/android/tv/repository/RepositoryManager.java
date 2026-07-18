@@ -130,7 +130,7 @@ public class RepositoryManager {
         if (index < 0) {
             for (int i = 0; i < items.size(); i++) if (items.get(i).getId() == repository.getId()) index = i;
         }
-        int target = Math.clamp(index + delta, 0, items.size() - 1);
+        int target = Math.max(0, Math.min(index + delta, items.size() - 1));
         if (index < 0 || index == target) return;
         Collections.swap(items, index, target);
         for (int i = 0; i < items.size(); i++) {
@@ -152,7 +152,7 @@ public class RepositoryManager {
         List<RepositoryItem> items = getAllItems(item.getRepositoryId());
         int index = -1;
         for (int i = 0; i < items.size(); i++) if (items.get(i).getId() == item.getId()) index = i;
-        int target = Math.clamp(index + delta, 0, items.size() - 1);
+        int target = Math.max(0, Math.min(index + delta, items.size() - 1));
         if (index < 0 || target == index) return;
         Collections.swap(items, index, target);
         for (int i = 0; i < items.size(); i++) {

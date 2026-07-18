@@ -224,7 +224,9 @@ final class DanmakuSettingPanel {
     }
 
     private void setupSlider(Slider slider, TextView label, float initial, Function<Float, String> formatter, Consumer<Float> setter) {
-        float clamped = Math.clamp(initial, slider.getValueFrom(), slider.getValueTo());
+        // Math.clamp is unavailable on Android 9 vendor runtimes even when compiling against a
+        // modern SDK.  This panel is opened directly from the player, so keep it API-28 safe.
+        float clamped = Math.max(slider.getValueFrom(), Math.min(slider.getValueTo(), initial));
         slider.clearOnChangeListeners();
         slider.setLabelFormatter(formatter::apply);
         slider.setValue(clamped);

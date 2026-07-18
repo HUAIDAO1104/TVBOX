@@ -28,6 +28,15 @@ public class EpisodeDisplayNameTest {
         assertEquals("第1集", EpisodeDisplayName.compactActionLabel(technicalName));
         assertFalse(EpisodeDisplayName.needsWideCell(technicalName));
         assertEquals("第2季 · 第8集", EpisodeDisplayName.compactActionLabel("Demo.S02E08.4K.mkv"));
+        assertEquals("第2季第8集", EpisodeDisplayName.compactGridLabel("Demo.S02E08.4K.mkv"));
         assertEquals("", EpisodeDisplayName.compactActionLabel("一个非常非常非常长且不适合放在主按钮里的名称"));
+    }
+
+    @Test
+    public void cleansCloudDriveEpisodeNamesWithoutDroppingTheirMeaning() {
+        assertEquals("第9集 · 百花杀", EpisodeDisplayName.format("[2.1 GB]9.mp4【百花杀】"));
+        assertEquals("第9集", EpisodeDisplayName.compactGridLabel("[2.1 GB]9.mp4【百花杀】"));
+        assertEquals("第16集", EpisodeDisplayName.format("[1.9 GB] 第16集.mkv"));
+        assertEquals("第14集 · 加更", EpisodeDisplayName.format("【2 GB】14.mp4（加更）"));
     }
 }

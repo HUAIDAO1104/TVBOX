@@ -34,9 +34,13 @@ public class VodPresenter extends Presenter {
     }
 
     public VodPresenter(OnClickListener listener, Style style, boolean fitPoster) {
+        this(listener, style, fitPoster, Product.getColumn(style));
+    }
+
+    public VodPresenter(OnClickListener listener, Style style, boolean fitPoster, int columns) {
         this.listener = listener;
         this.style = style;
-        this.size = Product.getSpec(style);
+        this.size = Product.getSpec(style, columns);
         this.fitPoster = fitPoster;
     }
 

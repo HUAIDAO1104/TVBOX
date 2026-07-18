@@ -3,10 +3,13 @@ package com.fongmi.android.tv.ui.activity;
 import android.app.SearchManager;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.OvershootInterpolator;
 
 import androidx.core.splashscreen.SplashScreen;
 import androidx.fragment.app.Fragment;
@@ -60,6 +63,7 @@ import com.fongmi.android.tv.ui.home.HomeNavigationController;
 import com.fongmi.android.tv.ui.home.HomePageController;
 import com.fongmi.android.tv.ui.home.HomePosterAdapter;
 import com.fongmi.android.tv.ui.home.HomeState;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.utils.FileChooser;
 import com.fongmi.android.tv.utils.KeyUtil;
 import com.fongmi.android.tv.utils.Notify;
@@ -112,6 +116,11 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     private boolean homeUiRestored;
     private boolean cachedHistoryShown;
     private List<History> cachedHistories = new ArrayList<>();
+    private long brandSplashStartedAt;
+    private boolean brandSplashDismissed;
+    private boolean brandSplashMotionStarted;
+    private boolean brandSplashDismissRequested;
+    private boolean systemSplashExited;
     private final Runnable deferredStartup = () -> {
         if (isFinishing() || isDestroyed()) return;
         PermissionUtil.requestNotify(this);
@@ -130,7 +139,15 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        SplashScreen.installSplashScreen(this);
+        SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
+        // The system starting window is deliberately blank and color-matched. Begin the real
+        // double-frame motion only after it has been removed, otherwise the animation runs hidden
+        // behind Android's splash and appears as a second static screen on slower TV firmware.
+        splashScreen.setOnExitAnimationListener(provider -> {
+            provider.remove();
+            systemSplashExited = true;
+            startBrandSplashWhenAttached();
+        });
         super.onCreate(savedInstanceState);
     }
 
@@ -149,8 +166,25 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         setRecyclerViews();
         setViewModels();
         setInitialNavigation();
+        // Start the in-app veil only after the hidden home hierarchy has been wired. The veil
+        // owns focus while it is visible so remote events cannot accidentally open Search or
+        // Settings behind the animation.
+        prepareBrandSplash();
+        // The platform splash is a colour-matched blank frame. The branded motion starts only
+        // after it exits, so the launcher never shows a static logo before the real animation.
+        startBrandSplashWhenAttached();
+        // Some vendor Android 9 builds occasionally omit the compat exit callback. Keep a
+        // bounded fallback without blocking cached-home/config work behind the launch veil.
+        binding.brandSplash.postDelayed(() -> {
+            if (brandSplashMotionStarted || brandSplashDismissed) return;
+            systemSplashExited = true;
+            startBrandSplashWhenAttached();
+        }, 800L);
         pageController.showLoading(false);
         initConfig();
+        // Prefer revealing an already useful cache/home surface. On a genuinely cold first run,
+        // fall back to the explicit skeleton after a bounded interval instead of looking frozen.
+        binding.brandSplash.postDelayed(this::dismissBrandSplashToLoading, 3500L);
         // Notification/service/update initialization must not compete with the first TV frame.
         binding.getRoot().postDelayed(deferredStartup, 1400L);
     }
@@ -165,6 +199,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         });
         binding.settings.setOnClickListener(view -> SettingActivity.start(this));
         binding.recommendMore.setOnClickListener(view -> HomeFeaturedActivity.start(this, allRecommendations));
+        binding.historyMore.setOnClickListener(view -> HistoryActivity.start(this));
         binding.emptyConfig.setOnClickListener(view -> openConfig());
         binding.errorConfig.setOnClickListener(view -> openConfig());
         binding.errorSettings.setOnClickListener(view -> SettingActivity.start(this));
@@ -173,6 +208,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         bindUtilityFocus(binding.config);
         bindUtilityFocus(binding.settings);
         bindUtilityFocus(binding.recommendMore);
+        bindUtilityFocus(binding.historyMore);
         getSupportFragmentManager().addOnBackStackChangedListener(this::syncVisibleCategoryTag);
     }
 
@@ -232,20 +268,36 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     private void initConfig() {
         configReady = false;
         Task.execute(() -> {
-            List<History> histories = History.get();
-            App.post(() -> onCachedHistoryLoaded(histories));
+            try {
+                List<History> histories = History.get();
+                App.post(() -> onCachedHistoryLoaded(histories));
+            } catch (Throwable error) {
+                App.post(() -> onCachedHistoryLoaded(new ArrayList<>()));
+            }
         });
         Task.execute(() -> {
-            VodConfig.get().init();
-            LiveConfig.get().init();
-            WallConfig.get().init();
-            App.post(() -> {
-                if (isFinishing() || isDestroyed()) return;
-                VodConfig.get().load(configCallback(false));
-                LiveConfig.get().load();
-                WallConfig.get().load();
-            });
+            try {
+                VodConfig.get().init();
+                LiveConfig.get().init();
+                WallConfig.get().init();
+                App.post(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    VodConfig.get().load(configCallback(false));
+                    LiveConfig.get().load();
+                    WallConfig.get().load();
+                });
+            } catch (Throwable error) {
+                App.post(this::showStartupError);
+            }
         });
+    }
+
+    private void showStartupError() {
+        if (isFinishing() || isDestroyed()) return;
+        configReady = false;
+        if (cachedHistoryShown) pageController.showHome();
+        else showError();
+        dismissBrandSplashWhenReady();
     }
 
     private void onCachedHistoryLoaded(List<History> histories) {
@@ -272,6 +324,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         updateHeroFocusTarget(true, false);
         pageController.showHome();
         binding.historyRecycler.setSelectedPosition(Math.min(homeState.getHistoryPosition(), histories.size() - 1));
+        dismissBrandSplashWhenReady();
     }
 
     private Callback configCallback(boolean switching) {
@@ -293,9 +346,11 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
                 configReady = false;
                 if (cachedHistoryShown) {
                     pageController.showHome();
+                    dismissBrandSplashWhenReady();
                     return;
                 }
                 showError();
+                dismissBrandSplashWhenReady();
             }
         };
     }
@@ -398,6 +453,112 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         if (!homeAvailable) pageController.showEmpty();
         else pageController.showHome();
         restorePageAfterLoad();
+        dismissBrandSplashWhenReady();
+    }
+
+    private void prepareBrandSplash() {
+        brandSplashDismissed = false;
+        brandSplashMotionStarted = false;
+        brandSplashDismissRequested = false;
+        binding.brandSplash.setVisibility(View.VISIBLE);
+        binding.brandSplash.setFocusable(true);
+        binding.brandSplash.setFocusableInTouchMode(true);
+        binding.brandSplash.setOnKeyListener((view, keyCode, event) -> true);
+        binding.brandSplash.requestFocus();
+        binding.brandSplash.setAlpha(1f);
+        binding.brandSplashBackdrop.animate().cancel();
+        binding.brandSplashBackdrop.setAlpha(0f);
+        binding.brandSplashBackdrop.setScaleX(1.055f);
+        binding.brandSplashBackdrop.setScaleY(1.055f);
+        binding.brandSplashHalo.animate().cancel();
+        binding.brandSplashHalo.setAlpha(0f);
+        binding.brandSplashHalo.setScaleX(0.58f);
+        binding.brandSplashHalo.setScaleY(0.58f);
+        binding.brandSplashSweep.animate().cancel();
+        binding.brandSplashSweep.setAlpha(0f);
+        binding.brandSplashSweep.setTranslationX(-ResUtil.dp2px(380));
+        binding.brandSplashFrameLeft.animate().cancel();
+        binding.brandSplashFrameLeft.setAlpha(0f);
+        binding.brandSplashFrameLeft.setScaleX(0.84f);
+        binding.brandSplashFrameLeft.setScaleY(0.84f);
+        binding.brandSplashFrameLeft.setRotation(-14f);
+        binding.brandSplashFrameLeft.setTranslationX(-ResUtil.dp2px(42));
+        binding.brandSplashFrameRight.animate().cancel();
+        binding.brandSplashFrameRight.setAlpha(0f);
+        binding.brandSplashFrameRight.setScaleX(0.84f);
+        binding.brandSplashFrameRight.setScaleY(0.84f);
+        binding.brandSplashFrameRight.setRotation(14f);
+        binding.brandSplashFrameRight.setTranslationX(ResUtil.dp2px(42));
+        binding.brandSplashPlay.animate().cancel();
+        binding.brandSplashPlay.setAlpha(0f);
+        binding.brandSplashPlay.setScaleX(0.58f);
+        binding.brandSplashPlay.setScaleY(0.58f);
+        binding.brandSplashPlay.setRotation(-6f);
+        binding.brandSplashTitle.animate().cancel();
+        binding.brandSplashTitle.setAlpha(0f);
+        binding.brandSplashTitle.setTranslationY(ResUtil.dp2px(14));
+        binding.brandSplashTagline.animate().cancel();
+        binding.brandSplashTagline.setAlpha(0f);
+        binding.brandSplashTagline.setTranslationY(ResUtil.dp2px(8));
+        binding.brandSplashPulse.animate().cancel();
+        binding.brandSplashPulse.setAlpha(0f);
+        binding.brandSplashPulse.setPivotX(0f);
+        binding.brandSplashPulse.setScaleX(0.02f);
+        binding.brandSplashPulse.setTranslationX(-ResUtil.dp2px(42));
+    }
+
+    private void startBrandSplashWhenAttached() {
+        if (!systemSplashExited || binding == null) return;
+        binding.brandSplash.post(this::startBrandSplashMotion);
+    }
+
+    private void startBrandSplashMotion() {
+        if (brandSplashDismissed || brandSplashMotionStarted || isFinishing() || isDestroyed()) return;
+        brandSplashMotionStarted = true;
+        brandSplashStartedAt = SystemClock.uptimeMillis();
+        DecelerateInterpolator cinematic = new DecelerateInterpolator(1.7f);
+        OvershootInterpolator settle = new OvershootInterpolator(0.72f);
+        binding.brandSplashBackdrop.animate().alpha(1f).scaleX(1f).scaleY(1f).setInterpolator(cinematic).setDuration(900L).start();
+        binding.brandSplashHalo.animate().alpha(0.62f).scaleX(1f).scaleY(1f).setInterpolator(cinematic).setStartDelay(90L).setDuration(520L).withEndAction(() -> {
+            if (brandSplashDismissed) return;
+            binding.brandSplashHalo.animate().alpha(0.2f).scaleX(1.24f).scaleY(1.24f).setDuration(700L).start();
+        }).start();
+        binding.brandSplashFrameLeft.animate().alpha(0.38f).translationX(-ResUtil.dp2px(13)).rotation(-7f).scaleX(0.94f).scaleY(0.94f).setInterpolator(cinematic).setStartDelay(90L).setDuration(520L).start();
+        binding.brandSplashFrameRight.animate().alpha(0.38f).translationX(ResUtil.dp2px(13)).rotation(7f).scaleX(0.94f).scaleY(0.94f).setInterpolator(cinematic).setStartDelay(130L).setDuration(520L).start();
+        binding.brandSplashPlay.animate().alpha(1f).rotation(0f).scaleX(1f).scaleY(1f).setInterpolator(settle).setStartDelay(230L).setDuration(530L).start();
+        binding.brandSplashSweep.animate().alpha(0.9f).translationX(ResUtil.dp2px(380)).setInterpolator(cinematic).setStartDelay(260L).setDuration(720L).withEndAction(() -> binding.brandSplashSweep.animate().alpha(0f).setDuration(180L).start()).start();
+        binding.brandSplashTitle.animate().alpha(1f).translationY(0f).setInterpolator(cinematic).setStartDelay(520L).setDuration(360L).start();
+        binding.brandSplashTagline.animate().alpha(1f).translationY(0f).setInterpolator(cinematic).setStartDelay(650L).setDuration(340L).start();
+        binding.brandSplashPulse.animate().alpha(1f).translationX(0f).scaleX(1f).setInterpolator(cinematic).setStartDelay(720L).setDuration(480L).start();
+        if (brandSplashDismissRequested) dismissBrandSplashWhenReady();
+    }
+
+    private void dismissBrandSplashWhenReady() {
+        brandSplashDismissRequested = true;
+        if (!brandSplashMotionStarted) return;
+        long elapsed = SystemClock.uptimeMillis() - brandSplashStartedAt;
+        binding.brandSplash.postDelayed(this::dismissBrandSplash, Math.max(0L, 1400L - elapsed));
+    }
+
+    private void dismissBrandSplashToLoading() {
+        if (brandSplashDismissed || isFinishing() || isDestroyed()) return;
+        if (!homeAvailable && !cachedHistoryShown) pageController.showLoading(false);
+        brandSplashDismissRequested = true;
+        if (brandSplashMotionStarted) dismissBrandSplash();
+    }
+
+    private void dismissBrandSplash() {
+        if (brandSplashDismissed || isFinishing() || isDestroyed()) return;
+        brandSplashDismissed = true;
+        binding.brandSplash.animate().alpha(0f).setDuration(300L).withEndAction(() -> {
+            binding.brandSplash.setVisibility(View.GONE);
+            binding.brandSplash.setClickable(false);
+            binding.brandSplash.setFocusable(false);
+            binding.brandSplash.setOnKeyListener(null);
+            if (isFinishing() || isDestroyed() || !hasWindowFocus()) return;
+            View current = getCurrentFocus();
+            if (current == null || current == binding.brandSplash) binding.search.requestFocus();
+        }).start();
     }
 
     private List<Vod> validVods(List<Vod> source) {
@@ -517,9 +678,11 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     }
 
     private void updateHistory(List<History> items) {
-        historyAdapter.submit(items);
-        binding.historySection.setVisibility(items.isEmpty() ? View.GONE : View.VISIBLE);
-        if (items.isEmpty()) historyAdapter.setDeleteMode(false);
+        List<History> safe = items == null ? List.of() : items;
+        List<History> recent = new ArrayList<>(safe.subList(0, Math.min(3, safe.size())));
+        historyAdapter.submit(recent);
+        binding.historySection.setVisibility(recent.isEmpty() ? View.GONE : View.VISIBLE);
+        if (recent.isEmpty()) historyAdapter.setDeleteMode(false);
     }
 
     private void updateHeroFocusTarget(boolean hasHistory, boolean hasRecommendations) {
@@ -551,7 +714,10 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         homeState.setSelectedCategoryId(type.getTypeId());
         selectNavigationFor(type.getTypeId());
         FragmentManager manager = getSupportFragmentManager();
+        if (manager.isStateSaved()) return;
+        manager.executePendingTransactions();
         FragmentTransaction transaction = manager.beginTransaction();
+        transaction.setReorderingAllowed(true);
         for (Fragment fragment : manager.getFragments()) if (isCategoryFragment(fragment)) transaction.hide(fragment);
         String tag = categoryTag(type.getTypeId());
         Fragment fragment = manager.findFragmentByTag(tag);
@@ -561,7 +727,9 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         } else {
             transaction.show(fragment);
         }
-        transaction.commit();
+        // Focus-driven tab changes can arrive faster than asynchronous fragment commits. Apply
+        // this transaction synchronously so A -> B -> A never creates duplicate/overlapping tabs.
+        transaction.commitNow();
         visibleCategoryTag = tag;
         pageController.showCategory();
         if (fragment instanceof TypeFragment typeFragment) {
@@ -593,8 +761,18 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     }
 
     private void hideVisibleCategory() {
-        Fragment fragment = getVisibleCategoryFragment();
-        if (fragment != null) getSupportFragmentManager().beginTransaction().hide(fragment).commit();
+        FragmentManager manager = getSupportFragmentManager();
+        if (!manager.isStateSaved()) {
+            manager.executePendingTransactions();
+            FragmentTransaction transaction = manager.beginTransaction().setReorderingAllowed(true);
+            boolean changed = false;
+            for (Fragment fragment : manager.getFragments()) {
+                if (!isCategoryFragment(fragment) || !fragment.isAdded() || fragment.isHidden()) continue;
+                transaction.hide(fragment);
+                changed = true;
+            }
+            if (changed) transaction.commitNow();
+        }
         visibleCategoryTag = null;
     }
 
@@ -676,6 +854,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     private void showHomeContentError() {
         if (homeState.isHome() && homeAvailable) pageController.showHome();
         else showError();
+        dismissBrandSplashWhenReady();
     }
 
     private void openConfig() {
@@ -757,8 +936,18 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         }
     }
 
+    @Override
+    public void onNavFocus(HomeNavItem item) {
+        if (item == null || item.isMore()) return;
+        if (item.isHome()) {
+            if (!homeState.isHome()) showHome(true);
+        } else if (!item.id().equals(homeState.getSelectedCategoryId())) {
+            showCategory(item.type(), true);
+        }
+    }
+
     private void showMore(List<Class> overflow) {
-        String[] names = overflow.stream().map(Class::getTypeName).toArray(String[]::new);
+        String[] names = overflow.stream().map(item -> SearchDisplayName.removeEmoji(item.getTypeName())).toArray(String[]::new);
         new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.home_categories)
                 .setItems(names, (dialog, which) -> showCategory(overflow.get(which), true))
@@ -949,6 +1138,11 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
             return true;
         }
         if (KeyUtil.isMenuKey(event)) SiteDialog.create().show(this);
+        if (KeyUtil.isActionDown(event) && KeyUtil.isRightKey(event)
+                && binding.historyRecycler.findContainingItemView(getCurrentFocus()) != null
+                && binding.historyRecycler.getSelectedPosition() == historyAdapter.getItemCount() - 1) {
+            return binding.historyMore.requestFocus();
+        }
         if (KeyUtil.isActionDown(event) && KeyUtil.isDownKey(event) && isTopFocus(getCurrentFocus()) && focusContentFromTop()) return true;
         return super.dispatchKeyEvent(event);
     }

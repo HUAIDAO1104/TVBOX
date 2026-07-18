@@ -47,6 +47,7 @@ import java.util.List;
 public class TypeFragment extends BaseFragment implements CustomScroller.Callback, VodPresenter.OnClickListener, SwipeRefreshLayout.OnRefreshListener {
 
     private static final String STATE_POSITION = "state_position";
+    private static final int EMBEDDED_COLUMN_COUNT = 6;
 
     public interface Host {
         void openCategoryFolder(String key, String typeId, Style style, HashMap<String, String> extend, boolean folder);
@@ -220,7 +221,7 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
 
     private boolean checkLastSize(List<Vod> items, Style style) {
         if (mLast == null || items.isEmpty()) return false;
-        int size = Product.getColumn(style) - mLast.size();
+        int size = getColumn(style) - mLast.size();
         if (size == 0) return false;
         size = Math.min(size, items.size());
         mLast.addAll(mLast.size(), items.subList(0, size));
@@ -231,13 +232,18 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     private void addGrid(List<Vod> items, Style style) {
         if (checkLastSize(items, style)) return;
         List<ListRow> rows = new ArrayList<>();
-        VodPresenter presenter = new VodPresenter(this, style, isEmbedded());
-        for (List<Vod> part : Lists.partition(items, Product.getColumn(style))) {
+        int columns = getColumn(style);
+        VodPresenter presenter = new VodPresenter(this, style, isEmbedded(), columns);
+        for (List<Vod> part : Lists.partition(items, columns)) {
             mLast = new ArrayObjectAdapter(presenter);
             mLast.addAll(0, part);
             rows.add(new ListRow(mLast));
         }
         mAdapter.addAll(mAdapter.size(), rows);
+    }
+
+    private int getColumn(Style style) {
+        return isEmbedded() ? EMBEDDED_COLUMN_COUNT : Product.getColumn(style);
     }
 
     private ListRow getRow(Filter filter) {

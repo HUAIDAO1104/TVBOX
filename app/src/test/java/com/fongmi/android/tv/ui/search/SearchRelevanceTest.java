@@ -23,6 +23,14 @@ public class SearchRelevanceTest {
     }
 
     @Test
+    public void fastProviderGateKeepsRealVariantsAndDropsFallbackCatalogRows() {
+        assertTrue(relevance.isPotentiallyRelevant("庆余年", "慶餘年 第二部【4K】"));
+        assertTrue(relevance.isPotentiallyRelevant("庆余年2", "庆余年第二部"));
+        assertFalse(relevance.isPotentiallyRelevant("庆余年", "长相思 第二季"));
+        assertFalse(relevance.isPotentiallyRelevant("庆余年", "随机推荐列表"));
+    }
+
+    @Test
     public void specifiedInstallmentMustMatch() {
         assertTrue(relevance.isRelevant("庆余年2", "庆余年第二部"));
         assertFalse(relevance.isRelevant("庆余年2", "庆余年第一部"));

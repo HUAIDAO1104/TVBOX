@@ -41,7 +41,8 @@
             android:id="@+id/topNavigation"
             android:layout_width="match_parent"
             android:layout_height="@dimen/home_top_height"
-            android:clipChildren="true"
+            android:clipChildren="false"
+            android:clipToPadding="false"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingStart="@dimen/home_safe_start"
@@ -52,7 +53,7 @@
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:clipChildren="true"
+                android:clipChildren="false"
                 android:clipToPadding="false"
                 android:overScrollMode="never"
                 app:focusOutEnd="true"
@@ -141,12 +142,14 @@
                             android:clipChildren="false"
                             android:clipToPadding="false"
                             android:orientation="vertical"
-                            android:paddingTop="14dp">
+                            android:paddingTop="8dp">
 
                             <androidx.appcompat.widget.LinearLayoutCompat
                                 android:id="@+id/featuredInfo"
                                 android:layout_width="@dimen/home_featured_copy_width"
-                                android:layout_height="218dp"
+                                android:layout_height="174dp"
+                                android:clipChildren="false"
+                                android:clipToPadding="false"
                                 android:orientation="vertical">
 
                                 <com.google.android.material.textview.MaterialTextView
@@ -215,11 +218,11 @@
                                     android:id="@+id/featuredSummary"
                                     android:layout_width="430dp"
                                     android:layout_height="wrap_content"
-                                    android:layout_marginTop="10dp"
+                                    android:layout_marginTop="7dp"
                                     android:ellipsize="end"
                                     android:includeFontPadding="false"
-                                    android:lineSpacingExtra="3dp"
-                                    android:maxLines="3"
+                                    android:lineSpacingExtra="2dp"
+                                    android:maxLines="2"
                                     android:textColor="@color/tv_text_secondary"
                                     android:textSize="@dimen/tv_text_body"
                                     tools:text="一起横跨二十年的碎尸案，牵扯出几个家庭命运的变迁。隐藏在时光深处的秘密与真相逐渐浮现。" />
@@ -232,8 +235,9 @@
                                 <androidx.appcompat.widget.LinearLayoutCompat
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:layout_marginTop="13dp"
+                                    android:layout_marginTop="8dp"
                                     android:clipChildren="false"
+                                    android:clipToPadding="false"
                                     android:orientation="horizontal">
 
                                     <com.google.android.material.button.MaterialButton
@@ -318,14 +322,31 @@
                                 android:layout_marginTop="8dp"
                                 android:orientation="vertical">
 
-                                <com.google.android.material.textview.MaterialTextView
-                                    android:layout_width="wrap_content"
+                                <androidx.appcompat.widget.LinearLayoutCompat
+                                    android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:includeFontPadding="false"
-                                    android:text="@string/home_continue_watching"
-                                    android:textColor="@color/tv_text_primary"
-                                    android:textSize="@dimen/tv_text_section"
-                                    android:textStyle="bold" />
+                                    android:gravity="center_vertical"
+                                    android:orientation="horizontal">
+
+                                    <com.google.android.material.textview.MaterialTextView
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:includeFontPadding="false"
+                                        android:text="@string/home_continue_watching"
+                                        android:textColor="@color/tv_text_primary"
+                                        android:textSize="@dimen/tv_text_section"
+                                        android:textStyle="bold" />
+
+                                    <com.google.android.material.textview.MaterialTextView
+                                        android:id="@+id/historyMore"
+                                        style="@style/DetailV2.Button.Link"
+                                        android:layout_marginEnd="10dp"
+                                        android:drawableEnd="@drawable/ic_keyboard_right"
+                                        android:nextFocusDown="@id/historyRecycler"
+                                        android:text="@string/home_view_all" />
+
+                                </androidx.appcompat.widget.LinearLayoutCompat>
 
                                 <androidx.leanback.widget.HorizontalGridView
                                     android:id="@+id/historyRecycler"
@@ -344,8 +365,8 @@
 
                         <com.fongmi.android.tv.ui.home.HomePosterAuraView
                             android:id="@+id/featuredPosterAura"
-                            android:layout_width="460dp"
-                            android:layout_height="330dp"
+                            android:layout_width="390dp"
+                            android:layout_height="@dimen/home_featured_height"
                             android:layout_gravity="center_vertical|end"
                             android:layout_marginEnd="2dp"
                             android:alpha="0"
@@ -381,12 +402,13 @@
                             android:id="@+id/featuredIndicator"
                             android:layout_width="138dp"
                             android:layout_height="28dp"
-                            android:layout_gravity="bottom|center_horizontal"
+                            android:layout_gravity="bottom|start"
+                            android:layout_marginStart="@dimen/home_featured_indicator_start"
                             android:layout_marginBottom="12dp"
                             android:alpha="0.78"
                             android:nextFocusLeft="@id/detail"
                             android:nextFocusUp="@id/detail"
-                            android:nextFocusDown="@id/recommendRecycler" />
+                            android:nextFocusDown="@id/historyRecycler" />
 
                     </FrameLayout>
 
@@ -708,5 +730,124 @@
         </FrameLayout>
 
     </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <!-- In-app launch veil lets cache/config/home work continue behind a deterministic branded
+         animation instead of holding the system splash on network work. -->
+    <FrameLayout
+        android:id="@+id/brandSplash"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/settings_v2_brand_background"
+        android:clickable="true"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:importantForAccessibility="noHideDescendants">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/brandSplashBackdrop"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:alpha="0"
+            android:contentDescription="@null"
+            android:scaleType="centerCrop"
+            android:src="@drawable/pdd_splash_background_v2" />
+
+        <View
+            android:id="@+id/brandSplashSweep"
+            android:layout_width="420dp"
+            android:layout_height="2dp"
+            android:layout_gravity="center"
+            android:alpha="0"
+            android:background="@drawable/brand_splash_sweep"
+            android:importantForAccessibility="no"
+            android:rotation="-11"
+            android:translationY="-18dp" />
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:translationY="-4dp">
+
+            <FrameLayout
+                android:layout_width="190dp"
+                android:layout_height="164dp"
+                android:clipChildren="false"
+                android:clipToPadding="false">
+
+                <View
+                    android:id="@+id/brandSplashHalo"
+                    android:layout_width="184dp"
+                    android:layout_height="184dp"
+                    android:layout_gravity="center"
+                    android:alpha="0"
+                    android:background="@drawable/brand_splash_halo"
+                    android:importantForAccessibility="no" />
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/brandSplashFrameLeft"
+                    android:layout_width="126dp"
+                    android:layout_height="126dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/brand_icon_master" />
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/brandSplashFrameRight"
+                    android:layout_width="126dp"
+                    android:layout_height="126dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/brand_icon_master" />
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/brandSplashPlay"
+                    android:layout_width="138dp"
+                    android:layout_height="138dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@string/app_name"
+                    android:elevation="8dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/brand_icon_master" />
+
+            </FrameLayout>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/brandSplashTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.15"
+                android:text="@string/app_name"
+                android:textColor="@color/tv_text_primary"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/brandSplashTagline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.1"
+                android:text="@string/brand_tagline"
+                android:textColor="#B8FFFFFF"
+                android:textSize="13sp" />
+
+            <View
+                android:id="@+id/brandSplashPulse"
+                android:layout_width="96dp"
+                android:layout_height="2dp"
+                android:layout_marginTop="18dp"
+                android:background="@drawable/brand_splash_sweep" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+    </FrameLayout>
 
 </FrameLayout>

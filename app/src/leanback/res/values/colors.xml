@@ -8,11 +8,11 @@
     <color name="tv_text_secondary">#BFC5C9D0</color>
     <color name="tv_text_tertiary">#8F9BA1AB</color>
     <color name="tv_text_disabled">#5F7D8490</color>
-    <color name="tv_focus_border">#FFF1BBA6</color>
-    <color name="tv_utility_focus">#FF86B7D3</color>
-    <color name="tv_accent">#FFFF5428</color>
-    <color name="tv_accent_focused">#FFFF6A42</color>
-    <color name="tv_accent_dark">#FFB62F16</color>
+    <color name="tv_focus_border">#FFFF626B</color>
+    <color name="tv_utility_focus">#FFFF4C57</color>
+    <color name="tv_accent">#FFE21F30</color>
+    <color name="tv_accent_focused">#FFFF3D4B</color>
+    <color name="tv_accent_dark">#FFA70F1E</color>
     <color name="tv_scrim">#D905080D</color>
     <color name="tv_success">#FF28C76F</color>
     <color name="tv_warning">#FFF0B45A</color>

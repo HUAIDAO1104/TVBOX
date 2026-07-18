@@ -6,36 +6,23 @@ import androidx.lifecycle.ViewModel;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.Constant;
-import com.fongmi.android.tv.api.Decoder;
 import com.fongmi.android.tv.api.SiteApi;
 import com.fongmi.android.tv.api.config.VodConfig;
-import com.fongmi.android.tv.bean.Repository;
-import com.fongmi.android.tv.bean.RepositoryItem;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.bean.Site;
-import com.fongmi.android.tv.repository.RepositoryManager;
-import com.fongmi.android.tv.repository.RepositorySiteParser;
-import com.fongmi.android.tv.repository.RepositorySiteRegistry;
 import com.fongmi.android.tv.ui.search.SearchSourceHealthStore;
 import com.fongmi.android.tv.ui.search.SearchFailurePolicy;
-import com.fongmi.android.tv.utils.UrlUtil;
+import com.fongmi.android.tv.ui.search.SearchRelevance;
+import com.github.catvod.crawler.SpiderDebug;
 import com.github.catvod.utils.Trans;
-import com.google.common.util.concurrent.FluentFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
@@ -52,11 +39,8 @@ public class SiteViewModel extends ViewModel {
     private final ViewModelTaskRunner<TaskType> tasks;
     private final ViewModelSearchRunner searches;
     private final AtomicInteger searchSession;
-    private final List<Future<?>> catalogFutures;
-    private final Set<String> searchedSiteKeys;
     private final List<Result> aggregateResults;
     private SearchProgress currentSearchProgress;
-    private int searchRunnerEpoch;
 
     public SiteViewModel() {
         result = new MutableLiveData<>();
@@ -69,8 +53,6 @@ public class SiteViewModel extends ViewModel {
         tasks = new ViewModelTaskRunner<>(TaskType.class);
         searches = new ViewModelSearchRunner();
         searchSession = new AtomicInteger();
-        catalogFutures = new CopyOnWriteArrayList<>();
-        searchedSiteKeys = ConcurrentHashMap.newKeySet();
         aggregateResults = new ArrayList<>();
         currentSearchProgress = SearchProgress.idle();
     }
@@ -144,140 +126,93 @@ public class SiteViewModel extends ViewModel {
         search.setValue(null);
         resetAggregateSearch(session);
         setSearchProgress(SearchProgress.started(session, sites.size()));
-        searchedSiteKeys.clear();
-        sites.forEach(site -> searchedSiteKeys.add(site.getKey()));
-        searchRunnerEpoch = searches.start(sites, site -> trackedSearchTask(site, keyword, quick),
-                (site, result) -> onSearchResult(session, site, result),
+        searches.start(sites, site -> trackedSearchTask(site, keyword, quick),
+                (site, result) -> onSearchResult(session, site, result, keyword),
                 (site, throwable) -> onSearchFailure(session, site, throwable));
     }
 
     /**
-     * Searches the active configuration immediately, then discovers every enabled repository
-     * configuration off the main thread and adds its sites to the same stable search session.
+     * Searches every searchable site in the currently selected warehouse/config only.  Repository
+     * catalog discovery is intentionally excluded: expanding every enabled backup repository can
+     * turn one user search into hundreds of Spider tasks and exhaust TV-class devices.
      */
-    public void searchAllContent(String keyword, boolean quick) {
-        searchAllContent(keyword, quick, site -> true);
+    public int searchCurrentContent(String keyword, boolean quick) {
+        return searchCurrentContent(keyword, quick, site -> true);
     }
 
-    public void searchAllContent(String keyword, boolean quick, Predicate<Site> sourceFilter) {
-        cancelCatalogDiscovery();
-        int session = searchSession.incrementAndGet();
-        search.setValue(null);
-        resetAggregateSearch(session);
-        searchedSiteKeys.clear();
-
+    /** Searches only the checked sources, prioritizing the current and recently healthy sites. */
+    public int searchCurrentContent(String keyword, boolean quick, Predicate<Site> sourceFilter) {
+        List<Site> configured = VodConfig.get().getSites();
         Predicate<Site> safeFilter = sourceFilter == null ? site -> true : sourceFilter;
-        List<Site> activeSites = new ArrayList<>(VodConfig.get().getSites().stream()
-                .filter(Site::isSearchable)
-                .filter(safeFilter)
-                .toList());
-        activeSites.forEach(site -> searchedSiteKeys.add(site.getKey()));
-        // One pending slot represents the repository catalog itself. It prevents the active-site
-        // searches from briefly publishing a terminal state while Room is still enumerating the
-        // enabled repositories on a worker thread.
-        setSearchProgress(SearchProgress.started(session, activeSites.size() + 1));
-        searchRunnerEpoch = searches.start(activeSites, site -> trackedSearchTask(site, keyword, quick),
-                (site, value) -> onSearchResult(session, site, value),
-                (site, throwable) -> onSearchFailure(session, site, throwable));
-        discoverRepositoryCatalog(session, keyword, quick, VodConfig.getUrl(), safeFilter);
+        Map<String, Site> current = uniqueSearchableSites(configured, safeFilter);
+        List<Site> selected = new ArrayList<>(current.values());
+        Site home = VodConfig.get().getHome();
+        selected.sort((first, second) -> compareSearchPriority(first, second, home));
+        SpiderDebug.log("search", "scope=checked-current-config,configured=%s,selectedUnique=%s",
+                configured.size(), selected.size());
+        searchContent(selected, keyword, quick);
+        return searchSession.get();
     }
 
-    private void discoverRepositoryCatalog(int session, String keyword, boolean quick, String activeUrl,
-                                           Predicate<Site> sourceFilter) {
-        FluentFuture<List<RepositoryEntry>> future = FluentFuture
-                .from(com.fongmi.android.tv.utils.Task.largeExecutor().submit(() -> repositoryEntries(activeUrl)))
-                .withTimeout(Math.min(Constant.TIMEOUT_SEARCH, TimeUnit.SECONDS.toMillis(15)),
-                        TimeUnit.MILLISECONDS, com.fongmi.android.tv.utils.Task.scheduler());
-        catalogFutures.add(future);
-        future.addCallback(com.fongmi.android.tv.utils.Task.callback(
-                entries -> onRepositoryEntries(session, keyword, quick, future, entries, sourceFilter),
-                throwable -> onCatalogFailure(session, future, throwable)), MoreExecutors.directExecutor());
+    /** Legacy name retained for callers; aggregate search is scoped to the active warehouse. */
+    public void searchAllContent(String keyword, boolean quick) {
+        searchCurrentContent(keyword, quick);
     }
 
-    private List<RepositoryEntry> repositoryEntries(String activeUrl) {
-        Map<String, RepositoryEntry> entries = new LinkedHashMap<>();
-        for (Repository repository : RepositoryManager.get().getEnabled()) {
-            for (RepositoryItem item : RepositoryManager.get().getItems(repository.getId())) {
-                if (item.getType() != 0 || item.getUrl().isBlank()) continue;
-                if (sameUrl(activeUrl, item.getUrl())) continue;
-                entries.putIfAbsent(repository.getId() + "\n" + item.getUrl(), new RepositoryEntry(repository, item));
-            }
-        }
-        return new ArrayList<>(entries.values());
+    /** Legacy filtered overload; filtering never expands into backup warehouse configurations. */
+    public void searchAllContent(String keyword, boolean quick, Predicate<Site> sourceFilter) {
+        searchCurrentContent(keyword, quick, sourceFilter);
     }
 
-    private synchronized void onRepositoryEntries(int session, String keyword, boolean quick,
-                                                  Future<?> future, List<RepositoryEntry> entries,
-                                                  Predicate<Site> sourceFilter) {
-        catalogFutures.remove(future);
-        if (currentSearchProgress.session() != session || currentSearchProgress.cancelled()) return;
-        List<RepositoryEntry> safe = entries == null ? List.of() : entries;
-        if (safe.isEmpty()) {
-            setSearchProgress(currentSearchProgress.result(Result.empty()));
-            return;
-        }
-        // Replace the single catalog placeholder with one independently timed placeholder per
-        // repository configuration. Each configuration will subsequently expand to its sites.
-        setSearchProgress(currentSearchProgress.expand(safe.size() - 1));
-        for (RepositoryEntry entry : safe) discover(entry, session, keyword, quick, sourceFilter);
+    static int compareSearchPriority(Site first, Site second, Site home) {
+        int compared = Boolean.compare(!sameSite(first, home), !sameSite(second, home));
+        if (compared != 0) return compared;
+        SearchSourceHealthStore.Snapshot firstHealth = SearchSourceHealthStore.get().snapshot(first.getKey());
+        SearchSourceHealthStore.Snapshot secondHealth = SearchSourceHealthStore.get().snapshot(second.getKey());
+        compared = Integer.compare(availabilityRank(firstHealth), availabilityRank(secondHealth));
+        if (compared != 0) return compared;
+        compared = Integer.compare(firstHealth.recentFailureCount(), secondHealth.recentFailureCount());
+        if (compared != 0) return compared;
+        compared = Long.compare(responseRank(firstHealth), responseRank(secondHealth));
+        if (compared != 0) return compared;
+        compared = Long.compare(secondHealth.lastSuccessAtMillis(), firstHealth.lastSuccessAtMillis());
+        if (compared != 0) return compared;
+        return String.valueOf(first.getName()).compareToIgnoreCase(String.valueOf(second.getName()));
     }
 
-    private boolean sameUrl(String first, String second) {
+    private static boolean sameSite(Site first, Site second) {
         if (first == null || second == null) return false;
-        return first.trim().replaceAll("/+$", "").equals(second.trim().replaceAll("/+$", ""));
+        return first == second || String.valueOf(first.getKey()).equals(String.valueOf(second.getKey()));
     }
 
-    private void discover(RepositoryEntry entry, int session, String keyword, boolean quick,
-                          Predicate<Site> sourceFilter) {
-        String tag = "AggregateRepository-" + entry.repository().getId() + "-" + entry.item().getId();
-        FluentFuture<List<Site>> future = FluentFuture
-                .from(com.fongmi.android.tv.utils.Task.largeExecutor().submit(() -> {
-                    String json = Decoder.getJson(UrlUtil.convert(entry.item().getUrl()), tag);
-                    return RepositorySiteParser.parse(entry.repository(), entry.item(), json);
-                }))
-                .withTimeout(Math.min(Constant.TIMEOUT_SEARCH, TimeUnit.SECONDS.toMillis(15)),
-                        TimeUnit.MILLISECONDS, com.fongmi.android.tv.utils.Task.scheduler());
-        catalogFutures.add(future);
-        future.addCallback(com.fongmi.android.tv.utils.Task.callback(
-                sites -> onSitesDiscovered(session, keyword, quick, future, sites, sourceFilter),
-                throwable -> onCatalogFailure(session, future, throwable)), MoreExecutors.directExecutor());
+    private static int availabilityRank(SearchSourceHealthStore.Snapshot health) {
+        return switch (health.availability()) {
+            case AVAILABLE -> 0;
+            case UNKNOWN -> 1;
+            case UNAVAILABLE -> 2;
+        };
     }
 
-    private synchronized void onSitesDiscovered(int session, String keyword, boolean quick,
-                                                Future<?> future, List<Site> sites,
-                                                Predicate<Site> sourceFilter) {
-        catalogFutures.remove(future);
-        if (currentSearchProgress.session() != session || currentSearchProgress.cancelled()) return;
-        List<Site> additions = sites == null ? List.of() : sites.stream()
-                .filter(Site::isSearchable)
-                .filter(sourceFilter)
-                .filter(site -> searchedSiteKeys.add(site.getKey()))
-                .toList();
-        if (additions.isEmpty()) {
-            setSearchProgress(currentSearchProgress.result(Result.empty()));
-            return;
+    private static long responseRank(SearchSourceHealthStore.Snapshot health) {
+        return health.responseTimeMillis() <= 0 ? Long.MAX_VALUE : health.responseTimeMillis();
+    }
+
+    static Map<String, Site> uniqueSearchableSites(List<Site> sites, Predicate<Site> filter) {
+        Map<String, Site> unique = new LinkedHashMap<>();
+        if (sites == null) return unique;
+        for (Site site : sites) {
+            if (site == null || !site.isSearchable() || !filter.test(site)) continue;
+            unique.putIfAbsent(searchBackendIdentity(site), site);
         }
-        additions.forEach(RepositorySiteRegistry::register);
-        setSearchProgress(currentSearchProgress.expand(additions.size() - 1));
-        searches.add(additions, searchRunnerEpoch, site -> trackedSearchTask(site, keyword, quick),
-                (site, result) -> onSearchResult(session, site, result),
-                (site, throwable) -> onSearchFailure(session, site, throwable));
+        return unique;
     }
 
-    private synchronized void onCatalogFailure(int session, Future<?> future, Throwable throwable) {
-        catalogFutures.remove(future);
-        if (throwable instanceof CancellationException) return;
-        if (currentSearchProgress.session() != session || currentSearchProgress.cancelled()) return;
-        setSearchProgress(currentSearchProgress.failure(isTimeout(throwable)));
-    }
-
-    private boolean isTimeout(Throwable throwable) {
-        Throwable current = throwable;
-        while (current != null) {
-            if (current instanceof TimeoutException) return true;
-            current = current.getCause();
-        }
-        return false;
+    private static String searchBackendIdentity(Site site) {
+        // Scoped repository keys are routing identifiers, not backend identities. Configs often
+        // declare the same source more than once with a different key/name. Invoking both wastes
+        // memory and can enter the same third-party native Spider concurrently after a timeout.
+        return site.getType() + "\u0000" + site.getApi() + "\u0000" + site.getJar() + "\u0000"
+                + site.getExt() + "\u0000" + site.getHeader().hashCode();
     }
 
     private Callable<Result> trackedSearchTask(Site site, String keyword, boolean quick) {
@@ -288,11 +223,12 @@ public class SiteViewModel extends ViewModel {
         };
     }
 
-    private synchronized void onSearchResult(int session, Site site, Result result) {
+    private synchronized void onSearchResult(int session, Site site, Result result, String keyword) {
         if (currentSearchProgress.session() != session || currentSearchProgress.cancelled()) return;
         SearchSourceHealthStore.get().success(site.getKey());
-        if (result != null && !result.getList().isEmpty()) {
-            aggregateResults.add(result);
+        Result filtered = filterRelevant(result, keyword);
+        if (filtered != null && !filtered.getList().isEmpty()) {
+            aggregateResults.add(filtered);
             aggregateSearch.postValue(new SearchSnapshot(session, aggregateResults));
         }
         // MutableLiveData.postValue coalesces pending values. Aggregate search can finish several
@@ -302,9 +238,18 @@ public class SiteViewModel extends ViewModel {
             synchronized (SiteViewModel.this) {
                 if (currentSearchProgress.session() != session || currentSearchProgress.cancelled()) return;
             }
-            search.setValue(result);
+            search.setValue(filtered);
         });
-        setSearchProgress(currentSearchProgress.result(result));
+        setSearchProgress(currentSearchProgress.result(filtered));
+    }
+
+    private Result filterRelevant(Result result, String keyword) {
+        if (result == null || result.getList().isEmpty()) return result;
+        SearchRelevance relevance = new SearchRelevance();
+        result.setList(result.getList().stream()
+                .filter(vod -> relevance.isPotentiallyRelevant(keyword, vod.getName()))
+                .toList());
+        return result;
     }
 
     private synchronized void resetAggregateSearch(int session) {
@@ -342,13 +287,14 @@ public class SiteViewModel extends ViewModel {
     }
 
     private void cancelCatalogDiscovery() {
-        catalogFutures.forEach(future -> future.cancel(true));
-        catalogFutures.clear();
+        // Repository discovery used to happen here. Search is now deliberately scoped to the
+        // active warehouse, so there is no catalog work to cancel.
     }
 
     @Override
     protected void onCleared() {
         stopSearch();
+        searches.close();
         tasks.cancelAll();
     }
 
@@ -383,9 +329,6 @@ public class SiteViewModel extends ViewModel {
                 }
             }
         }
-    }
-
-    private record RepositoryEntry(Repository repository, RepositoryItem item) {
     }
 
     private enum TaskType {RESULT, PLAYER, ACTION}

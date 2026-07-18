@@ -82,6 +82,12 @@
             android:process=":error_activity"
             android:theme="@style/Theme.Crash" />
 
+        <activity
+            android:name=".update.UpdateInstallerActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@style/Theme.UpdateInstaller" />
+
         <receiver
             android:name=".receiver.ActionReceiver"
             android:exported="false">

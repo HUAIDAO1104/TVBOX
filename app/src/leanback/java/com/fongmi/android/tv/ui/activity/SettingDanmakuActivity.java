@@ -11,10 +11,14 @@ import androidx.viewbinding.ViewBinding;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.ActivitySettingDanmakuBinding;
 import com.fongmi.android.tv.impl.DanmakuListener;
+import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.base.FocusSafeSettingsActivity;
 import com.fongmi.android.tv.ui.dialog.DanmakuApiDialog;
+import com.fongmi.android.tv.ui.dialog.DanmakuSearchDialog;
+import com.fongmi.android.tv.ui.dialog.DanmakuSettingDialog;
+import com.fongmi.android.tv.utils.Notify;
 
 public class SettingDanmakuActivity extends FocusSafeSettingsActivity implements DanmakuListener {
 
@@ -51,6 +55,8 @@ public class SettingDanmakuActivity extends FocusSafeSettingsActivity implements
     @Override
     protected void initEvent() {
         mBinding.danmakuApi.setOnClickListener(this::onDanmakuApi);
+        mBinding.danmakuDetail.setOnClickListener(view -> DanmakuSettingDialog.create().show(this));
+        mBinding.danmakuSearch.setOnClickListener(this::onDanmakuSearch);
         mBinding.danmakuAuto.setOnClickListener(this::setDanmakuAuto);
         mBinding.danmakuLoad.setOnClickListener(this::setDanmakuLoad);
         mBinding.danmakuSpider.setOnClickListener(this::setDanmakuSpider);
@@ -65,7 +71,29 @@ public class SettingDanmakuActivity extends FocusSafeSettingsActivity implements
     private void updateApiVisibility() {
         boolean load = DanmakuSetting.isLoad();
         mBinding.danmakuApi.setVisibility(load ? View.VISIBLE : View.GONE);
+        // Manual matching is a recovery tool, so it must remain discoverable even when automatic
+        // loading or the API is not configured yet. Clicking it guides the user to the missing
+        // prerequisite instead of silently removing the entry.
+        mBinding.danmakuSearch.setVisibility(View.VISIBLE);
+        mBinding.danmakuSearch.setAlpha(load ? 1f : 0.62f);
         updateAutoVisibility();
+    }
+
+    private void onDanmakuSearch(View view) {
+        if (!DanmakuSetting.isLoad()) {
+            Notify.show(R.string.danmaku_search_enable_first);
+            return;
+        }
+        if (TextUtils.isEmpty(DanmakuSetting.getEffectiveApiUrl())) {
+            DanmakuApiDialog.show(this);
+            return;
+        }
+        var service = Server.get().getService();
+        if (service == null || service.player() == null || service.player().getMetadata() == null) {
+            Notify.show(R.string.danmaku_search_no_playback);
+            return;
+        }
+        DanmakuSearchDialog.create().player(service.player()).show(this);
     }
 
     private void updateAutoVisibility() {

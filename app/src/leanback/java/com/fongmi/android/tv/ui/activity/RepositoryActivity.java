@@ -19,6 +19,8 @@ import com.fongmi.android.tv.ui.dialog.RepositoryEditDialog;
 import com.fongmi.android.tv.utils.Notify;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import java.util.Collections;
+
 public class RepositoryActivity extends BaseActivity implements RepositoryAdapter.Listener, RepositoryEditDialog.Listener {
 
     private final RepositoryManager manager = RepositoryManager.get();
@@ -55,7 +57,13 @@ public class RepositoryActivity extends BaseActivity implements RepositoryAdapte
     }
 
     private void refresh() {
-        adapter.submit(manager.getAll());
+        try {
+            adapter.submit(manager.getAll());
+            binding.empty.setText(R.string.repository_empty);
+        } catch (Throwable error) {
+            adapter.submit(Collections.emptyList());
+            binding.empty.setText(R.string.repository_load_failed);
+        }
         binding.empty.setVisibility(adapter.getItemCount() == 0 ? android.view.View.VISIBLE : android.view.View.GONE);
     }
 
@@ -102,7 +110,8 @@ public class RepositoryActivity extends BaseActivity implements RepositoryAdapte
                 .setSingleChoiceItems(choices, 0, (dialog, which) -> selected[0] = which)
                 .setNegativeButton(R.string.dialog_negative, null)
                 .setPositiveButton(R.string.dialog_positive, (dialog, which) -> {
-                    RepositoryDeleteMode mode = RepositoryDeleteMode.values()[Math.clamp(selected[0], 0, RepositoryDeleteMode.values().length - 1)];
+                    int modeIndex = Math.max(0, Math.min(selected[0], RepositoryDeleteMode.values().length - 1));
+                    RepositoryDeleteMode mode = RepositoryDeleteMode.values()[modeIndex];
                     if (!manager.delete(repository, mode)) Notify.show(R.string.repository_delete_failed);
                     refresh();
                 })

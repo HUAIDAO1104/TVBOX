@@ -84,6 +84,37 @@ public class RepositoryParserTest {
         assertThrows(IllegalArgumentException.class, () -> RepositoryParser.parse(repository(), "{\"urls\":[]}"));
     }
 
+    @Test
+    public void parsesTomorrowMultiRepositoryWithoutFlatteningOrDroppingChildren() {
+        String json = "{\"urls\":["
+                + "{\"url\":\"https://8815.kstore.vip/tvbox/wmz\",\"name\":\"网络接口\"},"
+                + "{\"url\":\"http://肥猫.net/tv\",\"name\":\"肥猫\"},"
+                + "{\"url\":\"https://9280.kstore.vip/newwex.json\",\"name\":\"线路 03\"},"
+                + "{\"url\":\"https://9877.kstore.space/ONE/one.json\",\"name\":\"潇洒\"},"
+                + "{\"url\":\"http://www.小不点.com\",\"name\":\"摸鱼\"},"
+                + "{\"url\":\"https://www.饭太硬.cc/tv\",\"name\":\"饭太硬\"},"
+                + "{\"url\":\"https://16151.kstore.space\",\"name\":\"东篱\"},"
+                + "{\"url\":\"https://example.com/8\",\"name\":\"小米\"},"
+                + "{\"url\":\"https://example.com/9\",\"name\":\"巧记\"},"
+                + "{\"url\":\"https://example.com/10\",\"name\":\"小虎斑\"},"
+                + "{\"url\":\"https://example.com/11\",\"name\":\"欧歌\"},"
+                + "{\"url\":\"https://example.com/12\",\"name\":\"南风\"},"
+                + "{\"url\":\"https://example.com/13\",\"name\":\"PG\"},"
+                + "{\"url\":\"https://example.com/14\",\"name\":\"真心\"},"
+                + "{\"url\":\"https://gitlab.com/duomv/dzhipy/-/raw/main/index.json\",\"name\":\"道长\"}]}";
+        Repository repository = repository();
+        repository.setUrl("https://gh.llkk.cc/https://raw.githubusercontent.com/tushen6/Tomorrow/master/lmw.json");
+
+        List<RepositoryItem> items = RepositoryParser.parse(repository, json);
+
+        assertEquals(15, items.size());
+        assertEquals("网络接口", items.get(0).getName());
+        assertEquals("http://肥猫.net/tv", items.get(1).getUrl());
+        assertEquals("道长", items.get(14).getName());
+        assertEquals(7, items.get(14).getRepositoryId());
+        assertEquals(14, items.get(14).getSortOrder());
+    }
+
     private Repository repository() {
         Repository repository = new Repository();
         repository.setId(7);

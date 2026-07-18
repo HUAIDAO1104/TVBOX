@@ -15,6 +15,12 @@
     <string name="home_view_detail">View details</string>
     <string name="home_featured_poster">Featured poster</string>
     <string name="home_continue_watching">Continue watching</string>
+    <string name="home_view_all">View all</string>
+    <string name="history_clear_all">Clear history</string>
+    <string name="danmaku_manual_search">Manual danmaku match</string>
+    <string name="danmaku_manual_search_hint">Search current video</string>
+    <string name="danmaku_search_no_playback">Play a video before manually matching danmaku</string>
+    <string name="danmaku_search_enable_first">Enable danmaku loading before manual matching</string>
     <string name="home_hot_recommend">Featured for you</string>
     <string name="home_featured_empty">No featured titles are available</string>
     <string name="home_score_douban">Douban %1$s</string>
@@ -40,6 +46,7 @@
     <string name="repository_add">Add repository</string>
     <string name="repository_sync_all">Refresh all</string>
     <string name="repository_empty">No repositories. Add one to get started.</string>
+    <string name="repository_load_failed">Unable to read the saved repositories. Restart after installing the compatibility update.</string>
     <string name="repository_enable">Enable</string>
     <string name="repository_disable">Disable</string>
     <string name="repository_delete_title">Delete repository</string>
@@ -50,6 +57,9 @@
     <string name="repository_edit_title">Repository</string>
     <string name="repository_name">Name (optional)</string>
     <string name="repository_url">Repository URL</string>
+    <string name="repository_scan_title">Add with phone</string>
+    <string name="repository_scan_info">Scan with a phone on the same network, then paste the repository name and URL in the web page.</string>
+    <string name="repository_manual_input">Or enter it with the remote</string>
     <string name="setting_repository">Configuration repositories</string>
     <string name="setting_repository_desc">Add, sort, disable and refresh</string>
     <string name="setting_cloud_account">Cloud-drive accounts</string>
@@ -169,6 +179,12 @@
     <string name="collect_result">Search results for <xliff:g name="name">%s</xliff:g></string>
     <string name="search_v2_title">Search</string>
     <string name="search_v2_voice">Voice search</string>
+    <string name="search_v2_voice_short">Voice</string>
+    <string name="search_v2_voice_prompt">Say a movie or series title</string>
+    <string name="search_v2_voice_unavailable">No voice recognition service is available on this device</string>
+    <string name="search_v2_voice_permission_denied">Microphone permission is required for voice search</string>
+    <string name="search_v2_voice_no_match">No title was recognized. Please try again</string>
+    <string name="search_v2_voice_failed">Voice recognition is temporarily unavailable</string>
     <string name="search_v2_hint">Press OK to search</string>
     <string name="search_v2_keyboard">TV keyboard</string>
     <string name="search_v2_stop">Stop</string>
@@ -225,7 +241,8 @@
     <string name="search_v2_source_lane_all">All</string>
     <string name="search_v2_source_lane_searching">…</string>
     <string name="search_v2_source_filter_count">Sources %1$d</string>
-    <string name="search_v2_source_filter_apply">Apply and search</string>
+    <string name="search_v2_source_filter_all">Sources: All</string>
+    <string name="search_v2_source_filter_apply">Apply</string>
     <string name="search_v2_source_filter_default">Restore defaults</string>
     <string name="search_v2_source_filter_other">Other enabled sources</string>
     <string name="detail_v2_more_sources">Other sources for this title</string>

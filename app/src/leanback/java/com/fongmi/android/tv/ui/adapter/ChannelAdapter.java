@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.fongmi.android.tv.bean.Channel;
 import com.fongmi.android.tv.databinding.AdapterChannelBinding;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +66,7 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.ViewHold
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Channel item = mItems.get(position);
         item.loadLogo(holder.binding.logo);
-        holder.binding.name.setText(item.getShow());
+        holder.binding.name.setText(SearchDisplayName.removeEmoji(item.getShow()));
         holder.binding.number.setText(item.getNumber());
         holder.binding.getRoot().setSelected(item.isSelected());
         holder.binding.getRoot().setRightListener(() -> mListener.showEpg(item));

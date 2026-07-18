@@ -1,0 +1,85 @@
+name: Release OTA packages
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, for example v5.5.19
+        required: true
+      release_notes:
+        description: Update notes shown in the app
+        required: false
+        default: "稳定性与设备兼容性优化"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Restore release signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_BASE64"
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$GITHUB_WORKSPACE/release.keystore"
+          printf 'storeFile=%s\nkeyAlias=%s\nstorePassword=%s\nkeyPassword=%s\n' \
+            "$GITHUB_WORKSPACE/release.keystore" "$KEY_ALIAS" "$STORE_PASSWORD" "$KEY_PASSWORD" > local.properties
+
+      - name: Build signed APKs
+        run: |
+          bash gradlew \
+            assembleLeanbackArmeabi_v7aRelease \
+            assembleLeanbackArm64_v8aRelease \
+            assembleMobileArmeabi_v7aRelease \
+            assembleMobileArm64_v8aRelease
+
+      - name: Collect release assets
+        run: |
+          mkdir -p dist
+          cp "$(find app/build/outputs/apk -path '*/release/leanback-armeabi_v7a.apk' -print -quit)" dist/pianduoduo-leanback-armeabi_v7a.apk
+          cp "$(find app/build/outputs/apk -path '*/release/leanback-arm64_v8a.apk' -print -quit)" dist/pianduoduo-leanback-arm64_v8a.apk
+          cp "$(find app/build/outputs/apk -path '*/release/mobile-armeabi_v7a.apk' -print -quit)" dist/pianduoduo-mobile-armeabi_v7a.apk
+          cp "$(find app/build/outputs/apk -path '*/release/mobile-arm64_v8a.apk' -print -quit)" dist/pianduoduo-mobile-arm64_v8a.apk
+
+      - name: Generate update manifest
+        env:
+          RELEASE_NOTES: ${{ inputs.release_notes }}
+        run: |
+          VERSION_CODE="$(sed -nE 's/^[[:space:]]*versionCode[[:space:]]+([0-9]+).*/\1/p' app/build.gradle | head -1)"
+          VERSION_NAME="$(sed -nE 's/^[[:space:]]*versionName[[:space:]]+"([^"]+)".*/\1/p' app/build.gradle | head -1)"
+          NOTES="${RELEASE_NOTES:-稳定性与设备兼容性优化}"
+          python3 scripts/generate_update_manifest.py \
+            --repo "$GITHUB_REPOSITORY" \
+            --version-code "$VERSION_CODE" \
+            --version-name "$VERSION_NAME" \
+            --notes "$NOTES" \
+            --asset leanback-armeabi_v7a=dist/pianduoduo-leanback-armeabi_v7a.apk \
+            --asset leanback-arm64_v8a=dist/pianduoduo-leanback-arm64_v8a.apk \
+            --asset mobile-armeabi_v7a=dist/pianduoduo-mobile-armeabi_v7a.apk \
+            --asset mobile-arm64_v8a=dist/pianduoduo-mobile-arm64_v8a.apk \
+            --output dist/latest.json
+
+      - name: Publish latest release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          files: dist/*
+          generate_release_notes: true
+          make_latest: true

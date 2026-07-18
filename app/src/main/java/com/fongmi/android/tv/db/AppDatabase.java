@@ -126,6 +126,31 @@ public abstract class AppDatabase extends RoomDatabase {
 
     private static AppDatabase create(Context context) {
         return Room.databaseBuilder(context, AppDatabase.class, NAME)
+                .addMigrations(Migrations.MIGRATION_5_6)
+                .addMigrations(Migrations.MIGRATION_6_7)
+                .addMigrations(Migrations.MIGRATION_7_8)
+                .addMigrations(Migrations.MIGRATION_8_9)
+                .addMigrations(Migrations.MIGRATION_9_10)
+                .addMigrations(Migrations.MIGRATION_10_11)
+                .addMigrations(Migrations.MIGRATION_11_12)
+                .addMigrations(Migrations.MIGRATION_12_13)
+                .addMigrations(Migrations.MIGRATION_13_14)
+                .addMigrations(Migrations.MIGRATION_14_15)
+                .addMigrations(Migrations.MIGRATION_15_16)
+                .addMigrations(Migrations.MIGRATION_16_17)
+                .addMigrations(Migrations.MIGRATION_17_18)
+                .addMigrations(Migrations.MIGRATION_18_19)
+                .addMigrations(Migrations.MIGRATION_19_20)
+                .addMigrations(Migrations.MIGRATION_20_21)
+                .addMigrations(Migrations.MIGRATION_21_22)
+                .addMigrations(Migrations.MIGRATION_22_23)
+                .addMigrations(Migrations.MIGRATION_23_24)
+                .addMigrations(Migrations.MIGRATION_24_25)
+                .addMigrations(Migrations.MIGRATION_25_26)
+                .addMigrations(Migrations.MIGRATION_26_27)
+                .addMigrations(Migrations.MIGRATION_27_28)
+                .addMigrations(Migrations.MIGRATION_28_29)
+                .addMigrations(Migrations.MIGRATION_29_30)
                 .addMigrations(Migrations.MIGRATION_30_31)
                 .addMigrations(Migrations.MIGRATION_31_32)
                 .addMigrations(Migrations.MIGRATION_32_33)
@@ -134,6 +159,10 @@ public abstract class AppDatabase extends RoomDatabase {
                 .addMigrations(Migrations.MIGRATION_35_36)
                 .addMigrations(Migrations.MIGRATION_36_37)
                 .addMigrations(Migrations.MIGRATION_37_38)
+                // Versions 1-4 predate the oldest schema which can be migrated safely. This
+                // matches the historical app behavior for those releases, while preserving all
+                // user data from version 5 onward through the explicit chain above.
+                .fallbackToDestructiveMigrationFrom(1, 2, 3, 4)
                 .allowMainThreadQueries().build();
     }
 

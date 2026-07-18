@@ -25,6 +25,9 @@
     <color name="white_70">#B3FFFFFF</color>
     <color name="white_80">#CCFFFFFF</color>
     <color name="white_90">#E6FFFFFF</color>
-    <color name="settings_v2_brand_background">#08101A</color>
+    <color name="settings_v2_brand_background">#07070A</color>
+    <color name="brand_red">#E21F30</color>
+    <color name="brand_red_focused">#FF3D4B</color>
+    <color name="brand_red_dark">#A70F1E</color>
 
 </resources>

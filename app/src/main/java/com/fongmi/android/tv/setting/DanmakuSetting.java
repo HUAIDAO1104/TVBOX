@@ -1,13 +1,13 @@
 package com.fongmi.android.tv.setting;
 
-import android.text.TextUtils;
-
 import androidx.media3.ui.danmaku.DanmakuConfig;
 
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.github.catvod.utils.Prefers;
 
 public class DanmakuSetting {
+
+    static final String DEFAULT_API_URL = "https://danmu.xyy.red/api/v2/fongmi/danmaku?name={name}&episode={episode}";
 
     private static final float MIN_TEXT_SCALE = 0.5f;
     private static final float MAX_TEXT_SCALE = 3.0f;
@@ -37,7 +37,7 @@ public class DanmakuSetting {
     private static final int MAX_MAX_FIXED_LINES = 10;
 
     public static boolean isLoad() {
-        return Prefers.getBoolean("danmaku_load");
+        return Prefers.getBoolean("danmaku_load", true);
     }
 
     public static void putLoad(boolean danmakuLoad) {
@@ -46,7 +46,7 @@ public class DanmakuSetting {
     }
 
     public static boolean isAuto() {
-        return Prefers.getBoolean("danmaku_auto");
+        return Prefers.getBoolean("danmaku_auto", true);
     }
 
     public static void putAuto(boolean auto) {
@@ -78,19 +78,19 @@ public class DanmakuSetting {
     }
 
     public static float getTextScale() {
-        return Math.clamp(Prefers.getFloat("danmaku_text_scale", 1f), MIN_TEXT_SCALE, MAX_TEXT_SCALE);
+        return clamp(Prefers.getFloat("danmaku_text_scale", 1f), MIN_TEXT_SCALE, MAX_TEXT_SCALE);
     }
 
     public static void putTextScale(float value) {
-        Prefers.put("danmaku_text_scale", Math.clamp(value, MIN_TEXT_SCALE, MAX_TEXT_SCALE));
+        Prefers.put("danmaku_text_scale", clamp(value, MIN_TEXT_SCALE, MAX_TEXT_SCALE));
     }
 
     public static float getTransparency() {
-        return Math.clamp(Prefers.getFloat("danmaku_transparency", 0f), MIN_TRANSPARENCY, MAX_TRANSPARENCY);
+        return clamp(Prefers.getFloat("danmaku_transparency", 0f), MIN_TRANSPARENCY, MAX_TRANSPARENCY);
     }
 
     public static void putTransparency(float value) {
-        Prefers.put("danmaku_transparency", Math.clamp(value, MIN_TRANSPARENCY, MAX_TRANSPARENCY));
+        Prefers.put("danmaku_transparency", clamp(value, MIN_TRANSPARENCY, MAX_TRANSPARENCY));
     }
 
     public static boolean isTextBold() {
@@ -118,123 +118,123 @@ public class DanmakuSetting {
     }
 
     public static float getShadowTransparency() {
-        return Math.clamp(Prefers.getFloat("danmaku_shadow_transparency", 0.1f), MIN_TRANSPARENCY, MAX_TRANSPARENCY);
+        return clamp(Prefers.getFloat("danmaku_shadow_transparency", 0.1f), MIN_TRANSPARENCY, MAX_TRANSPARENCY);
     }
 
     public static void putShadowTransparency(float value) {
-        Prefers.put("danmaku_shadow_transparency", Math.clamp(value, MIN_TRANSPARENCY, MAX_TRANSPARENCY));
+        Prefers.put("danmaku_shadow_transparency", clamp(value, MIN_TRANSPARENCY, MAX_TRANSPARENCY));
     }
 
     public static float getStrokeWidthMultiplier() {
-        return Math.clamp(Prefers.getFloat("danmaku_stroke_width_multiplier", 0.12f), MIN_STROKE_WIDTH_MULTIPLIER, MAX_STROKE_WIDTH_MULTIPLIER);
+        return clamp(Prefers.getFloat("danmaku_stroke_width_multiplier", 0.12f), MIN_STROKE_WIDTH_MULTIPLIER, MAX_STROKE_WIDTH_MULTIPLIER);
     }
 
     public static void putStrokeWidthMultiplier(float value) {
-        Prefers.put("danmaku_stroke_width_multiplier", Math.clamp(value, MIN_STROKE_WIDTH_MULTIPLIER, MAX_STROKE_WIDTH_MULTIPLIER));
+        Prefers.put("danmaku_stroke_width_multiplier", clamp(value, MIN_STROKE_WIDTH_MULTIPLIER, MAX_STROKE_WIDTH_MULTIPLIER));
     }
 
     public static float getProjectionOffsetX() {
-        return Math.clamp(Prefers.getFloat("danmaku_projection_offset_x", 0.08f), MIN_PROJECTION_OFFSET, MAX_PROJECTION_OFFSET);
+        return clamp(Prefers.getFloat("danmaku_projection_offset_x", 0.08f), MIN_PROJECTION_OFFSET, MAX_PROJECTION_OFFSET);
     }
 
     public static void putProjectionOffsetX(float value) {
-        Prefers.put("danmaku_projection_offset_x", Math.clamp(value, MIN_PROJECTION_OFFSET, MAX_PROJECTION_OFFSET));
+        Prefers.put("danmaku_projection_offset_x", clamp(value, MIN_PROJECTION_OFFSET, MAX_PROJECTION_OFFSET));
     }
 
     public static float getProjectionOffsetY() {
-        return Math.clamp(Prefers.getFloat("danmaku_projection_offset_y", 0.08f), MIN_PROJECTION_OFFSET, MAX_PROJECTION_OFFSET);
+        return clamp(Prefers.getFloat("danmaku_projection_offset_y", 0.08f), MIN_PROJECTION_OFFSET, MAX_PROJECTION_OFFSET);
     }
 
     public static void putProjectionOffsetY(float value) {
-        Prefers.put("danmaku_projection_offset_y", Math.clamp(value, MIN_PROJECTION_OFFSET, MAX_PROJECTION_OFFSET));
+        Prefers.put("danmaku_projection_offset_y", clamp(value, MIN_PROJECTION_OFFSET, MAX_PROJECTION_OFFSET));
     }
 
     public static float getProjectionTransparency() {
-        return Math.clamp(Prefers.getFloat("danmaku_projection_transparency", 0.2f), MIN_TRANSPARENCY, MAX_TRANSPARENCY);
+        return clamp(Prefers.getFloat("danmaku_projection_transparency", 0.2f), MIN_TRANSPARENCY, MAX_TRANSPARENCY);
     }
 
     public static void putProjectionTransparency(float value) {
-        Prefers.put("danmaku_projection_transparency", Math.clamp(value, MIN_TRANSPARENCY, MAX_TRANSPARENCY));
+        Prefers.put("danmaku_projection_transparency", clamp(value, MIN_TRANSPARENCY, MAX_TRANSPARENCY));
     }
 
     public static long getDurationMs() {
-        return Math.clamp(Prefers.getLong("danmaku_duration", 8000L), MIN_DURATION_MS, MAX_DURATION_MS);
+        return clamp(Prefers.getLong("danmaku_duration", 8000L), MIN_DURATION_MS, MAX_DURATION_MS);
     }
 
     public static void putDurationMs(long value) {
-        Prefers.put("danmaku_duration", Math.clamp(value, MIN_DURATION_MS, MAX_DURATION_MS));
+        Prefers.put("danmaku_duration", clamp(value, MIN_DURATION_MS, MAX_DURATION_MS));
     }
 
     public static long getFixedDurationMs() {
-        return Math.clamp(Prefers.getLong("danmaku_fixed_duration", 5000L), MIN_FIXED_DURATION_MS, MAX_FIXED_DURATION_MS);
+        return clamp(Prefers.getLong("danmaku_fixed_duration", 5000L), MIN_FIXED_DURATION_MS, MAX_FIXED_DURATION_MS);
     }
 
     public static void putFixedDurationMs(long value) {
-        Prefers.put("danmaku_fixed_duration", Math.clamp(value, MIN_FIXED_DURATION_MS, MAX_FIXED_DURATION_MS));
+        Prefers.put("danmaku_fixed_duration", clamp(value, MIN_FIXED_DURATION_MS, MAX_FIXED_DURATION_MS));
     }
 
     public static long getTimeOffsetMs() {
-        return Math.clamp(Prefers.getLong("danmaku_time_offset", 0L), MIN_TIME_OFFSET_MS, MAX_TIME_OFFSET_MS);
+        return clamp(Prefers.getLong("danmaku_time_offset", 0L), MIN_TIME_OFFSET_MS, MAX_TIME_OFFSET_MS);
     }
 
     public static void putTimeOffsetMs(long value) {
-        Prefers.put("danmaku_time_offset", Math.clamp(value, MIN_TIME_OFFSET_MS, MAX_TIME_OFFSET_MS));
+        Prefers.put("danmaku_time_offset", clamp(value, MIN_TIME_OFFSET_MS, MAX_TIME_OFFSET_MS));
     }
 
     public static int getMaxOnScreen() {
-        return Math.clamp(Prefers.getInt("danmaku_max_on_screen", 150), MIN_MAX_ON_SCREEN, MAX_MAX_ON_SCREEN);
+        return clamp(Prefers.getInt("danmaku_max_on_screen", 150), MIN_MAX_ON_SCREEN, MAX_MAX_ON_SCREEN);
     }
 
     public static void putMaxOnScreen(int value) {
-        Prefers.put("danmaku_max_on_screen", Math.clamp(value, MIN_MAX_ON_SCREEN, MAX_MAX_ON_SCREEN));
+        Prefers.put("danmaku_max_on_screen", clamp(value, MIN_MAX_ON_SCREEN, MAX_MAX_ON_SCREEN));
     }
 
     public static float getScrollAreaRatio() {
-        return Math.clamp(Prefers.getFloat("danmaku_scroll_area_ratio", 0.5f), MIN_SCROLL_AREA_RATIO, MAX_SCROLL_AREA_RATIO);
+        return clamp(Prefers.getFloat("danmaku_scroll_area_ratio", 0.5f), MIN_SCROLL_AREA_RATIO, MAX_SCROLL_AREA_RATIO);
     }
 
     public static void putScrollAreaRatio(float value) {
-        Prefers.put("danmaku_scroll_area_ratio", Math.clamp(value, MIN_SCROLL_AREA_RATIO, MAX_SCROLL_AREA_RATIO));
+        Prefers.put("danmaku_scroll_area_ratio", clamp(value, MIN_SCROLL_AREA_RATIO, MAX_SCROLL_AREA_RATIO));
     }
 
     public static int getMaxScrollLines() {
-        return Math.clamp(Prefers.getInt("danmaku_max_scroll_lines", 0), MIN_MAX_SCROLL_LINES, MAX_MAX_SCROLL_LINES);
+        return clamp(Prefers.getInt("danmaku_max_scroll_lines", 0), MIN_MAX_SCROLL_LINES, MAX_MAX_SCROLL_LINES);
     }
 
     public static void putMaxScrollLines(int value) {
-        Prefers.put("danmaku_max_scroll_lines", Math.clamp(value, MIN_MAX_SCROLL_LINES, MAX_MAX_SCROLL_LINES));
+        Prefers.put("danmaku_max_scroll_lines", clamp(value, MIN_MAX_SCROLL_LINES, MAX_MAX_SCROLL_LINES));
     }
 
     public static int getMaxTopLines() {
-        return Math.clamp(Prefers.getInt("danmaku_max_top_lines", 0), MIN_MAX_FIXED_LINES, MAX_MAX_FIXED_LINES);
+        return clamp(Prefers.getInt("danmaku_max_top_lines", 0), MIN_MAX_FIXED_LINES, MAX_MAX_FIXED_LINES);
     }
 
     public static void putMaxTopLines(int value) {
-        Prefers.put("danmaku_max_top_lines", Math.clamp(value, MIN_MAX_FIXED_LINES, MAX_MAX_FIXED_LINES));
+        Prefers.put("danmaku_max_top_lines", clamp(value, MIN_MAX_FIXED_LINES, MAX_MAX_FIXED_LINES));
     }
 
     public static int getMaxBottomLines() {
-        return Math.clamp(Prefers.getInt("danmaku_max_bottom_lines", 0), MIN_MAX_FIXED_LINES, MAX_MAX_FIXED_LINES);
+        return clamp(Prefers.getInt("danmaku_max_bottom_lines", 0), MIN_MAX_FIXED_LINES, MAX_MAX_FIXED_LINES);
     }
 
     public static void putMaxBottomLines(int value) {
-        Prefers.put("danmaku_max_bottom_lines", Math.clamp(value, MIN_MAX_FIXED_LINES, MAX_MAX_FIXED_LINES));
+        Prefers.put("danmaku_max_bottom_lines", clamp(value, MIN_MAX_FIXED_LINES, MAX_MAX_FIXED_LINES));
     }
 
     public static float getLineSpacing() {
-        return Math.clamp(Prefers.getFloat("danmaku_line_spacing", 1.4f), MIN_LINE_SPACING, MAX_LINE_SPACING);
+        return clamp(Prefers.getFloat("danmaku_line_spacing", 1.4f), MIN_LINE_SPACING, MAX_LINE_SPACING);
     }
 
     public static void putLineSpacing(float value) {
-        Prefers.put("danmaku_line_spacing", Math.clamp(value, MIN_LINE_SPACING, MAX_LINE_SPACING));
+        Prefers.put("danmaku_line_spacing", clamp(value, MIN_LINE_SPACING, MAX_LINE_SPACING));
     }
 
     public static float getScrollGapRatio() {
-        return Math.clamp(Prefers.getFloat("danmaku_scroll_gap_ratio", 0f), MIN_SCROLL_GAP_RATIO, MAX_SCROLL_GAP_RATIO);
+        return clamp(Prefers.getFloat("danmaku_scroll_gap_ratio", 0f), MIN_SCROLL_GAP_RATIO, MAX_SCROLL_GAP_RATIO);
     }
 
     public static void putScrollGapRatio(float value) {
-        Prefers.put("danmaku_scroll_gap_ratio", Math.clamp(value, MIN_SCROLL_GAP_RATIO, MAX_SCROLL_GAP_RATIO));
+        Prefers.put("danmaku_scroll_gap_ratio", clamp(value, MIN_SCROLL_GAP_RATIO, MAX_SCROLL_GAP_RATIO));
     }
 
     public static boolean isShowScroll() {
@@ -294,9 +294,17 @@ public class DanmakuSetting {
     }
 
     public static String getEffectiveApiUrl() {
-        String userUrl = getApiUrl();
-        if (!TextUtils.isEmpty(userUrl)) return userUrl;
-        return VodConfig.get().getConfig().getDanmaku();
+        return resolveApiUrl(getApiUrl(), VodConfig.get().getConfig().getDanmaku());
+    }
+
+    static String resolveApiUrl(String userUrl, String repositoryUrl) {
+        if (!isBlank(userUrl)) return userUrl.trim();
+        if (!isBlank(repositoryUrl)) return repositoryUrl.trim();
+        return DEFAULT_API_URL;
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     public static void resetAppearance() {
@@ -372,5 +380,22 @@ public class DanmakuSetting {
                 .setShowSubtitle(isShowSubtitle())
                 .setShowSpecial(isShowSpecial())
                 .build();
+    }
+
+    /*
+     * java.lang.Math.clamp was added after Android 9.  Calling it directly can compile against
+     * the modern SDK yet still fail with NoSuchMethodError on API 28 vendor images.  Keep these
+     * tiny overloads local so every danmaku preference is safe before creating the player view.
+     */
+    static float clamp(float value, float min, float max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    static long clamp(long value, long min, long max) {
+        return Math.max(min, Math.min(max, value));
     }
 }

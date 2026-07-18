@@ -11,6 +11,7 @@ import com.bumptech.glide.Glide;
 import com.fongmi.android.tv.Product;
 import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.databinding.AdapterVodBinding;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.utils.ImgUtil;
 import com.fongmi.android.tv.utils.ResUtil;
 
@@ -72,9 +73,9 @@ public class HistoryPresenter extends Presenter {
         boolean same = item.getVodName().equals(item.getVodRemarks());
         ViewHolder holder = (ViewHolder) viewHolder;
         setClickListener(holder.view, item);
-        holder.binding.name.setText(item.getVodName());
-        holder.binding.site.setText(item.getSiteName());
-        holder.binding.remark.setText(item.getVodRemarks());
+        holder.binding.name.setText(SearchDisplayName.removeEmoji(item.getVodName()));
+        holder.binding.site.setText(SearchDisplayName.removeEmoji(item.getSiteName()));
+        holder.binding.remark.setText(SearchDisplayName.removeEmoji(item.getVodRemarks()));
         holder.binding.site.setVisibility(item.getSiteVisible());
         holder.binding.delete.setVisibility(!delete ? View.GONE : View.VISIBLE);
         holder.binding.remark.setVisibility(delete || same ? View.GONE : View.VISIBLE);

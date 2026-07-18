@@ -15,6 +15,12 @@
     <string name="home_view_detail">查看詳情</string>
     <string name="home_featured_poster">精選影片海報</string>
     <string name="home_continue_watching">繼續觀看</string>
+    <string name="home_view_all">查看全部</string>
+    <string name="history_clear_all">清空歷史</string>
+    <string name="danmaku_manual_search">手動搜尋彈幕</string>
+    <string name="danmaku_manual_search_hint">重新匹配目前影片</string>
+    <string name="danmaku_search_no_playback">請先播放影片，再手動匹配彈幕</string>
+    <string name="danmaku_search_enable_first">請先開啟載入彈幕，再進行手動匹配</string>
     <string name="home_hot_recommend">首頁精選</string>
     <string name="home_featured_empty">暫無精選內容</string>
     <string name="home_score_douban">豆瓣 %1$s</string>
@@ -40,6 +46,7 @@
     <string name="repository_add">新增倉庫</string>
     <string name="repository_sync_all">全部重新整理</string>
     <string name="repository_empty">暫無倉庫，可新增一個倉庫開始使用</string>
+    <string name="repository_load_failed">暫時無法讀取已儲存倉庫，請安裝相容更新後重新啟動</string>
     <string name="repository_enable">啟用</string>
     <string name="repository_disable">停用</string>
     <string name="repository_delete_title">刪除倉庫</string>
@@ -50,6 +57,9 @@
     <string name="repository_edit_title">配置倉庫</string>
     <string name="repository_name">名稱（選填）</string>
     <string name="repository_url">倉庫網址</string>
+    <string name="repository_scan_title">手機掃碼新增</string>
+    <string name="repository_scan_info">手機與電視連接同一網路，掃碼後在網頁中貼上倉庫名稱和網址並送出。</string>
+    <string name="repository_manual_input">或使用遙控器輸入</string>
     <string name="setting_repository">配置與倉庫</string>
     <string name="setting_repository_desc">新增、排序、停用與重新整理</string>
     <string name="setting_cloud_account">網盤帳戶</string>
@@ -169,6 +179,12 @@
     <string name="collect_result">「<xliff:g name="name">%s</xliff:g>」的搜尋結果</string>
     <string name="search_v2_title">搜尋</string>
     <string name="search_v2_voice">語音搜尋</string>
+    <string name="search_v2_voice_short">語音</string>
+    <string name="search_v2_voice_prompt">請說出影片或劇集名稱</string>
+    <string name="search_v2_voice_unavailable">此裝置沒有可用的語音辨識服務</string>
+    <string name="search_v2_voice_permission_denied">語音搜尋需要麥克風權限，請允許後重試</string>
+    <string name="search_v2_voice_no_match">沒有辨識到片名，請重試</string>
+    <string name="search_v2_voice_failed">語音辨識暫時無法使用，請稍後重試</string>
     <string name="search_v2_hint">按確認鍵開始搜尋</string>
     <string name="search_v2_keyboard">電視鍵盤</string>
     <string name="search_v2_stop">停止搜尋</string>
@@ -223,7 +239,8 @@
     <string name="search_v2_source_lane_all">全部</string>
     <string name="search_v2_source_lane_searching">…</string>
     <string name="search_v2_source_filter_count">搜尋來源 %1$d</string>
-    <string name="search_v2_source_filter_apply">套用並搜尋</string>
+    <string name="search_v2_source_filter_all">搜尋來源：全部</string>
+    <string name="search_v2_source_filter_apply">套用</string>
     <string name="search_v2_source_filter_default">恢復預設</string>
     <string name="search_v2_source_filter_other">其他已啟用來源</string>
     <string name="detail_v2_more_sources">同片其他來源</string>

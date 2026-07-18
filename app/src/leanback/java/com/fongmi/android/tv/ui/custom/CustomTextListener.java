@@ -6,7 +6,8 @@ import android.speech.SpeechRecognizer;
 import android.text.Editable;
 import android.text.TextWatcher;
 
-import java.util.Collections;
+import com.fongmi.android.tv.ui.search.VoiceSearchPolicy;
+
 import java.util.List;
 
 public abstract class CustomTextListener implements TextWatcher, RecognitionListener {
@@ -22,9 +23,8 @@ public abstract class CustomTextListener implements TextWatcher, RecognitionList
     }
 
     private String parse(Bundle bundle) {
-        List<String> texts = bundle == null ? Collections.emptyList() : bundle.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-        if (texts == null || texts.isEmpty()) return "";
-        return texts.get(0).trim();
+        List<String> texts = bundle == null ? null : bundle.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+        return VoiceSearchPolicy.firstResult(texts);
     }
 
     @Override
@@ -58,13 +58,20 @@ public abstract class CustomTextListener implements TextWatcher, RecognitionList
     @Override
     public void onError(int error) {
         done();
-        onResults("");
+        switch (VoiceSearchPolicy.classifyError(error)) {
+            case CANCELLED -> onCancelled();
+            case PERMISSION_DENIED -> onPermissionDenied();
+            case NO_MATCH -> onNoMatch();
+            case FAILURE -> onFailure(error);
+        }
     }
 
     @Override
     public void onResults(Bundle results) {
         done();
-        onResults(parse(results));
+        String result = parse(results);
+        if (result.isEmpty()) onNoMatch();
+        else onResults(result);
     }
 
     @Override
@@ -80,5 +87,20 @@ public abstract class CustomTextListener implements TextWatcher, RecognitionList
     }
 
     public void onResults(String result) {
+    }
+
+    public void onCancelled() {
+    }
+
+    public void onPermissionDenied() {
+    }
+
+    public void onNoMatch() {
+    }
+
+    public void onFailure(int error) {
+    }
+
+    public void onUnavailable() {
     }
 }

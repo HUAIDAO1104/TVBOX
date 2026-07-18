@@ -20,9 +20,9 @@
 
     <style name="Theme.Splash" parent="Theme.SplashScreen">
         <item name="postSplashScreenTheme">@style/Theme.App</item>
-        <item name="windowSplashScreenBackground">@color/tv_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/settings_v2_splash_animated</item>
-        <item name="windowSplashScreenAnimationDuration">650</item>
+        <item name="windowSplashScreenBackground">@color/settings_v2_brand_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/brand_splash_placeholder</item>
+        <item name="windowSplashScreenAnimationDuration">1</item>
     </style>
 
     <style name="Theme.App" parent="Theme.Base" />

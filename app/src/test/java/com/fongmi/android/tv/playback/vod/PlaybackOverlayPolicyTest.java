@@ -26,6 +26,29 @@ public class PlaybackOverlayPolicyTest {
     }
 
     @Test
+    public void horizontalDirectionSeeksWhileVerticalDirectionRevealsHiddenControls() {
+        assertTrue(PlaybackOverlayPolicy.shouldSeekWithHiddenControls(true, false, false, false, true));
+        assertFalse(PlaybackOverlayPolicy.shouldSeekWithHiddenControls(true, true, false, false, true));
+        assertFalse(PlaybackOverlayPolicy.shouldSeekWithHiddenControls(true, false, true, false, true));
+        assertFalse(PlaybackOverlayPolicy.shouldSeekWithHiddenControls(true, false, false, true, true));
+        assertFalse(PlaybackOverlayPolicy.shouldSeekWithHiddenControls(true, false, false, false, false));
+        assertTrue(PlaybackOverlayPolicy.shouldRevealControls(true, false, false, false, true));
+        assertFalse(PlaybackOverlayPolicy.shouldRevealControls(true, true, false, false, true));
+        assertFalse(PlaybackOverlayPolicy.shouldRevealControls(true, false, true, false, true));
+        assertFalse(PlaybackOverlayPolicy.shouldRevealControls(true, false, false, true, true));
+        assertFalse(PlaybackOverlayPolicy.shouldRevealControls(true, false, false, false, false));
+    }
+
+    @Test
+    public void bufferingActionsWaitForExplicitDirectionalNavigation() {
+        assertTrue(PlaybackOverlayPolicy.shouldEnterProgressActions(true, true, false, true));
+        assertFalse(PlaybackOverlayPolicy.shouldEnterProgressActions(true, true, true, true));
+        assertFalse(PlaybackOverlayPolicy.shouldEnterProgressActions(true, false, false, true));
+        assertFalse(PlaybackOverlayPolicy.shouldEnterProgressActions(false, true, false, true));
+        assertFalse(PlaybackOverlayPolicy.shouldEnterProgressActions(true, true, false, false));
+    }
+
+    @Test
     public void rebufferingPreparedMediaCanStillBePausedWithConfirm() {
         assertTrue(PlaybackOverlayPolicy.canToggleDuringBuffering(true, true, true, false, false));
         assertFalse(PlaybackOverlayPolicy.canToggleDuringBuffering(true, true, true, true, false));

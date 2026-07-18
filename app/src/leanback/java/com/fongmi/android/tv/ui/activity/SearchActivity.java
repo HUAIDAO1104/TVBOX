@@ -25,7 +25,9 @@ import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.custom.CustomKeyboard;
 import com.fongmi.android.tv.ui.custom.CustomTextListener;
 import com.fongmi.android.tv.ui.dialog.SiteDialog;
+import com.fongmi.android.tv.ui.search.VoiceSearchPolicy;
 import com.fongmi.android.tv.utils.KeyUtil;
+import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.Util;
 import com.fongmi.android.tv.utils.ZhuToPin;
 import com.github.catvod.net.OkHttp;
@@ -54,6 +56,8 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
     private WordAdapter mWordAdapter;
     private Bundle mSavedState;
     private boolean mFirstResume;
+    private boolean mStartVoiceRequested;
+    private boolean mSearchLaunching;
 
     public static void start(Activity activity) {
         activity.startActivity(new Intent(activity, SearchActivity.class));
@@ -89,6 +93,7 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
     protected void initView(Bundle savedInstanceState) {
         mSavedState = savedInstanceState;
         mFirstResume = true;
+        mStartVoiceRequested = savedInstanceState == null && getIntent().getBooleanExtra(EXTRA_START_VOICE, false);
         CustomKeyboard.init(this, mBinding);
         setRecyclerView();
         checkKeyword(savedInstanceState);
@@ -107,17 +112,57 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
                 getWord(s.toString());
             }
         });
-        mBinding.mic.setOnClickListener(v -> mBinding.mic.start());
+        mBinding.voiceAction.setOnClickListener(v -> startVoiceSearch());
         mBinding.mic.setListener(this, new CustomTextListener() {
             @Override
             public void onResults(String result) {
-                if (!result.isEmpty()) setKeyword(result);
-                mBinding.keyword.requestFocus();
+                if (result.isEmpty()) return;
+                setKeyword(result);
+                onSearch();
+            }
+
+            @Override
+            public void onCancelled() {
+                restoreVoiceFocus();
+            }
+
+            @Override
+            public void onPermissionDenied() {
+                Notify.show(R.string.search_v2_voice_permission_denied);
+                restoreVoiceFocus();
+            }
+
+            @Override
+            public void onNoMatch() {
+                Notify.show(R.string.search_v2_voice_no_match);
+                restoreVoiceFocus();
+            }
+
+            @Override
+            public void onFailure(int error) {
+                Notify.show(R.string.search_v2_voice_failed);
+                restoreVoiceFocus();
+            }
+
+            @Override
+            public void onUnavailable() {
+                Notify.show(R.string.search_v2_voice_unavailable);
+                restoreVoiceFocus();
             }
         });
-        if (getIntent().getBooleanExtra(EXTRA_START_VOICE, false)) {
-            mBinding.mic.post(mBinding.mic::start);
-        }
+    }
+
+    private void startVoiceSearch() {
+        mBinding.voiceAction.requestFocus();
+        mBinding.mic.start();
+    }
+
+    private void restoreVoiceFocus() {
+        mBinding.voiceAction.post(() -> {
+            if (!isFinishing() && !isDestroyed() && mBinding.voiceAction.isFocusable()) {
+                mBinding.voiceAction.requestFocus();
+            }
+        });
     }
 
     private void setRecyclerView() {
@@ -203,7 +248,12 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
 
     @Override
     public void onSearch() {
-        if (empty()) return;
+        // A single remote confirmation can be delivered both as an IME action and as the focused
+        // keyboard item's click. Without a gate this starts two CollectActivity instances a few
+        // milliseconds apart, which in turn runs two complete Spider queues and can corrupt shared
+        // native/Jar state. Re-enable submission only after this screen is actually resumed.
+        if (empty() || mSearchLaunching) return;
+        mSearchLaunching = true;
         String keyword = mBinding.keyword.getText().toString().trim();
         App.post(() -> mRecordAdapter.add(keyword), 250);
         Util.hideKeyboard(mBinding.keyword);
@@ -222,11 +272,15 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        if (event.getAction() == KeyEvent.ACTION_DOWN && KeyUtil.isBackKey(event) && mBinding.mic.isListening()) {
+            mBinding.mic.stop();
+            restoreVoiceFocus();
+            return true;
+        }
         if (event.getAction() == KeyEvent.ACTION_DOWN
-                && (event.getKeyCode() == KeyEvent.KEYCODE_SEARCH
-                || event.getKeyCode() == KeyEvent.KEYCODE_VOICE_ASSIST
-                || event.getKeyCode() == KeyEvent.KEYCODE_ASSIST)) {
-            mBinding.mic.start();
+                && event.getRepeatCount() == 0
+                && VoiceSearchPolicy.isActivationKey(event.getKeyCode())) {
+            startVoiceSearch();
             return true;
         }
         if (KeyUtil.isMenuKey(event)) showDialog();
@@ -355,26 +409,32 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
     @Override
     protected void onPause() {
         super.onPause();
-        mBinding.mic.setFocusable(false);
+        mBinding.voiceAction.setFocusable(false);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        mBinding.mic.setFocusable(true);
+        mSearchLaunching = false;
+        mBinding.voiceAction.setFocusable(true);
         if (!mFirstResume) return;
         mFirstResume = false;
         mBinding.getRoot().post(this::restoreFocus);
     }
 
     private void restoreFocus() {
+        if (mStartVoiceRequested) {
+            mStartVoiceRequested = false;
+            startVoiceSearch();
+            return;
+        }
         if (mSavedState == null) {
             mBinding.keyword.requestFocus();
             return;
         }
         String zone = mSavedState.getString(STATE_FOCUS_ZONE, "keyword");
         int position = mSavedState.getInt(STATE_FOCUS_POSITION, 0);
-        if ("mic".equals(zone)) mBinding.mic.requestFocus();
+        if ("mic".equals(zone)) mBinding.voiceAction.requestFocus();
         else if ("keyboard".equals(zone)) focusPosition(mBinding.keyboard, position);
         else if ("record".equals(zone)) focusPosition(mBinding.recordRecycler, position);
         else if ("word".equals(zone)) focusPosition(mBinding.wordRecycler, position);
@@ -402,7 +462,7 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
         outState.putString(STATE_KEYWORD, mBinding.keyword.getText().toString());
         outState.putInt(STATE_SCROLL_Y, mBinding.scroll.getScrollY());
         View focus = getCurrentFocus();
-        if (focus == mBinding.mic) outState.putString(STATE_FOCUS_ZONE, "mic");
+        if (focus == mBinding.voiceAction) outState.putString(STATE_FOCUS_ZONE, "mic");
         else if (focus == mBinding.keyword) outState.putString(STATE_FOCUS_ZONE, "keyword");
         else if (saveRecyclerFocus(outState, mBinding.keyboard, focus, "keyboard")) return;
         else if (saveRecyclerFocus(outState, mBinding.recordRecycler, focus, "record")) return;

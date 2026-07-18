@@ -80,6 +80,26 @@ public final class SearchAggregator {
         return new Update(UpdateType.ADDED_WORK, position, work);
     }
 
+    /**
+     * Adds one provider result as one card. This keeps every source-visible result available to
+     * the source lane without weakening the conservative title aggregation used elsewhere.
+     */
+    public synchronized Update addUnaggregated(SearchSource source) {
+        if (source == null || !relevance.isRelevant(keyword, source)) return filtered();
+        String existingWorkId = sourceToWork.get(source.stableId());
+        if (existingWorkId != null) return updateExisting(existingWorkId, source);
+        String workId = SearchStableIds.create("raw", source.stableId());
+        if (workPositions.containsKey(workId)) {
+            workId = SearchStableIds.create("raw", source.stableId() + '\u001f' + works.size());
+        }
+        SearchWork work = SearchWork.create(workId, source, ranker, nowMillis.getAsLong());
+        int position = works.size();
+        works.add(work);
+        workPositions.put(workId, position);
+        sourceToWork.put(source.stableId(), workId);
+        return new Update(UpdateType.ADDED_WORK, position, work);
+    }
+
     public synchronized List<Update> addAll(Collection<SearchSource> sources) {
         if (sources == null || sources.isEmpty()) return Collections.emptyList();
         List<Update> updates = new ArrayList<>(sources.size());

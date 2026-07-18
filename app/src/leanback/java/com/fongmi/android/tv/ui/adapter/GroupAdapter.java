@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.fongmi.android.tv.bean.Group;
 import com.fongmi.android.tv.databinding.AdapterGroupBinding;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -65,7 +66,7 @@ public class GroupAdapter extends RecyclerView.Adapter<GroupAdapter.ViewHolder> 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Group item = mItems.get(position);
-        holder.binding.name.setText(item.getName());
+        holder.binding.name.setText(SearchDisplayName.removeEmoji(item.getName()));
         holder.binding.getRoot().setOnClickListener(v -> mListener.onItemClick(item));
     }
 

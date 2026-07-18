@@ -1,5 +1,6 @@
 package com.fongmi.android.tv.ui.dialog;
 
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
@@ -12,6 +13,9 @@ import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.databinding.DialogDanmakuSettingBinding;
 import com.fongmi.android.tv.player.PlayerManager;
+import com.fongmi.android.tv.server.Server;
+import com.fongmi.android.tv.setting.DanmakuSetting;
+import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Util;
 
@@ -39,6 +43,22 @@ public final class DanmakuSettingDialog {
         return DialogDanmakuSettingBinding.inflate(inflater, container, false);
     }
 
+    private static void openSearch(FragmentActivity activity, PlayerManager preferred, Runnable dismiss) {
+        PlayerManager target = preferred;
+        var service = Server.get().getService();
+        if (target == null && service != null) target = service.player();
+        if (target == null || target.getMetadata() == null) {
+            Notify.show(com.fongmi.android.tv.R.string.danmaku_search_no_playback);
+            return;
+        }
+        if (TextUtils.isEmpty(DanmakuSetting.getEffectiveApiUrl())) {
+            Notify.show(com.fongmi.android.tv.R.string.danmaku_search_configure_api);
+            return;
+        }
+        dismiss.run();
+        DanmakuSearchDialog.create().player(target).show(activity);
+    }
+
     public static final class BottomSheet extends BaseBottomSheetDialog {
 
         private DialogDanmakuSettingBinding binding;
@@ -56,6 +76,8 @@ public final class DanmakuSettingDialog {
         @Override
         protected void initView() {
             new DanmakuSettingPanel(binding, player).bind();
+            binding.search.setOnClickListener(view -> openSearch(requireActivity(), player, this::dismissNow));
+            if (Util.isLeanback()) binding.search.requestFocus();
         }
     }
 
@@ -81,6 +103,8 @@ public final class DanmakuSettingDialog {
         @Override
         protected void initView() {
             new DanmakuSettingPanel(binding, player).bind();
+            binding.search.setOnClickListener(view -> openSearch(requireActivity(), player, this::dismissNow));
+            if (Util.isLeanback()) binding.search.requestFocus();
         }
     }
 }

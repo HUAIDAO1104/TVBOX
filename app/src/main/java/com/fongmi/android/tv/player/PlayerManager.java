@@ -232,7 +232,7 @@ public class PlayerManager implements ParseCallback {
     }
 
     public String getPositionTime(long delta) {
-        return Util.timeMs(Math.clamp(getPosition() + delta, 0, Math.max(0, getDuration())));
+        return Util.timeMs(Math.max(0, Math.min(getPosition() + delta, Math.max(0, getDuration()))));
     }
 
     public long getDuration() {
@@ -270,7 +270,12 @@ public class PlayerManager implements ParseCallback {
     public void setDanmakuEnabled(boolean enabled) {
         if (danmakuEnabled == enabled) return;
         danmakuEnabled = enabled;
+        DanmakuSetting.putShow(enabled);
         callback.onDanmakuEnabledChanged(danmakuEnabled);
+    }
+
+    public boolean isDanmakuEnabled() {
+        return danmakuEnabled;
     }
 
     public void sendDanmaku(String text) {
@@ -290,11 +295,11 @@ public class PlayerManager implements ParseCallback {
     }
 
     public String addSpeed(float value) {
-        return setSpeed(Math.clamp(getSpeed() + value, 0.25f, 5.0f));
+        return setSpeed(Math.max(0.25f, Math.min(getSpeed() + value, 5.0f)));
     }
 
     public String subSpeed(float value) {
-        return setSpeed(Math.clamp(getSpeed() - value, 0.25f, 5.0f));
+        return setSpeed(Math.max(0.25f, Math.min(getSpeed() - value, 5.0f)));
     }
 
     public String toggleSpeed() {

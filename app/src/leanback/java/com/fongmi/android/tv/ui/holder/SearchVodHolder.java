@@ -37,7 +37,7 @@ public class SearchVodHolder extends BaseVodHolder {
         String displayName = SearchDisplayName.clean(item.getName());
         String meta = join(item.getYear(), item.getTypeName());
         String source = join(SearchDisplayName.clean(item.getSiteName()), SearchDisplayName.clean(item.getRemarks()));
-        binding.name.setText(displayName.isEmpty() ? item.getName() : displayName);
+        binding.name.setText(displayName.isEmpty() ? SearchDisplayName.removeEmoji(item.getName()) : displayName);
         binding.meta.setText(meta);
         binding.source.setText(source);
         binding.meta.setVisibility(meta.isEmpty() ? View.GONE : View.VISIBLE);

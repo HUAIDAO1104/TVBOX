@@ -13,10 +13,12 @@ import com.bumptech.glide.Glide;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.databinding.AdapterHomeHistoryBinding;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.utils.ImgUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class HomeHistoryAdapter extends RecyclerView.Adapter<HomeHistoryAdapter.ViewHolder> {
 
@@ -38,6 +40,7 @@ public class HomeHistoryAdapter extends RecyclerView.Adapter<HomeHistoryAdapter.
     }
 
     public void submit(List<History> next) {
+        List<History> safe = next == null ? List.of() : next.stream().filter(Objects::nonNull).toList();
         List<History> old = new ArrayList<>(items);
         DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
             @Override
@@ -47,23 +50,23 @@ public class HomeHistoryAdapter extends RecyclerView.Adapter<HomeHistoryAdapter.
 
             @Override
             public int getNewListSize() {
-                return next.size();
+                return safe.size();
             }
 
             @Override
             public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-                return old.get(oldItemPosition).getKey().equals(next.get(newItemPosition).getKey());
+                return Objects.equals(old.get(oldItemPosition).getKey(), safe.get(newItemPosition).getKey());
             }
 
             @Override
             public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-                return old.get(oldItemPosition).isSameContent(next.get(newItemPosition))
-                        && old.get(oldItemPosition).getPosition() == next.get(newItemPosition).getPosition()
-                        && old.get(oldItemPosition).getDuration() == next.get(newItemPosition).getDuration();
+                return old.get(oldItemPosition).isSameContent(safe.get(newItemPosition))
+                        && old.get(oldItemPosition).getPosition() == safe.get(newItemPosition).getPosition()
+                        && old.get(oldItemPosition).getDuration() == safe.get(newItemPosition).getDuration();
             }
         });
         items.clear();
-        items.addAll(next);
+        items.addAll(safe);
         diff.dispatchUpdatesTo(this);
     }
 
@@ -79,7 +82,7 @@ public class HomeHistoryAdapter extends RecyclerView.Adapter<HomeHistoryAdapter.
 
     @Override
     public long getItemId(int position) {
-        return items.get(position).getKey().hashCode();
+        return Objects.hashCode(items.get(position).getKey());
     }
 
     @NonNull
@@ -91,7 +94,8 @@ public class HomeHistoryAdapter extends RecyclerView.Adapter<HomeHistoryAdapter.
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         History item = items.get(position);
-        holder.binding.name.setText(item.getVodName());
+        String displayName = SearchDisplayName.removeEmoji(item.getVodName());
+        holder.binding.name.setText(displayName);
         int progress = progress(item);
         String remark = historyRemark(holder.binding.getRoot().getContext(), item, progress);
         holder.binding.remark.setText(remark);
@@ -99,7 +103,7 @@ public class HomeHistoryAdapter extends RecyclerView.Adapter<HomeHistoryAdapter.
         holder.binding.progress.setProgress(progress);
         holder.binding.progress.setVisibility(progress > 0 ? View.VISIBLE : View.INVISIBLE);
         ImgUtil.loadPoster(item.getVodName(), item.getVodPic(), holder.binding.poster);
-        holder.binding.getRoot().setContentDescription(item.getVodName() + (remark.isEmpty() ? "" : ", " + remark));
+        holder.binding.getRoot().setContentDescription(displayName + (remark.isEmpty() ? "" : ", " + remark));
         holder.binding.getRoot().setOnClickListener(view -> {
             if (deleteMode) listener.onHistoryDelete(item);
             else listener.onHistoryClick(item);

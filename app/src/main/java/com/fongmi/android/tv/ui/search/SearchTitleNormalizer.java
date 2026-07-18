@@ -85,6 +85,23 @@ public final class SearchTitleNormalizer {
         return parse(value).identityKey();
     }
 
+    /**
+     * Cheap containment key used before the full catalog normalizer. It deliberately avoids
+     * java.util.regex so a provider returning hundreds of unrelated rows cannot flood Android's
+     * native ICU Matcher allocator.
+     */
+    static String fastKey(String value) {
+        String text = Trans.t2s(false, Normalizer.normalize(value == null ? "" : value, Normalizer.Form.NFKC))
+                .replace('馀', '余').toLowerCase(Locale.ROOT);
+        StringBuilder result = new StringBuilder(text.length());
+        for (int offset = 0; offset < text.length(); ) {
+            int codePoint = text.codePointAt(offset);
+            if (Character.isLetterOrDigit(codePoint)) result.appendCodePoint(codePoint);
+            offset += Character.charCount(codePoint);
+        }
+        return result.toString();
+    }
+
     public static NormalizedTitle parse(String value) {
         String original = value == null ? "" : value;
         String text = prepare(original);

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <!-- Both states remain readable: red fill means playing, pale ring means focus. -->
+    <solid android:color="@color/tv_accent" />
+    <corners android:radius="8dp" />
+    <stroke android:width="3dp" android:color="#FFFFD7DB" />
+</shape>
