@@ -54,6 +54,21 @@ jobs:
             assembleMobileArmeabi_v7aRelease \
             assembleMobileArm64_v8aRelease
 
+      - name: Verify projector-compatible signatures
+        run: |
+          APKSIGNER="$(find "$ANDROID_SDK_ROOT/build-tools" -name apksigner -type f | sort -V | tail -1)"
+          test -x "$APKSIGNER"
+          while IFS= read -r apk; do
+            # Force verification from API 23 so apksigner also evaluates the embedded V1
+            # signature. With the manifest minSdk (24), apksigner intentionally reports V1 as
+            # unused even when the compatibility signature is present.
+            result="$($APKSIGNER verify --verbose --min-sdk-version 23 "$apk")"
+            echo "$result"
+            grep -q "Verified using v1 scheme (JAR signing): true" <<< "$result"
+            grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" <<< "$result"
+            grep -q "Verified using v3 scheme (APK Signature Scheme v3): true" <<< "$result"
+          done < <(find app/build/outputs/apk -path '*/release/*.apk' -type f)
+
       - name: Collect release assets
         run: |
           mkdir -p dist

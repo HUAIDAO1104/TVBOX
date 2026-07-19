@@ -42,7 +42,10 @@ public class Updater implements Download.Callback, UpdateListener {
     }
 
     private File getFile() {
-        return Path.cache("update.apk");
+        // Keep the downloaded payload extension-neutral. Some Android TV firmwares inspect or
+        // quarantine files ending in .apk before the platform installer has a chance to verify
+        // them. UpdateInstallerActivity streams this verified payload into PackageInstaller.
+        return Path.cache("update.payload");
     }
 
     public Updater force() {
@@ -140,7 +143,9 @@ public class Updater implements Download.Callback, UpdateListener {
 
     @Override
     public void success(File file) {
-        if (!UpdateVerifier.checksumMatches(file, asset.sha256()) || !UpdateVerifier.hasSameSigner(App.get(), file)) {
+        boolean checksumMatches = UpdateVerifier.checksumMatches(file, asset.sha256());
+        UpdateVerifier.SignerStatus signerStatus = UpdateVerifier.signerStatus(App.get(), file);
+        if (!UpdateVerifier.canInstall(checksumMatches, signerStatus)) {
             Path.clear(file);
             Notify.show(R.string.update_invalid);
             dismiss();

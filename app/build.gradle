@@ -19,8 +19,8 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // Keep compatibility fixes on a strictly newer version so TV installers do not retain
         // the previous APK while preserving its database for the migration chain below.
-        versionCode 578
-        versionName "5.5.27-danmaku-poster-touch"
+        versionCode 579
+        versionName "5.5.28-projector-ota"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
@@ -62,6 +62,13 @@ android {
             keyAlias localProps['keyAlias']
             keyPassword localProps['keyPassword'] ?: localProps['storePassword']
             storePassword localProps['storePassword']
+            // Several Android 9 projector firmwares cannot inspect V2-only archives through
+            // PackageManager. Keep V1 for their pre-install compatibility check while retaining
+            // V2/V3 integrity protection for modern Android versions.
+            enableV1Signing true
+            enableV2Signing true
+            enableV3Signing true
+            enableV4Signing false
         }
     }
 

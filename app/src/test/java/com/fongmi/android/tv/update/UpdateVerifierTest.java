@@ -27,4 +27,13 @@ public class UpdateVerifierTest {
         assertFalse(UpdateVerifier.checksumMatches(file, "00"));
         assertFalse(UpdateVerifier.checksumMatches(file, ""));
     }
+
+    @Test
+    public void onlyRejectsVerifiedSignerMismatch() {
+        assertTrue(UpdateVerifier.canInstall(true, UpdateVerifier.SignerStatus.MATCH));
+        assertTrue(UpdateVerifier.canInstall(true, UpdateVerifier.SignerStatus.UNKNOWN));
+        assertFalse(UpdateVerifier.canInstall(true, UpdateVerifier.SignerStatus.MISMATCH));
+        assertFalse(UpdateVerifier.canInstall(false, UpdateVerifier.SignerStatus.MATCH));
+        assertFalse(UpdateVerifier.canInstall(false, UpdateVerifier.SignerStatus.UNKNOWN));
+    }
 }

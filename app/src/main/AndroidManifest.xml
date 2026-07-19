@@ -86,6 +86,7 @@
             android:name=".update.UpdateInstallerActivity"
             android:excludeFromRecents="true"
             android:exported="false"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.UpdateInstaller" />
 
         <receiver

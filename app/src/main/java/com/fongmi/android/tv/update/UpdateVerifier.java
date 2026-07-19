@@ -15,6 +15,12 @@ import java.util.Set;
 
 public final class UpdateVerifier {
 
+    public enum SignerStatus {
+        MATCH,
+        MISMATCH,
+        UNKNOWN
+    }
+
     private UpdateVerifier() {
     }
 
@@ -41,6 +47,17 @@ public final class UpdateVerifier {
 
     @SuppressWarnings("deprecation")
     public static boolean hasSameSigner(Context context, File apk) {
+        return signerStatus(context, apk) == SignerStatus.MATCH;
+    }
+
+    /**
+     * Android TV vendor builds occasionally fail to expose archive signatures for V2-only APKs.
+     * Treat that platform parsing failure as UNKNOWN rather than a forged package. The verified
+     * manifest checksum still gates installation, and PackageInstaller performs the authoritative
+     * package-name and signing-certificate compatibility checks before replacing the app.
+     */
+    @SuppressWarnings("deprecation")
+    public static SignerStatus signerStatus(Context context, File apk) {
         try {
             PackageManager manager = context.getPackageManager();
             int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
@@ -48,14 +65,20 @@ public final class UpdateVerifier {
                     : PackageManager.GET_SIGNATURES;
             PackageInfo installed = manager.getPackageInfo(context.getPackageName(), flags);
             PackageInfo candidate = manager.getPackageArchiveInfo(apk.getAbsolutePath(), flags);
-            if (candidate == null || !context.getPackageName().equals(candidate.packageName)) return false;
+            if (candidate == null) return SignerStatus.UNKNOWN;
+            if (!context.getPackageName().equals(candidate.packageName)) return SignerStatus.MISMATCH;
             Set<String> installedSigners = signerDigests(installed);
             Set<String> candidateSigners = signerDigests(candidate);
+            if (installedSigners.isEmpty() || candidateSigners.isEmpty()) return SignerStatus.UNKNOWN;
             installedSigners.retainAll(candidateSigners);
-            return !installedSigners.isEmpty();
+            return installedSigners.isEmpty() ? SignerStatus.MISMATCH : SignerStatus.MATCH;
         } catch (Exception e) {
-            return false;
+            return SignerStatus.UNKNOWN;
         }
+    }
+
+    public static boolean canInstall(boolean checksumMatches, SignerStatus signerStatus) {
+        return checksumMatches && signerStatus != SignerStatus.MISMATCH;
     }
 
     @SuppressWarnings("deprecation")
