@@ -33,7 +33,7 @@ public abstract class BaseBottomSheetDialog extends BottomSheetDialogFragment {
         if (window == null) return dialog;
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         if (Util.isFullscreen(getActivity())) window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        DialogGlass.applyBehind(dialog);
+        DialogGlass.applySheet(dialog);
         return dialog;
     }
 
@@ -65,6 +65,7 @@ public abstract class BaseBottomSheetDialog extends BottomSheetDialogFragment {
         if (sheet == null) return;
         if (transparent()) sheet.setBackgroundColor(ResUtil.getColor(R.color.transparent));
         else sheet.setBackground(DialogGlass.background(requireContext(), 20));
+        if (getView() != null) getView().setBackgroundColor(ResUtil.getColor(R.color.transparent));
         BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(sheet);
         behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
         behavior.setSkipCollapsed(true);

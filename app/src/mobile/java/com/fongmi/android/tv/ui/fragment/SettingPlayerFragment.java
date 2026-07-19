@@ -20,6 +20,7 @@ import com.fongmi.android.tv.ui.activity.HomeActivity;
 import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.dialog.MpvConfDialog;
 import com.fongmi.android.tv.ui.dialog.SpeedDialog;
+import com.fongmi.android.tv.ui.dialog.DialogGlass;
 import com.fongmi.android.tv.ui.dialog.UaDialog;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -122,11 +123,11 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, S
     }
 
     private void onScale(View view) {
-        new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.player_scale).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(scale, PlayerSetting.getScale(), (dialog, which) -> {
+        DialogGlass.show(new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.player_scale).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(scale, PlayerSetting.getScale(), (dialog, which) -> {
             mBinding.scaleText.setText(scale[which]);
             PlayerSetting.putScale(which);
             dialog.dismiss();
-        }).show();
+        }));
     }
 
     private void setCaption(View view) {
@@ -150,11 +151,11 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, S
     }
 
     private void onBackground(View view) {
-        new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.player_background).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(background, PlayerSetting.getBackground(), (dialog, which) -> {
+        DialogGlass.show(new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.player_background).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(background, PlayerSetting.getBackground(), (dialog, which) -> {
             mBinding.backgroundText.setText(background[which]);
             PlayerSetting.putBackground(which);
             dialog.dismiss();
-        }).show();
+        }));
     }
 
     private void setAdblock(View view) {

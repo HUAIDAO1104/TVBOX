@@ -116,7 +116,7 @@
                                     android:lineSpacingExtra="1dp"
                                     android:maxLines="2"
                                     android:textColor="@color/tv_text_primary"
-                                    android:textSize="9sp"
+                                    android:textSize="15sp"
                                     android:textStyle="bold"
                                     tools:text="庆余年 第二季" />
 

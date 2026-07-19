@@ -14,6 +14,7 @@ import com.github.catvod.net.OkHttp;
 import com.github.catvod.utils.Trans;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -31,15 +32,25 @@ public class DanmakuApi {
     }
 
     public static Call newCall(String name, String episode) {
+        return newCalls(name, episode).get(0);
+    }
+
+    public static List<Call> newCalls(String name, String episode) {
         REQUEST_GENERATION.incrementAndGet();
         OkHttp.cancel(TAG);
-        return createCall(name, episode);
+        List<Call> calls = new ArrayList<>();
+        for (String url : DanmakuSetting.getSearchApiUrls()) calls.add(createCall(name, episode, url));
+        return calls;
     }
 
     private static Call createCall(String name, String episode) {
+        return createCall(name, episode, Objects.toString(DanmakuSetting.getEffectiveApiUrl(), ""));
+    }
+
+    private static Call createCall(String name, String episode, String url) {
         name = Trans.t2s(Objects.toString(name, ""));
         episode = Trans.t2s(Objects.toString(episode, ""));
-        String url = Objects.toString(DanmakuSetting.getEffectiveApiUrl(), "");
+        url = Objects.toString(url, "");
         if (url.contains("{name}") || url.contains("{episode}")) {
             return OkHttp.newCall(url.replace("{name}", name).replace("{episode}", episode), TAG);
         } else {

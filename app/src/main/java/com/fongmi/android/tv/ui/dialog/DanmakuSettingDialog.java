@@ -1,7 +1,7 @@
 package com.fongmi.android.tv.ui.dialog;
 
-import android.text.TextUtils;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -14,7 +14,6 @@ import androidx.viewbinding.ViewBinding;
 import com.fongmi.android.tv.databinding.DialogDanmakuSettingBinding;
 import com.fongmi.android.tv.player.PlayerManager;
 import com.fongmi.android.tv.server.Server;
-import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Util;
@@ -22,6 +21,7 @@ import com.fongmi.android.tv.utils.Util;
 public final class DanmakuSettingDialog {
 
     private PlayerManager player;
+    private boolean searchInitially;
 
     public static DanmakuSettingDialog create() {
         return new DanmakuSettingDialog();
@@ -32,40 +32,40 @@ public final class DanmakuSettingDialog {
         return this;
     }
 
+    public DanmakuSettingDialog search(boolean value) {
+        this.searchInitially = value;
+        return this;
+    }
+
     public void show(FragmentActivity activity) {
         FragmentManager manager = activity.getSupportFragmentManager();
         for (Fragment fragment : manager.getFragments()) if (fragment instanceof BottomSheet || fragment instanceof SideSheet) return;
-        if (Util.isFullscreenLand(activity) || Util.isLeanback()) new SideSheet(player).show(manager, null);
-        else new BottomSheet(player).show(manager, null);
+        PlayerManager target = resolvePlayer(player);
+        if (Util.isFullscreenLand(activity) || Util.isLeanback()) new SideSheet(target, searchInitially).show(manager, null);
+        else new BottomSheet(target, searchInitially).show(manager, null);
     }
 
     private static DialogDanmakuSettingBinding inflate(LayoutInflater inflater, ViewGroup container) {
         return DialogDanmakuSettingBinding.inflate(inflater, container, false);
     }
 
-    private static void openSearch(FragmentActivity activity, PlayerManager preferred, Runnable dismiss) {
+    private static PlayerManager resolvePlayer(PlayerManager preferred) {
         PlayerManager target = preferred;
         var service = Server.get().getService();
         if (target == null && service != null) target = service.player();
-        if (target == null || target.getMetadata() == null) {
-            Notify.show(com.fongmi.android.tv.R.string.danmaku_search_no_playback);
-            return;
-        }
-        if (TextUtils.isEmpty(DanmakuSetting.getEffectiveApiUrl())) {
-            Notify.show(com.fongmi.android.tv.R.string.danmaku_search_configure_api);
-            return;
-        }
-        dismiss.run();
-        DanmakuSearchDialog.create().player(target).show(activity);
+        return target;
     }
 
     public static final class BottomSheet extends BaseBottomSheetDialog {
 
         private DialogDanmakuSettingBinding binding;
         private final PlayerManager player;
+        private final boolean searchInitially;
+        private DanmakuSearchPanel searchPanel;
 
-        BottomSheet(PlayerManager player) {
+        BottomSheet(PlayerManager player, boolean searchInitially) {
             this.player = player;
+            this.searchInitially = searchInitially;
         }
 
         @Override
@@ -76,8 +76,30 @@ public final class DanmakuSettingDialog {
         @Override
         protected void initView() {
             new DanmakuSettingPanel(binding, player).bind();
-            binding.search.setOnClickListener(view -> openSearch(requireActivity(), player, this::dismissNow));
-            if (Util.isLeanback()) binding.search.requestFocus();
+            if (player != null && player.getMetadata() != null) {
+                searchPanel = new DanmakuSearchPanel(binding.searchPane, player);
+                searchPanel.bind();
+            }
+            binding.search.setOnClickListener(view -> showSearch());
+            if (searchInitially) showSearch();
+            else if (Util.isLeanback()) binding.search.requestFocus();
+        }
+
+        private void showSearch() {
+            if (searchPanel == null) {
+                Notify.show(com.fongmi.android.tv.R.string.danmaku_search_no_playback);
+                return;
+            }
+            // Portrait phones keep the same dialog instance and dedicate its surface to search.
+            binding.settingsPane.setVisibility(View.GONE);
+            binding.searchDivider.setVisibility(View.GONE);
+            searchPanel.show(true);
+        }
+
+        @Override
+        public void onDestroyView() {
+            if (searchPanel != null) searchPanel.destroy();
+            super.onDestroyView();
         }
     }
 
@@ -85,14 +107,17 @@ public final class DanmakuSettingDialog {
 
         private DialogDanmakuSettingBinding binding;
         private final PlayerManager player;
+        private final boolean searchInitially;
+        private DanmakuSearchPanel searchPanel;
 
-        SideSheet(PlayerManager player) {
+        SideSheet(PlayerManager player, boolean searchInitially) {
             this.player = player;
+            this.searchInitially = searchInitially;
         }
 
         @Override
         protected int getWidth() {
-            return Math.min(ResUtil.dp2px(420), ResUtil.getScreenWidth() / 2);
+            return Math.min(ResUtil.dp2px(1180), Math.round(ResUtil.getScreenWidth() * 0.88f));
         }
 
         @Override
@@ -103,8 +128,28 @@ public final class DanmakuSettingDialog {
         @Override
         protected void initView() {
             new DanmakuSettingPanel(binding, player).bind();
-            binding.search.setOnClickListener(view -> openSearch(requireActivity(), player, this::dismissNow));
-            if (Util.isLeanback()) binding.search.requestFocus();
+            if (player != null && player.getMetadata() != null) {
+                searchPanel = new DanmakuSearchPanel(binding.searchPane, player);
+                searchPanel.bind();
+            }
+            binding.search.setOnClickListener(view -> showSearch());
+            if (searchInitially) showSearch();
+            else if (Util.isLeanback()) binding.search.requestFocus();
+        }
+
+        private void showSearch() {
+            if (searchPanel == null) {
+                Notify.show(com.fongmi.android.tv.R.string.danmaku_search_no_playback);
+                return;
+            }
+            binding.searchDivider.setVisibility(View.VISIBLE);
+            searchPanel.show(true);
+        }
+
+        @Override
+        public void onDestroyView() {
+            if (searchPanel != null) searchPanel.destroy();
+            super.onDestroyView();
         }
     }
 }

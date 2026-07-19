@@ -146,6 +146,9 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     @Override
     protected void initEvent() {
         mBinding.swipeLayout.setOnRefreshListener(this);
+        // TV remote users refresh through normal navigation. Disabling the pull container for
+        // embedded Leanback categories prevents touch overscroll from dragging the whole page.
+        mBinding.swipeLayout.setEnabled(false);
         mBinding.recycler.addOnScrollListener(mScroller);
     }
 
@@ -315,7 +318,7 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     public void onHiddenChanged(boolean hidden) {
         super.onHiddenChanged(hidden);
         if (isEmbedded()) {
-            if (!hidden) mBinding.recycler.requestFocus();
+            if (!hidden && !mBinding.getRoot().isInTouchMode()) mBinding.recycler.requestFocus();
             return;
         }
         if (hidden) {
@@ -323,14 +326,14 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         } else {
             if (headerVisible) mBinding.recycler.showHeader();
             else mBinding.recycler.hideHeader();
-            mBinding.recycler.requestFocus();
+            if (!mBinding.getRoot().isInTouchMode()) mBinding.recycler.requestFocus();
         }
     }
 
     @Override
     public void setUserVisibleHint(boolean isVisibleToUser) {
         super.setUserVisibleHint(isVisibleToUser);
-        if (mBinding != null && !isEmbedded()) mBinding.recycler.moveToTop();
+        if (mBinding != null && !isEmbedded() && !mBinding.getRoot().isInTouchMode()) mBinding.recycler.moveToTop();
     }
 
     public int getSelectedPosition() {

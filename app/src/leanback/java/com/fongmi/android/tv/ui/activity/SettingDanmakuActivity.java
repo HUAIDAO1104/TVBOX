@@ -16,7 +16,6 @@ import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.base.FocusSafeSettingsActivity;
 import com.fongmi.android.tv.ui.dialog.DanmakuApiDialog;
-import com.fongmi.android.tv.ui.dialog.DanmakuSearchDialog;
 import com.fongmi.android.tv.ui.dialog.DanmakuSettingDialog;
 import com.fongmi.android.tv.utils.Notify;
 
@@ -93,7 +92,7 @@ public class SettingDanmakuActivity extends FocusSafeSettingsActivity implements
             Notify.show(R.string.danmaku_search_no_playback);
             return;
         }
-        DanmakuSearchDialog.create().player(service.player()).show(this);
+        DanmakuSettingDialog.create().player(service.player()).search(true).show(this);
     }
 
     private void updateAutoVisibility() {

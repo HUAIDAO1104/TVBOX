@@ -5,6 +5,10 @@ import androidx.media3.ui.danmaku.DanmakuConfig;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.github.catvod.utils.Prefers;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+
 public class DanmakuSetting {
 
     static final String DEFAULT_API_URL = "https://danmu.xyy.red/api/v2/fongmi/danmaku?name={name}&episode={episode}";
@@ -295,6 +299,23 @@ public class DanmakuSetting {
 
     public static String getEffectiveApiUrl() {
         return resolveApiUrl(getApiUrl(), VodConfig.get().getConfig().getDanmaku());
+    }
+
+    /** Ordered, de-duplicated endpoints used by manual matching. */
+    public static List<String> getSearchApiUrls() {
+        return resolveSearchApiUrls(getApiUrl(), VodConfig.get().getConfig().getDanmaku(), DEFAULT_API_URL);
+    }
+
+    static List<String> resolveSearchApiUrls(String userUrl, String repositoryUrl, String defaultUrl) {
+        LinkedHashSet<String> urls = new LinkedHashSet<>();
+        addUrl(urls, userUrl);
+        addUrl(urls, repositoryUrl);
+        addUrl(urls, defaultUrl);
+        return new ArrayList<>(urls);
+    }
+
+    private static void addUrl(LinkedHashSet<String> urls, String value) {
+        if (!isBlank(value)) urls.add(value.trim());
     }
 
     static String resolveApiUrl(String userUrl, String repositoryUrl) {

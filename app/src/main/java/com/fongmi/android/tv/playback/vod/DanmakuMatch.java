@@ -53,8 +53,11 @@ public final class DanmakuMatch {
         String cleanCandidate = normalizeTitle(candidate);
         if (cleanCandidate.isEmpty()) return false;
         String cleanTitle = normalizeTitle(title);
-        boolean titleMatches = cleanTitle.isEmpty()
-                || cleanCandidate.contains(cleanTitle)
+        // Automatic loading must never guess when playback metadata is missing. Previously an
+        // empty title accepted any API result, which allowed a late response from another show
+        // (for example "百花杀") to become the new episode's default danmaku.
+        if (cleanTitle.length() < 2) return false;
+        boolean titleMatches = cleanCandidate.contains(cleanTitle)
                 || titleMatchesBase(title, candidate);
         if (!titleMatches) return false;
         if (NOISE.matcher(candidate).find() && !NOISE.matcher(episode == null ? "" : episode).find()) return false;

@@ -19,6 +19,7 @@ import com.fongmi.android.tv.ui.fragment.FolderFragment;
 
 public class FolderActivity extends BaseActivity {
 
+    private static final String FOLDER_FRAGMENT_TAG = "folder_content_fragment";
     private ActivityFolderBinding mBinding;
 
     public static void start(Activity activity, String key, Result result) {
@@ -53,11 +54,11 @@ public class FolderActivity extends BaseActivity {
         setSupportActionBar(mBinding.toolbar);
         Class type = getResult().getTypes().get(0);
         setTitle(type.getTypeName());
-        getSupportFragmentManager().beginTransaction().replace(R.id.container, FolderFragment.newInstance(getKey(), type, 8), "0").commit();
+        getSupportFragmentManager().beginTransaction().replace(R.id.container, FolderFragment.newInstance(getKey(), type, 8), FOLDER_FRAGMENT_TAG).commit();
     }
 
     private FolderFragment getFragment() {
-        return (FolderFragment) getSupportFragmentManager().findFragmentByTag("0");
+        return (FolderFragment) getSupportFragmentManager().findFragmentByTag(FOLDER_FRAGMENT_TAG);
     }
 
     @Override

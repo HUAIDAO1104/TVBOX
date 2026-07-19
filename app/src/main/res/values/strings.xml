@@ -74,6 +74,12 @@
     <string name="danmaku_select">Select danmaku</string>
     <string name="danmaku_setting">Danmaku setting</string>
     <string name="danmaku_manual_search">Search danmaku</string>
+    <string name="danmaku_manual_match_title">Manual danmaku matching</string>
+    <string name="danmaku_manual_match_hint">Searches every available configured, repository, and built-in provider</string>
+    <string name="danmaku_search_ready">Enter a title to find matching danmaku sources</string>
+    <string name="danmaku_search_action">Search</string>
+    <string name="danmaku_search_running">Searching <xliff:g name="count">%d</xliff:g> providers…</string>
+    <string name="danmaku_search_result"><xliff:g name="count">%d</xliff:g> matching sources found</string>
     <string name="danmaku_search_no_playback">Play a video before manually matching danmaku</string>
     <string name="danmaku_search_configure_api">Configure a danmaku search API in Settings first</string>
     <string name="danmaku_text_size">Text scale</string>

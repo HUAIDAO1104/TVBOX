@@ -42,9 +42,4 @@ public class SpeedDialog extends BaseAlertDialog {
         });
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-        getDialog().getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-    }
 }

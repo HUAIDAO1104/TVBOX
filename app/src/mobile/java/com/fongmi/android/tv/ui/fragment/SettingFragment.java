@@ -31,6 +31,7 @@ import com.fongmi.android.tv.ui.activity.HomeActivity;
 import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.dialog.ConfigDialog;
 import com.fongmi.android.tv.ui.dialog.HistoryDialog;
+import com.fongmi.android.tv.ui.dialog.DialogGlass;
 import com.fongmi.android.tv.ui.dialog.LiveDialog;
 import com.fongmi.android.tv.ui.dialog.RestoreDialog;
 import com.fongmi.android.tv.ui.dialog.SiteDialog;
@@ -280,19 +281,19 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
     }
 
     private void setSize(View view) {
-        new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.setting_size).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(size, PlayerSetting.getSize(), (dialog, which) -> {
+        DialogGlass.show(new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.setting_size).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(size, PlayerSetting.getSize(), (dialog, which) -> {
             mBinding.sizeText.setText(size[which]);
             PlayerSetting.putSize(which);
             RefreshEvent.size();
             dialog.dismiss();
-        }).show();
+        }));
     }
 
     private void setDoh(View view) {
-        new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.setting_doh).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(getDohList(), getDohIndex(), (dialog, which) -> {
+        DialogGlass.show(new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.setting_doh).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(getDohList(), getDohIndex(), (dialog, which) -> {
             setDoh(VodConfig.get().getDoh().get(which));
             dialog.dismiss();
-        }).show();
+        }));
     }
 
     private void setDoh(Doh doh) {

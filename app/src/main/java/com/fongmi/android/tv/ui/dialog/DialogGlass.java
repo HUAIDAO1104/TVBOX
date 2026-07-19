@@ -3,11 +3,16 @@ package com.fongmi.android.tv.ui.dialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.view.Window;
 import android.view.WindowManager;
+
+import androidx.appcompat.app.AlertDialog;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 /** Shared translucent surface and background blur for TV dialogs and sheets. */
 public final class DialogGlass {
@@ -19,6 +24,26 @@ public final class DialogGlass {
         applyBehind(dialog);
         if (dialog == null || dialog.getWindow() == null) return;
         dialog.getWindow().setBackgroundDrawable(background(dialog.getContext(), 18));
+        dialog.getWindow().getDecorView().post(() -> {
+            if (dialog.getWindow() == null) return;
+            android.view.View panel = dialog.findViewById(androidx.appcompat.R.id.parentPanel);
+            if (panel != null) panel.setBackground(background(dialog.getContext(), 18));
+        });
+    }
+
+    public static void applySheet(Dialog dialog) {
+        applyBehind(dialog);
+        if (dialog == null || dialog.getWindow() == null) return;
+        // Material sheets paint an opaque colorSurface on their window before the actual sheet
+        // container is attached. Clear that layer so the 32–40% glass surface is visible.
+        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+    }
+
+    public static AlertDialog show(MaterialAlertDialogBuilder builder) {
+        AlertDialog dialog = builder.create();
+        dialog.show();
+        apply(dialog);
+        return dialog;
     }
 
     public static void applyBehind(Dialog dialog) {
@@ -27,7 +52,7 @@ public final class DialogGlass {
         if (window == null) return;
         window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
         WindowManager.LayoutParams params = window.getAttributes();
-        params.dimAmount = 0.30f;
+        params.dimAmount = 0.34f;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
             params.setBlurBehindRadius(dp(dialog.getContext(), 28));

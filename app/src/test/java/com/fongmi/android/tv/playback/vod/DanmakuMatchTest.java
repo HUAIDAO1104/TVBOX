@@ -43,4 +43,10 @@ public class DanmakuMatchTest {
         assertFalse(DanmakuMatch.isReliable("庆余年 第二季", "第12集", "莲花楼 第12集"));
         assertFalse(DanmakuMatch.isReliable("庆余年 第二季", "第12集", "庆余年第二季 第12集预告"));
     }
+
+    @Test
+    public void refusesAutomaticGuessWhenPlaybackTitleIsMissing() {
+        assertFalse(DanmakuMatch.isReliable("", "第1集", "百花杀 第1集"));
+        assertFalse(DanmakuMatch.isReliable("影", "第1集", "百花杀 第1集"));
+    }
 }

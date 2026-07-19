@@ -3,7 +3,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="horizontal">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/settingsPane"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical">
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
@@ -141,4 +148,21 @@
 
         </androidx.appcompat.widget.LinearLayoutCompat>
     </androidx.core.widget.NestedScrollView>
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <View
+        android:id="@+id/searchDivider"
+        android:layout_width="1dp"
+        android:layout_height="match_parent"
+        android:background="#28FFFFFF"
+        android:visibility="gone" />
+
+    <include
+        android:id="@+id/searchPane"
+        layout="@layout/view_danmaku_search_embedded"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1.12"
+        android:visibility="gone" />
 </androidx.appcompat.widget.LinearLayoutCompat>

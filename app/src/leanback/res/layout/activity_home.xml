@@ -59,20 +59,38 @@
                 app:focusOutEnd="true"
                 app:focusOutFront="false" />
 
-            <androidx.appcompat.widget.AppCompatImageButton
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/search"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_marginStart="12dp"
-                android:background="@drawable/selector_tv_utility"
+                android:layout_width="184dp"
+                android:layout_height="38dp"
+                android:layout_marginStart="16dp"
+                android:background="@drawable/selector_home_search_pill"
                 android:contentDescription="@string/home_search"
                 android:focusable="true"
                 android:focusableInTouchMode="true"
+                android:gravity="center_vertical"
+                android:includeFontPadding="false"
+                android:insetBottom="0dp"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
+                android:insetTop="0dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
                 android:nextFocusDown="@id/play"
-                android:padding="4dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/ic_home_toolbar_search"
-                android:translationY="-6dp" />
+                android:paddingStart="15dp"
+                android:paddingEnd="15dp"
+                android:stateListAnimator="@null"
+                android:text="@string/home_search_hint"
+                android:textAllCaps="false"
+                android:textColor="@color/tv_text_secondary"
+                android:textSize="13sp"
+                android:translationY="-5dp"
+                app:backgroundTint="@null"
+                app:icon="@drawable/ic_home_toolbar_search"
+                app:iconGravity="textStart"
+                app:iconPadding="9dp"
+                app:iconSize="17dp"
+                app:iconTint="@color/tv_text_secondary" />
 
             <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/config"

@@ -104,8 +104,9 @@ public class CustomVerticalGridView extends VerticalGridView {
                         float dy = Math.abs(event.getY() - touchDownY);
                         if (dy > touchSlop && dy > dx) {
                             touchDragging = true;
-                            setFocusableInTouchMode(true);
-                            requestFocus();
+                            // Requesting focus here makes Leanback realign the selected child.
+                            // On phones that manifests as a snap back to the first row. Let the
+                            // RecyclerView own the drag; DPAD focus remains untouched.
                         }
                     }
                     break;

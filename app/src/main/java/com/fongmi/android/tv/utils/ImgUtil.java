@@ -12,6 +12,7 @@ import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.content.res.AppCompatResources;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestBuilder;
@@ -77,6 +78,8 @@ public class ImgUtil {
         try {
             Glide.with(view)
                     .load(getUrl(url))
+                    .placeholder(R.drawable.poster_placeholder)
+                    .error(R.drawable.poster_placeholder)
                     .centerCrop()
                     .transition(DrawableTransitionOptions.withCrossFade(220))
                     .listener(getListener(text, url, view, true))
@@ -93,9 +96,10 @@ public class ImgUtil {
         if (TextUtils.isEmpty(url) || failed.contains(url)) view.setImageDrawable(getTextDrawable(text, vod));
         else try {
             RequestBuilder<Drawable> builder = Glide.with(view).load(getUrl(url)).listener(getListener(text, url, view, vod));
-            if (vod) builder.centerCrop().into(view);
+            if (vod) builder.placeholder(R.drawable.poster_placeholder).error(R.drawable.poster_placeholder).centerCrop().into(view);
             else builder.fitCenter().into(view);
         } catch (Throwable e) {
+            view.setImageDrawable(getTextDrawable(text, vod));
             com.github.catvod.crawler.SpiderDebug.log(e);
         }
     }
@@ -119,9 +123,12 @@ public class ImgUtil {
     }
 
     private static Drawable getTextDrawable(String text, boolean vod) {
+        // A missing/failed provider image must never leave a blank tile or a raw storage label.
+        // Real artwork is borrowed by PosterResolver first; this branded poster is the final,
+        // deterministic fallback for every remaining VOD surface.
+        if (vod) return AppCompatResources.getDrawable(App.get(), R.drawable.poster_placeholder);
         TextDrawable.Builder builder = new TextDrawable.Builder();
         text = TextUtils.isEmpty(text) ? "！" : text.substring(0, 1);
-        if (vod) builder.buildRect(text, ColorGenerator.get400(text));
         return builder.buildRoundRect(text, ColorGenerator.get400(text), ResUtil.dp2px(4));
     }
 

@@ -8,14 +8,12 @@ public final class DetailTitlePolicy {
 
     public static float textSizeSp(String title) {
         int length = codePointLength(title);
-        // The redesigned detail pane is only 30% of a 16:9 TV canvas.  The previous
-        // 27-39sp values were inherited from the old full-width hero and overwhelmed
-        // the poster, cast and synopsis in this compact card. Keep the same progressive
-        // hierarchy while reducing the current type scale by 40 percent.
-        if (length > 18) return 7.2f;
-        if (length > 14) return 7.8f;
-        if (length > 9) return 8.4f;
-        return 9.0f;
+        // Restore the balanced scale used before the over-aggressive 40% reduction. Long
+        // names still step down and wrap, while ordinary titles remain readable at TV distance.
+        if (length > 18) return 12f;
+        if (length > 14) return 13f;
+        if (length > 9) return 14f;
+        return 15f;
     }
 
     public static int maxLines(String title) {

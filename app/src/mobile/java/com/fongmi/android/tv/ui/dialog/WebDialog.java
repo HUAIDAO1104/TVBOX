@@ -33,5 +33,6 @@ public class WebDialog {
 
     private void initDialog() {
         dialog.show();
+        DialogGlass.apply(dialog);
     }
 }

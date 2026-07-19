@@ -62,12 +62,6 @@ public class PreloadDialog extends BaseAlertDialog {
         });
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-        getDialog().getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-    }
-
     private int getMin() {
         if (type == THREADS) return PreloadSetting.MIN_THREADS;
         if (type == SIZE) return PreloadSetting.MIN_SIZE_MB;
