@@ -14,8 +14,8 @@ public class UpdateSourceTest {
         List<String> candidates = UpdateSource.manifestCandidates();
 
         assertEquals(4, candidates.size());
-        assertTrue(candidates.get(0).startsWith("https://gh-proxy.com/"));
-        assertTrue(candidates.get(1).startsWith("https://ghfast.top/"));
+        assertTrue(candidates.get(0).startsWith("https://ghfast.top/"));
+        assertTrue(candidates.get(1).startsWith("https://gh-proxy.com/"));
         assertTrue(candidates.get(2).startsWith("https://ghproxy.net/"));
         assertEquals("https://github.com/HUAIDAO1104/TVBOX/releases/latest/download/latest.json", candidates.get(3));
     }

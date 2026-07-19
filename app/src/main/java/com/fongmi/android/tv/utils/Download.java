@@ -34,8 +34,11 @@ import okhttp3.ResponseBody;
 
 public class Download {
 
-    private static final int PROBE_BYTES = 128 * 1024;
-    private static final long PROBE_DEADLINE_MS = 6_000L;
+    // Small range probes overvalue mirrors with a quick first packet but aggressive sustained
+    // throttling. Sample enough data to measure real throughput while keeping the same short
+    // selection window before an update starts.
+    private static final int PROBE_BYTES = 768 * 1024;
+    private static final long PROBE_DEADLINE_MS = 6_500L;
     private static final long PROGRESS_INTERVAL_MS = 650L;
 
     private final File file;
@@ -244,9 +247,9 @@ public class Download {
         long start = System.nanoTime();
         long bytes = 0L;
         OkHttpClient client = OkHttp.client().newBuilder()
-                .connectTimeout(3_500L, TimeUnit.MILLISECONDS)
-                .readTimeout(3_500L, TimeUnit.MILLISECONDS)
-                .callTimeout(5_000L, TimeUnit.MILLISECONDS)
+                .connectTimeout(3_000L, TimeUnit.MILLISECONDS)
+                .readTimeout(5_000L, TimeUnit.MILLISECONDS)
+                .callTimeout(6_000L, TimeUnit.MILLISECONDS)
                 .build();
         Request request = new Request.Builder().url(url).header(HttpHeaders.RANGE, "bytes=0-" + (PROBE_BYTES - 1)).tag(tag).build();
         try (Response response = client.newCall(request).execute()) {

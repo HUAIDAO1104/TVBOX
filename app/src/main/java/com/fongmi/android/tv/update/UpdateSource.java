@@ -9,8 +9,8 @@ public final class UpdateSource {
 
     private static final String RELEASE_ROOT = "https://github.com/HUAIDAO1104/TVBOX/releases/latest/download/";
     private static final String[] MIRROR_PREFIXES = {
-            "https://gh-proxy.com/",
             "https://ghfast.top/",
+            "https://gh-proxy.com/",
             "https://ghproxy.net/"
     };
 
