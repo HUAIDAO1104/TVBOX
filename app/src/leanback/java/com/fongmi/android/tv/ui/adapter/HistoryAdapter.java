@@ -15,6 +15,7 @@ import com.fongmi.android.tv.bean.Style;
 import com.fongmi.android.tv.databinding.AdapterVodBinding;
 import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.utils.ImgUtil;
+import com.fongmi.android.tv.utils.PosterResolver;
 
 import java.util.List;
 import java.util.Objects;
@@ -40,6 +41,7 @@ public final class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.Vi
 
     public void submit(List<History> next) {
         List<History> safe = next == null ? List.of() : List.copyOf(next);
+        for (History item : safe) PosterResolver.remember(item.getVodName(), item.getVodPic());
         List<History> old = items;
         DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
             @Override public int getOldListSize() { return old.size(); }

@@ -45,7 +45,9 @@ import com.fongmi.android.tv.ui.search.SearchSource;
 import com.fongmi.android.tv.ui.search.SearchSourcePreference;
 import com.fongmi.android.tv.ui.search.SearchSourceHealthStore;
 import com.fongmi.android.tv.ui.search.SearchWork;
+import com.fongmi.android.tv.ui.dialog.DialogGlass;
 import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.utils.PosterResolver;
 import com.google.gson.reflect.TypeToken;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -267,6 +269,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
                 .create();
         alert.setOnShowListener(ignored -> compactSourceFilterRows(alert.getListView()));
         alert.show();
+        DialogGlass.apply(alert);
     }
 
     private void compactSourceFilterRows(ListView listView) {
@@ -509,6 +512,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
             }
         }
         if (poster.isBlank()) return;
+        PosterResolver.remember(work.displayTitle(), poster);
         for (SearchSource source : work.sources()) borrowedPosterBySource.put(source.stableId(), poster);
     }
 
@@ -879,6 +883,13 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         Vod selected = vodBySource.get(source.stableId());
         if (selected == null || selected.getSite() == null) return;
         List<Vod> ranked = fallbackCandidatesBySource.getOrDefault(source.stableId(), List.of(selected));
+        String selectedBorrowed = borrowedPosterBySource.getOrDefault(source.stableId(), "");
+        if (selected.getPic().isEmpty() && !selectedBorrowed.isEmpty()) selected.setPic(selectedBorrowed);
+        for (Vod candidate : ranked) {
+            if (candidate == null) continue;
+            String resolved = PosterResolver.resolve(candidate.getName(), candidate.getPic());
+            if (!resolved.isEmpty()) candidate.setPic(resolved);
+        }
         ArrayList<Vod> candidates = DetailSourceFallbackPolicy.prioritize(selected, ranked,
                 vod -> vod.getSiteKey() + '\u0000' + vod.getId());
         VideoActivity.collect(this, candidates);

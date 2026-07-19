@@ -39,5 +39,6 @@ public class WebDialog {
         params.width = (int) (ResUtil.getScreenWidth() * 0.8f);
         dialog.getWindow().setAttributes(params);
         dialog.show();
+        DialogGlass.apply(dialog);
     }
 }

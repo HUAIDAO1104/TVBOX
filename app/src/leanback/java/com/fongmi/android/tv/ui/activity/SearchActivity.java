@@ -153,16 +153,18 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
 
             @Override
             public void onUnavailable() {
-                mBinding.keyword.requestFocus();
+                Notify.show(R.string.search_v2_voice_unavailable);
+                restoreVoiceFocus();
             }
         });
     }
 
     private void startVoiceSearch() {
         if (!mBinding.mic.canRecognize()) {
-            // Android TV boxes without a SpeechRecognizer cannot provide microphone text to an
-            // app. Use the existing phone-input channel instead of showing a dead-end error.
-            onRemote();
+            // Phone/QR input is a separate feature. A voice action must never silently navigate
+            // into that flow just because this device lacks a recognition service.
+            Notify.show(R.string.search_v2_voice_unavailable);
+            restoreVoiceFocus();
             return;
         }
         mBinding.voiceAction.requestFocus();
@@ -297,7 +299,8 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
                 startVoiceSearch();
                 return true;
             }
-            onRemote();
+            Notify.show(R.string.search_v2_voice_unavailable);
+            restoreVoiceFocus();
             return true;
         }
         if (KeyUtil.isMenuKey(event)) showDialog();

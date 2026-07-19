@@ -17,6 +17,7 @@ import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.databinding.ViewProgressBinding;
 import com.fongmi.android.tv.security.PromotionFilter;
 import com.fongmi.android.tv.security.ToastPolicy;
+import com.fongmi.android.tv.ui.dialog.DialogGlass;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public class Notify {
@@ -72,8 +73,8 @@ public class Notify {
     private void create(Context context) {
         ViewProgressBinding binding = ViewProgressBinding.inflate(LayoutInflater.from(context));
         mDialog = new MaterialAlertDialogBuilder(context).setView(binding.getRoot()).create();
-        mDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
         mDialog.show();
+        DialogGlass.apply(mDialog);
     }
 
     private void makeText(String text) {

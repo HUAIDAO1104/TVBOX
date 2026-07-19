@@ -100,6 +100,7 @@ import com.fongmi.android.tv.utils.ImgUtil;
 import com.fongmi.android.tv.utils.KeyUtil;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.PartUtil;
+import com.fongmi.android.tv.utils.PosterResolver;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Sniffer;
 import com.fongmi.android.tv.utils.Traffic;
@@ -413,6 +414,8 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         mDetailCandidates = candidates == null ? new ArrayList<>() : candidates;
         for (Vod candidate : mDetailCandidates) {
             if (candidate.getSite() != null) RepositorySiteRegistry.register(candidate.getSite());
+            String poster = PosterResolver.resolve(candidate.getName(), candidate.getPic());
+            if (candidate.getPic().isEmpty() && !poster.isEmpty()) candidate.setPic(poster);
         }
         mDetailSourceFallback = new DetailSourceFallbackPolicy(mDetailCandidates.size(), findDetailCandidate());
     }
@@ -540,6 +543,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         int danmakuVisibility = DanmakuSetting.isLoad() ? View.VISIBLE : View.GONE;
         mBinding.control.action.danmaku.setVisibility(danmakuVisibility);
         mBinding.control.action.danmakuSetting.setVisibility(danmakuVisibility);
+        mBinding.control.action.prev.setVisibility(View.GONE);
         updateDanmakuAction();
         configurePlaybackControlFocus();
         configureProgressActionFocus();
@@ -557,7 +561,6 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         addVisiblePlaybackControl(controls, mBinding.control.action.audio);
         addVisiblePlaybackControl(controls, mBinding.control.action.danmaku);
         addVisiblePlaybackControl(controls, mBinding.control.action.danmakuSetting);
-        addVisiblePlaybackControl(controls, mBinding.control.action.prev);
         addVisiblePlaybackControl(controls, mBinding.control.action.speed);
         addVisiblePlaybackControl(controls, mBinding.control.action.scale);
         addVisiblePlaybackControl(controls, mBinding.control.action.text);
@@ -822,6 +825,11 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     @Override
     public void renderDetail(Vod item, History history) {
         mHistory = history;
+        enrichDetailMetadata(item);
+        if (!item.getPic().isEmpty()) {
+            mHistory.setVodPic(item.getPic());
+            getIntent().putExtra("pic", item.getPic());
+        }
         mBinding.progressLayout.showContent();
         setDetailTitle(item.getName());
         if (!mRestoreDetailPending && !mInitialDetailFocusApplied) focusDetailDefault();
@@ -833,6 +841,34 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         updatePrimaryAction();
         updateKeep();
         restoreDetailStateWhenReady(View.NO_ID);
+    }
+
+    /**
+     * A number of cloud/detail endpoints return playable episodes but omit descriptive metadata.
+     * Search candidates for the same work already carry that information, so merge only missing
+     * fields and preserve every authoritative value returned by the selected detail endpoint.
+     */
+    private void enrichDetailMetadata(Vod item) {
+        if (item == null) return;
+        if (item.getName().isEmpty()) item.setName(firstCandidateValue(Vod::getName, getName()));
+        if (item.getPic().isEmpty()) item.setPic(firstCandidateValue(Vod::getPic, getPic()));
+        if (item.getYear().isEmpty()) item.setYear(firstCandidateValue(Vod::getYear, ""));
+        if (item.getArea().isEmpty()) item.setArea(firstCandidateValue(Vod::getArea, ""));
+        if (item.getTypeName().isEmpty()) item.setTypeName(firstCandidateValue(Vod::getTypeName, ""));
+        if (item.getRemarks().isEmpty()) item.setRemarks(firstCandidateValue(Vod::getRemarks, ""));
+        if (item.getDirector().isEmpty()) item.setDirector(firstCandidateValue(Vod::getDirector, ""));
+        if (item.getActor().isEmpty()) item.setActor(firstCandidateValue(Vod::getActor, ""));
+        if (item.getContent().isEmpty()) item.setContent(firstCandidateValue(Vod::getContent, ""));
+        item.setPic(PosterResolver.resolve(item.getName(), item.getPic()));
+    }
+
+    private String firstCandidateValue(java.util.function.Function<Vod, String> getter, String fallback) {
+        for (Vod candidate : mDetailCandidates) {
+            if (candidate == null) continue;
+            String value = getter.apply(candidate);
+            if (!TextUtils.isEmpty(value)) return value;
+        }
+        return Objects.toString(fallback, "");
     }
 
     @Override
@@ -1743,7 +1779,10 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         // asynchronous.  Use the persisted preference until the real PlayerManager is ready.
         boolean enabled = service() == null ? DanmakuSetting.isShow() : player().isDanmakuEnabled();
         mBinding.control.action.danmaku.setText(enabled ? R.string.danmaku_on : R.string.danmaku_off);
-        mBinding.control.action.danmaku.setSelected(enabled);
+        // Selected is reserved for the actual remote focus styling. Keeping this true while
+        // danmaku was enabled produced a small white pseudo-focused button that users could not
+        // navigate to reliably. The label already communicates the on/off state.
+        mBinding.control.action.danmaku.setSelected(false);
         mBinding.control.action.danmaku.setContentDescription(getString(
                 enabled ? R.string.danmaku_on_description : R.string.danmaku_off_description));
     }

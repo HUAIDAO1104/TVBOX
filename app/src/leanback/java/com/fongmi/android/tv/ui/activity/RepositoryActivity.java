@@ -16,6 +16,7 @@ import com.fongmi.android.tv.ui.adapter.RepositoryAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
 import com.fongmi.android.tv.ui.dialog.RepositoryEditDialog;
+import com.fongmi.android.tv.ui.dialog.DialogGlass;
 import com.fongmi.android.tv.utils.Notify;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -104,7 +105,7 @@ public class RepositoryActivity extends BaseActivity implements RepositoryAdapte
     public void onDelete(Repository repository) {
         int[] selected = {0};
         String[] choices = getResources().getStringArray(R.array.repository_delete_modes);
-        new MaterialAlertDialogBuilder(this)
+        DialogGlass.apply(new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.repository_delete_title)
                 .setMessage(getString(R.string.repository_delete_impact, manager.getItemCount(repository.getId())))
                 .setSingleChoiceItems(choices, 0, (dialog, which) -> selected[0] = which)
@@ -115,7 +116,7 @@ public class RepositoryActivity extends BaseActivity implements RepositoryAdapte
                     if (!manager.delete(repository, mode)) Notify.show(R.string.repository_delete_failed);
                     refresh();
                 })
-                .show();
+                .show());
     }
 
     private RepositorySyncManager.Listener syncListener() {

@@ -191,6 +191,10 @@ public class Vod implements Parcelable, Diffable<Vod> {
         return TextUtils.isEmpty(vodActor) ? "" : vodActor.trim();
     }
 
+    public void setActor(String vodActor) {
+        this.vodActor = vodActor;
+    }
+
     public String getContent() {
         return TextUtils.isEmpty(vodContent) ? "" : Util.clean(vodContent);
     }

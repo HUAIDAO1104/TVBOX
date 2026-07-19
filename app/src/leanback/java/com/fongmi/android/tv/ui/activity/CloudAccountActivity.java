@@ -21,6 +21,7 @@ import com.fongmi.android.tv.ui.adapter.CloudAccountAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
 import com.fongmi.android.tv.ui.dialog.CloudAccountEditDialog;
+import com.fongmi.android.tv.ui.dialog.DialogGlass;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.Task;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -183,14 +184,14 @@ public class CloudAccountActivity extends BaseActivity implements CloudAccountAd
 
     @Override
     public void onLogout(CloudProvider provider) {
-        new MaterialAlertDialogBuilder(this)
+        DialogGlass.apply(new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.cloud_logout_title)
                 .setMessage(getString(R.string.cloud_logout_message, provider.name()))
                 .setNegativeButton(R.string.dialog_negative, null)
                 .setPositiveButton(R.string.dialog_positive, (dialog, which) -> {
                     CloudAccountManager.logout(provider.id());
                     adapter.notifyDataSetChanged();
-                }).show();
+                }).show());
     }
 
     @Override

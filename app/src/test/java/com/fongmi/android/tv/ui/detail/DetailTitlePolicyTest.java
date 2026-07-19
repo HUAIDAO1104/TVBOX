@@ -8,10 +8,10 @@ public class DetailTitlePolicyTest {
 
     @Test
     public void longTitlesUseTwoLinesAndProgressivelySmallerType() {
-        assertEquals(39, DetailTitlePolicy.textSizeSp("庆余年"));
+        assertEquals(15, DetailTitlePolicy.textSizeSp("庆余年"));
         assertEquals(1, DetailTitlePolicy.maxLines("庆余年"));
-        assertEquals(35, DetailTitlePolicy.textSizeSp("现在就出发第三季特别篇"));
+        assertEquals(14, DetailTitlePolicy.textSizeSp("现在就出发第三季特别篇"));
         assertEquals(2, DetailTitlePolicy.maxLines("现在就出发第三季特别篇"));
-        assertEquals(27, DetailTitlePolicy.textSizeSp("这是一个字数特别长需要稳定排版的节目标题名称"));
+        assertEquals(12, DetailTitlePolicy.textSizeSp("这是一个字数特别长需要稳定排版的节目标题名称"));
     }
 }

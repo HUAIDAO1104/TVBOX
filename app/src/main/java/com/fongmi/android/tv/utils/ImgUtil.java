@@ -69,6 +69,7 @@ public class ImgUtil {
         // provider images whose source ratio was not exactly the same as the TV slot.
         view.setScaleType(CENTER_CROP);
         view.setVisibility(View.VISIBLE);
+        url = PosterResolver.resolve(text, url);
         if (TextUtils.isEmpty(url) || failed.contains(url)) {
             view.setImageDrawable(getTextDrawable(text, true));
             return;
@@ -86,6 +87,7 @@ public class ImgUtil {
     }
 
     public static void load(String text, String url, ImageView view, boolean vod) {
+        if (vod) url = PosterResolver.resolve(text, url);
         view.setScaleType(vod ? CENTER_CROP : FIT_CENTER);
         if (!vod) view.setVisibility(TextUtils.isEmpty(url) ? View.GONE : View.VISIBLE);
         if (TextUtils.isEmpty(url) || failed.contains(url)) view.setImageDrawable(getTextDrawable(text, vod));
@@ -129,6 +131,7 @@ public class ImgUtil {
             public boolean onLoadFailed(@Nullable GlideException e, Object model, @NonNull Target<Drawable> target, boolean isFirstResource) {
                 view.setImageDrawable(getTextDrawable(text, vod));
                 failed.add(url);
+                if (vod) PosterResolver.forget(text, url);
                 return true;
             }
 

@@ -15,6 +15,7 @@ import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.AdapterHomePosterBinding;
 import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.utils.ImgUtil;
+import com.fongmi.android.tv.utils.PosterResolver;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +42,7 @@ public class HomePosterAdapter extends RecyclerView.Adapter<HomePosterAdapter.Vi
 
     public void submit(List<Vod> next) {
         List<Vod> submitted = next == null ? List.of() : new ArrayList<>(next);
+        for (Vod item : submitted) PosterResolver.remember(item.getName(), item.getPic());
         List<Vod> old = new ArrayList<>(items);
         DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
             @Override

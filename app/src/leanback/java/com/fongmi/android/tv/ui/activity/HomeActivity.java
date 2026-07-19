@@ -62,6 +62,7 @@ import com.fongmi.android.tv.ui.home.HomeNavigationAdapter;
 import com.fongmi.android.tv.ui.home.HomeNavigationController;
 import com.fongmi.android.tv.ui.home.HomePageController;
 import com.fongmi.android.tv.ui.home.HomePosterAdapter;
+import com.fongmi.android.tv.ui.dialog.DialogGlass;
 import com.fongmi.android.tv.ui.home.HomeState;
 import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.utils.FileChooser;
@@ -588,6 +589,9 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         int currentPosition = binding.recommendRecycler.getSelectedPosition();
         if (focusedKey.isEmpty() && currentPosition >= 0) focusedKey = posterAdapter.stableKeyAt(currentPosition);
         posterAdapter.submit(shelf);
+        // Home content frequently arrives after cached history. Rebind those three cards once the
+        // shelf has taught PosterResolver the canonical artwork for matching titles.
+        if (historyAdapter != null) historyAdapter.refreshPosters();
         int target = HomeFeaturedPolicy.resolvePosition(posterAdapter.stableKeys(), focusedKey, homeState.getRecommendPosition());
         if (target == HomeFeaturedPolicy.NO_POSITION) {
             homeState.setRecommendPosition(0);
@@ -948,10 +952,10 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
 
     private void showMore(List<Class> overflow) {
         String[] names = overflow.stream().map(item -> SearchDisplayName.removeEmoji(item.getTypeName())).toArray(String[]::new);
-        new MaterialAlertDialogBuilder(this)
+        DialogGlass.apply(new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.home_categories)
                 .setItems(names, (dialog, which) -> showCategory(overflow.get(which), true))
-                .show();
+                .show());
     }
 
     @Override

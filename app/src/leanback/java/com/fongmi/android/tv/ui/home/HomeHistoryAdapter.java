@@ -15,6 +15,7 @@ import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.databinding.AdapterHomeHistoryBinding;
 import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.utils.ImgUtil;
+import com.fongmi.android.tv.utils.PosterResolver;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +42,7 @@ public class HomeHistoryAdapter extends RecyclerView.Adapter<HomeHistoryAdapter.
 
     public void submit(List<History> next) {
         List<History> safe = next == null ? List.of() : next.stream().filter(Objects::nonNull).toList();
+        for (History item : safe) PosterResolver.remember(item.getVodName(), item.getVodPic());
         List<History> old = new ArrayList<>(items);
         DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
             @Override
@@ -68,6 +70,11 @@ public class HomeHistoryAdapter extends RecyclerView.Adapter<HomeHistoryAdapter.
         items.clear();
         items.addAll(safe);
         diff.dispatchUpdatesTo(this);
+    }
+
+    /** Rebind after the remote home shelf has supplied posters for existing history titles. */
+    public void refreshPosters() {
+        notifyItemRangeChanged(0, getItemCount());
     }
 
     public void setDeleteMode(boolean deleteMode) {

@@ -31,6 +31,7 @@ public abstract class BaseSideSheetDialog extends AppCompatDialogFragment {
         Window window = dialog.getWindow();
         if (window == null) return dialog;
         if (Util.isFullscreen(getActivity())) window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        DialogGlass.applyBehind(dialog);
         return dialog;
     }
 
@@ -61,5 +62,6 @@ public abstract class BaseSideSheetDialog extends AppCompatDialogFragment {
         ViewGroup.LayoutParams params = sheet.getLayoutParams();
         params.width = getWidth();
         sheet.setLayoutParams(params);
+        sheet.setBackground(DialogGlass.background(requireContext(), 18));
     }
 }
