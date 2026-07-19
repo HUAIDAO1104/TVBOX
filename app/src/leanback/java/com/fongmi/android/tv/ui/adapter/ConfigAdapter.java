@@ -13,6 +13,7 @@ import com.fongmi.android.tv.databinding.AdapterConfigBinding;
 import com.fongmi.android.tv.ui.search.SearchDisplayName;
 
 import java.util.List;
+import java.util.ArrayList;
 
 public class ConfigAdapter extends RecyclerView.Adapter<ConfigAdapter.ViewHolder> {
 
@@ -24,6 +25,7 @@ public class ConfigAdapter extends RecyclerView.Adapter<ConfigAdapter.ViewHolder
 
     public ConfigAdapter(OnClickListener listener) {
         this.listener = listener;
+        this.mItems = new ArrayList<>();
     }
 
     public interface OnClickListener {
@@ -49,9 +51,14 @@ public class ConfigAdapter extends RecyclerView.Adapter<ConfigAdapter.ViewHolder
     }
 
     public ConfigAdapter addAll(int type) {
-        mItems = Config.getAll(type);
-        if (!mItems.isEmpty() && !readOnly) mItems.remove(0);
+        setItems(Config.getAll(type));
         return this;
+    }
+
+    public void setItems(List<Config> items) {
+        mItems = items == null ? new ArrayList<>() : new ArrayList<>(items);
+        if (!mItems.isEmpty() && !readOnly) mItems.remove(0);
+        notifyDataSetChanged();
     }
 
     public int remove(Config item) {

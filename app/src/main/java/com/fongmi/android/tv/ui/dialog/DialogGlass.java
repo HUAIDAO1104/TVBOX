@@ -18,7 +18,10 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.StateSet;
+import android.view.PixelCopy;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -27,19 +30,30 @@ import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.view.ViewCompat;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /** Shared translucent surface and background blur for TV dialogs and sheets. */
 public final class DialogGlass {
 
     private static final int LEGACY_SAMPLE_WIDTH = 192;
     private static final Map<Dialog, Snapshot> SNAPSHOTS = new WeakHashMap<>();
+    private static final Map<Dialog, PendingCapture> CAPTURES = new WeakHashMap<>();
+    private static final ExecutorService GLASS_EXECUTOR = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "dialog-glass");
+        thread.setPriority(Thread.MIN_PRIORITY);
+        return thread;
+    });
 
     private DialogGlass() {
     }
@@ -53,7 +67,7 @@ public final class DialogGlass {
         dialog.getWindow().getDecorView().post(() -> {
             if (dialog.getWindow() == null) return;
             android.view.View panel = dialog.findViewById(androidx.appcompat.R.id.parentPanel);
-            if (panel != null) panel.setBackground(surface(dialog, panel, 18));
+            if (panel != null) setSurface(dialog, panel, 18);
             else dialog.getWindow().setBackgroundDrawable(
                     surface(dialog, dialog.getWindow().getDecorView(), 18));
             View content = dialog.findViewById(android.R.id.content);
@@ -117,14 +131,30 @@ public final class DialogGlass {
         return surfaceGradient(dialog, target, radiusDp, alpha, alpha, legacySnapshotAlpha);
     }
 
+    public static void setSurface(Dialog dialog, View target, int radiusDp) {
+        setSurface(dialog, target, radiusDp, 102, 255);
+    }
+
+    public static void setSurface(Dialog dialog, View target, int radiusDp, int alpha,
+                                  int legacySnapshotAlpha) {
+        if (dialog == null || target == null) return;
+        // Material3 SideSheet/BottomSheet applies an opaque backgroundTint after inflation. Merely
+        // replacing the Drawable leaves that tint active and turns a translucent surface black on
+        // Android 9. Clear both framework and compat tint before installing the glass surface.
+        target.setBackgroundTintList(null);
+        ViewCompat.setBackgroundTintList(target, null);
+        target.setBackground(surface(dialog, target, radiusDp, alpha, legacySnapshotAlpha));
+    }
+
     private static Drawable surfaceGradient(Dialog dialog, View target, int radiusDp,
                                             int startAlpha, int endAlpha,
                                             int legacySnapshotAlpha) {
         Drawable overlay = background(dialog.getContext(), radiusDp, startAlpha, endAlpha);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) return overlay;
-        Snapshot snapshot = snapshot(dialog);
-        return snapshot == null ? overlay : new FrostedDrawable(
-                snapshot, target, overlay, dp(dialog.getContext(), radiusDp), legacySnapshotAlpha);
+        FrostedDrawable drawable = new FrostedDrawable(
+                target, overlay, dp(dialog.getContext(), radiusDp), legacySnapshotAlpha);
+        requestSnapshot(dialog, drawable);
+        return drawable;
     }
 
     private static Drawable background(Context context, int radiusDp, int startAlpha, int endAlpha) {
@@ -141,32 +171,77 @@ public final class DialogGlass {
      * reuse that immutable sample for the whole lifetime of the dialog. Upscaling the pre-blurred
      * 192 px sample gives a convincing frosted surface without any per-frame capture or GPU blur.
      */
-    private static Snapshot snapshot(Dialog dialog) {
-        Snapshot cached = SNAPSHOTS.get(dialog);
-        if (cached != null) return cached;
+    private static void requestSnapshot(Dialog dialog, FrostedDrawable drawable) {
+        Snapshot cached;
+        PendingCapture pending;
+        synchronized (CAPTURES) {
+            cached = SNAPSHOTS.get(dialog);
+            if (cached != null) {
+                drawable.setSnapshot(cached);
+                return;
+            }
+            pending = CAPTURES.get(dialog);
+            if (pending != null) {
+                pending.add(drawable);
+                return;
+            }
+            pending = new PendingCapture(drawable);
+            CAPTURES.put(dialog, pending);
+        }
         Activity activity = findActivity(dialog.getContext());
-        if (activity == null || activity.getWindow() == null) return null;
+        if (activity == null || activity.getWindow() == null) {
+            completeCapture(dialog, null);
+            return;
+        }
         View root = activity.getWindow().getDecorView();
+        // Defer capture until after the dialog's first frame. The sheet is immediately usable;
+        // PixelCopy then captures SurfaceView video as well as normal Views without blocking the
+        // remote-control event that opened the dialog.
+        root.post(() -> captureWindow(dialog, activity, root));
+    }
+
+    private static void captureWindow(Dialog dialog, Activity activity, View root) {
         int width = root.getWidth();
         int height = root.getHeight();
-        if (width <= 0 || height <= 0) return null;
+        if (width <= 0 || height <= 0 || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            completeCapture(dialog, null);
+            return;
+        }
         int sampleWidth = Math.min(LEGACY_SAMPLE_WIDTH, Math.max(96, width / 8));
         int sampleHeight = Math.max(1, Math.round(height * sampleWidth / (float) width));
+        int[] location = new int[2];
+        root.getLocationOnScreen(location);
         try {
             Bitmap bitmap = Bitmap.createBitmap(sampleWidth, sampleHeight, Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(bitmap);
-            canvas.scale(sampleWidth / (float) width, sampleHeight / (float) height);
-            root.draw(canvas);
-            blur(bitmap, 2);
-            int[] location = new int[2];
-            root.getLocationOnScreen(location);
-            Snapshot snapshot = new Snapshot(bitmap, location[0], location[1], width, height);
-            SNAPSHOTS.put(dialog, snapshot);
-            return snapshot;
-        } catch (OutOfMemoryError | RuntimeException ignored) {
-            // The translucent gradient remains a safe fallback on unusually constrained devices.
-            return null;
+            PixelCopy.request(activity.getWindow(), bitmap, result -> {
+                if (result != PixelCopy.SUCCESS) {
+                    bitmap.recycle();
+                    completeCapture(dialog, null);
+                    return;
+                }
+                GLASS_EXECUTOR.execute(() -> {
+                    try {
+                        blur(bitmap, 2);
+                        Snapshot snapshot = new Snapshot(bitmap, location[0], location[1], width, height);
+                        new Handler(Looper.getMainLooper()).post(() -> completeCapture(dialog, snapshot));
+                    } catch (OutOfMemoryError | RuntimeException error) {
+                        bitmap.recycle();
+                        new Handler(Looper.getMainLooper()).post(() -> completeCapture(dialog, null));
+                    }
+                });
+            }, new Handler(Looper.getMainLooper()));
+        } catch (OutOfMemoryError | RuntimeException error) {
+            completeCapture(dialog, null);
         }
+    }
+
+    private static void completeCapture(Dialog dialog, Snapshot snapshot) {
+        PendingCapture pending;
+        synchronized (CAPTURES) {
+            pending = CAPTURES.remove(dialog);
+            if (snapshot != null) SNAPSHOTS.put(dialog, snapshot);
+        }
+        if (pending != null) pending.complete(snapshot);
     }
 
     private static Activity findActivity(Context context) {
@@ -275,10 +350,31 @@ public final class DialogGlass {
     private record Snapshot(Bitmap bitmap, int left, int top, int width, int height) {
     }
 
+    private static final class PendingCapture {
+
+        private final List<WeakReference<FrostedDrawable>> drawables = new ArrayList<>();
+
+        private PendingCapture(FrostedDrawable drawable) {
+            add(drawable);
+        }
+
+        private void add(FrostedDrawable drawable) {
+            drawables.add(new WeakReference<>(drawable));
+        }
+
+        private void complete(Snapshot snapshot) {
+            if (snapshot == null) return;
+            for (WeakReference<FrostedDrawable> reference : drawables) {
+                FrostedDrawable drawable = reference.get();
+                if (drawable != null) drawable.setSnapshot(snapshot);
+            }
+        }
+    }
+
     private static final class FrostedDrawable extends Drawable {
 
         private final WeakReference<View> target;
-        private final Snapshot snapshot;
+        private volatile Snapshot snapshot;
         private final Drawable overlay;
         private final Paint paint;
         private final Path path;
@@ -287,10 +383,9 @@ public final class DialogGlass {
         private final int[] location;
         private final float radius;
 
-        private FrostedDrawable(Snapshot snapshot, View target, Drawable overlay, float radius,
+        private FrostedDrawable(View target, Drawable overlay, float radius,
                                 int snapshotAlpha) {
             this.target = new WeakReference<>(target);
-            this.snapshot = snapshot;
             this.overlay = overlay;
             this.radius = radius;
             this.paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
@@ -309,16 +404,22 @@ public final class DialogGlass {
             path.addRoundRect(destination, radius, radius, Path.Direction.CW);
             int save = canvas.save();
             canvas.clipPath(path);
+            Snapshot current = snapshot;
             View view = target.get();
-            if (view != null && source(view, bounds)) {
-                canvas.drawBitmap(snapshot.bitmap(), source, destination, paint);
+            if (current != null && view != null && source(current, view, bounds)) {
+                canvas.drawBitmap(current.bitmap(), source, destination, paint);
             }
             overlay.setBounds(bounds);
             overlay.draw(canvas);
             canvas.restoreToCount(save);
         }
 
-        private boolean source(View view, Rect bounds) {
+        private void setSnapshot(Snapshot snapshot) {
+            this.snapshot = snapshot;
+            invalidateSelf();
+        }
+
+        private boolean source(Snapshot snapshot, View view, Rect bounds) {
             view.getLocationOnScreen(location);
             float scaleX = snapshot.bitmap().getWidth() / (float) snapshot.width();
             float scaleY = snapshot.bitmap().getHeight() / (float) snapshot.height();

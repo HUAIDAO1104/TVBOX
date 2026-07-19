@@ -9,7 +9,7 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="24dp"
+        android:paddingHorizontal="14dp"
         android:paddingVertical="4dp">
 
         <com.google.android.material.textview.MaterialTextView
@@ -34,7 +34,7 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="24dp"
+        android:paddingHorizontal="14dp"
         android:paddingVertical="4dp">
 
         <com.google.android.material.textview.MaterialTextView
@@ -58,7 +58,7 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="24dp"
+        android:paddingHorizontal="14dp"
         android:paddingVertical="4dp">
 
         <com.google.android.material.textview.MaterialTextView
@@ -82,7 +82,7 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="24dp"
+        android:paddingHorizontal="14dp"
         android:paddingVertical="4dp">
 
         <com.google.android.material.textview.MaterialTextView
@@ -106,7 +106,7 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="24dp"
+        android:paddingHorizontal="14dp"
         android:paddingVertical="4dp">
 
         <com.google.android.material.textview.MaterialTextView
@@ -130,7 +130,7 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="24dp"
+        android:paddingHorizontal="14dp"
         android:paddingVertical="4dp">
 
         <com.google.android.material.textview.MaterialTextView
@@ -154,7 +154,7 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="24dp"
+        android:paddingHorizontal="14dp"
         android:paddingVertical="4dp">
 
         <com.google.android.material.textview.MaterialTextView

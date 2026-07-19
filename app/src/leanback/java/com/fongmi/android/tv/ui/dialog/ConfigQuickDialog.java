@@ -15,7 +15,11 @@ import com.fongmi.android.tv.ui.adapter.ConfigAdapter;
 import com.fongmi.android.tv.ui.adapter.RepositoryItemAdapter;
 import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
 import com.fongmi.android.tv.ui.search.SearchDisplayName;
+import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.utils.Task;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
+import java.util.List;
 
 public class ConfigQuickDialog extends BaseAlertDialog implements ConfigAdapter.OnClickListener {
 
@@ -45,20 +49,35 @@ public class ConfigQuickDialog extends BaseAlertDialog implements ConfigAdapter.
     protected void initView() {
         Config current = VodConfig.get().getConfig();
         binding.current.setText(SearchDisplayName.removeEmoji(current.getDesc()));
-        adapter = new ConfigAdapter(this).glass().readOnly(true).current(current).addAll(0);
+        adapter = new ConfigAdapter(this).glass().readOnly(true).current(current);
         binding.recycler.setItemAnimator(null);
         binding.recycler.setHasFixedSize(false);
         binding.recycler.addItemDecoration(new SpaceItemDecoration(1, 10));
         binding.recycler.setAdapter(adapter);
         repositoryAdapter = new RepositoryItemAdapter(this::select).glass();
-        repositoryAdapter.load();
         binding.repositoryRecycler.setItemAnimator(null);
         binding.repositoryRecycler.addItemDecoration(new SpaceItemDecoration(1, 10));
         binding.repositoryRecycler.setAdapter(repositoryAdapter);
-        int repositoryVisibility = repositoryAdapter.getItemCount() == 0 ? View.GONE : View.VISIBLE;
-        binding.repositoryTitle.setVisibility(repositoryVisibility);
-        binding.repositoryRecycler.setVisibility(repositoryVisibility);
+        binding.repositoryTitle.setVisibility(View.GONE);
+        binding.repositoryRecycler.setVisibility(View.GONE);
         binding.dynamic.setVisibility(VodConfig.get().getSites().isEmpty() ? View.GONE : View.VISIBLE);
+        loadListsAsync();
+    }
+
+    private void loadListsAsync() {
+        Task.execute(() -> {
+            List<Config> configs = Config.getAll(0);
+            App.post(() -> {
+                if (binding == null || !isAdded()) return;
+                adapter.setItems(configs);
+            });
+        });
+        repositoryAdapter.loadAsync(() -> {
+            if (binding == null || !isAdded()) return;
+            int visibility = repositoryAdapter.getItemCount() == 0 ? View.GONE : View.VISIBLE;
+            binding.repositoryTitle.setVisibility(visibility);
+            binding.repositoryRecycler.setVisibility(visibility);
+        });
     }
 
     @Override
@@ -103,5 +122,11 @@ public class ConfigQuickDialog extends BaseAlertDialog implements ConfigAdapter.
     public void onStart() {
         super.onStart();
         setWidth(0.52f);
+    }
+
+    @Override
+    public void onDestroyView() {
+        binding = null;
+        super.onDestroyView();
     }
 }

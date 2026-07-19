@@ -17,6 +17,7 @@ public class UpdateDialog extends BaseAlertDialog {
     private DialogUpdateBinding binding;
     private UpdateListener listener;
     private boolean mandatory;
+    private boolean checking;
     private String title;
     private String desc;
 
@@ -44,6 +45,11 @@ public class UpdateDialog extends BaseAlertDialog {
         return this;
     }
 
+    public UpdateDialog checking() {
+        this.checking = true;
+        return this;
+    }
+
     public UpdateDialog show(FragmentActivity activity) {
         show(activity.getSupportFragmentManager(), null);
         return this;
@@ -56,13 +62,17 @@ public class UpdateDialog extends BaseAlertDialog {
 
     @Override
     protected MaterialAlertDialogBuilder getBuilder() {
-        MaterialAlertDialogBuilder builder = builder().setTitle(title).setView(getBinding().getRoot()).setPositiveButton(R.string.update_confirm, null).setCancelable(!mandatory);
-        return mandatory ? builder : builder.setNegativeButton(R.string.update_later, null);
+        return builder().setTitle(title).setView(getBinding().getRoot())
+                .setPositiveButton(R.string.update_confirm, null)
+                .setNegativeButton(R.string.update_later, null)
+                .setCancelable(!mandatory && !checking);
     }
 
     @Override
     protected void initView() {
         binding.desc.setText(desc);
+        binding.status.setVisibility(checking ? View.VISIBLE : View.GONE);
+        if (checking) binding.status.setText(R.string.update_select_mirror);
     }
 
     @Override
@@ -71,6 +81,7 @@ public class UpdateDialog extends BaseAlertDialog {
         AlertDialog dialog = (AlertDialog) getDialog();
         if (dialog != null && !mandatory) dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(view -> listener.onCancel(view));
         if (dialog != null) dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> listener.onConfirm(view));
+        applyState();
     }
 
     public void setProgress(int progress) {
@@ -99,6 +110,29 @@ public class UpdateDialog extends BaseAlertDialog {
         if (dialog != null) {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText(R.string.update_retry);
+        }
+    }
+
+    public void setRelease(String title, String desc, boolean mandatory) {
+        this.title = title;
+        this.desc = desc;
+        this.mandatory = mandatory;
+        this.checking = false;
+        if (binding != null) binding.desc.setText(desc);
+        AlertDialog dialog = (AlertDialog) getDialog();
+        if (dialog != null) dialog.setTitle(title);
+        applyState();
+    }
+
+    private void applyState() {
+        AlertDialog dialog = (AlertDialog) getDialog();
+        if (dialog == null) return;
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setVisibility(checking ? View.GONE : View.VISIBLE);
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setVisibility(checking || mandatory ? View.GONE : View.VISIBLE);
+        dialog.setCancelable(!mandatory && !checking);
+        if (binding != null) {
+            binding.status.setVisibility(checking ? View.VISIBLE : View.GONE);
+            if (checking) binding.status.setText(R.string.update_select_mirror);
         }
     }
 }

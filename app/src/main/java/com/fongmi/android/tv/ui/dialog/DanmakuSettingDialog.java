@@ -87,7 +87,11 @@ public final class DanmakuSettingDialog {
 
         @Override
         protected void initView() {
-            new DanmakuSettingPanel(binding, player).bind();
+            // Let the sheet render its shell before wiring the large slider/chip hierarchy. On
+            // low-power Android 9 projectors doing all of this inside the remote key callback made
+            // the button appear unresponsive for several seconds.
+            DanmakuSettingPanel settingPanel = new DanmakuSettingPanel(binding, player);
+            binding.getRoot().post(settingPanel::bind);
             if (player != null && player.getMetadata() != null) {
                 searchPanel = new DanmakuSearchPanel(binding.searchPane, player);
                 searchPanel.bind();
@@ -129,8 +133,8 @@ public final class DanmakuSettingDialog {
         protected void setBehavior(BottomSheetDialog dialog) {
             super.setBehavior(dialog);
             FrameLayout sheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
-            if (sheet != null) sheet.setBackground(DialogGlass.surface(
-                    dialog, sheet, 20, GLASS_TINT_ALPHA, LEGACY_BLUR_ALPHA));
+            if (sheet != null) DialogGlass.setSurface(
+                    dialog, sheet, 20, GLASS_TINT_ALPHA, LEGACY_BLUR_ALPHA);
             reduceBackdropDim();
         }
 
@@ -174,7 +178,8 @@ public final class DanmakuSettingDialog {
 
         @Override
         protected void initView() {
-            new DanmakuSettingPanel(binding, player).bind();
+            DanmakuSettingPanel settingPanel = new DanmakuSettingPanel(binding, player);
+            binding.getRoot().post(settingPanel::bind);
             if (player != null && player.getMetadata() != null) {
                 searchPanel = new DanmakuSearchPanel(binding.searchPane, player);
                 searchPanel.bind();
@@ -216,9 +221,11 @@ public final class DanmakuSettingDialog {
         public void onStart() {
             super.onStart();
             FrameLayout sheet = requireDialog().findViewById(com.google.android.material.R.id.m3_side_sheet);
-            if (sheet != null) sheet.setBackground(DialogGlass.surface(
-                    requireDialog(), sheet, 18, GLASS_TINT_ALPHA, LEGACY_BLUR_ALPHA));
-            DialogGlass.applyCards(binding.getRoot());
+            if (sheet != null) DialogGlass.setSurface(
+                    requireDialog(), sheet, 18, GLASS_TINT_ALPHA, LEGACY_BLUR_ALPHA);
+            binding.getRoot().post(() -> {
+                if (binding != null) DialogGlass.applyCards(binding.getRoot());
+            });
             Window window = requireDialog().getWindow();
             if (window == null) return;
             WindowManager.LayoutParams params = window.getAttributes();

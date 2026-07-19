@@ -17,6 +17,7 @@ public class UpdateDialog extends BaseAlertDialog {
     private DialogUpdateBinding binding;
     private UpdateListener listener;
     private boolean mandatory;
+    private boolean checking;
     private String title;
     private String desc;
 
@@ -44,6 +45,11 @@ public class UpdateDialog extends BaseAlertDialog {
         return this;
     }
 
+    public UpdateDialog checking() {
+        this.checking = true;
+        return this;
+    }
+
     public UpdateDialog show(FragmentActivity activity) {
         show(activity.getSupportFragmentManager(), null);
         return this;
@@ -63,7 +69,7 @@ public class UpdateDialog extends BaseAlertDialog {
     protected void initView() {
         binding.version.setText(title);
         binding.desc.setText(desc);
-        binding.cancel.setVisibility(mandatory ? View.GONE : View.VISIBLE);
+        applyState();
     }
 
     @Override
@@ -92,6 +98,26 @@ public class UpdateDialog extends BaseAlertDialog {
         setStatus(error);
         binding.confirm.setEnabled(true);
         binding.confirm.setText(R.string.update_retry);
+    }
+
+    public void setRelease(String title, String desc, boolean mandatory) {
+        this.title = title;
+        this.desc = desc;
+        this.mandatory = mandatory;
+        this.checking = false;
+        if (binding == null) return;
+        binding.version.setText(title);
+        binding.desc.setText(desc);
+        applyState();
+    }
+
+    private void applyState() {
+        if (binding == null) return;
+        binding.confirm.setVisibility(checking ? View.GONE : View.VISIBLE);
+        binding.cancel.setVisibility(checking || mandatory ? View.GONE : View.VISIBLE);
+        binding.status.setVisibility(checking ? View.VISIBLE : View.GONE);
+        if (checking) binding.status.setText(R.string.update_select_mirror);
+        if (getDialog() != null) getDialog().setCancelable(!mandatory && !checking);
     }
 
     private void onConfirm(View view) {

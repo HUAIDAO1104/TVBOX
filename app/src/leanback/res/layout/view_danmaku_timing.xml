@@ -10,7 +10,7 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="24dp"
+        android:paddingHorizontal="14dp"
         android:paddingVertical="4dp">
 
         <com.google.android.material.textview.MaterialTextView
@@ -33,7 +33,7 @@
         android:id="@+id/timeOffsetSlider"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="12dp"
+        android:layout_marginHorizontal="8dp"
         android:focusable="true"
         android:focusableInTouchMode="true"
         android:nextFocusUp="@id/tabTiming"
@@ -47,7 +47,7 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="24dp"
+        android:paddingHorizontal="14dp"
         android:paddingTop="4dp">
 
         <com.google.android.material.textview.MaterialTextView
@@ -70,7 +70,7 @@
         android:id="@+id/durationSlider"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="12dp"
+        android:layout_marginHorizontal="8dp"
         android:focusable="true"
         android:focusableInTouchMode="true"
         android:stepSize="500"
@@ -83,7 +83,7 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="24dp"
+        android:paddingHorizontal="14dp"
         android:paddingTop="4dp">
 
         <com.google.android.material.textview.MaterialTextView
@@ -106,7 +106,7 @@
         android:id="@+id/fixedDurationSlider"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="12dp"
+        android:layout_marginHorizontal="8dp"
         android:focusable="true"
         android:focusableInTouchMode="true"
         android:stepSize="500"

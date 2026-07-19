@@ -26,6 +26,7 @@ final class DanmakuSettingPanel {
 
     private final DialogDanmakuSettingBinding binding;
     private final PlayerManager player;
+    private final boolean[] bound = new boolean[4];
     private int currentTab;
 
     DanmakuSettingPanel(DialogDanmakuSettingBinding binding, PlayerManager player) {
@@ -34,10 +35,6 @@ final class DanmakuSettingPanel {
     }
 
     void bind() {
-        bindAppearance();
-        bindTiming();
-        bindDensity();
-        bindDisplay();
         bindTabs();
         showTab(0);
         binding.tabAppearance.requestFocus();
@@ -133,10 +130,22 @@ final class DanmakuSettingPanel {
     }
 
     private void showTab(int index) {
+        ensureBound(index);
         View[] roots = {binding.appearance.getRoot(), binding.timing.getRoot(), binding.density.getRoot(), binding.display.getRoot()};
         MaterialButton[] tabs = {binding.tabAppearance, binding.tabTiming, binding.tabDensity, binding.tabDisplay};
         for (int i = 0; i < roots.length; i++) roots[i].setVisibility(visibleIf(index == i));
         binding.reset.setNextFocusDownId(tabs[currentTab = index].getId());
+    }
+
+    private void ensureBound(int index) {
+        if (bound[index]) return;
+        bound[index] = true;
+        switch (index) {
+            case 0 -> bindAppearance();
+            case 1 -> bindTiming();
+            case 2 -> bindDensity();
+            case 3 -> bindDisplay();
+        }
     }
 
     private void updateStyleSubSettings(int mode) {

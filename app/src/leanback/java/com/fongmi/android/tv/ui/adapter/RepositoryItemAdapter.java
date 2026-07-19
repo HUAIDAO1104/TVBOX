@@ -12,6 +12,8 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.AdapterRepositoryItemBinding;
 import com.fongmi.android.tv.repository.RepositoryManager;
 import com.fongmi.android.tv.ui.search.SearchDisplayName;
+import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.utils.Task;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,13 +38,33 @@ public class RepositoryItemAdapter extends RecyclerView.Adapter<RepositoryItemAd
     }
 
     public void load() {
-        entries.clear();
+        replace(loadEntries());
+    }
+
+    public void loadAsync(Runnable onLoaded) {
+        Task.execute(() -> {
+            List<Entry> loaded = loadEntries();
+            App.post(() -> {
+                replace(loaded);
+                if (onLoaded != null) onLoaded.run();
+            });
+        });
+    }
+
+    private List<Entry> loadEntries() {
+        List<Entry> loaded = new ArrayList<>();
         RepositoryManager manager = RepositoryManager.get();
         for (Repository repository : manager.getEnabled()) {
             for (RepositoryItem item : manager.getItems(repository.getId())) {
-                entries.add(new Entry(repository.getName(), item));
+                loaded.add(new Entry(repository.getName(), item));
             }
         }
+        return loaded;
+    }
+
+    private void replace(List<Entry> loaded) {
+        entries.clear();
+        entries.addAll(loaded);
         notifyDataSetChanged();
     }
 

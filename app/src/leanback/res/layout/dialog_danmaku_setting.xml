@@ -12,37 +12,42 @@
         android:layout_weight="1"
         android:orientation="vertical">
 
+    <com.google.android.material.textview.MaterialTextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="16dp"
+        android:paddingTop="14dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="6dp"
+        android:text="@string/danmaku_setting"
+        android:textColor="@color/white"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="18dp"
-        android:paddingTop="16dp"
-        android:paddingEnd="18dp"
+        android:paddingStart="14dp"
+        android:paddingTop="2dp"
+        android:paddingEnd="14dp"
         android:paddingBottom="8dp">
-
-        <com.google.android.material.textview.MaterialTextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/danmaku_setting"
-            android:textAppearance="?attr/textAppearanceHeadlineSmall"
-            android:textColor="@color/white" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/search"
             style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
             android:layout_marginEnd="8dp"
             android:focusable="true"
             android:focusableInTouchMode="true"
             android:minWidth="0dp"
             android:nextFocusDown="@id/tabAppearance"
             android:nextFocusRight="@id/reset"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
             android:text="@string/danmaku_manual_search"
             android:textColor="@color/white"
             app:backgroundTint="@color/dialog_glass_card_tint"
@@ -52,15 +57,16 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/reset"
             style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
             android:focusable="true"
             android:focusableInTouchMode="true"
             android:minWidth="0dp"
             android:nextFocusLeft="@id/search"
             android:nextFocusDown="@id/tabAppearance"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
             android:text="@string/danmaku_reset"
             android:textColor="@color/white"
             app:backgroundTint="@color/dialog_glass_card_tint"
@@ -73,8 +79,8 @@
         android:id="@+id/tabGroup"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="18dp"
-        android:layout_marginEnd="18dp"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="14dp"
         android:layout_marginBottom="8dp"
         app:selectionRequired="true"
         app:singleSelection="true">
@@ -83,40 +89,56 @@
             android:id="@+id/tabAppearance"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:layout_weight="1"
             android:focusable="true"
+            android:minWidth="0dp"
+            android:paddingStart="2dp"
+            android:paddingEnd="2dp"
             android:text="@string/danmaku_section_appearance"
+            android:textSize="12sp"
             app:backgroundTint="@color/dialog_glass_card_tint" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/tabTiming"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:layout_weight="1"
             android:focusable="true"
+            android:minWidth="0dp"
+            android:paddingStart="2dp"
+            android:paddingEnd="2dp"
             android:text="@string/danmaku_section_timing"
+            android:textSize="12sp"
             app:backgroundTint="@color/dialog_glass_card_tint" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/tabDensity"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:layout_weight="1"
             android:focusable="true"
+            android:minWidth="0dp"
+            android:paddingStart="2dp"
+            android:paddingEnd="2dp"
             android:text="@string/danmaku_section_density"
+            android:textSize="12sp"
             app:backgroundTint="@color/dialog_glass_card_tint" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/tabDisplay"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:layout_weight="1"
             android:focusable="true"
+            android:minWidth="0dp"
+            android:paddingStart="2dp"
+            android:paddingEnd="2dp"
             android:text="@string/danmaku_section_display"
+            android:textSize="12sp"
             app:backgroundTint="@color/dialog_glass_card_tint" />
 
     </com.google.android.material.button.MaterialButtonToggleGroup>

@@ -50,7 +50,6 @@ public class Updater implements Download.Callback, UpdateListener {
 
     public Updater force() {
         forced = true;
-        Notify.show(R.string.update_check);
         Setting.putUpdate(true);
         return this;
     }
@@ -60,6 +59,7 @@ public class Updater implements Download.Callback, UpdateListener {
         if (!forced && now - Setting.getUpdateCheckTime() < AUTO_CHECK_INTERVAL_MS) return;
         Setting.putUpdateCheckTime(now);
         activityRef = new WeakReference<>(activity);
+        if (forced) showChecking(activity);
         Task.execute(this::doInBackground);
     }
 
@@ -67,27 +67,49 @@ public class Updater implements Download.Callback, UpdateListener {
         try {
             UpdateManifest manifest = UpdateClient.fetch();
             if (manifest.versionCode() <= BuildConfig.VERSION_CODE) {
-                if (forced) App.post(() -> Notify.show(R.string.update_latest));
+                if (forced) App.post(() -> {
+                    dismiss();
+                    Notify.show(R.string.update_latest);
+                });
                 return;
             }
             asset = manifest.assetFor(BuildConfig.FLAVOR_mode, BuildConfig.FLAVOR_abi);
             if (asset == null || asset.sha256().isEmpty()) {
-                if (forced) App.post(() -> Notify.show(R.string.update_unsupported));
+                if (forced) App.post(() -> {
+                    dismiss();
+                    Notify.show(R.string.update_unsupported);
+                });
                 return;
             }
             mandatory = manifest.mandatory();
             App.post(() -> show(manifest.versionName(), manifest.releaseNotes()));
         } catch (Exception e) {
             com.github.catvod.crawler.SpiderDebug.log(e);
-            if (forced) App.post(() -> Notify.show(R.string.update_failed));
+            if (forced) App.post(() -> {
+                dismiss();
+                Notify.show(R.string.update_failed);
+            });
         }
+    }
+
+    private void showChecking(FragmentActivity activity) {
+        dialog = UpdateDialog.create()
+                .title(ResUtil.getString(R.string.update_check))
+                .desc(ResUtil.getString(R.string.update_select_mirror))
+                .listener(this)
+                .checking()
+                .show(activity);
     }
 
     private void show(String version, String desc) {
         FragmentActivity activity = activityRef == null ? null : activityRef.get();
         if (activity == null || activity.isFinishing() || activity.isDestroyed()) return;
-        dismiss();
         if (desc == null || desc.isBlank()) desc = ResUtil.getString(R.string.update_default_notes);
+        if (forced && dialog != null) {
+            dialog.setRelease(ResUtil.getString(R.string.update_version, version), desc, mandatory);
+            return;
+        }
+        dismiss();
         dialog = UpdateDialog.create().title(ResUtil.getString(R.string.update_version, version)).desc(desc).mandatory(mandatory).listener(this).show(activity);
     }
 
