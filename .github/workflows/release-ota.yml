@@ -54,7 +54,39 @@ jobs:
             assembleMobileArmeabi_v7aRelease \
             assembleMobileArm64_v8aRelease
 
+      - name: Create Android 9 projector bridge package
+        if: ${{ (github.event_name == 'push' && github.ref_name == 'v5.5.29') || (github.event_name == 'workflow_dispatch' && inputs.tag == 'v5.5.29') }}
+        env:
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          APKSIGNER="$(find "$ANDROID_SDK_ROOT/build-tools" -name apksigner -type f | sort -V | tail -1)"
+          APK="$(find app/build/outputs/apk -path '*/release/leanback-armeabi_v7a.apk' -print -quit)"
+          BRIDGE="$RUNNER_TEMP/leanback-armeabi_v7a-bridge.apk"
+          test -x "$APKSIGNER"
+          test -f "$APK"
+          test -n "$KEY_ALIAS"
+          test -n "$STORE_PASSWORD"
+          EFFECTIVE_KEY_PASSWORD="${KEY_PASSWORD:-$STORE_PASSWORD}"
+          export STORE_PASSWORD EFFECTIVE_KEY_PASSWORD
+          "$APKSIGNER" sign \
+            --ks "$GITHUB_WORKSPACE/release.keystore" \
+            --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass env:STORE_PASSWORD \
+            --key-pass env:EFFECTIVE_KEY_PASSWORD \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled false \
+            --v4-signing-enabled false \
+            --min-sdk-version 23 \
+            --out "$BRIDGE" \
+            "$APK"
+          mv "$BRIDGE" "$APK"
+
       - name: Verify projector-compatible signatures
+        env:
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: |
           APKSIGNER="$(find "$ANDROID_SDK_ROOT/build-tools" -name apksigner -type f | sort -V | tail -1)"
           test -x "$APKSIGNER"
@@ -66,7 +98,11 @@ jobs:
             echo "$result"
             grep -q "Verified using v1 scheme (JAR signing): true" <<< "$result"
             grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" <<< "$result"
-            grep -q "Verified using v3 scheme (APK Signature Scheme v3): true" <<< "$result"
+            if [[ "$RELEASE_TAG" == "v5.5.29" && "$apk" == *'/leanbackArmeabi_v7a/'* ]]; then
+              grep -q "Verified using v3 scheme (APK Signature Scheme v3): false" <<< "$result"
+            else
+              grep -q "Verified using v3 scheme (APK Signature Scheme v3): true" <<< "$result"
+            fi
           done < <(find app/build/outputs/apk -path '*/release/*.apk' -type f)
 
       - name: Collect release assets
