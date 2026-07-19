@@ -18,6 +18,7 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 /** Shared translucent surface and background blur for TV dialogs and sheets. */
@@ -93,7 +94,11 @@ public final class DialogGlass {
      */
     public static void applyCards(View root) {
         if (root == null) return;
+        // MaterialButton owns a ShapeAppearanceModel that MaterialButtonToggleGroup reads again
+        // during layout. Replacing that background makes getShapeAppearanceModel() throw and
+        // crashes the danmaku settings sheet as soon as its tab group is measured.
         if (root instanceof TextView && !(root instanceof CompoundButton)
+                && !(root instanceof MaterialButton)
                 && root.isFocusable() && root.getBackground() != null) {
             int left = root.getPaddingLeft();
             int top = root.getPaddingTop();
