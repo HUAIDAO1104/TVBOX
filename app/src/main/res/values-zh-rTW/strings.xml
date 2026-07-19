@@ -240,6 +240,8 @@
     <string name="update_permission">請允許片多多安裝更新，授權後返回即可繼續</string>
     <string name="update_permission_denied">未取得安裝權限，可在設定中授權後重新更新</string>
     <string name="update_install_failed">無法開啟系統安裝程式</string>
+    <string name="update_install_preparing">下載完成，正在準備系統安裝程式…</string>
+    <string name="update_install_ready">下載完成，正在開啟系統安裝程式…</string>
     <string name="update_retry">重試</string>
     <string name="update_select_mirror">正在選擇最快的更新鏡像…</string>
     <string name="update_download_status"><xliff:g name="source">%1$s</xliff:g> · <xliff:g name="speed">%2$s</xliff:g>/秒 · <xliff:g name="downloaded">%3$s</xliff:g>/<xliff:g name="total">%4$s</xliff:g></string>

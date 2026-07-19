@@ -55,7 +55,7 @@ jobs:
             assembleMobileArm64_v8aRelease
 
       - name: Create Android 9 projector bridge package
-        if: ${{ (github.event_name == 'push' && github.ref_name == 'v5.5.29') || (github.event_name == 'workflow_dispatch' && inputs.tag == 'v5.5.29') }}
+        if: ${{ (github.event_name == 'push' && (github.ref_name == 'v5.5.29' || github.ref_name == 'v5.5.31')) || (github.event_name == 'workflow_dispatch' && (inputs.tag == 'v5.5.29' || inputs.tag == 'v5.5.31')) }}
         env:
           KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
@@ -98,7 +98,7 @@ jobs:
             echo "$result"
             grep -q "Verified using v1 scheme (JAR signing): true" <<< "$result"
             grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" <<< "$result"
-            if [[ "$RELEASE_TAG" == "v5.5.29" && "$apk" == *'/leanbackArmeabi_v7a/'* ]]; then
+            if [[ ( "$RELEASE_TAG" == "v5.5.29" || "$RELEASE_TAG" == "v5.5.31" ) && "$apk" == *'/leanbackArmeabi_v7a/'* ]]; then
               grep -q "Verified using v3 scheme (APK Signature Scheme v3): false" <<< "$result"
             else
               grep -q "Verified using v3 scheme (APK Signature Scheme v3): true" <<< "$result"

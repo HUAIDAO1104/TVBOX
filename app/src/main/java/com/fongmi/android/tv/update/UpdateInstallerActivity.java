@@ -2,6 +2,7 @@ package com.fongmi.android.tv.update;
 
 import android.app.Activity;
 import android.app.PendingIntent;
+import android.content.ClipData;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageInstaller;
@@ -71,7 +72,8 @@ public class UpdateInstallerActivity extends Activity {
             return;
         }
         if (canInstallPackages()) {
-            beginSessionInstall();
+            if (UpdateInstallPolicy.useSystemInstaller(Build.VERSION.SDK_INT)) openSystemInstaller();
+            else beginSessionInstall();
         } else if (permissionRequested) {
             Notify.show(R.string.update_permission_denied);
             finish();
@@ -105,12 +107,13 @@ public class UpdateInstallerActivity extends Activity {
 
     private void beginSessionInstall() {
         installerStarted = true;
+        Notify.show(R.string.update_install_preparing);
         Task.execute(() -> {
             try {
                 commitSession(apk);
-                runOnUiThread(this::finish);
             } catch (Exception e) {
-                runOnUiThread(this::openLegacyInstaller);
+                com.github.catvod.crawler.SpiderDebug.log(e);
+                runOnUiThread(this::openSystemInstaller);
             }
         });
     }
@@ -181,12 +184,30 @@ public class UpdateInstallerActivity extends Activity {
         return source.getParcelableExtra(key);
     }
 
-    private void openLegacyInstaller() {
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setDataAndType(FileUtil.getShareUri(apk), "application/vnd.android.package-archive");
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
-        if (!startSafely(intent)) Notify.show(R.string.update_install_failed);
+    private void openSystemInstaller() {
+        installerStarted = true;
+        Uri uri;
+        try {
+            uri = FileUtil.getShareUri(apk);
+        } catch (Exception e) {
+            com.github.catvod.crawler.SpiderDebug.log(e);
+            Notify.show(R.string.update_install_failed);
+            finish();
+            return;
+        }
+        Notify.show(R.string.update_install_ready);
+        Intent view = installerIntent(Intent.ACTION_VIEW, uri);
+        Intent install = installerIntent(Intent.ACTION_INSTALL_PACKAGE, uri);
+        if (!startSafely(view) && !startSafely(install)) Notify.show(R.string.update_install_failed);
         finish();
+    }
+
+    private Intent installerIntent(String action, Uri uri) {
+        Intent intent = new Intent(action);
+        intent.setDataAndType(uri, "application/vnd.android.package-archive");
+        intent.setClipData(ClipData.newRawUri("PianduoDuo update", uri));
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+        return intent;
     }
 
     private void clearPayload() {
