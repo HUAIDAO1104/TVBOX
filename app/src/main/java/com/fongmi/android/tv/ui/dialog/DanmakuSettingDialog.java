@@ -1,8 +1,12 @@
 package com.fongmi.android.tv.ui.dialog;
 
 import android.view.LayoutInflater;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -15,8 +19,10 @@ import com.fongmi.android.tv.databinding.DialogDanmakuSettingBinding;
 import com.fongmi.android.tv.player.PlayerManager;
 import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.utils.Notify;
+import com.fongmi.android.tv.utils.KeyUtil;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Util;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 public final class DanmakuSettingDialog {
 
@@ -62,6 +68,7 @@ public final class DanmakuSettingDialog {
         private final PlayerManager player;
         private final boolean searchInitially;
         private DanmakuSearchPanel searchPanel;
+        private boolean searchVisible;
 
         BottomSheet(PlayerManager player, boolean searchInitially) {
             this.player = player;
@@ -83,6 +90,7 @@ public final class DanmakuSettingDialog {
             binding.search.setOnClickListener(view -> showSearch());
             if (searchInitially) showSearch();
             else if (Util.isLeanback()) binding.search.requestFocus();
+            bindBackNavigation();
         }
 
         private void showSearch() {
@@ -90,10 +98,42 @@ public final class DanmakuSettingDialog {
                 Notify.show(com.fongmi.android.tv.R.string.danmaku_search_no_playback);
                 return;
             }
-            // Portrait phones keep the same dialog instance and dedicate its surface to search.
             binding.settingsPane.setVisibility(View.GONE);
             binding.searchDivider.setVisibility(View.GONE);
+            searchVisible = true;
             searchPanel.show(true);
+        }
+
+        private void showSettings() {
+            if (searchPanel != null) searchPanel.hide();
+            binding.searchDivider.setVisibility(View.GONE);
+            binding.settingsPane.setVisibility(View.VISIBLE);
+            searchVisible = false;
+            if (Util.isLeanback()) binding.search.requestFocus();
+        }
+
+        private void bindBackNavigation() {
+            requireDialog().setOnKeyListener((dialog, keyCode, event) -> {
+                if (!searchVisible || !KeyUtil.isBackKey(event)) return false;
+                if (event.getAction() == KeyEvent.ACTION_UP) showSettings();
+                return true;
+            });
+        }
+
+        @Override
+        protected void setBehavior(BottomSheetDialog dialog) {
+            super.setBehavior(dialog);
+            FrameLayout sheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+            if (sheet != null) sheet.setBackground(DialogGlass.background(requireContext(), 20, 89));
+            reduceBackdropDim();
+        }
+
+        private void reduceBackdropDim() {
+            Window window = requireDialog().getWindow();
+            if (window == null) return;
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.dimAmount = 0.20f;
+            window.setAttributes(params);
         }
 
         @Override
@@ -109,6 +149,7 @@ public final class DanmakuSettingDialog {
         private final PlayerManager player;
         private final boolean searchInitially;
         private DanmakuSearchPanel searchPanel;
+        private boolean searchVisible;
 
         SideSheet(PlayerManager player, boolean searchInitially) {
             this.player = player;
@@ -117,7 +158,7 @@ public final class DanmakuSettingDialog {
 
         @Override
         protected int getWidth() {
-            return Math.min(ResUtil.dp2px(1180), Math.round(ResUtil.getScreenWidth() * 0.88f));
+            return Math.min(ResUtil.dp2px(760), Math.round(ResUtil.getScreenWidth() * 0.62f));
         }
 
         @Override
@@ -135,6 +176,7 @@ public final class DanmakuSettingDialog {
             binding.search.setOnClickListener(view -> showSearch());
             if (searchInitially) showSearch();
             else if (Util.isLeanback()) binding.search.requestFocus();
+            bindBackNavigation();
         }
 
         private void showSearch() {
@@ -142,8 +184,39 @@ public final class DanmakuSettingDialog {
                 Notify.show(com.fongmi.android.tv.R.string.danmaku_search_no_playback);
                 return;
             }
-            binding.searchDivider.setVisibility(View.VISIBLE);
+            binding.settingsPane.setVisibility(View.GONE);
+            binding.searchDivider.setVisibility(View.GONE);
+            searchVisible = true;
             searchPanel.show(true);
+        }
+
+        private void showSettings() {
+            if (searchPanel != null) searchPanel.hide();
+            binding.searchDivider.setVisibility(View.GONE);
+            binding.settingsPane.setVisibility(View.VISIBLE);
+            searchVisible = false;
+            if (Util.isLeanback()) binding.search.requestFocus();
+        }
+
+        private void bindBackNavigation() {
+            requireDialog().setOnKeyListener((dialog, keyCode, event) -> {
+                if (!searchVisible || !KeyUtil.isBackKey(event)) return false;
+                if (event.getAction() == KeyEvent.ACTION_UP) showSettings();
+                return true;
+            });
+        }
+
+        @Override
+        public void onStart() {
+            super.onStart();
+            FrameLayout sheet = requireDialog().findViewById(com.google.android.material.R.id.m3_side_sheet);
+            if (sheet != null) sheet.setBackground(DialogGlass.background(requireContext(), 18, 89));
+            DialogGlass.applyCards(binding.getRoot());
+            Window window = requireDialog().getWindow();
+            if (window == null) return;
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.dimAmount = 0.20f;
+            window.setAttributes(params);
         }
 
         @Override

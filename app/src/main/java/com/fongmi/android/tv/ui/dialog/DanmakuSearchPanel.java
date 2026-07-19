@@ -31,7 +31,7 @@ import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
 
-/** Manual matching controller embedded in the right half of the detailed settings sheet. */
+/** Manual matching controller that replaces the settings content inside the same sheet. */
 final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
 
     private final ViewDanmakuSearchEmbeddedBinding binding;
@@ -79,6 +79,11 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         if (!focus) return;
         binding.keyword.requestFocus();
         if (!Util.isLeanback()) Util.showKeyboard(binding.keyword);
+    }
+
+    void hide() {
+        binding.getRoot().setVisibility(GONE);
+        Util.hideKeyboard(binding.keyword);
     }
 
     private void search() {

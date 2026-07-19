@@ -38,7 +38,9 @@
             android:layout_marginEnd="8dp"
             android:text="@string/danmaku_manual_search"
             android:textColor="@color/white"
-            app:backgroundTint="?attr/colorPrimary" />
+            app:backgroundTint="@color/dialog_glass_card_tint"
+            app:strokeColor="?attr/colorOutline"
+            app:strokeWidth="1dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/reset"
@@ -46,7 +48,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/danmaku_reset"
-            android:textColor="?attr/colorPrimary" />
+            android:textColor="@color/white"
+            app:backgroundTint="@color/dialog_glass_card_tint"
+            app:strokeColor="?attr/colorOutline"
+            app:strokeWidth="1dp" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 
@@ -66,7 +71,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/danmaku_section_appearance" />
+            android:text="@string/danmaku_section_appearance"
+            app:backgroundTint="@color/dialog_glass_card_tint" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/tabTiming"
@@ -74,7 +80,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/danmaku_section_timing" />
+            android:text="@string/danmaku_section_timing"
+            app:backgroundTint="@color/dialog_glass_card_tint" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/tabDensity"
@@ -82,7 +89,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/danmaku_section_density" />
+            android:text="@string/danmaku_section_density"
+            app:backgroundTint="@color/dialog_glass_card_tint" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/tabDisplay"
@@ -90,7 +98,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/danmaku_section_display" />
+            android:text="@string/danmaku_section_display"
+            app:backgroundTint="@color/dialog_glass_card_tint" />
 
     </com.google.android.material.button.MaterialButtonToggleGroup>
 

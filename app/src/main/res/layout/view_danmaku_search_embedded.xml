@@ -64,7 +64,9 @@
             android:text="@string/danmaku_search_action"
             android:textAllCaps="false"
             android:textColor="@color/white"
-            app:backgroundTint="?attr/colorPrimary" />
+            app:backgroundTint="@color/dialog_glass_card_tint"
+            app:strokeColor="?attr/colorOutline"
+            app:strokeWidth="1dp" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 

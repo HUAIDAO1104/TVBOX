@@ -69,9 +69,18 @@ public final class DialogGlass {
     }
 
     public static Drawable background(Context context, int radiusDp) {
+        return background(context, radiusDp, 102, 82);
+    }
+
+    /** Creates a glass surface whose two gradient stops use the same, explicit opacity. */
+    public static Drawable background(Context context, int radiusDp, int alpha) {
+        return background(context, radiusDp, alpha, alpha);
+    }
+
+    private static Drawable background(Context context, int radiusDp, int startAlpha, int endAlpha) {
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
-                new int[]{Color.argb(102, 28, 36, 50), Color.argb(82, 9, 14, 22)});
+                new int[]{Color.argb(startAlpha, 28, 36, 50), Color.argb(endAlpha, 9, 14, 22)});
         drawable.setCornerRadius(dp(context, radiusDp));
         drawable.setStroke(dp(context, 1), Color.argb(58, 255, 255, 255));
         return drawable;
