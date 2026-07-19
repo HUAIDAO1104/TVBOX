@@ -40,6 +40,17 @@
 
     </androidx.core.widget.NestedScrollView>
 
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:textColor="@color/tv_text_secondary"
+        android:textSize="13sp"
+        android:visibility="gone"
+        tools:text="正在选择最快的更新镜像…"
+        tools:visibility="visible" />
+
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

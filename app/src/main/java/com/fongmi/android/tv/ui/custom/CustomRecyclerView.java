@@ -2,6 +2,7 @@ package com.fongmi.android.tv.ui.custom;
 
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -22,6 +23,8 @@ public class CustomRecyclerView extends RecyclerView {
     private int touchSlop;
     private float x1;
     private float y1;
+    private long suppressAutoFocusUntil;
+    private boolean touchDragging;
 
     public CustomRecyclerView(@NonNull Context context) {
         super(context);
@@ -85,14 +88,20 @@ public class CustomRecyclerView extends RecyclerView {
     }
 
     private void focus(int position) {
+        if (suppressAutoFocus()) return;
         ViewHolder holder = findViewHolderForLayoutPosition(position);
         if (holder != null) holder.itemView.requestFocus();
     }
 
     @Override
     public void scrollToPosition(int position) {
+        if (suppressAutoFocus()) return;
         super.scrollToPosition(position);
         postDelayed(() -> focus(position), 50);
+    }
+
+    private boolean suppressAutoFocus() {
+        return touchDragging || SystemClock.uptimeMillis() < suppressAutoFocusUntil;
     }
 
     @Override
@@ -100,11 +109,15 @@ public class CustomRecyclerView extends RecyclerView {
         if (event.getPointerCount() != 1) return false;
         switch (event.getAction()) {
             case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                if (touchDragging) suppressAutoFocusUntil = SystemClock.uptimeMillis() + 320L;
+                touchDragging = false;
                 x1 = y1 = 0;
                 break;
             case MotionEvent.ACTION_DOWN:
                 x1 = event.getX();
                 y1 = event.getY();
+                touchDragging = false;
                 getParent().requestDisallowInterceptTouchEvent(true);
                 break;
             case MotionEvent.ACTION_MOVE:
@@ -112,6 +125,10 @@ public class CustomRecyclerView extends RecyclerView {
                 float y2 = event.getY();
                 float offsetX = Math.abs(x2 - x1);
                 float offsetY = Math.abs(y2 - y1);
+                if (Math.max(offsetX, offsetY) > touchSlop) {
+                    touchDragging = true;
+                    suppressAutoFocusUntil = SystemClock.uptimeMillis() + 320L;
+                }
                 if (offsetX > offsetY && offsetX > touchSlop) getParent().requestDisallowInterceptTouchEvent(false);
                 break;
         }

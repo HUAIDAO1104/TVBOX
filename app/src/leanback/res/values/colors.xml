@@ -2,7 +2,7 @@
 
     <color name="tv_background">#05080D</color>
     <color name="tv_background_secondary">#0A0E15</color>
-    <color name="tv_dialog_glass">#B8121925</color>
+    <color name="tv_dialog_glass">#5F121925</color>
     <color name="tv_surface">#C922252C</color>
     <color name="tv_surface_focused">#E72A2E37</color>
     <color name="tv_text_primary">#FFF8F9FB</color>

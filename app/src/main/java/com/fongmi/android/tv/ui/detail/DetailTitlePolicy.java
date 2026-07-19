@@ -6,15 +6,16 @@ public final class DetailTitlePolicy {
     private DetailTitlePolicy() {
     }
 
-    public static int textSizeSp(String title) {
+    public static float textSizeSp(String title) {
         int length = codePointLength(title);
         // The redesigned detail pane is only 30% of a 16:9 TV canvas.  The previous
         // 27-39sp values were inherited from the old full-width hero and overwhelmed
-        // the poster, cast and synopsis in this compact card.
-        if (length > 18) return 12;
-        if (length > 14) return 13;
-        if (length > 9) return 14;
-        return 15;
+        // the poster, cast and synopsis in this compact card. Keep the same progressive
+        // hierarchy while reducing the current type scale by 40 percent.
+        if (length > 18) return 7.2f;
+        if (length > 14) return 7.8f;
+        if (length > 9) return 8.4f;
+        return 9.0f;
     }
 
     public static int maxLines(String title) {

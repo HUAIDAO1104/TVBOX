@@ -235,6 +235,10 @@
     <string name="update_permission">Allow PianduoDuo to install updates, then return to continue</string>
     <string name="update_permission_denied">Installation permission was not granted. You can try again in Settings.</string>
     <string name="update_install_failed">Unable to open the system installer</string>
+    <string name="update_retry">Retry</string>
+    <string name="update_select_mirror">Selecting the fastest update mirror…</string>
+    <string name="update_download_status"><xliff:g name="source">%1$s</xliff:g> · <xliff:g name="speed">%2$s</xliff:g>/s · <xliff:g name="downloaded">%3$s</xliff:g>/<xliff:g name="total">%4$s</xliff:g></string>
+    <string name="update_download_failed">The download was interrupted. Progress was saved; choose Retry to continue.</string>
 
     <!-- Crash -->
     <string name="crash_info">An unexpected error occurred.\nSorry for the inconvenience.</string>

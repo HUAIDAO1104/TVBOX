@@ -234,6 +234,10 @@
     <string name="update_permission">請允許片多多安裝更新，授權後返回即可繼續</string>
     <string name="update_permission_denied">未取得安裝權限，可在設定中授權後重新更新</string>
     <string name="update_install_failed">無法開啟系統安裝程式</string>
+    <string name="update_retry">重試</string>
+    <string name="update_select_mirror">正在選擇最快的更新鏡像…</string>
+    <string name="update_download_status"><xliff:g name="source">%1$s</xliff:g> · <xliff:g name="speed">%2$s</xliff:g>/秒 · <xliff:g name="downloaded">%3$s</xliff:g>/<xliff:g name="total">%4$s</xliff:g></string>
+    <string name="update_download_failed">下載已中斷，目前進度已保留；請選擇「重試」繼續。</string>
 
     <!-- Crash -->
     <string name="crash_info">發生意外錯誤\n抱歉給您帶來不便</string>

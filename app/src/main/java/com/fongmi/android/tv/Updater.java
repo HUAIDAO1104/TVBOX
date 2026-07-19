@@ -1,5 +1,6 @@
 package com.fongmi.android.tv;
 
+import android.net.Uri;
 import android.view.View;
 
 import androidx.fragment.app.FragmentActivity;
@@ -20,6 +21,7 @@ import com.github.catvod.utils.Path;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
+import java.util.Locale;
 
 public class Updater implements Download.Callback, UpdateListener {
 
@@ -89,7 +91,14 @@ public class Updater implements Download.Callback, UpdateListener {
     @Override
     public void onConfirm(View view) {
         view.setEnabled(false);
-        download = Download.create(UpdateSource.assetCandidates(asset), getFile()).sha256(asset.sha256()).timeout(15_000L).tag("app-update");
+        if (dialog != null) dialog.setDownloading();
+        download = Download.create(UpdateSource.assetCandidates(asset), getFile())
+                .sha256(asset.sha256())
+                .connectTimeout(8_000L)
+                .readTimeout(60_000L)
+                .fastestFirst()
+                .resume()
+                .tag("app-update");
         download.start(this);
     }
 
@@ -97,6 +106,7 @@ public class Updater implements Download.Callback, UpdateListener {
     public void onCancel(View view) {
         if (download != null) download.cancel();
         Path.clear(getFile());
+        Path.clear(new File(getFile().getAbsolutePath() + ".sha256"));
         dismiss();
     }
 
@@ -113,9 +123,19 @@ public class Updater implements Download.Callback, UpdateListener {
     }
 
     @Override
+    public void status(String source, long bytesPerSecond, long downloaded, long total) {
+        if (dialog == null) return;
+        String host = Uri.parse(source).getHost();
+        if (host == null || host.isBlank()) host = "更新镜像";
+        dialog.setStatus(ResUtil.getString(R.string.update_download_status,
+                host, formatBytes(bytesPerSecond), formatBytes(downloaded), total > 0L ? formatBytes(total) : "—"));
+    }
+
+    @Override
     public void error(String msg) {
-        Notify.show(msg);
-        dismiss();
+        com.github.catvod.crawler.SpiderDebug.log(msg);
+        if (dialog != null) dialog.setError(ResUtil.getString(R.string.update_download_failed));
+        else Notify.show(R.string.update_failed);
     }
 
     @Override
@@ -128,5 +148,13 @@ public class Updater implements Download.Callback, UpdateListener {
         }
         UpdateInstallerActivity.start(file);
         dismiss();
+    }
+
+    private String formatBytes(long bytes) {
+        if (bytes < 1024L) return bytes + " B";
+        double value = bytes / 1024.0;
+        if (value < 1024.0) return String.format(Locale.getDefault(), "%.1f KB", value);
+        value /= 1024.0;
+        return String.format(Locale.getDefault(), "%.1f MB", value);
     }
 }

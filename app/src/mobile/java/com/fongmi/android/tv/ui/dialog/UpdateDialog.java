@@ -3,6 +3,7 @@ package com.fongmi.android.tv.ui.dialog;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewbinding.ViewBinding;
+import android.view.View;
 
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.DialogUpdateBinding;
@@ -75,5 +76,29 @@ public class UpdateDialog extends BaseAlertDialog {
     public void setProgress(int progress) {
         AlertDialog dialog = (AlertDialog) getDialog();
         if (dialog != null) dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText(String.format(Locale.getDefault(), "%1$d%%", progress));
+    }
+
+    public void setDownloading() {
+        binding.status.setVisibility(View.VISIBLE);
+        binding.status.setText(R.string.update_select_mirror);
+        AlertDialog dialog = (AlertDialog) getDialog();
+        if (dialog != null) {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("0%");
+        }
+    }
+
+    public void setStatus(String status) {
+        binding.status.setVisibility(View.VISIBLE);
+        binding.status.setText(status);
+    }
+
+    public void setError(String error) {
+        setStatus(error);
+        AlertDialog dialog = (AlertDialog) getDialog();
+        if (dialog != null) {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText(R.string.update_retry);
+        }
     }
 }

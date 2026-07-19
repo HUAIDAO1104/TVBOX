@@ -38,7 +38,7 @@ public final class DialogGlass {
     public static Drawable background(Context context, int radiusDp) {
         GradientDrawable drawable = new GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
-                new int[]{Color.argb(190, 28, 36, 50), Color.argb(174, 9, 14, 22)});
+                new int[]{Color.argb(102, 28, 36, 50), Color.argb(82, 9, 14, 22)});
         drawable.setCornerRadius(dp(context, radiusDp));
         drawable.setStroke(dp(context, 1), Color.argb(58, 255, 255, 255));
         return drawable;

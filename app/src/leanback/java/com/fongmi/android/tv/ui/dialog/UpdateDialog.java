@@ -5,6 +5,7 @@ import android.view.View;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewbinding.ViewBinding;
 
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.DialogUpdateBinding;
 import com.fongmi.android.tv.impl.UpdateListener;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -73,6 +74,24 @@ public class UpdateDialog extends BaseAlertDialog {
 
     public void setProgress(int progress) {
         binding.confirm.setText(String.format(Locale.getDefault(), "%1$d%%", progress));
+    }
+
+    public void setDownloading() {
+        binding.status.setVisibility(View.VISIBLE);
+        binding.status.setText(R.string.update_select_mirror);
+        binding.confirm.setEnabled(false);
+        binding.confirm.setText("0%");
+    }
+
+    public void setStatus(String status) {
+        binding.status.setVisibility(View.VISIBLE);
+        binding.status.setText(status);
+    }
+
+    public void setError(String error) {
+        setStatus(error);
+        binding.confirm.setEnabled(true);
+        binding.confirm.setText(R.string.update_retry);
     }
 
     private void onConfirm(View view) {

@@ -2,8 +2,11 @@ package com.fongmi.android.tv.ui.custom;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.view.InputDevice;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -25,6 +28,10 @@ public class CustomVerticalGridView extends VerticalGridView {
     private boolean pressDown;
     private boolean pressUp;
     private boolean moveTop;
+    private final int touchSlop;
+    private float touchDownX;
+    private float touchDownY;
+    private boolean touchDragging;
 
     public CustomVerticalGridView(@NonNull Context context) {
         this(context, null);
@@ -36,6 +43,7 @@ public class CustomVerticalGridView extends VerticalGridView {
 
     public CustomVerticalGridView(@NonNull Context context, @Nullable AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         setMoveTop(true);
     }
 
@@ -79,6 +87,37 @@ public class CustomVerticalGridView extends VerticalGridView {
         pressUp = KeyUtil.isUpKey(event);
         pressDown = KeyUtil.isDownKey(event);
         return super.dispatchKeyEvent(event);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (event.isFromSource(InputDevice.SOURCE_TOUCHSCREEN)) {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    touchDownX = event.getX();
+                    touchDownY = event.getY();
+                    touchDragging = false;
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    if (!touchDragging) {
+                        float dx = Math.abs(event.getX() - touchDownX);
+                        float dy = Math.abs(event.getY() - touchDownY);
+                        if (dy > touchSlop && dy > dx) {
+                            touchDragging = true;
+                            setFocusableInTouchMode(true);
+                            requestFocus();
+                        }
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    touchDragging = false;
+                    break;
+                default:
+                    break;
+            }
+        }
+        return super.dispatchTouchEvent(event);
     }
 
     public boolean moveToTop() {

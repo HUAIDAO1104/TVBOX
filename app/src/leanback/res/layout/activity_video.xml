@@ -23,7 +23,7 @@
         android:layout_height="1dp"
         android:visibility="gone" />
 
-    <androidx.core.widget.NestedScrollView
+    <com.fongmi.android.tv.ui.custom.TouchSafeNestedScrollView
         android:id="@+id/scroll"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -116,7 +116,7 @@
                                     android:lineSpacingExtra="1dp"
                                     android:maxLines="2"
                                     android:textColor="@color/tv_text_primary"
-                                    android:textSize="14sp"
+                                    android:textSize="9sp"
                                     android:textStyle="bold"
                                     tools:text="庆余年 第二季" />
 
@@ -366,7 +366,7 @@
                 </androidx.appcompat.widget.LinearLayoutCompat>
             </androidx.appcompat.widget.LinearLayoutCompat>
         </androidx.appcompat.widget.LinearLayoutCompat>
-    </androidx.core.widget.NestedScrollView>
+    </com.fongmi.android.tv.ui.custom.TouchSafeNestedScrollView>
 
     <!-- Direct root child: detail position is 16:9; fullscreen swaps only these layout params. -->
     <FrameLayout

@@ -155,7 +155,7 @@
 
             </androidx.appcompat.widget.LinearLayoutCompat>
 
-            <androidx.core.widget.NestedScrollView
+            <com.fongmi.android.tv.ui.custom.TouchSafeNestedScrollView
                 android:id="@+id/scroll"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
@@ -225,7 +225,7 @@
                         tools:listitem="@layout/adapter_search_word" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
-            </androidx.core.widget.NestedScrollView>
+            </com.fongmi.android.tv.ui.custom.TouchSafeNestedScrollView>
         </androidx.appcompat.widget.LinearLayoutCompat>
     </androidx.appcompat.widget.LinearLayoutCompat>
 </FrameLayout>

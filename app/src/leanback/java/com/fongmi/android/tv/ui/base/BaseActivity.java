@@ -4,9 +4,15 @@ import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.graphics.Rect;
 import android.os.Bundle;
+import android.view.InputDevice;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.widget.AbsSeekBar;
+import android.widget.EditText;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
@@ -26,6 +32,14 @@ import me.jessyan.autosize.AutoSizeCompat;
 
 public abstract class BaseActivity extends AppCompatActivity {
 
+    private int touchSlop;
+    private float touchDownX;
+    private float touchDownY;
+    private long touchDownAt;
+    private boolean touchMoved;
+    private boolean touchTargetWasFocused;
+    private View touchTarget;
+
     protected abstract ViewBinding getBinding();
 
     @Override
@@ -37,6 +51,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         Util.hideSystemUI(this);
         setBackCallback();
         initEvent();
+        touchSlop = ViewConfiguration.get(this).getScaledTouchSlop();
     }
 
     @Override
@@ -66,6 +81,82 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     protected boolean isGone(View view) {
         return view.getVisibility() == View.GONE;
+    }
+
+    /**
+     * TV widgets are focus-first by design, which makes the first touchscreen tap only select an
+     * item on some vendor ROMs. For a genuine touchscreen tap, cancel the focus-only delivery and
+     * perform exactly one click in the same gesture. Key events and DPAD focus remain untouched.
+     */
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (!event.isFromSource(InputDevice.SOURCE_TOUCHSCREEN)) return super.dispatchTouchEvent(event);
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+                touchDownX = event.getRawX();
+                touchDownY = event.getRawY();
+                touchDownAt = event.getEventTime();
+                touchMoved = false;
+                touchTarget = findClickableAt(getWindow().getDecorView(), touchDownX, touchDownY);
+                touchTargetWasFocused = touchTarget != null && touchTarget.isFocused();
+                return super.dispatchTouchEvent(event);
+            case MotionEvent.ACTION_MOVE:
+                if (Math.abs(event.getRawX() - touchDownX) > touchSlop
+                        || Math.abs(event.getRawY() - touchDownY) > touchSlop) touchMoved = true;
+                return super.dispatchTouchEvent(event);
+            case MotionEvent.ACTION_UP:
+                if (shouldPerformTouchClick(event)) {
+                    View target = touchTarget;
+                    MotionEvent cancel = MotionEvent.obtain(event);
+                    cancel.setAction(MotionEvent.ACTION_CANCEL);
+                    super.dispatchTouchEvent(cancel);
+                    cancel.recycle();
+                    resetTouchTracking();
+                    target.requestFocus();
+                    target.performClick();
+                    return true;
+                }
+                boolean handled = super.dispatchTouchEvent(event);
+                resetTouchTracking();
+                return handled;
+            case MotionEvent.ACTION_CANCEL:
+                resetTouchTracking();
+                return super.dispatchTouchEvent(event);
+            default:
+                return super.dispatchTouchEvent(event);
+        }
+    }
+
+    private boolean shouldPerformTouchClick(MotionEvent event) {
+        if (touchTarget == null || touchTargetWasFocused || touchMoved) return false;
+        if (event.getEventTime() - touchDownAt >= ViewConfiguration.getLongPressTimeout()) return false;
+        if (!touchTarget.isAttachedToWindow() || !touchTarget.isEnabled() || !touchTarget.isShown()) return false;
+        Rect bounds = new Rect();
+        return touchTarget.getGlobalVisibleRect(bounds)
+                && bounds.contains(Math.round(event.getRawX()), Math.round(event.getRawY()));
+    }
+
+    private View findClickableAt(View view, float rawX, float rawY) {
+        if (view == null || !view.isShown() || !view.isEnabled()) return null;
+        Rect bounds = new Rect();
+        if (!view.getGlobalVisibleRect(bounds) || !bounds.contains(Math.round(rawX), Math.round(rawY))) return null;
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int index = group.getChildCount() - 1; index >= 0; index--) {
+                View target = findClickableAt(group.getChildAt(index), rawX, rawY);
+                if (target != null) return target;
+            }
+        }
+        if (!view.isClickable() || !view.hasOnClickListeners() || view instanceof EditText || view instanceof AbsSeekBar) return null;
+        String className = view.getClass().getName();
+        return className.contains("Slider") ? null : view;
+    }
+
+    private void resetTouchTracking() {
+        touchTarget = null;
+        touchTargetWasFocused = false;
+        touchMoved = false;
+        touchDownAt = 0L;
     }
 
     protected void notifyItemChanged(RecyclerView view, RecyclerView.Adapter<?> adapter) {
