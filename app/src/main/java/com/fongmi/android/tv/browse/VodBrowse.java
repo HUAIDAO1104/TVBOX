@@ -225,9 +225,20 @@ class VodBrowse {
 
     private static int findCurrentIndex(@NonNull Flag flag, @NonNull History history) {
         String currentUrl = history.getEpisode() != null ? history.getEpisode().getUrl() : null;
-        if (TextUtils.isEmpty(currentUrl)) return 0;
         List<Episode> episodes = flag.getEpisodes();
-        return IntStream.range(0, episodes.size()).filter(i -> episodes.get(i).getUrl().equals(currentUrl)).findFirst().orElse(0);
+        if (!TextUtils.isEmpty(currentUrl)) {
+            int index = IntStream.range(0, episodes.size())
+                    .filter(i -> episodes.get(i).getUrl().equals(currentUrl))
+                    .findFirst()
+                    .orElse(-1);
+            if (index >= 0) return index;
+        }
+        String currentName = history.getVodRemarks();
+        if (TextUtils.isEmpty(currentName)) return 0;
+        return IntStream.range(0, episodes.size())
+                .filter(i -> episodes.get(i).getName().equalsIgnoreCase(currentName))
+                .findFirst()
+                .orElse(0);
     }
 
     @Nullable

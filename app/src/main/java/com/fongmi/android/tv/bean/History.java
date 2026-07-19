@@ -27,6 +27,8 @@ import java.util.concurrent.TimeUnit;
 @Entity
 public class History implements Diffable<History> {
 
+    static final int MAX_EPISODE_URL_LENGTH = 16 * 1024;
+
     @NonNull
     @PrimaryKey
     @SerializedName("key")
@@ -164,7 +166,11 @@ public class History implements Diffable<History> {
     }
 
     public void setEpisodeUrl(String episodeUrl) {
-        this.episodeUrl = episodeUrl;
+        // Some drive sources embed an entire request payload in the episode identifier. Persisting
+        // a multi-megabyte value makes Android 9's fixed 2 MB CursorWindow crash while saving seek
+        // progress. The episode name remains available as the resume-position fallback.
+        this.episodeUrl = episodeUrl != null && episodeUrl.length() <= MAX_EPISODE_URL_LENGTH
+                ? episodeUrl : "";
     }
 
     public boolean isRevSort() {

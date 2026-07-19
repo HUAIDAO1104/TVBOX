@@ -124,7 +124,7 @@ public final class DanmakuSettingDialog {
         protected void setBehavior(BottomSheetDialog dialog) {
             super.setBehavior(dialog);
             FrameLayout sheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
-            if (sheet != null) sheet.setBackground(DialogGlass.background(requireContext(), 20, 89));
+            if (sheet != null) sheet.setBackground(DialogGlass.surface(dialog, sheet, 20, 89));
             reduceBackdropDim();
         }
 
@@ -210,7 +210,7 @@ public final class DanmakuSettingDialog {
         public void onStart() {
             super.onStart();
             FrameLayout sheet = requireDialog().findViewById(com.google.android.material.R.id.m3_side_sheet);
-            if (sheet != null) sheet.setBackground(DialogGlass.background(requireContext(), 18, 89));
+            if (sheet != null) sheet.setBackground(DialogGlass.surface(requireDialog(), sheet, 18, 89));
             DialogGlass.applyCards(binding.getRoot());
             Window window = requireDialog().getWindow();
             if (window == null) return;

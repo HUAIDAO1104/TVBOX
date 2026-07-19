@@ -64,7 +64,7 @@ public abstract class BaseBottomSheetDialog extends BottomSheetDialogFragment {
         FrameLayout sheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
         if (sheet == null) return;
         if (transparent()) sheet.setBackgroundColor(ResUtil.getColor(R.color.transparent));
-        else sheet.setBackground(DialogGlass.background(requireContext(), 20));
+        else sheet.setBackground(DialogGlass.surface(dialog, sheet, 20));
         if (getView() != null) getView().setBackgroundColor(ResUtil.getColor(R.color.transparent));
         if (getView() != null) getView().post(() -> DialogGlass.applyCards(getView()));
         BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(sheet);

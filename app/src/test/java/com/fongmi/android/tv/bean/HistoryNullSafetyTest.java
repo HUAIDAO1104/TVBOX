@@ -26,4 +26,20 @@ public class HistoryNullSafetyTest {
         assertEquals("", first.getVodFlag());
         assertTrue(first.isSameContent(second));
     }
+
+    @Test
+    public void oversizedEpisodePayloadDoesNotEnterHistoryCursor() {
+        History history = new History();
+        history.setEpisodeUrl("x".repeat(History.MAX_EPISODE_URL_LENGTH + 1));
+
+        assertEquals("", history.getEpisodeUrl());
+    }
+
+    @Test
+    public void normalEpisodeIdentifierIsPreserved() {
+        History history = new History();
+        history.setEpisodeUrl("episode-12");
+
+        assertEquals("episode-12", history.getEpisodeUrl());
+    }
 }

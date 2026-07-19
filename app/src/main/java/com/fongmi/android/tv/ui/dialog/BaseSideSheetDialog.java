@@ -62,7 +62,7 @@ public abstract class BaseSideSheetDialog extends AppCompatDialogFragment {
         ViewGroup.LayoutParams params = sheet.getLayoutParams();
         params.width = getWidth();
         sheet.setLayoutParams(params);
-        sheet.setBackground(DialogGlass.background(requireContext(), 18));
+        sheet.setBackground(DialogGlass.surface(requireDialog(), sheet, 18));
         if (getView() != null) getView().setBackgroundColor(android.graphics.Color.TRANSPARENT);
     }
 }
