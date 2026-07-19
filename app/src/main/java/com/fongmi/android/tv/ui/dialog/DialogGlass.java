@@ -100,20 +100,31 @@ public final class DialogGlass {
     }
 
     public static Drawable surface(Dialog dialog, View target, int radiusDp) {
-        return surface(dialog, target, radiusDp, 102, 82);
+        return surfaceGradient(dialog, target, radiusDp, 102, 82, 255);
     }
 
     public static Drawable surface(Dialog dialog, View target, int radiusDp, int alpha) {
-        return surface(dialog, target, radiusDp, alpha, alpha);
+        return surfaceGradient(dialog, target, radiusDp, alpha, alpha, 255);
     }
 
-    private static Drawable surface(Dialog dialog, View target, int radiusDp,
-                                    int startAlpha, int endAlpha) {
+    /**
+     * Creates a legacy-friendly glass surface with independently controlled tint and snapshot
+     * opacity. Android 9 cannot blur the live window, so the low-resolution blurred snapshot is
+     * blended over the still-visible activity instead of being painted as an opaque replacement.
+     */
+    public static Drawable surface(Dialog dialog, View target, int radiusDp, int alpha,
+                                   int legacySnapshotAlpha) {
+        return surfaceGradient(dialog, target, radiusDp, alpha, alpha, legacySnapshotAlpha);
+    }
+
+    private static Drawable surfaceGradient(Dialog dialog, View target, int radiusDp,
+                                            int startAlpha, int endAlpha,
+                                            int legacySnapshotAlpha) {
         Drawable overlay = background(dialog.getContext(), radiusDp, startAlpha, endAlpha);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) return overlay;
         Snapshot snapshot = snapshot(dialog);
         return snapshot == null ? overlay : new FrostedDrawable(
-                snapshot, target, overlay, dp(dialog.getContext(), radiusDp));
+                snapshot, target, overlay, dp(dialog.getContext(), radiusDp), legacySnapshotAlpha);
     }
 
     private static Drawable background(Context context, int radiusDp, int startAlpha, int endAlpha) {
@@ -276,12 +287,14 @@ public final class DialogGlass {
         private final int[] location;
         private final float radius;
 
-        private FrostedDrawable(Snapshot snapshot, View target, Drawable overlay, float radius) {
+        private FrostedDrawable(Snapshot snapshot, View target, Drawable overlay, float radius,
+                                int snapshotAlpha) {
             this.target = new WeakReference<>(target);
             this.snapshot = snapshot;
             this.overlay = overlay;
             this.radius = radius;
             this.paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+            this.paint.setAlpha(Math.max(0, Math.min(255, snapshotAlpha)));
             this.path = new Path();
             this.source = new Rect();
             this.destination = new RectF();

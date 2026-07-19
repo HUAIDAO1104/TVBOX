@@ -26,6 +26,11 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 public final class DanmakuSettingDialog {
 
+    private static final float SIDE_SHEET_WIDTH_RATIO = 0.35f;
+    private static final float BACKDROP_DIM_AMOUNT = 0.14f;
+    private static final int GLASS_TINT_ALPHA = 89; // 35%
+    private static final int LEGACY_BLUR_ALPHA = 102; // 40%, blended over the live activity
+
     private PlayerManager player;
     private boolean searchInitially;
 
@@ -124,7 +129,8 @@ public final class DanmakuSettingDialog {
         protected void setBehavior(BottomSheetDialog dialog) {
             super.setBehavior(dialog);
             FrameLayout sheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
-            if (sheet != null) sheet.setBackground(DialogGlass.surface(dialog, sheet, 20, 89));
+            if (sheet != null) sheet.setBackground(DialogGlass.surface(
+                    dialog, sheet, 20, GLASS_TINT_ALPHA, LEGACY_BLUR_ALPHA));
             reduceBackdropDim();
         }
 
@@ -132,7 +138,7 @@ public final class DanmakuSettingDialog {
             Window window = requireDialog().getWindow();
             if (window == null) return;
             WindowManager.LayoutParams params = window.getAttributes();
-            params.dimAmount = 0.20f;
+            params.dimAmount = BACKDROP_DIM_AMOUNT;
             window.setAttributes(params);
         }
 
@@ -158,7 +164,7 @@ public final class DanmakuSettingDialog {
 
         @Override
         protected int getWidth() {
-            return Math.min(ResUtil.dp2px(760), Math.round(ResUtil.getScreenWidth() * 0.62f));
+            return Math.round(ResUtil.getScreenWidth() * SIDE_SHEET_WIDTH_RATIO);
         }
 
         @Override
@@ -210,12 +216,13 @@ public final class DanmakuSettingDialog {
         public void onStart() {
             super.onStart();
             FrameLayout sheet = requireDialog().findViewById(com.google.android.material.R.id.m3_side_sheet);
-            if (sheet != null) sheet.setBackground(DialogGlass.surface(requireDialog(), sheet, 18, 89));
+            if (sheet != null) sheet.setBackground(DialogGlass.surface(
+                    requireDialog(), sheet, 18, GLASS_TINT_ALPHA, LEGACY_BLUR_ALPHA));
             DialogGlass.applyCards(binding.getRoot());
             Window window = requireDialog().getWindow();
             if (window == null) return;
             WindowManager.LayoutParams params = window.getAttributes();
-            params.dimAmount = 0.20f;
+            params.dimAmount = BACKDROP_DIM_AMOUNT;
             window.setAttributes(params);
         }
 
