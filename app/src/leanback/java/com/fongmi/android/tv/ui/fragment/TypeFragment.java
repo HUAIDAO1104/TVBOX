@@ -37,6 +37,7 @@ import com.fongmi.android.tv.ui.custom.CustomSelector;
 import com.fongmi.android.tv.ui.presenter.FilterPresenter;
 import com.fongmi.android.tv.ui.presenter.VodPresenter;
 import com.fongmi.android.tv.utils.Notify;
+import com.fongmi.android.tv.utils.PosterResolver;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.google.common.collect.Lists;
 
@@ -211,10 +212,18 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     }
 
     private void addVideo(Result result) {
+        rememberPosters(result.getList());
         Style style = isEmbedded() ? Style.rect() : result.getStyle(getStyle());
         if (style.isList()) mAdapter.addAll(mAdapter.size(), result.getList());
         else addGrid(result.getList(), style);
         checkMore();
+    }
+
+    private void rememberPosters(List<Vod> items) {
+        if (items == null) return;
+        for (Vod item : items) {
+            if (item != null) PosterResolver.remember(item.getName(), item.getPic());
+        }
     }
 
     private void checkMore() {

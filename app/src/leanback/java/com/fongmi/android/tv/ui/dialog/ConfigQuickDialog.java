@@ -45,12 +45,12 @@ public class ConfigQuickDialog extends BaseAlertDialog implements ConfigAdapter.
     protected void initView() {
         Config current = VodConfig.get().getConfig();
         binding.current.setText(SearchDisplayName.removeEmoji(current.getDesc()));
-        adapter = new ConfigAdapter(this).readOnly(true).current(current).addAll(0);
+        adapter = new ConfigAdapter(this).glass().readOnly(true).current(current).addAll(0);
         binding.recycler.setItemAnimator(null);
         binding.recycler.setHasFixedSize(false);
         binding.recycler.addItemDecoration(new SpaceItemDecoration(1, 10));
         binding.recycler.setAdapter(adapter);
-        repositoryAdapter = new RepositoryItemAdapter(this::select);
+        repositoryAdapter = new RepositoryItemAdapter(this::select).glass();
         repositoryAdapter.load();
         binding.repositoryRecycler.setItemAnimator(null);
         binding.repositoryRecycler.addItemDecoration(new SpaceItemDecoration(1, 10));

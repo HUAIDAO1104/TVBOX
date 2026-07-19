@@ -77,7 +77,6 @@ import com.fongmi.android.tv.ui.detail.DetailTitlePolicy;
 import com.fongmi.android.tv.ui.detail.EpisodeDisplayName;
 import com.fongmi.android.tv.ui.dialog.ChapterDialog;
 import com.fongmi.android.tv.ui.dialog.ContentDialog;
-import com.fongmi.android.tv.ui.dialog.DanmakuDialog;
 import com.fongmi.android.tv.ui.dialog.DanmakuSettingDialog;
 import com.fongmi.android.tv.ui.dialog.EditionDialog;
 import com.fongmi.android.tv.ui.dialog.ParseDialog;
@@ -467,11 +466,6 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         mBinding.control.action.danmakuSetting.setOnClickListener(view -> onDanmakuSetting());
         mBinding.control.action.danmaku.setOnLongClickListener(view -> {
             onDanmakuSetting();
-            return true;
-        });
-        mBinding.control.action.danmaku.setOnKeyListener((view, keyCode, event) -> {
-            if (keyCode != KeyEvent.KEYCODE_MENU || event.getAction() != KeyEvent.ACTION_UP) return false;
-            onDanmakuSource();
             return true;
         });
         mBinding.control.action.edition.setOnClickListener(view -> onEdition());
@@ -1761,12 +1755,6 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         showControl(view);
     }
 
-    private void onDanmakuSource() {
-        if (service() == null) return;
-        DanmakuDialog.create().player(player()).show(this);
-        hideControl();
-    }
-
     private void onDanmakuSetting() {
         if (service() == null) return;
         DanmakuSettingDialog.create().player(player()).show(this);
@@ -1783,6 +1771,8 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         // danmaku was enabled produced a small white pseudo-focused button that users could not
         // navigate to reliably. The label already communicates the on/off state.
         mBinding.control.action.danmaku.setSelected(false);
+        mBinding.control.action.danmaku.setActivated(false);
+        mBinding.control.action.danmaku.jumpDrawablesToCurrentState();
         mBinding.control.action.danmaku.setContentDescription(getString(
                 enabled ? R.string.danmaku_on_description : R.string.danmaku_off_description));
     }
@@ -2353,8 +2343,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
             return true;
         }
         if (isFullscreen() && !progressVisible && !errorVisible && KeyUtil.isMenuKey(event)) {
-            if (controlVisible && getCurrentFocus() == mBinding.control.action.danmaku) onDanmakuSource();
-            else onToggle();
+            onToggle();
             return true;
         }
         if (isFullscreen() && !errorVisible && KeyUtil.isMediaPlayPause(event)) {

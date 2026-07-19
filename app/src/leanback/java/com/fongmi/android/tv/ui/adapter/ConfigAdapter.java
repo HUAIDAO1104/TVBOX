@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.fongmi.android.tv.bean.Config;
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.AdapterConfigBinding;
 import com.fongmi.android.tv.ui.search.SearchDisplayName;
 
@@ -18,6 +19,7 @@ public class ConfigAdapter extends RecyclerView.Adapter<ConfigAdapter.ViewHolder
     private final OnClickListener listener;
     private List<Config> mItems;
     private boolean readOnly;
+    private boolean glass;
     private String currentUrl = "";
 
     public ConfigAdapter(OnClickListener listener) {
@@ -38,6 +40,11 @@ public class ConfigAdapter extends RecyclerView.Adapter<ConfigAdapter.ViewHolder
 
     public ConfigAdapter current(Config current) {
         currentUrl = current == null ? "" : current.getUrl();
+        return this;
+    }
+
+    public ConfigAdapter glass() {
+        glass = true;
         return this;
     }
 
@@ -70,6 +77,10 @@ public class ConfigAdapter extends RecyclerView.Adapter<ConfigAdapter.ViewHolder
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Config item = mItems.get(position);
+        if (glass) {
+            holder.binding.text.setBackgroundResource(R.drawable.selector_dialog_glass_card);
+            holder.binding.delete.setBackgroundResource(R.drawable.selector_dialog_glass_card);
+        }
         boolean current = item.getUrl().equals(currentUrl);
         holder.binding.text.setText((current ? "●  " : "    ") + SearchDisplayName.removeEmoji(item.getDesc()));
         holder.binding.text.setSelected(current);

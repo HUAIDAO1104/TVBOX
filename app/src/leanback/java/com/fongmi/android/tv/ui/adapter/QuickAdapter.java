@@ -12,6 +12,7 @@ import com.fongmi.android.tv.databinding.AdapterQuickBinding;
 import com.fongmi.android.tv.security.PromotionFilter;
 import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.utils.ImgUtil;
+import com.fongmi.android.tv.utils.PosterResolver;
 import com.fongmi.android.tv.utils.ResUtil;
 
 import java.util.ArrayList;
@@ -32,6 +33,9 @@ public class QuickAdapter extends RecyclerView.Adapter<QuickAdapter.ViewHolder> 
 
     public void addAll(List<Vod> items) {
         int start = mItems.size();
+        for (Vod item : items) {
+            if (item != null) PosterResolver.remember(item.getName(), item.getPic());
+        }
         mItems.addAll(items);
         notifyItemRangeInserted(start, items.size());
     }

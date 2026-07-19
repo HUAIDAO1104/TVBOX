@@ -30,6 +30,7 @@ public final class SearchSourcePanelAdapter extends RecyclerView.Adapter<SearchS
     private final Listener listener;
     private List<SearchSource> items = List.of();
     private String recommendedId = "";
+    private String posterTitle = "";
 
     public SearchSourcePanelAdapter(Listener listener) {
         this.listener = listener;
@@ -37,12 +38,15 @@ public final class SearchSourcePanelAdapter extends RecyclerView.Adapter<SearchS
     }
 
     /** @return true only when rows or the recommended marker actually changed. */
-    public boolean submit(List<SearchSource> sources, SearchSource recommended) {
+    public boolean submit(List<SearchSource> sources, SearchSource recommended, String workTitle) {
         List<SearchSource> safe = sources == null ? List.of() : List.copyOf(sources);
         String nextRecommendedId = recommended == null ? "" : recommended.stableId();
+        String nextPosterTitle = workTitle == null ? "" : workTitle;
         List<SearchSource> previous = items;
         String previousRecommendedId = recommendedId;
-        if (previous.equals(safe) && previousRecommendedId.equals(nextRecommendedId)) return false;
+        String previousPosterTitle = posterTitle;
+        if (previous.equals(safe) && previousRecommendedId.equals(nextRecommendedId)
+                && previousPosterTitle.equals(nextPosterTitle)) return false;
         DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
             @Override public int getOldListSize() { return previous.size(); }
             @Override public int getNewListSize() { return safe.size(); }
@@ -54,11 +58,13 @@ public final class SearchSourcePanelAdapter extends RecyclerView.Adapter<SearchS
                 SearchSource newItem = safe.get(newItemPosition);
                 return oldItem.equals(newItem)
                         && (previousRecommendedId.equals(oldItem.stableId())
-                        == nextRecommendedId.equals(newItem.stableId()));
+                        == nextRecommendedId.equals(newItem.stableId()))
+                        && previousPosterTitle.equals(nextPosterTitle);
             }
         }, false);
         items = safe;
         recommendedId = nextRecommendedId;
+        posterTitle = nextPosterTitle;
         diff.dispatchUpdatesTo(this);
         return true;
     }
@@ -114,7 +120,8 @@ public final class SearchSourcePanelAdapter extends RecyclerView.Adapter<SearchS
             listener.onClose();
             return true;
         });
-        ImgUtil.loadPoster(source.title(), source.posterUrl(), holder.binding.poster);
+        ImgUtil.loadPoster(posterTitle.isEmpty() ? source.title() : posterTitle,
+                source.posterUrl(), holder.binding.poster);
     }
 
     @Override

@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.fongmi.android.tv.bean.Repository;
 import com.fongmi.android.tv.bean.RepositoryItem;
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.AdapterRepositoryItemBinding;
 import com.fongmi.android.tv.repository.RepositoryManager;
 import com.fongmi.android.tv.ui.search.SearchDisplayName;
@@ -23,9 +24,15 @@ public class RepositoryItemAdapter extends RecyclerView.Adapter<RepositoryItemAd
 
     private final List<Entry> entries = new ArrayList<>();
     private final Listener listener;
+    private boolean glass;
 
     public RepositoryItemAdapter(Listener listener) {
         this.listener = listener;
+    }
+
+    public RepositoryItemAdapter glass() {
+        glass = true;
+        return this;
     }
 
     public void load() {
@@ -53,6 +60,7 @@ public class RepositoryItemAdapter extends RecyclerView.Adapter<RepositoryItemAd
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Entry entry = entries.get(position);
+        if (glass) holder.binding.getRoot().setBackgroundResource(R.drawable.selector_dialog_glass_card);
         holder.binding.name.setText(SearchDisplayName.removeEmoji(entry.item.getName()));
         holder.binding.repository.setText(SearchDisplayName.removeEmoji(entry.repository));
         holder.binding.getRoot().setOnClickListener(v -> listener.onClick(entry.item));

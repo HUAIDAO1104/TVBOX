@@ -26,4 +26,15 @@ public class PosterResolverTest {
 
         assertEquals("", PosterResolver.resolve("庆余年第二季", ""));
     }
+
+    @Test
+    public void failedPosterFallsBackToAnotherRealSourceForSameWork() {
+        PosterResolver.remember("庆余年 第二季", "https://img.example/first.jpg");
+        PosterResolver.remember("庆余年第2季 4K", "https://img.example/second.jpg");
+
+        PosterResolver.forget("庆余年 第二季", "https://img.example/second.jpg");
+
+        assertEquals("https://img.example/first.jpg",
+                PosterResolver.resolve("庆余年第2季", ""));
+    }
 }

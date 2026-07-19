@@ -70,11 +70,13 @@ public class ImgUtil {
         // provider images whose source ratio was not exactly the same as the TV slot.
         view.setScaleType(CENTER_CROP);
         view.setVisibility(View.VISIBLE);
-        url = PosterResolver.resolve(text, url);
-        if (TextUtils.isEmpty(url) || failed.contains(url)) {
+        url = resolveAvailablePoster(text, url);
+        if (TextUtils.isEmpty(url)) {
             view.setImageDrawable(getTextDrawable(text, true));
             return;
         }
+        final String requestUrl = url;
+        view.setTag(R.id.poster_request_token, posterRequestToken(text, requestUrl));
         try {
             Glide.with(view)
                     .load(getUrl(url))
@@ -82,7 +84,7 @@ public class ImgUtil {
                     .error(R.drawable.poster_placeholder)
                     .centerCrop()
                     .transition(DrawableTransitionOptions.withCrossFade(220))
-                    .listener(getListener(text, url, view, true))
+                    .listener(getListener(text, requestUrl, view, true))
                     .into(view);
         } catch (Throwable e) {
             view.setImageDrawable(getTextDrawable(text, true));
@@ -90,12 +92,14 @@ public class ImgUtil {
     }
 
     public static void load(String text, String url, ImageView view, boolean vod) {
-        if (vod) url = PosterResolver.resolve(text, url);
+        if (vod) url = resolveAvailablePoster(text, url);
         view.setScaleType(vod ? CENTER_CROP : FIT_CENTER);
         if (!vod) view.setVisibility(TextUtils.isEmpty(url) ? View.GONE : View.VISIBLE);
-        if (TextUtils.isEmpty(url) || failed.contains(url)) view.setImageDrawable(getTextDrawable(text, vod));
+        if (TextUtils.isEmpty(url) || !vod && failed.contains(url)) view.setImageDrawable(getTextDrawable(text, vod));
         else try {
-            RequestBuilder<Drawable> builder = Glide.with(view).load(getUrl(url)).listener(getListener(text, url, view, vod));
+            final String requestUrl = url;
+            if (vod) view.setTag(R.id.poster_request_token, posterRequestToken(text, requestUrl));
+            RequestBuilder<Drawable> builder = Glide.with(view).load(getUrl(requestUrl)).listener(getListener(text, requestUrl, view, vod));
             if (vod) builder.placeholder(R.drawable.poster_placeholder).error(R.drawable.poster_placeholder).centerCrop().into(view);
             else builder.fitCenter().into(view);
         } catch (Throwable e) {
@@ -132,13 +136,39 @@ public class ImgUtil {
         return builder.buildRoundRect(text, ColorGenerator.get400(text), ResUtil.dp2px(4));
     }
 
+    private static String resolveAvailablePoster(String text, String candidate) {
+        String resolved = PosterResolver.resolve(text, candidate);
+        int remaining = 16;
+        while (!TextUtils.isEmpty(resolved) && failed.contains(resolved) && remaining-- > 0) {
+            PosterResolver.forget(text, resolved);
+            resolved = PosterResolver.resolve(text, "");
+        }
+        return resolved;
+    }
+
+    private static String posterRequestToken(String text, String url) {
+        return (text == null ? "" : text) + '\u0000' + url;
+    }
+
     private static RequestListener<Drawable> getListener(String text, String url, ImageView view, boolean vod) {
         return new RequestListener<>() {
             @Override
             public boolean onLoadFailed(@Nullable GlideException e, Object model, @NonNull Target<Drawable> target, boolean isFirstResource) {
-                view.setImageDrawable(getTextDrawable(text, vod));
                 failed.add(url);
-                if (vod) PosterResolver.forget(text, url);
+                if (vod) {
+                    PosterResolver.forget(text, url);
+                    String alternate = resolveAvailablePoster(text, "");
+                    Object token = view.getTag(R.id.poster_request_token);
+                    if (!TextUtils.isEmpty(alternate) && posterRequestToken(text, url).equals(token)) {
+                        view.post(() -> {
+                            if (posterRequestToken(text, url).equals(view.getTag(R.id.poster_request_token))) {
+                                loadPoster(text, "", view);
+                            }
+                        });
+                        return true;
+                    }
+                }
+                view.setImageDrawable(getTextDrawable(text, vod));
                 return true;
             }
 

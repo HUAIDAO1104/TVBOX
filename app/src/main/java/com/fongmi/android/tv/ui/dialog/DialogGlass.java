@@ -6,9 +6,15 @@ import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.StateListDrawable;
 import android.os.Build;
+import android.util.StateSet;
+import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.CompoundButton;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 
@@ -28,6 +34,8 @@ public final class DialogGlass {
             if (dialog.getWindow() == null) return;
             android.view.View panel = dialog.findViewById(androidx.appcompat.R.id.parentPanel);
             if (panel != null) panel.setBackground(background(dialog.getContext(), 18));
+            View content = dialog.findViewById(android.R.id.content);
+            if (content != null) applyCards(content);
         });
     }
 
@@ -66,6 +74,46 @@ public final class DialogGlass {
                 new int[]{Color.argb(102, 28, 36, 50), Color.argb(82, 9, 14, 22)});
         drawable.setCornerRadius(dp(context, radiusDp));
         drawable.setStroke(dp(context, 1), Color.argb(58, 255, 255, 255));
+        return drawable;
+    }
+
+    /**
+     * Applies the same 35–40% glass fill to focusable text actions inside every dialog. This
+     * catches native alert buttons and dynamically inflated option rows which cannot reliably be
+     * styled from a single XML theme on older TV firmware.
+     */
+    public static void applyCards(View root) {
+        if (root == null) return;
+        if (root instanceof TextView && !(root instanceof CompoundButton)
+                && root.isFocusable() && root.getBackground() != null) {
+            int left = root.getPaddingLeft();
+            int top = root.getPaddingTop();
+            int right = root.getPaddingRight();
+            int bottom = root.getPaddingBottom();
+            root.setBackground(cardSelector(root.getContext()));
+            root.setPadding(left, top, right, bottom);
+        }
+        if (!(root instanceof ViewGroup group)) return;
+        for (int i = 0; i < group.getChildCount(); i++) applyCards(group.getChildAt(i));
+    }
+
+    private static Drawable cardSelector(Context context) {
+        StateListDrawable selector = new StateListDrawable();
+        Drawable focused = card(context, 102, true); // 40%
+        selector.addState(new int[]{android.R.attr.state_focused}, focused);
+        selector.addState(new int[]{android.R.attr.state_pressed}, focused);
+        selector.addState(new int[]{android.R.attr.state_checked}, card(context, 89, true));
+        selector.addState(new int[]{android.R.attr.state_selected}, card(context, 89, true));
+        selector.addState(StateSet.WILD_CARD, card(context, 89, false)); // 35%
+        return selector;
+    }
+
+    private static Drawable card(Context context, int alpha, boolean accent) {
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setColor(Color.argb(alpha, accent ? 53 : 21, accent ? 26 : 27, accent ? 34 : 36));
+        drawable.setCornerRadius(dp(context, 14));
+        drawable.setStroke(dp(context, accent ? 2 : 1),
+                accent ? Color.rgb(255, 98, 107) : Color.argb(50, 255, 255, 255));
         return drawable;
     }
 

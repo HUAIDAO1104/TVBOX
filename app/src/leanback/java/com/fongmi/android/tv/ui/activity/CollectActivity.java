@@ -496,6 +496,18 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
     /** Shares a real poster only inside a cautiously normalized cross-source work group. */
     private void refreshBorrowedPosters(SearchWork work) {
         if (work == null || work.sources().isEmpty()) return;
+        // Keep every real candidate. A provider often returns an expiring or blocked image while
+        // another source in the same group has valid artwork; ImgUtil can then fail over without
+        // ever showing the branded last-resort tile.
+        for (SearchSource source : work.rankedSources()) {
+            String candidate = source.posterUrl();
+            if (candidate == null || candidate.isBlank()) continue;
+            PosterResolver.remember(work.displayTitle(), candidate);
+        }
+        for (SearchSource source : work.sources()) {
+            String candidate = source.posterUrl();
+            if (candidate != null && !candidate.isBlank()) PosterResolver.remember(source.title(), candidate);
+        }
         String poster = "";
         for (SearchSource source : work.rankedSources()) {
             if (!source.requiresLogin() && source.posterUrl() != null && !source.posterUrl().isBlank()) {
@@ -512,7 +524,6 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
             }
         }
         if (poster.isBlank()) return;
-        PosterResolver.remember(work.displayTitle(), poster);
         for (SearchSource source : work.sources()) borrowedPosterBySource.put(source.stableId(), poster);
     }
 
@@ -718,7 +729,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         panelWorkId = work.stableId();
         selectedWorkId = work.stableId();
         binding.sourceTitle.setText(getString(R.string.search_v2_source_title, work.displayTitle()));
-        boolean changed = sourceAdapter.submit(work.rankedSources(), work.recommendedSource());
+        boolean changed = sourceAdapter.submit(work.rankedSources(), work.recommendedSource(), work.displayTitle());
         if (changed) restoreSourceFocus(focusedSource);
     }
 
@@ -861,7 +872,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         selectedSourceId = sourceAnchor(work);
         panelWorkId = work.stableId();
         binding.sourceTitle.setText(getString(R.string.search_v2_source_title, work.displayTitle()));
-        sourceAdapter.submit(work.rankedSources(), work.recommendedSource());
+        sourceAdapter.submit(work.rankedSources(), work.recommendedSource(), work.displayTitle());
         binding.sourceScrim.setVisibility(View.VISIBLE);
         binding.sourcePanel.setVisibility(View.VISIBLE);
         binding.sourcePanel.bringToFront();

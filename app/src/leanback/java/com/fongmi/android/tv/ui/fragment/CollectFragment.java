@@ -30,6 +30,7 @@ import com.fongmi.android.tv.ui.custom.CustomScroller;
 import com.fongmi.android.tv.ui.custom.CustomSelector;
 import com.fongmi.android.tv.ui.presenter.SearchVodPresenter;
 import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.utils.PosterResolver;
 import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
@@ -113,6 +114,9 @@ public class CollectFragment extends BaseFragment implements CustomScroller.Call
     }
 
     public void addVideo(List<Vod> items) {
+        for (Vod item : items) {
+            if (item != null) PosterResolver.remember(item.getName(), item.getPic());
+        }
         if (checkLastSize(items) || getActivity() == null || getActivity().isFinishing()) return;
         List<ListRow> rows = new ArrayList<>();
         SearchVodPresenter presenter = new SearchVodPresenter(this);
