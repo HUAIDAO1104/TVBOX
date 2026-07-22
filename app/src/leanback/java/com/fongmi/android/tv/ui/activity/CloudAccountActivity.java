@@ -24,6 +24,7 @@ import com.fongmi.android.tv.ui.dialog.CloudAccountEditDialog;
 import com.fongmi.android.tv.ui.dialog.DialogGlass;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.Task;
+import com.fongmi.android.tv.utils.Util;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
@@ -99,7 +100,11 @@ public class CloudAccountActivity extends BaseActivity implements CloudAccountAd
             List<CloudLoginRoute> resolved = routes;
             postUi(() -> {
                 adapter.submitRoutes(resolved);
-                if (!binding.recycler.hasFocus()) binding.recycler.post(() -> binding.recycler.scrollToPosition(0));
+                // Focus restoration is for DPAD only. On a phone, an async route discovery can
+                // finish while the user is scrolling and must not reset the viewport.
+                if (!Util.isMobile() && !binding.recycler.hasFocus()) {
+                    binding.recycler.post(() -> binding.recycler.scrollToPosition(0));
+                }
                 binding.refresh.setEnabled(true);
                 if (resolved.isEmpty()) {
                     binding.scanStatus.setText(R.string.cloud_scan_empty);

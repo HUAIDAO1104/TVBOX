@@ -1,23 +1,35 @@
 package com.fongmi.android.tv.ui.activity;
 
 import android.content.Intent;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.View;
+import android.view.ViewGroup;
 
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.databinding.ActivityFileBinding;
+import com.fongmi.android.tv.databinding.ActivityFileTouchBinding;
 import com.fongmi.android.tv.ui.adapter.FileAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
+import com.fongmi.android.tv.ui.custom.ProgressLayout;
 import com.fongmi.android.tv.utils.PermissionUtil;
 import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.utils.Util;
 import com.github.catvod.utils.Path;
 
 import java.io.File;
 
 public class FileActivity extends BaseActivity implements FileAdapter.OnClickListener {
 
-    private ActivityFileBinding mBinding;
+    private ViewBinding mBinding;
+    private RecyclerView mRecycler;
+    private androidx.leanback.widget.VerticalGridView mLeanbackRecycler;
+    private ProgressLayout mProgressLayout;
     private FileAdapter mAdapter;
     private File dir;
 
@@ -27,7 +39,18 @@ public class FileActivity extends BaseActivity implements FileAdapter.OnClickLis
 
     @Override
     protected ViewBinding getBinding() {
-        return mBinding = ActivityFileBinding.inflate(getLayoutInflater());
+        if (Util.isMobile()) {
+            ActivityFileTouchBinding binding = ActivityFileTouchBinding.inflate(getLayoutInflater());
+            mBinding = binding;
+            mRecycler = binding.recycler;
+            mProgressLayout = binding.progressLayout;
+        } else {
+            ActivityFileBinding binding = ActivityFileBinding.inflate(getLayoutInflater());
+            mBinding = binding;
+            mRecycler = mLeanbackRecycler = binding.recycler;
+            mProgressLayout = binding.progressLayout;
+        }
+        return mBinding;
     }
 
     @Override
@@ -37,9 +60,18 @@ public class FileActivity extends BaseActivity implements FileAdapter.OnClickLis
     }
 
     private void setRecyclerView() {
-        mBinding.recycler.setHasFixedSize(true);
-        mBinding.recycler.setVerticalSpacing(ResUtil.dp2px(16));
-        mBinding.recycler.setAdapter(mAdapter = new FileAdapter(this));
+        mRecycler.setHasFixedSize(true);
+        if (Util.isMobile()) {
+            mRecycler.setLayoutManager(new LinearLayoutManager(this));
+            mRecycler.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+            mRecycler.setFocusable(false);
+            mRecycler.setFocusableInTouchMode(false);
+            mRecycler.setPreserveFocusAfterLayout(false);
+            mRecycler.addItemDecoration(new VerticalSpacingDecoration(ResUtil.dp2px(16)));
+        } else {
+            mLeanbackRecycler.setVerticalSpacing(ResUtil.dp2px(16));
+        }
+        mRecycler.setAdapter(mAdapter = new FileAdapter(this));
     }
 
     private void checkPermission() {
@@ -47,9 +79,10 @@ public class FileActivity extends BaseActivity implements FileAdapter.OnClickLis
     }
 
     private void update(File dir) {
-        mBinding.recycler.setSelectedPosition(0);
+        if (mLeanbackRecycler == null) mRecycler.scrollToPosition(0);
+        else mLeanbackRecycler.setSelectedPosition(0);
         mAdapter.addAll(Path.list(this.dir = dir));
-        mBinding.progressLayout.showContent(true, mAdapter.getItemCount());
+        mProgressLayout.showContent(true, mAdapter.getItemCount());
     }
 
     @Override
@@ -68,6 +101,20 @@ public class FileActivity extends BaseActivity implements FileAdapter.OnClickLis
             super.onBackInvoked();
         } else {
             update(dir.getParentFile());
+        }
+    }
+
+    private static final class VerticalSpacingDecoration extends RecyclerView.ItemDecoration {
+
+        private final int spacing;
+
+        private VerticalSpacingDecoration(int spacing) {
+            this.spacing = spacing;
+        }
+
+        @Override
+        public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+            outRect.bottom = spacing;
         }
     }
 }

@@ -304,7 +304,10 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     private void showFilter() {
         List<ListRow> rows = new ArrayList<>();
         for (Filter filter : mFilters) rows.add(getRow(filter));
-        mRecycler.postDelayed(() -> mRecycler.scrollToPosition(0), 48);
+        // On TV the filter row should immediately become the DPAD anchor. On phones this
+        // delayed jump can arrive after the user has already started a fling and pull the page
+        // back to the beginning, so native touch scrolling keeps its current viewport.
+        if (!Util.isMobile()) mRecycler.postDelayed(() -> mRecycler.scrollToPosition(0), 48);
         mAdapter.addAll(0, rows);
     }
 

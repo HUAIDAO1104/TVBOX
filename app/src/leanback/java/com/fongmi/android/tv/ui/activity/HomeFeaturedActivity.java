@@ -4,7 +4,10 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewbinding.ViewBinding;
 
@@ -12,12 +15,15 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.ActivityHomeFeaturedBinding;
+import com.fongmi.android.tv.databinding.ActivityHomeFeaturedTouchBinding;
 import com.fongmi.android.tv.model.SiteViewModel;
 import com.fongmi.android.tv.ui.base.BaseActivity;
+import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
 import com.fongmi.android.tv.ui.home.HomeFeaturedPolicy;
 import com.fongmi.android.tv.ui.home.HomePosterAdapter;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.utils.Util;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +34,10 @@ public class HomeFeaturedActivity extends BaseActivity implements HomePosterAdap
     private static final String EXTRA_ITEMS = "home_featured_items";
     private static final String STATE_POSITION = "home_featured_position";
 
-    private ActivityHomeFeaturedBinding binding;
+    private ViewBinding binding;
+    private RecyclerView recycler;
+    private View empty;
+    private androidx.leanback.widget.VerticalGridView leanbackRecycler;
     private HomePosterAdapter adapter;
     private SiteViewModel viewModel;
     private int selectedPosition;
@@ -42,26 +51,49 @@ public class HomeFeaturedActivity extends BaseActivity implements HomePosterAdap
 
     @Override
     protected ViewBinding getBinding() {
-        return binding = ActivityHomeFeaturedBinding.inflate(getLayoutInflater());
+        if (Util.isMobile()) {
+            ActivityHomeFeaturedTouchBinding touchBinding = ActivityHomeFeaturedTouchBinding.inflate(getLayoutInflater());
+            binding = touchBinding;
+            recycler = touchBinding.recycler;
+            empty = touchBinding.empty;
+        } else {
+            ActivityHomeFeaturedBinding tvBinding = ActivityHomeFeaturedBinding.inflate(getLayoutInflater());
+            binding = tvBinding;
+            recycler = leanbackRecycler = tvBinding.recycler;
+            empty = tvBinding.empty;
+        }
+        return binding;
     }
 
     @Override
     protected void initView(Bundle savedInstanceState) {
         selectedPosition = savedInstanceState == null ? 0 : savedInstanceState.getInt(STATE_POSITION);
-        binding.recycler.setNumColumns(HomeFeaturedPolicy.PREVIEW_LIMIT);
-        binding.recycler.setHorizontalSpacing(ResUtil.dp2px(12));
-        binding.recycler.setVerticalSpacing(ResUtil.dp2px(14));
-        binding.recycler.setItemAnimator(null);
-        binding.recycler.setAdapter(adapter = new HomePosterAdapter(this));
+        if (Util.isMobile()) {
+            // Leanback keeps a selected row as a DPAD anchor and realigns to it after a fling.
+            // The complete featured page is touch-first on phones, so give it a native layout
+            // manager with no focus anchor instead of trying to suppress Leanback callbacks.
+            recycler.setLayoutManager(new GridLayoutManager(this, HomeFeaturedPolicy.PREVIEW_LIMIT));
+            recycler.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+            recycler.setFocusable(false);
+            recycler.setFocusableInTouchMode(false);
+            recycler.setPreserveFocusAfterLayout(false);
+            recycler.addItemDecoration(new SpaceItemDecoration(HomeFeaturedPolicy.PREVIEW_LIMIT, 12));
+        } else {
+            leanbackRecycler.setNumColumns(HomeFeaturedPolicy.PREVIEW_LIMIT);
+            leanbackRecycler.setHorizontalSpacing(ResUtil.dp2px(12));
+            leanbackRecycler.setVerticalSpacing(ResUtil.dp2px(14));
+        }
+        recycler.setItemAnimator(null);
+        recycler.setAdapter(adapter = new HomePosterAdapter(this));
         List<Vod> items = getIntent().getParcelableArrayListExtra(EXTRA_ITEMS);
         adapter.submit(items == null ? List.of() : items);
-        binding.empty.setVisibility(adapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
-        binding.recycler.setVisibility(adapter.getItemCount() == 0 ? View.GONE : View.VISIBLE);
-        binding.recycler.post(this::updateGridLayout);
-        if (adapter.getItemCount() > 0) {
+        empty.setVisibility(adapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
+        recycler.setVisibility(adapter.getItemCount() == 0 ? View.GONE : View.VISIBLE);
+        recycler.post(this::updateGridLayout);
+        if (!Util.isMobile() && adapter.getItemCount() > 0) {
             selectedPosition = Math.min(selectedPosition, adapter.getItemCount() - 1);
-            binding.recycler.setSelectedPosition(selectedPosition);
-            binding.recycler.requestFocus();
+            leanbackRecycler.setSelectedPosition(selectedPosition);
+            leanbackRecycler.requestFocus();
         }
         viewModel = new ViewModelProvider(this).get(SiteViewModel.class);
         viewModel.getAction().observe(this, result -> {
@@ -75,7 +107,7 @@ public class HomeFeaturedActivity extends BaseActivity implements HomePosterAdap
 
     private void updateGridLayout() {
         int columns = HomeFeaturedPolicy.PREVIEW_LIMIT;
-        int available = binding.recycler.getWidth() - binding.recycler.getPaddingLeft() - binding.recycler.getPaddingRight();
+        int available = recycler.getWidth() - recycler.getPaddingLeft() - recycler.getPaddingRight();
         if (available <= 0) return;
         int minimumSpacing = getResources().getDimensionPixelSize(R.dimen.home_poster_min_spacing);
         int preferredWidth = getResources().getDimensionPixelSize(R.dimen.home_poster_card_width);
@@ -83,8 +115,10 @@ public class HomeFeaturedActivity extends BaseActivity implements HomePosterAdap
         int height = Math.round(width * 4f / 3f);
         int spacing = Math.max(minimumSpacing, (available - width * columns) / (columns - 1));
         adapter.setCardSize(width, height);
-        binding.recycler.setColumnWidth(width);
-        binding.recycler.setHorizontalSpacing(spacing);
+        if (leanbackRecycler != null) {
+            leanbackRecycler.setColumnWidth(width);
+            leanbackRecycler.setHorizontalSpacing(spacing);
+        }
     }
 
     @Override

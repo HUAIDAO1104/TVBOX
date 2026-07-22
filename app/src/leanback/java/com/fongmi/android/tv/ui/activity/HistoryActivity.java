@@ -15,6 +15,7 @@ import com.fongmi.android.tv.ui.adapter.HistoryAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
 import com.fongmi.android.tv.utils.Task;
+import com.fongmi.android.tv.utils.Util;
 
 import java.util.List;
 
@@ -60,7 +61,9 @@ public final class HistoryActivity extends BaseActivity implements HistoryAdapte
                 adapter.submit(items);
                 binding.clear.setEnabled(!items.isEmpty());
                 binding.progressLayout.showContent(true, items.size());
-                if (!items.isEmpty() && getCurrentFocus() == null) binding.recycler.requestFocus();
+                if (!Util.isMobile() && !items.isEmpty() && getCurrentFocus() == null) {
+                    binding.recycler.requestFocus();
+                }
             });
         });
     }
