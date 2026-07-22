@@ -568,6 +568,13 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     private void addVisiblePlaybackControl(List<View> controls, View control) {
+        // Last line of defence for repository-provided labels. The shared PlaySpec already
+        // removes this invalid source, but a restored/custom view must not put it back into the
+        // remote focus graph before media state has finished rebuilding.
+        if (control instanceof TextView text && Danmaku.isBlockedSourceLabel(text.getText())) {
+            control.setVisibility(View.GONE);
+            return;
+        }
         if (control.getVisibility() == View.VISIBLE) controls.add(control);
     }
 
@@ -817,8 +824,8 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     @Override
-    public void loadDanmaku(Result result, History history, Episode episode, int episodeOrdinal) {
-        VodPlaybackMedia.searchDanmaku(result, history, episode, episodeOrdinal, player());
+    public void loadDanmaku(Result result, History history, Episode episode, int stableEpisodeIndex) {
+        VodPlaybackMedia.searchDanmaku(result, history, episode, stableEpisodeIndex, player());
     }
 
     @Override

@@ -99,20 +99,7 @@ public class DanmakuApi {
     }
 
     static Danmaku bestMatch(String name, String episode, List<Danmaku> items) {
-        Danmaku best = null;
-        int bestScore = Integer.MIN_VALUE;
-        if (items == null) return null;
-        for (Danmaku item : items) {
-            if (item == null || item.isEmpty() || !DanmakuMatch.isReliable(name, episode, item.getName())) continue;
-            int score = DanmakuMatch.score(name, episode, item.getName());
-            // Keep source ordering stable for equal scores. APIs commonly place their preferred
-            // provider first and a later tie must not cause the selected source to jump.
-            if (best == null || score > bestScore) {
-                best = item;
-                bestScore = score;
-            }
-        }
-        return best;
+        return DanmakuMatch.best(name, episode, items, Danmaku::getName);
     }
 
     public static void cancel() {

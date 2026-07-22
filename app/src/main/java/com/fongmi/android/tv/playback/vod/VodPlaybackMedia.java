@@ -7,8 +7,6 @@ import com.fongmi.android.tv.bean.Episode;
 import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.player.PlayerManager;
-import com.fongmi.android.tv.setting.DanmakuSetting;
-
 import java.util.Objects;
 
 public final class VodPlaybackMedia {
@@ -22,31 +20,32 @@ public final class VodPlaybackMedia {
     }
 
     public static void searchDanmaku(Result result, History history, Episode episode, PlayerManager player) {
-        searchDanmaku(result, history, episode, -1, player);
+        searchDanmaku(result, history, episode, episode.getIndex(), player);
     }
 
-    public static void searchDanmaku(Result result, History history, Episode episode, int episodeOrdinal, PlayerManager player) {
+    public static void searchDanmaku(Result result, History history, Episode episode, int stableEpisodeIndex, PlayerManager player) {
         // Invalidate an older title's pending response even when automatic matching is disabled
         // or the new item lacks enough metadata to start another request.
         DanmakuApi.cancel();
         if (!DanmakuApi.canSearch()) return;
         String title = history.getVodName();
         String episodeName = episode.getName();
-        String episodeQuery = resolveEpisodeQuery(episodeName, episode.getNumber(), episodeOrdinal);
+        String episodeQuery = resolveEpisodeQuery(episodeName, stableEpisodeIndex);
         DanmakuApi.search(title, episodeQuery, danmaku -> {
             if (!matchesCurrent(player, title, episodeName)) return;
-            if (DanmakuSetting.isSpiderFirst() && !result.getDanmaku().isEmpty()) player.addDanmaku(danmaku);
-            else player.setDanmaku(danmaku);
+            // Automatic matching is expected to choose the correct episode. Embedded spider
+            // sources remain available as alternatives, but must never keep a stale/wrong source
+            // selected after an exact 360 match was found.
+            player.setDanmaku(danmaku);
         });
     }
 
-    static String resolveEpisodeQuery(String episodeName, int parsedNumber, int episodeOrdinal) {
+    static String resolveEpisodeQuery(String episodeName, int stableEpisodeIndex) {
         Integer explicit = DanmakuMatch.episodeNumber(episodeName);
         if (explicit != null && explicit > 0) return String.valueOf(explicit);
-        // Date-like labels are content metadata, not episode numbers. The selected row ordinal
-        // is deterministic when the provider omitted an explicit episode marker.
-        if (parsedNumber > 0 && parsedNumber <= 999) return String.valueOf(parsedNumber);
-        if (episodeOrdinal > 0) return String.valueOf(episodeOrdinal);
+        // Generic digit extraction also mistakes sizes, dates and resolutions for episode
+        // numbers. Only explicit episode syntax or the stable pre-reversal order is safe.
+        if (stableEpisodeIndex > 0) return String.valueOf(stableEpisodeIndex);
         return Objects.toString(episodeName, "").trim();
     }
 

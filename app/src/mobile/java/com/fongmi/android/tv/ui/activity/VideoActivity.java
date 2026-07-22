@@ -560,8 +560,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     @Override
-    public void loadDanmaku(Result result, History history, Episode episode, int episodeOrdinal) {
-        VodPlaybackMedia.searchDanmaku(result, history, episode, episodeOrdinal, player());
+    public void loadDanmaku(Result result, History history, Episode episode, int stableEpisodeIndex) {
+        VodPlaybackMedia.searchDanmaku(result, history, episode, stableEpisodeIndex, player());
     }
 
     @Override

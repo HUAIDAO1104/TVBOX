@@ -1,7 +1,9 @@
 package com.fongmi.android.tv.playback.vod;
 
 import java.text.Normalizer;
+import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -69,11 +71,32 @@ public final class DanmakuMatch {
 
         Integer expectedEpisode = episodeNumber(episode);
         Integer candidateEpisode = episodeNumber(candidate);
-        if (expectedEpisode != null && candidateEpisode != null && !expectedEpisode.equals(candidateEpisode)) return false;
+        // The bundled API returns an entire season even when an episode parameter is supplied.
+        // When the request has an exact episode, candidates without an exact parseable episode
+        // are unsafe too; accepting one is how episode 1/10/11 leaked into later episodes.
+        if (expectedEpisode != null && !expectedEpisode.equals(candidateEpisode)) return false;
 
         Integer expectedSeason = firstNonNull(seasonNumber(episode), seasonNumber(title));
         Integer candidateSeason = seasonNumber(candidate);
         return expectedSeason == null || candidateSeason == null || expectedSeason.equals(candidateSeason);
+    }
+
+    /** Selects a reliable result independently of provider response order. */
+    public static <T> T best(String title, String episode, List<T> items, Function<T, String> name) {
+        T best = null;
+        int bestScore = Integer.MIN_VALUE;
+        if (items == null) return null;
+        for (T item : items) {
+            if (item == null) continue;
+            String candidate = name.apply(item);
+            if (!isReliable(title, episode, candidate)) continue;
+            int score = score(title, episode, candidate);
+            if (best == null || score > bestScore) {
+                best = item;
+                bestScore = score;
+            }
+        }
+        return best;
     }
 
     static Integer episodeNumber(String value) {

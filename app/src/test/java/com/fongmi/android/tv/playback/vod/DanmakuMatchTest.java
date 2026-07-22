@@ -1,9 +1,12 @@
 package com.fongmi.android.tv.playback.vod;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
+
+import java.util.List;
 
 public class DanmakuMatchTest {
 
@@ -56,5 +59,16 @@ public class DanmakuMatchTest {
         int sameEpisode = DanmakuMatch.score("庆余年第二季", "2", "庆余年第二季 from bilibili 第2集");
         assertTrue(preferred > sameEpisode);
         assertFalse(DanmakuMatch.isReliable("庆余年第二季", "2", "庆余年第二季 from 360 第12集"));
+    }
+
+    @Test
+    public void selectsExact360EpisodeFromWholeSeasonResponse() {
+        List<String> response = List.of(
+                "欢天喜地七仙女(2005)【电视剧】from 360 - 【youku】 第1集",
+                "欢天喜地七仙女(2005)【电视剧】from 360 - 【youku】 第10集",
+                "欢天喜地七仙女(2005)【电视剧】from bilibili - 第2集",
+                "欢天喜地七仙女(2005)【电视剧】from 360 - 【youku】 第2集");
+        assertEquals(response.get(3), DanmakuMatch.best("欢天喜地七仙女", "2", response, item -> item));
+        assertFalse(DanmakuMatch.isReliable("欢天喜地七仙女", "2", "欢天喜地七仙女 正片"));
     }
 }

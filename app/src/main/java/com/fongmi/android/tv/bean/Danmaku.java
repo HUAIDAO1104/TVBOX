@@ -12,8 +12,11 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 
 public class Danmaku {
 
@@ -27,7 +30,10 @@ public class Danmaku {
     public static List<Danmaku> arrayFrom(String str) {
         Type listType = TypeToken.getParameterized(List.class, Danmaku.class).getType();
         List<Danmaku> items = App.gson().fromJson(str, listType);
-        return items == null ? Collections.emptyList() : items;
+        if (items == null) return Collections.emptyList();
+        List<Danmaku> result = new ArrayList<>();
+        for (Danmaku item : items) if (item != null && !item.isBlockedSource()) result.add(item);
+        return result;
     }
 
     public static Danmaku from(String path) {
@@ -39,6 +45,23 @@ public class Danmaku {
 
     public static Danmaku empty() {
         return new Danmaku();
+    }
+
+    /**
+     * Some repository spiders inject a non-actionable source named "小白弹幕" into the media
+     * source list. It is rendered like a selectable action even though it cannot be loaded.
+     * Reject it at the shared media boundary so it cannot reappear in TV/mobile controls or
+     * source dialogs regardless of which repository supplied it.
+     */
+    public boolean isBlockedSource() {
+        return isBlockedSourceLabel(Objects.toString(name, "") + " " + Objects.toString(url, ""));
+    }
+
+    public static boolean isBlockedSourceLabel(CharSequence label) {
+        String value = Objects.toString(label, "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[\\s\\p{P}\\p{S}]+", "");
+        return value.contains("小白弹幕");
     }
 
     public String getName() {

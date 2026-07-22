@@ -85,6 +85,12 @@ public class Flag implements Parcelable, Diffable<Flag> {
     }
 
     public List<Episode> getEpisodes() {
+        // Episode order is playback identity, not presentation state. Assign it once before a
+        // user can reverse the list so automatic danmaku matching never mistakes UI position
+        // for the real episode number.
+        for (int i = 0; i < episodes.size(); i++) {
+            if (episodes.get(i).getIndex() <= 0) episodes.get(i).setIndex(i + 1);
+        }
         return episodes;
     }
 
@@ -94,6 +100,7 @@ public class Flag implements Parcelable, Diffable<Flag> {
             String[] split = urls[i].split("\\$", 2);
             String number = String.format(Locale.getDefault(), "%02d", i + 1);
             Episode episode = split.length > 1 ? Episode.create(split[0].isEmpty() ? number : split[0].trim(), split[1]) : Episode.create(number, urls[i]);
+            episode.setIndex(i + 1);
             if (!getEpisodes().contains(episode)) getEpisodes().add(episode);
         }
     }
@@ -140,8 +147,10 @@ public class Flag implements Parcelable, Diffable<Flag> {
     }
 
     public void mergeEpisodes(List<Episode> items, boolean rev) {
+        int next = getEpisodes().stream().mapToInt(Episode::getIndex).max().orElse(0) + 1;
         for (Episode item : items) {
             if (getEpisodes().contains(item)) continue;
+            if (item.getIndex() <= 0) item.setIndex(next++);
             if (rev) getEpisodes().add(0, item);
             else getEpisodes().add(item);
         }

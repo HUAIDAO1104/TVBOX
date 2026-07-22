@@ -37,8 +37,17 @@ public class PlaySpec {
         this.subs = subs;
         this.format = format;
         this.headers = headers;
-        this.danmakus = danmakus;
+        this.danmakus = sanitizeDanmakus(danmakus);
         this.metadata = metadata;
+    }
+
+    private static List<Danmaku> sanitizeDanmakus(List<Danmaku> items) {
+        if (items == null) return null;
+        List<Danmaku> result = new ArrayList<>();
+        for (Danmaku item : items) {
+            if (item != null && !item.isBlockedSource()) result.add(item);
+        }
+        return result;
     }
 
     public static PlaySpec from(String key, String url, Map<String, String> headers, MediaMetadata metadata) {
@@ -129,13 +138,14 @@ public class PlaySpec {
 
     public void setDanmaku(Danmaku item) {
         if (danmakus == null) danmakus = new ArrayList<>();
+        if (item == null || item.isBlockedSource()) return;
         if (!item.isEmpty() && !danmakus.contains(item)) danmakus.add(0, item);
         danmakus.forEach(danmaku -> danmaku.setSelected(danmaku.getUrl().equals(item.getUrl())));
     }
 
     public void addDanmaku(Danmaku item) {
         if (danmakus == null) danmakus = new ArrayList<>();
-        if (item.isEmpty() || danmakus.contains(item)) return;
+        if (item == null || item.isEmpty() || item.isBlockedSource() || danmakus.contains(item)) return;
         danmakus.add(item);
     }
 }

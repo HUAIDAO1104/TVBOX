@@ -22,7 +22,8 @@ public class Episode implements Parcelable, Diffable<Episode> {
     @SerializedName("url")
     private String url;
 
-    private int index;
+    /** Stable one-based order assigned before the UI list can be reversed. */
+    private int index = -1;
     private int number;
     private boolean selected;
 
@@ -40,6 +41,7 @@ public class Episode implements Parcelable, Diffable<Episode> {
         this.name = in.readString();
         this.desc = in.readString();
         this.url = in.readString();
+        this.index = in.readInt();
         this.number = in.readInt();
         this.selected = in.readByte() != 0;
     }
@@ -134,6 +136,7 @@ public class Episode implements Parcelable, Diffable<Episode> {
         dest.writeString(this.name);
         dest.writeString(this.desc);
         dest.writeString(this.url);
+        dest.writeInt(this.index);
         dest.writeInt(this.number);
         dest.writeByte(this.selected ? (byte) 1 : (byte) 0);
     }
