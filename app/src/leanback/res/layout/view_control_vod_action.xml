@@ -52,6 +52,7 @@
                 android:layout_marginEnd="9dp"
                 android:nextFocusUp="@id/danmaku"
                 android:nextFocusDown="@id/danmaku"
+                android:saveEnabled="false"
                 android:text="@string/danmaku"
                 android:visibility="gone"
                 tools:visibility="visible" />

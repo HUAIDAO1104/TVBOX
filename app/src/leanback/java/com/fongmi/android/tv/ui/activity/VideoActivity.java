@@ -464,6 +464,11 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         mBinding.control.action.repeat.setOnClickListener(view -> onRepeat());
         mBinding.control.action.danmaku.setOnClickListener(this::onDanmakuToggle);
         mBinding.control.action.danmakuSetting.setOnClickListener(view -> onDanmakuSetting());
+        // Old builds persisted the toggle's selected state and Android could restore it after
+        // init, creating a small white non-navigable ghost action. Focus is now the only source
+        // of controller highlighting.
+        mBinding.control.action.danmaku.setSaveEnabled(false);
+        mBinding.control.action.danmaku.setOnFocusChangeListener((view, hasFocus) -> clearDanmakuGhostState());
         mBinding.control.action.danmaku.setOnLongClickListener(view -> {
             onDanmakuSetting();
             return true;
@@ -812,8 +817,8 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     @Override
-    public void loadDanmaku(Result result, History history, Episode episode) {
-        VodPlaybackMedia.searchDanmaku(result, history, episode, player());
+    public void loadDanmaku(Result result, History history, Episode episode, int episodeOrdinal) {
+        VodPlaybackMedia.searchDanmaku(result, history, episode, episodeOrdinal, player());
     }
 
     @Override
@@ -1770,11 +1775,18 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         // Selected is reserved for the actual remote focus styling. Keeping this true while
         // danmaku was enabled produced a small white pseudo-focused button that users could not
         // navigate to reliably. The label already communicates the on/off state.
-        mBinding.control.action.danmaku.setSelected(false);
-        mBinding.control.action.danmaku.setActivated(false);
-        mBinding.control.action.danmaku.jumpDrawablesToCurrentState();
+        clearDanmakuGhostState();
         mBinding.control.action.danmaku.setContentDescription(getString(
                 enabled ? R.string.danmaku_on_description : R.string.danmaku_off_description));
+    }
+
+    private void clearDanmakuGhostState() {
+        if (mBinding == null) return;
+        View toggle = mBinding.control.action.danmaku;
+        toggle.setSelected(false);
+        toggle.setActivated(false);
+        toggle.setPressed(false);
+        toggle.jumpDrawablesToCurrentState();
     }
 
     private void onToggle() {
@@ -1938,6 +1950,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     private void showControl(View view) {
         updatePlaybackControlAction();
+        clearDanmakuGhostState();
         configurePlaybackControlFocus();
         mBinding.control.controlTitle.setText(mBinding.widget.title.getText());
         if (!TextUtils.isEmpty(mCurrentSourceName)) mBinding.control.controlStatus.setText(getString(R.string.detail_v2_current_source, mCurrentSourceName));

@@ -22,17 +22,32 @@ public final class VodPlaybackMedia {
     }
 
     public static void searchDanmaku(Result result, History history, Episode episode, PlayerManager player) {
+        searchDanmaku(result, history, episode, -1, player);
+    }
+
+    public static void searchDanmaku(Result result, History history, Episode episode, int episodeOrdinal, PlayerManager player) {
         // Invalidate an older title's pending response even when automatic matching is disabled
         // or the new item lacks enough metadata to start another request.
         DanmakuApi.cancel();
         if (!DanmakuApi.canSearch()) return;
         String title = history.getVodName();
         String episodeName = episode.getName();
-        DanmakuApi.search(title, episodeName, danmaku -> {
+        String episodeQuery = resolveEpisodeQuery(episodeName, episode.getNumber(), episodeOrdinal);
+        DanmakuApi.search(title, episodeQuery, danmaku -> {
             if (!matchesCurrent(player, title, episodeName)) return;
             if (DanmakuSetting.isSpiderFirst() && !result.getDanmaku().isEmpty()) player.addDanmaku(danmaku);
             else player.setDanmaku(danmaku);
         });
+    }
+
+    static String resolveEpisodeQuery(String episodeName, int parsedNumber, int episodeOrdinal) {
+        Integer explicit = DanmakuMatch.episodeNumber(episodeName);
+        if (explicit != null && explicit > 0) return String.valueOf(explicit);
+        // Date-like labels are content metadata, not episode numbers. The selected row ordinal
+        // is deterministic when the provider omitted an explicit episode marker.
+        if (parsedNumber > 0 && parsedNumber <= 999) return String.valueOf(parsedNumber);
+        if (episodeOrdinal > 0) return String.valueOf(episodeOrdinal);
+        return Objects.toString(episodeName, "").trim();
     }
 
     static boolean matchesMetadata(String expectedTitle, String expectedEpisode, CharSequence currentTitle, CharSequence currentEpisode) {

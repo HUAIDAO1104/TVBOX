@@ -78,7 +78,7 @@ public class VodPlaybackController {
         if (result.hasArtwork()) host.renderArtwork(result.getArtwork());
         if (result.hasPosition()) state.getHistory().setPosition(result.getPosition());
         startPlayback(result, startPositionMs());
-        host.loadDanmaku(result, state.getHistory(), state.getEpisode());
+        host.loadDanmaku(result, state.getHistory(), state.getEpisode(), state.getFlag().getPosition() + 1);
     }
 
     private void startPlayback(Result result, long startPositionMs) {

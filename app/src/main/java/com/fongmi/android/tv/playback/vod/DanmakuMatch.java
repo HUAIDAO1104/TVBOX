@@ -16,6 +16,7 @@ public final class DanmakuMatch {
     private static final Pattern SEASON_SUFFIX = Pattern.compile("(?:第)?[0-9一二三四五六七八九十百壹贰叁肆伍陆柒捌玖拾]+[季部]");
     private static final Pattern NOISE = Pattern.compile("预告|花絮|解说|reaction|片段|剪辑", Pattern.CASE_INSENSITIVE);
     private static final Pattern TITLE_TAG = Pattern.compile("(?i)4k|8k|2160p|1080p|720p|hdr(?:10)?|sdr|uhd|web[-_. ]?dl|blu[-_. ]?ray|国语|粤语|中字|双语|全集|完结|超清|高清|官源");
+    private static final Pattern PREFERRED_360 = Pattern.compile("(?i)(?:^|\\b)from\\s*360(?:\\b|$)");
 
     private DanmakuMatch() {
     }
@@ -41,6 +42,10 @@ public final class DanmakuMatch {
         if (expectedSeason != null && candidateSeason != null) {
             score += expectedSeason.equals(candidateSeason) ? 30 : -140;
         }
+        // The built-in provider exposes several upstream catalogues. 360 has the most stable
+        // episode mapping for the current API, so use it as a deterministic tie-breaker only
+        // after title/episode reliability has been established.
+        if (PREFERRED_360.matcher(candidate).find()) score += 30;
         if (NOISE.matcher(candidate).find() && !NOISE.matcher(episode == null ? "" : episode).find()) score -= 120;
         return score;
     }
@@ -71,7 +76,7 @@ public final class DanmakuMatch {
         return expectedSeason == null || candidateSeason == null || expectedSeason.equals(candidateSeason);
     }
 
-    private static Integer episodeNumber(String value) {
+    static Integer episodeNumber(String value) {
         if (value == null) return null;
         Matcher seasonEpisode = SEASON_EPISODE.matcher(value);
         if (seasonEpisode.find()) return Integer.parseInt(seasonEpisode.group(2));

@@ -58,7 +58,7 @@ public interface VodPlaybackHost {
 
     void startPlayback(Result result, boolean useParse, long startPositionMs, History history, Episode episode);
 
-    void loadDanmaku(Result result, History history, Episode episode);
+    void loadDanmaku(Result result, History history, Episode episode, int episodeOrdinal);
 
     void renderDetail(Vod item, History history);
 

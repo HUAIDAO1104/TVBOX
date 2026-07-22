@@ -49,4 +49,12 @@ public class DanmakuMatchTest {
         assertFalse(DanmakuMatch.isReliable("", "第1集", "百花杀 第1集"));
         assertFalse(DanmakuMatch.isReliable("影", "第1集", "百花杀 第1集"));
     }
+
+    @Test
+    public void prefers360OnlyAfterEpisodeMatches() {
+        int preferred = DanmakuMatch.score("庆余年第二季", "2", "庆余年第二季 from 360 第2集");
+        int sameEpisode = DanmakuMatch.score("庆余年第二季", "2", "庆余年第二季 from bilibili 第2集");
+        assertTrue(preferred > sameEpisode);
+        assertFalse(DanmakuMatch.isReliable("庆余年第二季", "2", "庆余年第二季 from 360 第12集"));
+    }
 }
