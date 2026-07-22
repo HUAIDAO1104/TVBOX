@@ -57,6 +57,7 @@ public abstract class BaseSideSheetDialog extends AppCompatDialogFragment {
     @Override
     public void onStart() {
         super.onStart();
+        TouchClickWindowCallback.install(requireDialog().getWindow());
         FrameLayout sheet = getDialog().findViewById(com.google.android.material.R.id.m3_side_sheet);
         if (sheet == null) return;
         ViewGroup.LayoutParams params = sheet.getLayoutParams();

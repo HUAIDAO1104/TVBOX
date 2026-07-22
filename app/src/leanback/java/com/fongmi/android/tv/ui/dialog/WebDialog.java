@@ -40,5 +40,6 @@ public class WebDialog {
         dialog.getWindow().setAttributes(params);
         dialog.show();
         DialogGlass.apply(dialog);
+        TouchClickWindowCallback.install(dialog.getWindow());
     }
 }

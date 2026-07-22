@@ -132,7 +132,12 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
     private boolean shouldPerformTouchClick(MotionEvent event) {
-        if (touchTarget == null || touchTargetWasFocused || touchMoved) return false;
+        if (touchTarget == null || touchMoved) return false;
+        // A TV widget may consume a touchscreen tap only to update its focus state. Mobile must
+        // never depend on that state: every short, stationary tap is delivered as exactly one
+        // click whether the target was focused, selected, or neither. TV keeps its original
+        // focus-first behavior for remote compatibility.
+        if (!Util.isMobile() && touchTargetWasFocused) return false;
         if (event.getEventTime() - touchDownAt >= ViewConfiguration.getLongPressTimeout()) return false;
         if (!touchTarget.isAttachedToWindow() || !touchTarget.isEnabled() || !touchTarget.isShown()) return false;
         Rect bounds = new Rect();

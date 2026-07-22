@@ -1,8 +1,10 @@
 package com.fongmi.android.tv.ui.fragment;
 
 import android.annotation.SuppressLint;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -13,6 +15,8 @@ import androidx.leanback.widget.HorizontalGridView;
 import androidx.leanback.widget.ItemBridgeAdapter;
 import androidx.leanback.widget.ListRow;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.viewbinding.ViewBinding;
 
@@ -27,6 +31,7 @@ import com.fongmi.android.tv.bean.Style;
 import com.fongmi.android.tv.bean.Value;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.FragmentTypeBinding;
+import com.fongmi.android.tv.databinding.FragmentTypeTouchBinding;
 import com.fongmi.android.tv.model.SiteViewModel;
 import com.fongmi.android.tv.ui.activity.CollectActivity;
 import com.fongmi.android.tv.ui.activity.VideoActivity;
@@ -34,6 +39,8 @@ import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.custom.CustomRowPresenter;
 import com.fongmi.android.tv.ui.custom.CustomScroller;
 import com.fongmi.android.tv.ui.custom.CustomSelector;
+import com.fongmi.android.tv.ui.custom.CustomVerticalGridView;
+import com.fongmi.android.tv.ui.custom.ProgressLayout;
 import com.fongmi.android.tv.ui.presenter.FilterPresenter;
 import com.fongmi.android.tv.ui.presenter.VodPresenter;
 import com.fongmi.android.tv.utils.Notify;
@@ -58,7 +65,11 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     }
 
     private HashMap<String, String> mExtends;
-    private FragmentTypeBinding mBinding;
+    private ViewBinding mBinding;
+    private SwipeRefreshLayout mSwipeLayout;
+    private ProgressLayout mProgressLayout;
+    private RecyclerView mRecycler;
+    private CustomVerticalGridView mLeanbackRecycler;
     private ArrayObjectAdapter mAdapter;
     private ArrayObjectAdapter mLast;
     private CustomScroller mScroller;
@@ -127,7 +138,20 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
 
     @Override
     protected ViewBinding getBinding(@NonNull LayoutInflater inflater, @Nullable ViewGroup container) {
-        return mBinding = FragmentTypeBinding.inflate(inflater, container, false);
+        if (Util.isMobile()) {
+            FragmentTypeTouchBinding binding = FragmentTypeTouchBinding.inflate(inflater, container, false);
+            mBinding = binding;
+            mSwipeLayout = binding.swipeLayout;
+            mProgressLayout = binding.progressLayout;
+            mRecycler = binding.recycler;
+        } else {
+            FragmentTypeBinding binding = FragmentTypeBinding.inflate(inflater, container, false);
+            mBinding = binding;
+            mSwipeLayout = binding.swipeLayout;
+            mProgressLayout = binding.progressLayout;
+            mRecycler = mLeanbackRecycler = binding.recycler;
+        }
+        return mBinding;
     }
 
     @Override
@@ -147,11 +171,11 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
 
     @Override
     protected void initEvent() {
-        mBinding.swipeLayout.setOnRefreshListener(this);
+        mSwipeLayout.setOnRefreshListener(this);
         // TV remote users refresh through normal navigation. Disabling the pull container for
         // embedded Leanback categories prevents touch overscroll from dragging the whole page.
-        mBinding.swipeLayout.setEnabled(false);
-        mBinding.recycler.addOnScrollListener(mScroller);
+        mSwipeLayout.setEnabled(false);
+        mRecycler.addOnScrollListener(mScroller);
     }
 
     @SuppressLint("RestrictedApi")
@@ -160,9 +184,19 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         selector.addPresenter(Vod.class, new VodPresenter(this, Style.list()));
         selector.addPresenter(ListRow.class, new CustomRowPresenter(16, FocusHighlight.ZOOM_FACTOR_NONE), VodPresenter.class);
         selector.addPresenter(ListRow.class, new CustomRowPresenter(8, FocusHighlight.ZOOM_FACTOR_NONE, HorizontalGridView.FOCUS_SCROLL_ALIGNED), FilterPresenter.class);
-        mBinding.recycler.setAdapter(new ItemBridgeAdapter(mAdapter = new ArrayObjectAdapter(selector)));
-        if (!isEmbedded()) mBinding.recycler.setHeader(getActivity(), R.id.recycler);
-        mBinding.recycler.setVerticalSpacing(ResUtil.dp2px(16));
+        if (Util.isMobile()) {
+            // Category pages on phones must use a genuine touch layout manager. Leanback's
+            // GridLayoutManager always retains a selected row for DPAD and can realign it after
+            // pagination or fragment reuse, which is the long-standing snap-back-to-top bug.
+            mRecycler.setLayoutManager(new LinearLayoutManager(requireContext()));
+            mRecycler.setItemAnimator(null);
+            mRecycler.setHasFixedSize(false);
+            mRecycler.addItemDecoration(new VerticalSpacingDecoration(ResUtil.dp2px(16)));
+        } else {
+            if (!isEmbedded()) mLeanbackRecycler.setHeader(getActivity(), R.id.recycler);
+            mLeanbackRecycler.setVerticalSpacing(ResUtil.dp2px(16));
+        }
+        mRecycler.setAdapter(new ItemBridgeAdapter(mAdapter = new ArrayObjectAdapter(selector)));
     }
 
     private void setViewModel() {
@@ -206,8 +240,8 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         boolean first = mScroller.first();
         boolean flag = mExtends.isEmpty();
         int size = result.getList().size();
-        mBinding.progressLayout.showContent(first & flag, size);
-        mBinding.swipeLayout.setRefreshing(false);
+        mProgressLayout.showContent(first & flag, size);
+        mSwipeLayout.setRefreshing(false);
         mScroller.endLoading(result);
         if (size > 0) addVideo(result);
     }
@@ -270,7 +304,7 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     private void showFilter() {
         List<ListRow> rows = new ArrayList<>();
         for (Filter filter : mFilters) rows.add(getRow(filter));
-        mBinding.recycler.postDelayed(() -> mBinding.recycler.scrollToPosition(0), 48);
+        mRecycler.postDelayed(() -> mRecycler.scrollToPosition(0), 48);
         mAdapter.addAll(0, rows);
     }
 
@@ -289,8 +323,8 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         int adapterSize = mAdapter.size();
         int filterSize = filterVisible ? mFilters.size() : 0;
         if (adapterSize > filterSize) mAdapter.removeItems(filterSize, mAdapter.size() - filterSize);
-        if (adapterSize == 0) mBinding.progressLayout.showProgress();
-        else mBinding.swipeLayout.setRefreshing(true);
+        if (adapterSize == 0) mProgressLayout.showProgress();
+        else mSwipeLayout.setRefreshing(true);
     }
 
     public void onRefresh() {
@@ -304,7 +338,7 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         } else if (item.isFolder()) {
             if (isEmbedded() && getActivity() instanceof Host host) host.openCategoryFolder(getKey(), item.getId(), getStyle(), new HashMap<>(mExtends), isFolder());
             else getParent().openFolder(item.getId(), mExtends);
-            headerVisible = mBinding.recycler.isHeaderVisible();
+            headerVisible = mLeanbackRecycler != null && mLeanbackRecycler.isHeaderVisible();
         } else {
             if (getSite().isIndex()) CollectActivity.start(requireActivity(), item.getName());
             else VideoActivity.start(requireActivity(), getKey(), item.getId(), item.getName(), item.getPic(), isFolder() ? item.getName() : null);
@@ -331,34 +365,34 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         // makes Leanback align the previously selected row and undoes the user's scroll.
         if (Util.isMobile()) return;
         if (isEmbedded()) {
-            if (!hidden && !mBinding.getRoot().isInTouchMode()) mBinding.recycler.requestFocus();
+            if (!hidden && !mBinding.getRoot().isInTouchMode()) mLeanbackRecycler.requestFocus();
             return;
         }
         if (hidden) {
-            mBinding.recycler.showHeader();
+            mLeanbackRecycler.showHeader();
         } else {
-            if (headerVisible) mBinding.recycler.showHeader();
-            else mBinding.recycler.hideHeader();
-            if (!mBinding.getRoot().isInTouchMode()) mBinding.recycler.requestFocus();
+            if (headerVisible) mLeanbackRecycler.showHeader();
+            else mLeanbackRecycler.hideHeader();
+            if (!mBinding.getRoot().isInTouchMode()) mLeanbackRecycler.requestFocus();
         }
     }
 
     @Override
     public void setUserVisibleHint(boolean isVisibleToUser) {
         super.setUserVisibleHint(isVisibleToUser);
-        if (!Util.isMobile() && mBinding != null && !isEmbedded() && !mBinding.getRoot().isInTouchMode()) mBinding.recycler.moveToTop();
+        if (!Util.isMobile() && mBinding != null && !isEmbedded() && !mBinding.getRoot().isInTouchMode()) mLeanbackRecycler.moveToTop();
     }
 
     public int getSelectedPosition() {
-        return mBinding == null ? 0 : Math.max(0, mBinding.recycler.getSelectedPosition());
+        return mLeanbackRecycler == null ? 0 : Math.max(0, mLeanbackRecycler.getSelectedPosition());
     }
 
     public void restorePosition(int position) {
-        if (!Util.isMobile() && mBinding != null) mBinding.recycler.setSelectedPosition(Math.max(0, position));
+        if (!Util.isMobile() && mLeanbackRecycler != null) mLeanbackRecycler.setSelectedPosition(Math.max(0, position));
     }
 
     public boolean requestContentFocus() {
-        return !Util.isMobile() && mBinding != null && mBinding.recycler.requestFocus();
+        return !Util.isMobile() && mLeanbackRecycler != null && mLeanbackRecycler.requestFocus();
     }
 
     @Override
@@ -371,5 +405,19 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     public void onSaveInstanceState(@NonNull Bundle outState) {
         outState.putInt(STATE_POSITION, getSelectedPosition());
         super.onSaveInstanceState(outState);
+    }
+
+    private static final class VerticalSpacingDecoration extends RecyclerView.ItemDecoration {
+
+        private final int spacing;
+
+        private VerticalSpacingDecoration(int spacing) {
+            this.spacing = spacing;
+        }
+
+        @Override
+        public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+            outRect.bottom = spacing;
+        }
     }
 }

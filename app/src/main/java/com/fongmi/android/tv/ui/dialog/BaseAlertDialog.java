@@ -41,6 +41,7 @@ public abstract class BaseAlertDialog extends DialogFragment {
     public void onStart() {
         super.onStart();
         DialogGlass.apply(getDialog());
+        if (getDialog() != null) TouchClickWindowCallback.install(getDialog().getWindow());
     }
 
     protected void setWidth(float factor) {

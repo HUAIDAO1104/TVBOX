@@ -56,6 +56,12 @@ public abstract class BaseBottomSheetDialog extends BottomSheetDialogFragment {
     protected void initEvent() {
     }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (getDialog() != null) TouchClickWindowCallback.install(getDialog().getWindow());
+    }
+
     protected boolean transparent() {
         return false;
     }
