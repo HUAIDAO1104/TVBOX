@@ -9,10 +9,12 @@ import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.bean.Danmaku;
 import com.fongmi.android.tv.impl.Callback;
 import com.fongmi.android.tv.playback.vod.DanmakuMatch;
+import com.fongmi.android.tv.playback.vod.DanmakuQuery;
 import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.github.catvod.net.OkHttp;
 import com.github.catvod.utils.Trans;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Objects;
@@ -38,8 +40,9 @@ public class DanmakuApi {
     public static List<Call> newCalls(String name, String episode) {
         REQUEST_GENERATION.incrementAndGet();
         OkHttp.cancel(TAG);
+        String query = DanmakuQuery.from(name).searchTitle();
         List<Call> calls = new ArrayList<>();
-        for (String url : DanmakuSetting.getSearchApiUrls()) calls.add(createCall(name, episode, url));
+        for (String url : DanmakuSetting.getSearchApiUrls()) calls.add(createCall(query, episode, url));
         return calls;
     }
 
@@ -64,18 +67,33 @@ public class DanmakuApi {
     public static void search(String name, String episode, Consumer<Danmaku> found) {
         final int generation = REQUEST_GENERATION.incrementAndGet();
         OkHttp.cancel(TAG);
-        createCall(name, episode).enqueue(new Callback() {
+        DanmakuQuery query = DanmakuQuery.from(name);
+        search(generation, query, episode, found, 0);
+    }
+
+    private static void search(int generation, DanmakuQuery query, String episode,
+                               Consumer<Danmaku> found, int candidateIndex) {
+        if (generation != REQUEST_GENERATION.get() || candidateIndex >= query.candidates().size()) return;
+        createCall(query.candidates().get(candidateIndex), episode).enqueue(new Callback() {
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) {
                 try {
-                    if (generation != REQUEST_GENERATION.get() || response.body() == null) return;
-                    Danmaku best = bestMatch(name, episode, Danmaku.arrayFrom(response.body().string()));
-                    if (best == null) return;
+                    if (generation != REQUEST_GENERATION.get()) return;
+                    if (response.body() == null) return;
+                    Danmaku best = bestMatch(query.searchTitle(), episode, Danmaku.arrayFrom(response.body().string()));
+                    if (best == null) {
+                        search(generation, query, episode, found, candidateIndex + 1);
+                        return;
+                    }
                     App.post(() -> {
                         if (generation == REQUEST_GENERATION.get()) found.accept(best);
                     });
                 } catch (Exception ignored) {
                 }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
             }
         });
     }

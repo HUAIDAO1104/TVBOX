@@ -13,6 +13,7 @@ import com.fongmi.android.tv.api.DanmakuApi;
 import com.fongmi.android.tv.bean.Danmaku;
 import com.fongmi.android.tv.databinding.ViewDanmakuSearchEmbeddedBinding;
 import com.fongmi.android.tv.player.PlayerManager;
+import com.fongmi.android.tv.playback.vod.DanmakuQuery;
 import com.fongmi.android.tv.ui.adapter.DanmakuAdapter;
 import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
 import com.fongmi.android.tv.utils.KeyUtil;
@@ -57,7 +58,7 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         binding.recycler.setHasFixedSize(false);
         binding.recycler.addItemDecoration(new SpaceItemDecoration(1, 12));
         if (player != null && player.getMetadata() != null && player.getMetadata().title != null) {
-            String title = player.getMetadata().title.toString();
+            String title = DanmakuQuery.from(player.getMetadata().title.toString()).searchTitle();
             binding.keyword.setText(title);
             binding.keyword.setSelection(title.length());
         }
