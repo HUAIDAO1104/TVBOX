@@ -24,6 +24,8 @@ public class VodPlaybackState {
     private boolean autoFallback;
     private boolean useParse;
     private String searchKeyword;
+    private String detailYear;
+    private String detailType;
     private int qualityPosition;
 
     public VodPlaybackState() {
@@ -32,6 +34,8 @@ public class VodPlaybackState {
         this.flags = new ArrayList<>();
         this.quality = Result.empty();
         this.searchKeyword = "";
+        this.detailYear = "";
+        this.detailType = "";
     }
 
     public void reset() {
@@ -45,6 +49,8 @@ public class VodPlaybackState {
         autoFallback = false;
         useParse = false;
         searchKeyword = "";
+        detailYear = "";
+        detailType = "";
         qualityPosition = 0;
     }
 
@@ -79,7 +85,10 @@ public class VodPlaybackState {
 
     public void setFlags(List<Flag> items) {
         flags.clear();
-        flags.addAll(items);
+        if (items == null) return;
+        for (Flag item : items) {
+            if (item != null && !item.isBlockedPlaybackSource()) flags.add(item);
+        }
     }
 
     public boolean hasFlags() {
@@ -187,5 +196,18 @@ public class VodPlaybackState {
 
     public void setSearchKeyword(String searchKeyword) {
         this.searchKeyword = searchKeyword == null ? "" : searchKeyword;
+    }
+
+    public String getDetailYear() {
+        return detailYear;
+    }
+
+    public String getDetailType() {
+        return detailType;
+    }
+
+    public void setDetailMetadata(Vod item) {
+        detailYear = item == null ? "" : item.getYear();
+        detailType = item == null ? "" : item.getTypeName();
     }
 }

@@ -71,4 +71,54 @@ public class DanmakuMatchTest {
         assertEquals(response.get(3), DanmakuMatch.best("欢天喜地七仙女", "2", response, item -> item));
         assertFalse(DanmakuMatch.isReliable("欢天喜地七仙女", "2", "欢天喜地七仙女 正片"));
     }
+
+    @Test
+    public void neverTreatsASubstringAsTheSameWork() {
+        assertFalse(DanmakuMatch.isReliable("仙女", "2", "仙女湖(2012)【电视剧】from 360 - 第2集"));
+        assertFalse(DanmakuMatch.isReliable("庆余年", "1", "庆余年第二季(2024)【电视剧】from 360 - 第1集"));
+        assertFalse(DanmakuMatch.isReliable("庆余年", "1", "庆余年独家专访(2020)【综艺】from 360 - 第1期"));
+    }
+
+    @Test
+    public void seasonAliasesAreEquivalentButBaseTitleStaysDistinct() {
+        assertEquals(DanmakuMatch.canonicalTitle("庆余年 第二季"), DanmakuMatch.canonicalTitle("庆余年2"));
+        assertEquals(DanmakuMatch.canonicalTitle("庆余年 第2部"), DanmakuMatch.canonicalTitle("庆余年Ⅱ"));
+        assertFalse(DanmakuMatch.canonicalTitle("庆余年").equals(DanmakuMatch.canonicalTitle("庆余年第二季")));
+    }
+
+    @Test
+    public void providerMetadataDoesNotPolluteExactTitleButYearDisambiguates() {
+        List<String> response = List.of(
+                "同名剧(2024)【电视剧】from 360 - 第2集",
+                "同名剧(2005)【电视剧】from 360 - 第2集");
+        assertEquals(response.get(1), DanmakuMatch.best("同名剧", "2005", "2", response, item -> item));
+        assertEquals(null, DanmakuMatch.best("同名剧", "", "2", response, item -> item));
+    }
+
+    @Test
+    public void realProviderOrderingCannotSelectAnotherSeason() {
+        List<String> response = List.of(
+                "庆余年第二季(2024)【电视剧】from 360 - 【qq】 第1集",
+                "庆余年(2019)【电视剧】from 360 - 【qq】 第1集",
+                "庆余年独家专访(2020)【综艺】from 360 - 第1期");
+        assertEquals(response.get(1), DanmakuMatch.best("庆余年", "2019", "1", response, item -> item));
+        assertEquals(response.get(0), DanmakuMatch.best("庆余年2", "2024", "1", response, item -> item));
+    }
+
+    @Test
+    public void detailMediaTypeDisambiguatesSameTitleMovieAndSeries() {
+        List<String> response = List.of(
+                "同名作品(2019)【电影】from 360 - 第1集",
+                "同名作品(2019)【电视剧】from 360 - 第1集");
+        assertEquals(response.get(1), DanmakuMatch.best("同名作品", "2019", "国产剧", "1", response, item -> item));
+        assertEquals(response.get(0), DanmakuMatch.best("同名作品", "2019", "电影", "1", response, item -> item));
+    }
+
+    @Test
+    public void bracketedSubtitleRemainsPartOfWorkIdentity() {
+        assertFalse(DanmakuMatch.canonicalTitle("名侦探柯南【绀青之拳】")
+                .equals(DanmakuMatch.canonicalTitle("名侦探柯南")));
+        assertFalse(DanmakuMatch.isReliable("名侦探柯南【绀青之拳】", "1", "名侦探柯南【电视剧】from 360 - 第1集"));
+        assertEquals(DanmakuMatch.canonicalTitle("庆余年【电视剧】【4K】"), DanmakuMatch.canonicalTitle("庆余年"));
+    }
 }

@@ -3,13 +3,18 @@ package com.fongmi.android.tv.playback.vod;
 import androidx.media3.common.MediaMetadata;
 
 import com.fongmi.android.tv.api.DanmakuApi;
+import com.fongmi.android.tv.bean.Danmaku;
 import com.fongmi.android.tv.bean.Episode;
 import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.player.PlayerManager;
 import java.util.Objects;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 public final class VodPlaybackMedia {
+
+    private static final Map<PlayerManager, String> REQUEST_IDENTITIES = new WeakHashMap<>();
 
     public static MediaMetadata metadata(History history, Episode episode) {
         String title = history.getVodName();
@@ -20,24 +25,54 @@ public final class VodPlaybackMedia {
     }
 
     public static void searchDanmaku(Result result, History history, Episode episode, PlayerManager player) {
-        searchDanmaku(result, history, episode, episode.getIndex(), player);
+        searchDanmaku(result, history, episode, episode.getIndex(), "", "", player);
     }
 
     public static void searchDanmaku(Result result, History history, Episode episode, int stableEpisodeIndex, PlayerManager player) {
-        // Invalidate an older title's pending response even when automatic matching is disabled
-        // or the new item lacks enough metadata to start another request.
-        DanmakuApi.cancel();
+        searchDanmaku(result, history, episode, stableEpisodeIndex, "", "", player);
+    }
+
+    public static void searchDanmaku(Result result, History history, Episode episode, int stableEpisodeIndex,
+                                     String year, String type, PlayerManager player) {
+        invalidate(player);
         if (!DanmakuApi.canSearch()) return;
         String title = history.getVodName();
         String episodeName = episode.getName();
         String episodeQuery = resolveEpisodeQuery(episodeName, stableEpisodeIndex);
-        DanmakuApi.search(title, episodeQuery, danmaku -> {
+        String identity = identityOf(history, episode, stableEpisodeIndex) + '\u001f'
+                + Objects.toString(year, "") + '\u001f' + Objects.toString(type, "");
+        synchronized (REQUEST_IDENTITIES) {
+            REQUEST_IDENTITIES.put(player, identity);
+        }
+        DanmakuApi.search(title, year, type, episodeQuery, danmaku -> {
+            if (!isCurrentIdentity(player, identity)) return;
             if (!matchesCurrent(player, title, episodeName)) return;
-            // Automatic matching is expected to choose the correct episode. Embedded spider
-            // sources remain available as alternatives, but must never keep a stale/wrong source
-            // selected after an exact 360 match was found.
             player.setDanmaku(danmaku);
         });
+    }
+
+    /** Invalidates both the network request and the renderer source before a media transition. */
+    public static void invalidate(PlayerManager player) {
+        DanmakuApi.cancel();
+        if (player == null) return;
+        synchronized (REQUEST_IDENTITIES) {
+            REQUEST_IDENTITIES.remove(player);
+        }
+        player.setDanmaku(Danmaku.empty());
+    }
+
+    static String identityOf(History history, Episode episode, int stableEpisodeIndex) {
+        String url = episode == null ? "" : episode.getUrl();
+        return Objects.toString(history == null ? null : history.getKey(), "") + '\u001f'
+                + Objects.toString(history == null ? null : history.getVodFlag(), "") + '\u001f'
+                + Objects.toString(episode == null ? null : episode.getName(), "") + '\u001f'
+                + stableEpisodeIndex + '\u001f' + url.length() + ':' + url.hashCode();
+    }
+
+    private static boolean isCurrentIdentity(PlayerManager player, String identity) {
+        synchronized (REQUEST_IDENTITIES) {
+            return Objects.equals(identity, REQUEST_IDENTITIES.get(player));
+        }
     }
 
     static String resolveEpisodeQuery(String episodeName, int stableEpisodeIndex) {

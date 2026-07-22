@@ -140,7 +140,7 @@ public class Vod implements Parcelable, Diffable<Vod> {
     }
 
     public String getTypeName() {
-        return TextUtils.isEmpty(typeName) ? "" : typeName.trim();
+        return typeName == null || typeName.isEmpty() ? "" : typeName.trim();
     }
 
     public void setTypeName(String typeName) {
@@ -164,7 +164,7 @@ public class Vod implements Parcelable, Diffable<Vod> {
     }
 
     public String getYear() {
-        return TextUtils.isEmpty(vodYear) ? "" : vodYear.trim();
+        return vodYear == null || vodYear.isEmpty() ? "" : vodYear.trim();
     }
 
     public void setYear(String vodYear) {
@@ -204,7 +204,7 @@ public class Vod implements Parcelable, Diffable<Vod> {
     }
 
     public String getPlayFrom() {
-        return TextUtils.isEmpty(vodPlayFrom) ? "" : vodPlayFrom;
+        return vodPlayFrom == null || vodPlayFrom.isEmpty() ? "" : vodPlayFrom;
     }
 
     public void setPlayFrom(String vodPlayFrom) {
@@ -212,7 +212,7 @@ public class Vod implements Parcelable, Diffable<Vod> {
     }
 
     public String getPlayUrl() {
-        return TextUtils.isEmpty(vodPlayUrl) ? "" : vodPlayUrl;
+        return vodPlayUrl == null || vodPlayUrl.isEmpty() ? "" : vodPlayUrl;
     }
 
     public void setPlayUrl(String vodPlayUrl) {
@@ -252,7 +252,11 @@ public class Vod implements Parcelable, Diffable<Vod> {
     }
 
     public void setFlags(List<Flag> vodFlags) {
-        this.vodFlags = vodFlags;
+        this.vodFlags = new ArrayList<>();
+        if (vodFlags == null) return;
+        for (Flag item : vodFlags) {
+            if (item != null && !item.isBlockedPlaybackSource()) this.vodFlags.add(item);
+        }
     }
 
     public Site getSite() {
@@ -310,8 +314,19 @@ public class Vod implements Parcelable, Diffable<Vod> {
     public Vod setFlags() {
         String[] playUrls = getPlayUrl().split("\\$\\$\\$");
         String[] playFlags = getPlayFrom().split("\\$\\$\\$");
-        if (!getFlags().isEmpty()) for (Flag item : getFlags()) item.setEpisodes(item.getUrls());
-        else IntStream.range(0, playFlags.length).filter(i -> !playFlags[i].trim().isEmpty() && i < playUrls.length && !TextUtils.isEmpty(playUrls[i])).mapToObj(i -> Flag.create(playFlags[i].trim(), playUrls[i])).forEach(getFlags()::add);
+        getFlags().removeIf(item -> item == null || item.isBlockedPlaybackSource());
+        for (Flag item : getFlags()) item.setEpisodes(item.getUrls());
+        // Some providers send both structured and paired fields. If every structured item was a
+        // pseudo line, recover the real paired lines instead of leaving playback empty.
+        if (getFlags().isEmpty()) {
+            IntStream.range(0, playFlags.length)
+                    .filter(i -> !playFlags[i].trim().isEmpty()
+                            && !Danmaku.isBlockedSourceLabel(playFlags[i])
+                            && i < playUrls.length
+                            && !playUrls[i].isEmpty())
+                    .mapToObj(i -> Flag.create(playFlags[i].trim(), playUrls[i]))
+                    .forEach(getFlags()::add);
+        }
         return this;
     }
 

@@ -30,7 +30,7 @@ public class DanmakuApi {
     private static final AtomicInteger REQUEST_GENERATION = new AtomicInteger();
 
     public static boolean canSearch() {
-        return DanmakuSetting.isLoad() && DanmakuSetting.isAuto() && !TextUtils.isEmpty(DanmakuSetting.getEffectiveApiUrl());
+        return DanmakuSetting.isLoad() && DanmakuSetting.isAuto() && !TextUtils.isEmpty(DanmakuSetting.getAutomaticApiUrl());
     }
 
     public static Call newCall(String name, String episode) {
@@ -47,7 +47,7 @@ public class DanmakuApi {
     }
 
     private static Call createCall(String name, String episode) {
-        return createCall(name, episode, Objects.toString(DanmakuSetting.getEffectiveApiUrl(), ""));
+        return createCall(name, episode, Objects.toString(DanmakuSetting.getAutomaticApiUrl(), ""));
     }
 
     private static Call createCall(String name, String episode, String url) {
@@ -65,41 +65,61 @@ public class DanmakuApi {
     }
 
     public static void search(String name, String episode, Consumer<Danmaku> found) {
+        search(name, "", "", episode, found);
+    }
+
+    public static void search(String name, String year, String type, String episode, Consumer<Danmaku> found) {
         final int generation = REQUEST_GENERATION.incrementAndGet();
         OkHttp.cancel(TAG);
         DanmakuQuery query = DanmakuQuery.from(name);
-        search(generation, query, episode, found, 0);
+        search(generation, query, Objects.toString(year, ""), Objects.toString(type, ""), episode, found, 0);
     }
 
-    private static void search(int generation, DanmakuQuery query, String episode,
+    private static void search(int generation, DanmakuQuery query, String year, String type, String episode,
                                Consumer<Danmaku> found, int candidateIndex) {
         if (generation != REQUEST_GENERATION.get() || candidateIndex >= query.candidates().size()) return;
         createCall(query.candidates().get(candidateIndex), episode).enqueue(new Callback() {
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) {
-                try {
+                try (Response closeable = response) {
                     if (generation != REQUEST_GENERATION.get()) return;
-                    if (response.body() == null) return;
-                    Danmaku best = bestMatch(query.searchTitle(), episode, Danmaku.arrayFrom(response.body().string()));
+                    if (closeable.body() == null) {
+                        search(generation, query, year, type, episode, found, candidateIndex + 1);
+                        return;
+                    }
+                    Danmaku best = bestMatch(query, year, type, episode, Danmaku.arrayFrom(closeable.body().string()));
                     if (best == null) {
-                        search(generation, query, episode, found, candidateIndex + 1);
+                        search(generation, query, year, type, episode, found, candidateIndex + 1);
                         return;
                     }
                     App.post(() -> {
                         if (generation == REQUEST_GENERATION.get()) found.accept(best);
                     });
                 } catch (Exception ignored) {
+                    search(generation, query, year, type, episode, found, candidateIndex + 1);
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                if (generation == REQUEST_GENERATION.get()) {
+                    search(generation, query, year, type, episode, found, candidateIndex + 1);
+                }
             }
         });
     }
 
     static Danmaku bestMatch(String name, String episode, List<Danmaku> items) {
-        return DanmakuMatch.best(name, episode, items, Danmaku::getName);
+        return DanmakuMatch.best(name, "", episode, items, Danmaku::getName);
+    }
+
+    static Danmaku bestMatch(DanmakuQuery query, String episode, List<Danmaku> items) {
+        return DanmakuMatch.best(query.searchTitle(), query.year(), episode, items, Danmaku::getName);
+    }
+
+    static Danmaku bestMatch(DanmakuQuery query, String year, String type, String episode, List<Danmaku> items) {
+        String expectedYear = TextUtils.isEmpty(year) ? query.year() : year.trim();
+        return DanmakuMatch.best(query.searchTitle(), expectedYear, type, episode, items, Danmaku::getName);
     }
 
     public static void cancel() {

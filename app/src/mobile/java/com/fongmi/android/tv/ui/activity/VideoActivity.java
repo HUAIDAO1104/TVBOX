@@ -280,11 +280,19 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     @Override
     protected void onNewIntent(Intent intent) {
         String oldId = getId();
+        String oldKey = getKey();
         super.onNewIntent(intent);
         String id = Objects.toString(intent.getStringExtra("id"), "");
-        if (TextUtils.isEmpty(id) || id.equals(oldId)) return;
+        String key = Objects.toString(intent.getStringExtra("key"), "");
+        // Site ids are only unique inside one repository/site.  Reusing the same id after a
+        // source switch is still a different media identity and must invalidate the old player,
+        // parse job and danmaku request before loading the new item.
+        if (TextUtils.isEmpty(id) || id.equals(oldId) && key.equals(oldKey)) return;
         mBinding.swipeLayout.setRefreshing(true);
         saveHistory(false);
+        VodPlaybackMedia.invalidate(player());
+        player().stop();
+        player().clear();
         getIntent().putExtras(intent);
         mVod.reset();
         setOrient();
@@ -531,12 +539,15 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.scroll.scrollTo(0, 0);
         mClock.setCallback(null);
         updateNavigationKey();
+        VodPlaybackMedia.invalidate(player());
         player().reset();
         player().stop();
+        player().clear();
     }
 
     @Override
     public void stopPlaybackForRefresh() {
+        VodPlaybackMedia.invalidate(player());
         player().stop();
         player().clear();
         mClock.setCallback(null);
@@ -560,8 +571,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     @Override
-    public void loadDanmaku(Result result, History history, Episode episode, int stableEpisodeIndex) {
-        VodPlaybackMedia.searchDanmaku(result, history, episode, stableEpisodeIndex, player());
+    public void loadDanmaku(Result result, History history, Episode episode, int stableEpisodeIndex, String year, String type) {
+        VodPlaybackMedia.searchDanmaku(result, history, episode, stableEpisodeIndex, year, type, player());
     }
 
     @Override
@@ -600,6 +611,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     @Override
     public void renderFlagSelection(Flag item) {
+        if (item == null || item.isBlockedPlaybackSource()) return;
         notifyItemChanged(mBinding.flag, mFlagAdapter);
         scrollToPosition(mBinding.flag, mFlagAdapter.getPosition());
     }
@@ -691,6 +703,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     @Override
     public void showSwitchLine(Flag flag) {
+        if (flag == null || flag.isBlockedPlaybackSource()) return;
         Notify.show(getString(R.string.play_switch_flag, flag.getFlag()));
     }
 

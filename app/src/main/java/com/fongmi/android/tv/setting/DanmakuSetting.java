@@ -301,6 +301,16 @@ public class DanmakuSetting {
         return resolveApiUrl(getApiUrl(), VodConfig.get().getConfig().getDanmaku());
     }
 
+    /**
+     * Automatic matching intentionally uses the built-in catalogue. Repository supplied and
+     * user supplied endpoints remain available to manual search, where a person can inspect the
+     * candidates before applying one. Letting the active repository replace the automatic
+     * endpoint made a repository switch silently change the identity rules of playback.
+     */
+    public static String getAutomaticApiUrl() {
+        return DEFAULT_API_URL;
+    }
+
     /** Ordered, de-duplicated endpoints used by manual matching. */
     public static List<String> getSearchApiUrls() {
         return resolveSearchApiUrls(getApiUrl(), VodConfig.get().getConfig().getDanmaku(), DEFAULT_API_URL);

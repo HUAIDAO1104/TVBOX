@@ -12,6 +12,7 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -58,10 +59,14 @@ public class Danmaku {
     }
 
     public static boolean isBlockedSourceLabel(CharSequence label) {
-        String value = Objects.toString(label, "")
+        String value = Normalizer.normalize(Objects.toString(label, ""), Normalizer.Form.NFKC)
+                .replaceAll("<[^>]*>", "")
+                .replaceAll("[\\p{Cf}\\u200B-\\u200D\\u2060\\uFEFF]", "")
                 .toLowerCase(Locale.ROOT)
                 .replaceAll("[\\s\\p{P}\\p{S}]+", "");
-        return value.contains("小白弹幕");
+        // Match the two semantic tokens rather than one contiguous literal.  Repositories have
+        // emitted this pseudo line with HTML, decorations and inserted words between the tokens.
+        return value.contains("小白") && (value.contains("弹幕") || value.contains("彈幕"));
     }
 
     public String getName() {

@@ -10,6 +10,7 @@ import com.google.gson.JsonParseException;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -18,7 +19,8 @@ public class DanmakuAdapter implements JsonDeserializer<List<Danmaku>> {
     @Override
     public List<Danmaku> deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
         List<Danmaku> items = json.isJsonPrimitive() ? parsePrimitive(json.getAsString().trim(), typeOfT) : App.gson().fromJson(json, typeOfT);
-        return items.stream().filter(d -> !d.isEmpty()).collect(Collectors.toCollection(ArrayList::new));
+        if (items == null) return Collections.emptyList();
+        return items.stream().filter(d -> d != null && !d.isEmpty() && !d.isBlockedSource()).collect(Collectors.toCollection(ArrayList::new));
     }
 
     private List<Danmaku> parsePrimitive(String text, Type type) {

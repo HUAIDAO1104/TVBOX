@@ -78,7 +78,7 @@ public class VodPlaybackController {
         if (result.hasArtwork()) host.renderArtwork(result.getArtwork());
         if (result.hasPosition()) state.getHistory().setPosition(result.getPosition());
         startPlayback(result, startPositionMs());
-        host.loadDanmaku(result, state.getHistory(), state.getEpisode(), state.getEpisode().getIndex());
+        host.loadDanmaku(result, state.getHistory(), state.getEpisode(), state.getEpisode().getIndex(), state.getDetailYear(), state.getDetailType());
     }
 
     private void startPlayback(Result result, long startPositionMs) {
@@ -131,9 +131,10 @@ public class VodPlaybackController {
     }
 
     public void mergeFlags(List<Flag> items) {
-        if (items.isEmpty()) return;
+        if (items == null || items.isEmpty()) return;
         if (!state.hasFlags()) {
             state.setFlags(items);
+            if (!state.hasFlags()) return;
             host.renderFlags(state.getFlags());
             return;
         }
@@ -298,14 +299,15 @@ public class VodPlaybackController {
         item.checkPic(host.getVodPic());
         item.checkName(host.getVodName());
         if (host.isFromCollect() && item.getFlags().isEmpty() && host.tryNextDetailSource()) return;
+        state.setDetailMetadata(item);
         state.setFlags(item.getFlags());
         state.setHistory(historyPolicy.findOrCreate(host.getHistoryKey(), host.getVodMark(), item));
         lastHistory = state.getHistory();
         host.renderDetail(item, state.getHistory());
-        host.renderFlags(item.getFlags());
+        host.renderFlags(state.getFlags());
         host.renderHistory(state.getHistory());
         host.onDetailFallbackCancelled();
-        if (item.getFlags().isEmpty()) {
+        if (!state.hasFlags()) {
             // Aggregate search already exhausted its ranked repository-scoped candidates above.
             // Falling through to the legacy default-config search would leak across repositories
             // and could open a same-id item from an unrelated source.
@@ -333,6 +335,7 @@ public class VodPlaybackController {
     }
 
     private void mergeFlag(Flag activated, Flag item) {
+        if (item == null || item.isBlockedPlaybackSource()) return;
         Flag target = findFlag(item);
         if (target == null) {
             state.getFlags().add(item);

@@ -375,6 +375,9 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         if (TextUtils.isEmpty(id) || id.equals(oldId) && key.equals(oldKey)) return;
         cancelRepositorySiteResolve();
         saveHistory(false);
+        VodPlaybackMedia.invalidate(player());
+        player().stop();
+        player().clear();
         getIntent().putExtras(intent);
         configureRepositoryCandidates(getIntent());
         mVod.reset();
@@ -794,13 +797,16 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         mBinding.scroll.scrollTo(0, 0);
         mClock.setCallback(null);
         updateNavigationKey();
+        VodPlaybackMedia.invalidate(player());
         player().reset();
         player().stop();
+        player().clear();
         mBinding.progress.stage.setText(R.string.player_v2_stage_switching);
     }
 
     @Override
     public void stopPlaybackForRefresh() {
+        VodPlaybackMedia.invalidate(player());
         player().stop();
         player().clear();
         mClock.setCallback(null);
@@ -824,8 +830,8 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     @Override
-    public void loadDanmaku(Result result, History history, Episode episode, int stableEpisodeIndex) {
-        VodPlaybackMedia.searchDanmaku(result, history, episode, stableEpisodeIndex, player());
+    public void loadDanmaku(Result result, History history, Episode episode, int stableEpisodeIndex, String year, String type) {
+        VodPlaybackMedia.searchDanmaku(result, history, episode, stableEpisodeIndex, year, type, player());
     }
 
     @Override
@@ -911,6 +917,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     @Override
     public void renderFlagSelection(Flag item) {
+        if (item == null || item.isBlockedPlaybackSource()) return;
         mBinding.flag.setSelectedPosition(mFlagAdapter.indexOf(item));
         notifyItemChanged(mBinding.flag, mFlagAdapter);
         mCurrentSourceName = cleanSourceName(item.getShow());
@@ -1013,6 +1020,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     @Override
     public void showSwitchLine(Flag flag) {
+        if (flag == null || flag.isBlockedPlaybackSource()) return;
         mCurrentSourceName = flag.getShow();
         mBinding.control.controlStatus.setText(getString(R.string.detail_v2_current_source, mCurrentSourceName));
         showFallbackProgress(cleanSourceName(mCurrentSourceName), true);

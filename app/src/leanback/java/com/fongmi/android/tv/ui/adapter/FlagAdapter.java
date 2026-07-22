@@ -28,7 +28,9 @@ public class FlagAdapter extends RecyclerView.Adapter<FlagAdapter.ViewHolder> {
 
     public void addAll(List<Flag> items) {
         mItems.clear();
-        mItems.addAll(items);
+        for (Flag item : items) {
+            if (item != null && !item.isBlockedPlaybackSource()) mItems.add(item);
+        }
         notifyDataSetChanged();
     }
 

@@ -41,11 +41,15 @@ public class PlaySpec {
         this.metadata = metadata;
     }
 
-    private static List<Danmaku> sanitizeDanmakus(List<Danmaku> items) {
+    static List<Danmaku> sanitizeDanmakus(List<Danmaku> items) {
         if (items == null) return null;
         List<Danmaku> result = new ArrayList<>();
         for (Danmaku item : items) {
-            if (item != null && !item.isBlockedSource()) result.add(item);
+            if (item == null || item.isBlockedSource()) continue;
+            // Repository/Spider metadata is only an alternative source. It is not a verified
+            // identity match and must never arrive pre-selected ahead of the exact API result.
+            item.setSelected(false);
+            result.add(item);
         }
         return result;
     }

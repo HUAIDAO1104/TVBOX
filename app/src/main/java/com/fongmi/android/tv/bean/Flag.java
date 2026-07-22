@@ -2,7 +2,6 @@ package com.fongmi.android.tv.bean;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -69,11 +68,11 @@ public class Flag implements Parcelable, Diffable<Flag> {
     }
 
     public String getShow() {
-        return TextUtils.isEmpty(show) ? getFlag() : show;
+        return show == null || show.isEmpty() ? getFlag() : show;
     }
 
     public String getFlag() {
-        return TextUtils.isEmpty(flag) ? "" : flag;
+        return flag == null || flag.isEmpty() ? "" : flag;
     }
 
     public void setFlag(String flag) {
@@ -81,7 +80,12 @@ public class Flag implements Parcelable, Diffable<Flag> {
     }
 
     public String getUrls() {
-        return TextUtils.isEmpty(urls) ? "" : urls;
+        return urls == null || urls.isEmpty() ? "" : urls;
+    }
+
+    /** Reject repository-injected pseudo lines before they can become playback state. */
+    public boolean isBlockedPlaybackSource() {
+        return Danmaku.isBlockedSourceLabel(getFlag() + " " + getShow());
     }
 
     public List<Episode> getEpisodes() {
@@ -147,10 +151,14 @@ public class Flag implements Parcelable, Diffable<Flag> {
     }
 
     public void mergeEpisodes(List<Episode> items, boolean rev) {
-        int next = getEpisodes().stream().mapToInt(Episode::getIndex).max().orElse(0) + 1;
+        // A paged detail response commonly numbers every page from one again. Those values are
+        // page-local presentation indexes, so carrying them into the merged flag would give
+        // different episodes the same playback identity (and consequently the wrong danmaku
+        // episode). The merged flag owns the global, stable order of every newly accepted item.
+        int next = Math.max(getEpisodes().size(), getEpisodes().stream().mapToInt(Episode::getIndex).max().orElse(0)) + 1;
         for (Episode item : items) {
             if (getEpisodes().contains(item)) continue;
-            if (item.getIndex() <= 0) item.setIndex(next++);
+            item.setIndex(next++);
             if (rev) getEpisodes().add(0, item);
             else getEpisodes().add(item);
         }

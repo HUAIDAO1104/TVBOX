@@ -19,4 +19,15 @@ public class DanmakuSourceTest {
         assertTrue(ghost.isBlockedSource());
         assertFalse(normal.isBlockedSource());
     }
+
+    @Test
+    public void blocksObfuscatedGhostLabelsAtTheFinalUiBoundary() {
+        assertTrue(Danmaku.isBlockedSourceLabel("小白\u200B弹幕"));
+        assertTrue(Danmaku.isBlockedSourceLabel("<b>小白</b> · 弹幕"));
+        assertTrue(Danmaku.isBlockedSourceLabel("小白　弹幕"));
+        assertTrue(Danmaku.isBlockedSourceLabel("小白彈幕"));
+        assertTrue(Danmaku.isBlockedSourceLabel("小白播放器专用弹幕入口"));
+        assertFalse(Danmaku.isBlockedSourceLabel("弹幕设置"));
+        assertFalse(Danmaku.isBlockedSourceLabel("弹幕开"));
+    }
 }

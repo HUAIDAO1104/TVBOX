@@ -371,7 +371,13 @@ public class PlayerManager implements ParseCallback {
     }
 
     public void clear() {
+        // A parse job belongs to the current spec. Letting it survive clear() allows a late
+        // callback from the previous title to overwrite the next direct media item.
+        stopParse();
         spec = null;
+        // PlaybackService and PlayerView outlive an individual media item. Explicitly detach the
+        // old URI or the renderer can keep showing the previous title while the next item parses.
+        callback.onDanmakuSourceChanged(null);
     }
 
     public void resetTrack() {
@@ -443,6 +449,9 @@ public class PlayerManager implements ParseCallback {
         stopParse();
         pendingStartPositionMs = startPositionMs;
         spec = PlaySpec.fromParse(result, key, metadata);
+        // Embedded repository sources are alternatives, not verified automatic matches. Keep
+        // them in the source list but do not select the first one while parsing.
+        setDanmakus(spec.getDanmakus());
         parseJob = ParseJob.create(this).start(result, useParse);
     }
 
@@ -472,7 +481,9 @@ public class PlayerManager implements ParseCallback {
 
     private Danmaku getSelectedDanmaku(List<Danmaku> items) {
         if (items == null || items.isEmpty()) return Danmaku.empty();
-        return items.stream().filter(Danmaku::isSelected).findFirst().orElse(items.get(0));
+        // No selected item means no source. Falling back to item 0 made setDanmaku(empty) and
+        // clear operations immediately resurrect an unverified Spider/repository source.
+        return items.stream().filter(Danmaku::isSelected).findFirst().orElseGet(Danmaku::empty);
     }
 
     public Danmaku getSelectedDanmaku() {

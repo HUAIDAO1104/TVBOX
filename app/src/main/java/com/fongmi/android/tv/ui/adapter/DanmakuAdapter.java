@@ -37,15 +37,19 @@ public class DanmakuAdapter extends RecyclerView.Adapter<DanmakuAdapter.ViewHold
     public DanmakuAdapter addAll(List<Danmaku> items) {
         if (items == null) return this;
         int start = mItems.size();
-        mItems.addAll(items);
-        notifyItemRangeInserted(start, items.size());
+        for (Danmaku item : items) if (isDisplayable(item)) mItems.add(item);
+        notifyItemRangeInserted(start, mItems.size() - start);
         return this;
     }
 
     public void setItems(List<Danmaku> items) {
         mItems.clear();
-        if (items != null) mItems.addAll(items);
+        if (items != null) for (Danmaku item : items) if (isDisplayable(item)) mItems.add(item);
         notifyDataSetChanged();
+    }
+
+    private static boolean isDisplayable(Danmaku item) {
+        return item != null && !item.isEmpty() && !item.isBlockedSource();
     }
 
     public int getSelected() {
