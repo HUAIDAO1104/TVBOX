@@ -28,6 +28,7 @@ import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.fragment.FolderFragment;
 import com.fongmi.android.tv.utils.KeyUtil;
 import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.utils.Util;
 
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -86,7 +87,7 @@ public class VodActivity extends BaseActivity implements TypeAdapter.OnClickList
             @Override
             public void onPageSelected(int position) {
                 mBinding.recycler.setSelectedPosition(position);
-                mBinding.recycler.requestFocus();
+                if (!Util.isMobile()) mBinding.recycler.requestFocus();
             }
         });
         mBinding.recycler.addOnChildViewHolderSelectedListener(new OnChildViewHolderSelectedListener() {
@@ -98,7 +99,14 @@ public class VodActivity extends BaseActivity implements TypeAdapter.OnClickList
     }
 
     private void setRecyclerView() {
-        mBinding.recycler.requestFocus();
+        if (Util.isMobile()) {
+            mBinding.recycler.setPreserveFocusAfterLayout(false);
+            mBinding.recycler.setFocusable(false);
+            mBinding.recycler.setFocusableInTouchMode(false);
+            mBinding.recycler.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+        } else {
+            mBinding.recycler.requestFocus();
+        }
         mBinding.recycler.setHorizontalSpacing(ResUtil.dp2px(16));
         mBinding.recycler.setRowHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
         mBinding.recycler.setAdapter(mAdapter = new TypeAdapter(this));
@@ -150,7 +158,14 @@ public class VodActivity extends BaseActivity implements TypeAdapter.OnClickList
     }
 
     @Override
-    public void onItemClick(Class item) {
+    public void onItemClick(int position, Class item) {
+        // On phones a tab is a direct tap target.  Switching categories must not depend on a
+        // first tap assigning DPAD focus; tapping the already active tab keeps the existing
+        // filter shortcut available.
+        if (Util.isMobile() && mBinding.pager.getCurrentItem() != position) {
+            mBinding.pager.setCurrentItem(position);
+            return;
+        }
         updateFilter(item);
     }
 

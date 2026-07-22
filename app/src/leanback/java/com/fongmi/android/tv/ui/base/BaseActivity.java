@@ -112,7 +112,11 @@ public abstract class BaseActivity extends AppCompatActivity {
                     super.dispatchTouchEvent(cancel);
                     cancel.recycle();
                     resetTouchTracking();
-                    target.requestFocus();
+                    // Mobile reuses the TV layouts, but its interaction must remain touch-first.
+                    // Giving every tapped poster Leanback focus makes its parent grid retain a
+                    // selected row; the next incremental adapter update then realigns that row
+                    // and visibly snaps the category page back toward the top.
+                    if (!Util.isMobile()) target.requestFocus();
                     target.performClick();
                     return true;
                 }

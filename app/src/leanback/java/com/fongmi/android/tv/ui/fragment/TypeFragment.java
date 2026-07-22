@@ -39,6 +39,7 @@ import com.fongmi.android.tv.ui.presenter.VodPresenter;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.PosterResolver;
 import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.utils.Util;
 import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
@@ -326,6 +327,9 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     @Override
     public void onHiddenChanged(boolean hidden) {
         super.onHiddenChanged(hidden);
+        // Phone pages are driven by touch scroll and direct tab taps. Restoring TV focus here
+        // makes Leanback align the previously selected row and undoes the user's scroll.
+        if (Util.isMobile()) return;
         if (isEmbedded()) {
             if (!hidden && !mBinding.getRoot().isInTouchMode()) mBinding.recycler.requestFocus();
             return;
@@ -342,7 +346,7 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     @Override
     public void setUserVisibleHint(boolean isVisibleToUser) {
         super.setUserVisibleHint(isVisibleToUser);
-        if (mBinding != null && !isEmbedded() && !mBinding.getRoot().isInTouchMode()) mBinding.recycler.moveToTop();
+        if (!Util.isMobile() && mBinding != null && !isEmbedded() && !mBinding.getRoot().isInTouchMode()) mBinding.recycler.moveToTop();
     }
 
     public int getSelectedPosition() {
@@ -350,11 +354,11 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     }
 
     public void restorePosition(int position) {
-        if (mBinding != null) mBinding.recycler.setSelectedPosition(Math.max(0, position));
+        if (!Util.isMobile() && mBinding != null) mBinding.recycler.setSelectedPosition(Math.max(0, position));
     }
 
     public boolean requestContentFocus() {
-        return mBinding != null && mBinding.recycler.requestFocus();
+        return !Util.isMobile() && mBinding != null && mBinding.recycler.requestFocus();
     }
 
     @Override

@@ -7,6 +7,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -17,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.utils.KeyUtil;
+import com.fongmi.android.tv.utils.Util;
 
 import java.util.Arrays;
 import java.util.List;
@@ -45,6 +47,18 @@ public class CustomVerticalGridView extends VerticalGridView {
         super(context, attrs, defStyle);
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         setMoveTop(true);
+        if (Util.isMobile()) configureForTouch();
+    }
+
+    private void configureForTouch() {
+        // A Leanback grid normally keeps one child selected so DPAD focus can always be
+        // recovered.  That selected child is also used as a layout anchor after rows are added,
+        // which fights a phone fling and snaps the viewport back to the old (usually first) row.
+        // Posters remain clickable; only remote/focus navigation is disabled for mobile builds.
+        setPreserveFocusAfterLayout(false);
+        setFocusable(false);
+        setFocusableInTouchMode(false);
+        setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
     }
 
     @Override
@@ -82,6 +96,7 @@ public class CustomVerticalGridView extends VerticalGridView {
 
     @Override
     public boolean dispatchKeyEvent(@NonNull KeyEvent event) {
+        if (Util.isMobile()) return super.dispatchKeyEvent(event);
         if (!KeyUtil.isActionDown(event)) return super.dispatchKeyEvent(event);
         if (KeyUtil.isBackKey(event)) return moveTop && moveToTop();
         pressUp = KeyUtil.isUpKey(event);
@@ -122,6 +137,7 @@ public class CustomVerticalGridView extends VerticalGridView {
     }
 
     public boolean moveToTop() {
+        if (Util.isMobile()) return false;
         if (views == null || getSelectedPosition() == 0 || getAdapter() == null || getAdapter().getItemCount() == 0) return false;
         for (View view : views) if (view.getId() == R.id.recycler) view.requestFocus();
         scrollToPosition(0);

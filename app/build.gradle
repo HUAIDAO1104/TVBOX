@@ -19,8 +19,8 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // Keep compatibility fixes on a strictly newer version so TV installers do not retain
         // the previous APK while preserving its database for the migration chain below.
-        versionCode 588
-        versionName "5.5.37-dialog-performance"
+        versionCode 590
+        versionName "5.5.39-mobile-touch-scroll"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
@@ -54,6 +54,17 @@ android {
 
     sourceSets {
         androidTest.assets.srcDirs += files("$projectDir/schemas")
+
+        // Mobile and TV used to be two unrelated applications that happened to share the
+        // same data layer.  Keep a single landscape presentation source of truth so every
+        // home/search/detail/player/settings and splash change is identical on both APKs.
+        // The product flavor is still `mobile`, therefore update selection, device reporting,
+        // soft-keyboard behaviour and mobile-specific runtime checks continue to work.
+        mobile {
+            java.setSrcDirs(["src/leanback/java"])
+            res.setSrcDirs(["src/leanback/res"])
+            manifest.srcFile "src/leanback/AndroidManifest.xml"
+        }
     }
 
     signingConfigs {
@@ -151,6 +162,11 @@ dependencies {
     implementation libs.textdrawable
     leanbackImplementation libs.leanback
     leanbackImplementation libs.androidautosize
+    // The mobile flavor intentionally renders the exact TV landscape experience.  These are
+    // flavor-scoped as well so the shared TV activities and 960x540 adaptive layout compile
+    // without promoting TV-only dependencies to the common data layer.
+    mobileImplementation libs.leanback
+    mobileImplementation libs.androidautosize
     mobileImplementation libs.biometric
     mobileImplementation libs.zxing.android.embedded
     annotationProcessor libs.room.compiler

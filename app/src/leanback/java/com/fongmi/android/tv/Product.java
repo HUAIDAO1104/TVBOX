@@ -7,7 +7,10 @@ import com.fongmi.android.tv.utils.ResUtil;
 public class Product {
 
     public static int getDeviceType() {
-        return 0;
+        // The mobile APK now deliberately shares the TV landscape presentation.  Preserve its
+        // original device identity for API registration and OTA package selection instead of
+        // incorrectly reporting every landscape phone/tablet as a television.
+        return "mobile".equals(BuildConfig.FLAVOR_mode) ? 1 : 0;
     }
 
     public static int getColumn() {
