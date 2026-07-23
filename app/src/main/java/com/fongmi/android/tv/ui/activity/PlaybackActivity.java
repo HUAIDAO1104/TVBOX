@@ -46,6 +46,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 public abstract class PlaybackActivity extends BaseActivity implements MediaController.Listener, Player.Listener, ServiceConnection {
@@ -60,6 +61,8 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     private boolean bound;
     private boolean stop;
     private boolean lock;
+    private boolean danmakuSourceApplied;
+    private Uri appliedDanmakuUri;
 
     protected MediaController controller() {
         return mController;
@@ -377,7 +380,14 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
 
     private void applyDanmaku() {
         if (mService == null || !isOwner()) return;
-        getPlayerView().setDanmakuSource(player().getSelectedDanmakuUri());
+        applyDanmakuSource(player().getSelectedDanmakuUri());
+    }
+
+    protected final void applyDanmakuSource(Uri uri) {
+        if (danmakuSourceApplied && Objects.equals(appliedDanmakuUri, uri)) return;
+        getPlayerView().setDanmakuSource(uri);
+        appliedDanmakuUri = uri;
+        danmakuSourceApplied = true;
     }
 
     private void releasePlaybackService() {
@@ -459,7 +469,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
             // A null URI is a global detach signal for the shared playback service. Never reject
             // it just because navigation ownership changed a few instructions earlier; otherwise
             // the renderer can keep the previous programme's comments until another match wins.
-            if (uri == null || isOwner()) getPlayerView().setDanmakuSource(uri);
+            if (uri == null || isOwner()) applyDanmakuSource(uri);
         }
 
         @Override

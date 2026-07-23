@@ -806,7 +806,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         // the previous owner, leaving the old programme's danmaku visible when the next automatic
         // match deliberately returns no result.
         VodPlaybackMedia.invalidate(player());
-        getPlayerView().setDanmakuSource(null);
+        applyDanmakuSource(null);
         player().reset();
         player().stop();
         player().clear();

@@ -16,6 +16,11 @@ import java.util.function.Consumer;
 public class Task {
 
     private static final ListeningExecutorService executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(5));
+    // Foreground detail/player requests must not wait behind repository sync, history persistence,
+    // update downloads, or other maintenance work sharing the general executor.  A small,
+    // independent pool keeps remote-control actions responsive without adding enough concurrency
+    // to overwhelm TV-class devices.
+    private static final ListeningExecutorService interactiveExecutor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(3));
     private static final ListeningExecutorService largeExecutor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(20));
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
@@ -25,6 +30,10 @@ public class Task {
 
     public static ListeningExecutorService largeExecutor() {
         return largeExecutor;
+    }
+
+    public static ListeningExecutorService interactiveExecutor() {
+        return interactiveExecutor;
     }
 
     public static ScheduledExecutorService scheduler() {

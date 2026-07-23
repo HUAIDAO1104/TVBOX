@@ -100,6 +100,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
     private String activeSourceFamily = "";
     private SearchSnapshot pendingSnapshot;
     private boolean snapshotRenderScheduled;
+    private boolean openingSource;
     private final Runnable renderPendingSnapshot = this::renderPendingSnapshot;
 
     private enum SearchUiState {
@@ -890,9 +891,11 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
     }
 
     private void openSource(SearchSource source) {
-        if (source == null) return;
+        if (source == null || openingSource) return;
         Vod selected = vodBySource.get(source.stableId());
         if (selected == null || selected.getSite() == null) return;
+        openingSource = true;
+        suspendSearchForPlayback();
         List<Vod> ranked = fallbackCandidatesBySource.getOrDefault(source.stableId(), List.of(selected));
         String selectedBorrowed = borrowedPosterBySource.getOrDefault(source.stableId(), "");
         if (selected.getPic().isEmpty() && !selectedBorrowed.isEmpty()) selected.setPic(selectedBorrowed);
@@ -904,6 +907,19 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         ArrayList<Vod> candidates = DetailSourceFallbackPolicy.prioritize(selected, ranked,
                 vod -> vod.getSiteKey() + '\u0000' + vod.getId());
         VideoActivity.collect(this, candidates);
+    }
+
+    /**
+     * Search Spiders can keep consuming CPU, network, and shared Jar state after this Activity is
+     * covered by the detail page.  Stop that work before opening the selected result and discard a
+     * pending UI batch so it cannot run during the Activity transition.
+     */
+    private void suspendSearchForPlayback() {
+        if (progress.running()) viewModel.stopSearch();
+        pendingSnapshot = null;
+        snapshotRenderScheduled = false;
+        binding.resultArea.removeCallbacks(renderPendingSnapshot);
+        binding.resultArea.animate().cancel();
     }
 
     @Override
@@ -1131,6 +1147,12 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         }
         if (progress.running()) viewModel.stopSearch();
         super.onBackInvoked();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        openingSource = false;
     }
 
     @Override

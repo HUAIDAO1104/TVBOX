@@ -13,6 +13,7 @@ import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.ui.search.SearchSourceHealthStore;
 import com.fongmi.android.tv.ui.search.SearchFailurePolicy;
 import com.fongmi.android.tv.ui.search.SearchRelevance;
+import com.fongmi.android.tv.utils.Task;
 import com.github.catvod.crawler.SpiderDebug;
 import com.github.catvod.utils.Trans;
 
@@ -285,7 +286,7 @@ public class SiteViewModel extends ViewModel {
 
     private void execute(TaskType type, MutableLiveData<Result> liveData, Callable<Result> callable) {
         error.setValue(null);
-        tasks.execute(type, Constant.TIMEOUT_VOD, callable, liveData::postValue, error -> {
+        tasks.execute(type, Constant.TIMEOUT_VOD, Task.interactiveExecutor(), callable, liveData::postValue, error -> {
             String message = error.getMessage() == null ? error.getClass().getSimpleName() : error.getMessage();
             this.error.postValue(message);
             liveData.postValue(Result.error(message));

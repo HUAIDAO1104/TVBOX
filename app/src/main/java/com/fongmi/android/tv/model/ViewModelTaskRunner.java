@@ -3,6 +3,7 @@ package com.fongmi.android.tv.model;
 import com.fongmi.android.tv.utils.Task;
 import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import java.util.EnumMap;
@@ -26,11 +27,16 @@ final class ViewModelTaskRunner<T extends Enum<T>> {
     }
 
     <R> void execute(T type, long timeoutMs, Callable<R> callable, Consumer<R> onSuccess, Consumer<Throwable> onError) {
+        execute(type, timeoutMs, Task.executor(), callable, onSuccess, onError);
+    }
+
+    <R> void execute(T type, long timeoutMs, ListeningExecutorService executor, Callable<R> callable,
+                     Consumer<R> onSuccess, Consumer<Throwable> onError) {
         AtomicInteger taskId = Objects.requireNonNull(taskIds.get(type));
         int currentId = taskId.incrementAndGet();
         ListenableFuture<?> old = futures.get(type);
         if (old != null) old.cancel(true);
-        FluentFuture<R> future = FluentFuture.from(Task.executor().submit(callable)).withTimeout(timeoutMs, TimeUnit.MILLISECONDS, Task.scheduler());
+        FluentFuture<R> future = FluentFuture.from(executor.submit(callable)).withTimeout(timeoutMs, TimeUnit.MILLISECONDS, Task.scheduler());
         futures.put(type, future);
         future.addCallback(Task.callback(
                 result -> {

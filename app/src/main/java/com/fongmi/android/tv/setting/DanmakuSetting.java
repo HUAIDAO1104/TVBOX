@@ -1,5 +1,7 @@
 package com.fongmi.android.tv.setting;
 
+import android.os.Build;
+
 import androidx.media3.ui.danmaku.DanmakuConfig;
 
 import com.fongmi.android.tv.api.config.VodConfig;
@@ -382,27 +384,31 @@ public class DanmakuSetting {
     }
 
     public static DanmakuConfig getConfig() {
+        return getConfig(Build.VERSION.SDK_INT);
+    }
+
+    static DanmakuConfig getConfig(int sdkInt) {
         return new DanmakuConfig.Builder()
-                .setTextScale(getTextScale())
+                .setTextScale(DanmakuPlaybackTuning.textScale(getTextScale(), sdkInt))
                 .setTransparency(getTransparency())
                 .setTextBold(isTextBold())
-                .setStyleMode(getStyleMode())
+                .setStyleMode(DanmakuPlaybackTuning.styleMode(getStyleMode(), sdkInt))
                 .setShadowTransparency(getShadowTransparency())
-                .setStrokeWidthMultiplier(getStrokeWidthMultiplier())
+                .setStrokeWidthMultiplier(DanmakuPlaybackTuning.strokeWidth(getStrokeWidthMultiplier(), sdkInt))
                 .setProjectionOffsetXMultiplier(getProjectionOffsetX())
                 .setProjectionOffsetYMultiplier(getProjectionOffsetY())
                 .setProjectionTransparency(getProjectionTransparency())
                 .setColorMode(getColorMode())
-                .setDurationMs(getDurationMs())
-                .setFixedDurationMs(getFixedDurationMs())
+                .setDurationMs(DanmakuPlaybackTuning.scrollDuration(getDurationMs(), sdkInt))
+                .setFixedDurationMs(DanmakuPlaybackTuning.fixedDuration(getFixedDurationMs(), sdkInt))
                 .setTimeOffsetMs(getTimeOffsetMs())
-                .setMaxOnScreen(getMaxOnScreen())
+                .setMaxOnScreen(DanmakuPlaybackTuning.maxOnScreen(getMaxOnScreen(), sdkInt))
                 .setScrollAreaRatio(getScrollAreaRatio())
-                .setScrollGapRatio(getScrollGapRatio())
+                .setScrollGapRatio(DanmakuPlaybackTuning.scrollGap(getScrollGapRatio(), sdkInt))
                 .setLineSpacing(getLineSpacing())
-                .setMaxScrollLines(getMaxScrollLines())
-                .setMaxTopLines(getMaxTopLines())
-                .setMaxBottomLines(getMaxBottomLines())
+                .setMaxScrollLines(DanmakuPlaybackTuning.maxScrollLines(getMaxScrollLines(), sdkInt))
+                .setMaxTopLines(DanmakuPlaybackTuning.maxFixedLines(getMaxTopLines(), sdkInt))
+                .setMaxBottomLines(DanmakuPlaybackTuning.maxFixedLines(getMaxBottomLines(), sdkInt))
                 .setShowScroll(isShowScroll())
                 .setShowTop(isShowTop())
                 .setShowBottom(isShowBottom())
