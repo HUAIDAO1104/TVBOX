@@ -159,6 +159,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     private Runnable mR4;
     private Runnable mR5;
     private Runnable mR6;
+    private Runnable mPendingFocusScroll;
     private Clock mClock;
     private View mFocus1;
     private View mFocus2;
@@ -1456,7 +1457,12 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     private void ensureFocusVisible(@Nullable View target) {
         if (target == null || !isDescendantOf(target, mBinding.scroll)) return;
-        mBinding.scroll.post(() -> {
+        // Holding a DPAD direction fires dozens of focus changes per second. Posting an
+        // independent smooth scroll for each one constantly restarts the scroll animation and
+        // shows up as heavy stutter on low-end TVs. Coalesce to the latest target only.
+        if (mPendingFocusScroll != null) mBinding.scroll.removeCallbacks(mPendingFocusScroll);
+        mPendingFocusScroll = () -> {
+            mPendingFocusScroll = null;
             int[] child = new int[2];
             int[] viewport = new int[2];
             target.getLocationOnScreen(child);
@@ -1466,7 +1472,8 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
             int bottom = viewport[1] + mBinding.scroll.getHeight() - safe;
             if (child[1] < top) mBinding.scroll.smoothScrollBy(0, child[1] - top);
             else if (child[1] + target.getHeight() > bottom) mBinding.scroll.smoothScrollBy(0, child[1] + target.getHeight() - bottom);
-        });
+        };
+        mBinding.scroll.post(mPendingFocusScroll);
     }
 
     private boolean isDescendantOf(@Nullable View child, @NonNull ViewGroup ancestor) {

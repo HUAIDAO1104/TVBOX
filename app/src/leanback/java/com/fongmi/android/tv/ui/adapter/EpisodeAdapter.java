@@ -67,7 +67,13 @@ public class EpisodeAdapter extends RecyclerView.Adapter<EpisodeAdapter.ViewHold
         if (this.nextFocusUp == safeUp && this.nextFocusDown == safeDown) return;
         this.nextFocusUp = safeUp;
         this.nextFocusDown = safeDown;
-        if (!mItems.isEmpty()) notifyItemRangeChanged(0, mItems.size());
+        // Only the first and last visual rows read these bounds while binding. Notifying the
+        // whole grid rebinds every episode (expensive for long short-drama lists on TV boxes)
+        // just to update two boundary rows.
+        if (mItems.isEmpty()) return;
+        notifyItemRangeChanged(0, Math.min(2, mItems.size()));
+        int lastRowStart = ((mItems.size() - 1) / 2) * 2;
+        if (lastRowStart >= 2) notifyItemRangeChanged(lastRowStart, mItems.size() - lastRowStart);
     }
 
     private int findSelectedPosition() {
@@ -121,12 +127,21 @@ public class EpisodeAdapter extends RecyclerView.Adapter<EpisodeAdapter.ViewHold
         boolean lastRow = position / 2 == (getItemCount() - 1) / 2;
         holder.binding.text.setNextFocusUpId(firstRow ? nextFocusUp : View.NO_ID);
         holder.binding.text.setNextFocusDownId(lastRow ? nextFocusDown : View.NO_ID);
-        holder.binding.text.setSelected(item.isSelected());
+        // "Playing" visuals ride on the activated state so the selected state is free to drive
+        // the layout marquee from focus: long episode names scroll into view on the focused row.
+        holder.binding.text.setActivated(item.isSelected());
+        holder.binding.text.setSelected(holder.binding.text.isFocused() || item.isSelected());
         holder.binding.text.setTypeface(item.isSelected() ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
         holder.binding.text.setCompoundDrawablesRelativeWithIntrinsicBounds(item.isSelected() ? R.drawable.detail_v2_ic_playing : 0, 0, 0, 0);
         holder.binding.text.animate().cancel();
         applyFocusState(holder.binding.text, holder.binding.text.isFocused(), false);
-        holder.binding.text.setOnFocusChangeListener((view, hasFocus) -> applyFocusState(view, hasFocus, true));
+        holder.binding.text.setOnFocusChangeListener((view, hasFocus) -> {
+            applyFocusState(view, hasFocus, true);
+            // The layout marquee only runs while the TextView is selected. Drive it from focus
+            // so long episode names scroll into view on the focused row; the playing episode
+            // keeps its persistent selected state either way.
+            view.setSelected(hasFocus || item.isSelected());
+        });
         String rawName = SearchDisplayName.removeEmoji(item.getDesc().concat(item.getName()));
         String displayName = EpisodeDisplayName.format(rawName);
         holder.binding.text.setText(displayName);
