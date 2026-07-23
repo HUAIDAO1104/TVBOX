@@ -133,6 +133,10 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     private boolean shouldPerformTouchClick(MotionEvent event) {
         if (touchTarget == null || touchMoved) return false;
+        // Some full-screen surfaces own a real gesture detector. Converting their ACTION_UP into
+        // ACTION_CANCEL + performClick() breaks single/double tap recognition, so let subclasses
+        // keep the original DOWN/MOVE/UP stream for those specific views.
+        if (bypassSyntheticTouchClick(touchTarget)) return false;
         // A TV widget may consume a touchscreen tap only to update its focus state. Mobile must
         // never depend on that state: every short, stationary tap is delivered as exactly one
         // click whether the target was focused, selected, or neither. TV keeps its original
@@ -143,6 +147,10 @@ public abstract class BaseActivity extends AppCompatActivity {
         Rect bounds = new Rect();
         return touchTarget.getGlobalVisibleRect(bounds)
                 && bounds.contains(Math.round(event.getRawX()), Math.round(event.getRawY()));
+    }
+
+    protected boolean bypassSyntheticTouchClick(View target) {
+        return false;
     }
 
     private View findClickableAt(View view, float rawX, float rawY) {

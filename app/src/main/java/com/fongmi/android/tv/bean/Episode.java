@@ -69,6 +69,11 @@ public class Episode implements Parcelable, Diffable<Episode> {
         return url == null || url.isEmpty() ? "" : url;
     }
 
+    /** Repository helper entries are not playable episodes and must never become UI actions. */
+    public boolean isBlockedPlaybackEntry() {
+        return Danmaku.isBlockedSourceLabel(getName() + " " + getDesc() + " " + getUrl());
+    }
+
     public int getIndex() {
         return index;
     }

@@ -316,6 +316,7 @@ public class Vod implements Parcelable, Diffable<Vod> {
         String[] playFlags = getPlayFrom().split("\\$\\$\\$");
         getFlags().removeIf(item -> item == null || item.isBlockedPlaybackSource());
         for (Flag item : getFlags()) item.setEpisodes(item.getUrls());
+        getFlags().removeIf(item -> item.getEpisodes().isEmpty());
         // Some providers send both structured and paired fields. If every structured item was a
         // pseudo line, recover the real paired lines instead of leaving playback empty.
         if (getFlags().isEmpty()) {

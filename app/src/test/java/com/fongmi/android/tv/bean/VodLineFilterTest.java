@@ -45,4 +45,49 @@ public class VodLineFilterTest {
         assertEquals("真实线路", vod.getFlags().get(0).getFlag());
         assertEquals("real-url", vod.getFlags().get(0).getEpisodes().get(0).getUrl());
     }
+
+    @Test
+    public void removesGhostEpisodeHiddenInsideARealPlaybackLine() {
+        Flag flag = Flag.create(
+                "正常线路",
+                "第1集$normal-1#小白 · 弹幕$ghost#第2集$normal-2");
+
+        assertEquals(2, flag.getEpisodes().size());
+        assertEquals("第1集", flag.getEpisodes().get(0).getName());
+        assertEquals("第2集", flag.getEpisodes().get(1).getName());
+        assertEquals(1, flag.getEpisodes().get(0).getIndex());
+        assertEquals(2, flag.getEpisodes().get(1).getIndex());
+    }
+
+    @Test
+    public void structuredGhostEpisodeCannotKeepAnEmptyLineAlive() {
+        Vod vod = new Vod();
+        vod.setFlags(List.of(Flag.create("结构化线路", "小白播放器专用弹幕入口$bad")));
+        vod.setPlayFrom("真实线路");
+        vod.setPlayUrl("第1集$real-url");
+
+        vod.setFlags();
+
+        assertEquals(1, vod.getFlags().size());
+        assertEquals("真实线路", vod.getFlags().get(0).getFlag());
+    }
+
+    @Test
+    public void cachedGhostRemovalRepairsStableEpisodeIndexes() {
+        Flag flag = Flag.create("缓存线路");
+        List<Episode> episodes = flag.getEpisodes();
+        Episode first = Episode.create("第1集", "normal-1");
+        Episode ghost = Episode.create("小白弹幕", "ghost");
+        Episode second = Episode.create("第2集", "normal-2");
+        first.setIndex(1);
+        ghost.setIndex(2);
+        second.setIndex(3);
+        episodes.add(first);
+        episodes.add(ghost);
+        episodes.add(second);
+
+        assertEquals(2, flag.getEpisodes().size());
+        assertEquals(1, flag.getEpisodes().get(0).getIndex());
+        assertEquals(2, flag.getEpisodes().get(1).getIndex());
+    }
 }

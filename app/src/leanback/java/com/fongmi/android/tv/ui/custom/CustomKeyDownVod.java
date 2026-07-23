@@ -33,6 +33,13 @@ public class CustomKeyDownVod extends GestureDetector.SimpleOnGestureListener {
         return detector.onTouchEvent(e);
     }
 
+    @Override
+    public boolean onDown(@NonNull MotionEvent e) {
+        // GestureDetector requires DOWN to be claimed before it will reliably deliver the
+        // matching UP to onSingleTapConfirmed/onDoubleTap on touchscreen devices.
+        return true;
+    }
+
     public void setFull(boolean full) {
         this.full = full;
     }

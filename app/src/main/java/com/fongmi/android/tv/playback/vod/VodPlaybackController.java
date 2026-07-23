@@ -299,11 +299,14 @@ public class VodPlaybackController {
         item.checkPic(host.getVodPic());
         item.checkName(host.getVodName());
         if (host.isFromCollect() && item.getFlags().isEmpty() && host.tryNextDetailSource()) return;
-        state.setDetailMetadata(item);
         state.setFlags(item.getFlags());
         state.setHistory(historyPolicy.findOrCreate(host.getHistoryKey(), host.getVodMark(), item));
         lastHistory = state.getHistory();
+        // The host enriches sparse cloud/detail responses from the selected search candidate.
+        // Snapshot year/type only afterwards; otherwise automatic danmaku matching loses the
+        // edition identity and can accept a same-name remake returned by the provider.
         host.renderDetail(item, state.getHistory());
+        state.setDetailMetadata(item);
         host.renderFlags(state.getFlags());
         host.renderHistory(state.getHistory());
         host.onDetailFallbackCancelled();

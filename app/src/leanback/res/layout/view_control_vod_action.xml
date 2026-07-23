@@ -37,6 +37,38 @@
                 android:nextFocusDown="@id/next"
                 android:text="@string/play_next" />
 
+            <!-- Touch-only playback actions. They remain gone for the TV flavour and are enabled
+                 at runtime for the mobile flavour, which shares this landscape presentation. -->
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/playPause"
+                style="@style/PlayerV2.Control"
+                android:layout_marginEnd="9dp"
+                android:drawableStart="@drawable/player_v2_ic_pause"
+                android:nextFocusUp="@id/playPause"
+                android:nextFocusDown="@id/playPause"
+                android:text="@string/pause"
+                android:visibility="gone" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/rewind"
+                style="@style/PlayerV2.Control"
+                android:layout_marginEnd="9dp"
+                android:drawableStart="@drawable/player_v2_ic_rewind"
+                android:nextFocusUp="@id/rewind"
+                android:nextFocusDown="@id/rewind"
+                android:text="@string/player_v2_rewind"
+                android:visibility="gone" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/forward"
+                style="@style/PlayerV2.Control"
+                android:layout_marginEnd="9dp"
+                android:drawableStart="@drawable/player_v2_ic_forward"
+                android:nextFocusUp="@id/forward"
+                android:nextFocusDown="@id/forward"
+                android:text="@string/player_v2_forward"
+                android:visibility="gone" />
+
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/audio"
                 style="@style/PlayerV2.Control"
@@ -122,21 +154,6 @@
         android:focusable="false"
         android:importantForAccessibility="noHideDescendants"
         android:visibility="gone">
-
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/playPause"
-            android:layout_width="0dp"
-            android:layout_height="0dp" />
-
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/rewind"
-            android:layout_width="0dp"
-            android:layout_height="0dp" />
-
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/forward"
-            android:layout_width="0dp"
-            android:layout_height="0dp" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/repeat"

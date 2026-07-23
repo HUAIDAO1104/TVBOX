@@ -87,7 +87,7 @@ public class VodPlaybackState {
         flags.clear();
         if (items == null) return;
         for (Flag item : items) {
-            if (item != null && !item.isBlockedPlaybackSource()) flags.add(item);
+            if (item != null && !item.isBlockedPlaybackSource() && !item.getEpisodes().isEmpty()) flags.add(item);
         }
     }
 

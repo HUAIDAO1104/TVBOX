@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
@@ -167,6 +168,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     private int mFallbackAttempt;
     private boolean mFallbackActive;
     private boolean mBuffering;
+    private boolean mTouchingPlaybackControls;
     private boolean mRestoreDetailPending;
     private int mDetailScrollY;
     private int mDetailFocusId = View.NO_ID;
@@ -542,6 +544,10 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     private void setVideoView() {
         setSeekNextFocusDown(R.id.next);
         PlayerEngineDialog.setText(mBinding.control.action.player);
+        int touchActionVisibility = Util.isMobile() ? View.VISIBLE : View.GONE;
+        mBinding.control.action.playPause.setVisibility(touchActionVisibility);
+        mBinding.control.action.rewind.setVisibility(touchActionVisibility);
+        mBinding.control.action.forward.setVisibility(touchActionVisibility);
         int danmakuVisibility = DanmakuSetting.isLoad() ? View.VISIBLE : View.GONE;
         mBinding.control.action.danmaku.setVisibility(danmakuVisibility);
         mBinding.control.action.danmakuSetting.setVisibility(danmakuVisibility);
@@ -560,6 +566,9 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     private List<View> getVisiblePlaybackControls() {
         List<View> controls = new ArrayList<>();
         addVisiblePlaybackControl(controls, mBinding.control.action.next);
+        addVisiblePlaybackControl(controls, mBinding.control.action.playPause);
+        addVisiblePlaybackControl(controls, mBinding.control.action.rewind);
+        addVisiblePlaybackControl(controls, mBinding.control.action.forward);
         addVisiblePlaybackControl(controls, mBinding.control.action.audio);
         addVisiblePlaybackControl(controls, mBinding.control.action.danmaku);
         addVisiblePlaybackControl(controls, mBinding.control.action.danmakuSetting);
@@ -791,16 +800,21 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     @Override
     public void prepareSource(Vod item) {
+        // Clear the renderer while this Activity still owns the current playback key. Updating
+        // the Intent first makes PlaybackActivity reject the null-source callback as belonging to
+        // the previous owner, leaving the old programme's danmaku visible when the next automatic
+        // match deliberately returns no result.
+        VodPlaybackMedia.invalidate(player());
+        getPlayerView().setDanmakuSource(null);
+        player().reset();
+        player().stop();
+        player().clear();
         getIntent().putExtra("key", item.getSiteKey());
         getIntent().putExtra("pic", item.getPic());
         getIntent().putExtra("id", item.getId());
         mBinding.scroll.scrollTo(0, 0);
         mClock.setCallback(null);
         updateNavigationKey();
-        VodPlaybackMedia.invalidate(player());
-        player().reset();
-        player().stop();
-        player().clear();
         mBinding.progress.stage.setText(R.string.player_v2_stage_switching);
     }
 
@@ -1973,8 +1987,39 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         // HUD remains hidden so D-pad navigation never obscures the video.
         mBinding.widget.top.setVisibility(View.VISIBLE);
         mBinding.control.getRoot().setVisibility(View.VISIBLE);
-        getPlaybackControlTarget(view).requestFocus();
+        if (!Util.isMobile()) getPlaybackControlTarget(view).requestFocus();
         setR1Callback();
+    }
+
+    @Override
+    protected boolean bypassSyntheticTouchClick(View target) {
+        return Util.isMobile() && isFullscreen() && target == mBinding.video;
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (Util.isMobile() && isFullscreen()) {
+            int action = event.getActionMasked();
+            if (action == MotionEvent.ACTION_DOWN) {
+                mTouchingPlaybackControls = isVisible(mBinding.control.getRoot())
+                        && isTouchInside(event, mBinding.control.getRoot());
+                if (mTouchingPlaybackControls) App.removeCallbacks(mR1);
+            } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                if (mTouchingPlaybackControls) setR1Callback();
+                mTouchingPlaybackControls = false;
+            }
+        }
+        return super.dispatchTouchEvent(event);
+    }
+
+    private boolean isTouchInside(MotionEvent event, View view) {
+        if (view == null || !view.isShown()) return false;
+        int[] location = new int[2];
+        view.getLocationOnScreen(location);
+        float x = event.getRawX();
+        float y = event.getRawY();
+        return x >= location[0] && x <= location[0] + view.getWidth()
+                && y >= location[1] && y <= location[1] + view.getHeight();
     }
 
     private void hideControl() {

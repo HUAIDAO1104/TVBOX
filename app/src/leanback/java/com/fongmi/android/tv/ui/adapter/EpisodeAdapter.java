@@ -32,7 +32,11 @@ public class EpisodeAdapter extends RecyclerView.Adapter<EpisodeAdapter.ViewHold
 
     public void addAll(List<Episode> items) {
         mItems.clear();
-        mItems.addAll(items);
+        if (items != null) {
+            for (Episode item : items) {
+                if (item != null && !item.isBlockedPlaybackEntry()) mItems.add(item);
+            }
+        }
         selectedPosition = findSelectedPosition();
         notifyDataSetChanged();
     }

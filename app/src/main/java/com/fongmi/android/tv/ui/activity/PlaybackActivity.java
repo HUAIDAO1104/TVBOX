@@ -456,7 +456,10 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
 
         @Override
         public void onDanmakuSourceChanged(Uri uri) {
-            if (isOwner()) getPlayerView().setDanmakuSource(uri);
+            // A null URI is a global detach signal for the shared playback service. Never reject
+            // it just because navigation ownership changed a few instructions earlier; otherwise
+            // the renderer can keep the previous programme's comments until another match wins.
+            if (uri == null || isOwner()) getPlayerView().setDanmakuSource(uri);
         }
 
         @Override

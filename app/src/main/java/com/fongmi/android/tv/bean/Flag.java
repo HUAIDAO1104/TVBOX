@@ -89,23 +89,32 @@ public class Flag implements Parcelable, Diffable<Flag> {
     }
 
     public List<Episode> getEpisodes() {
+        int originalSize = episodes.size();
+        episodes.removeIf(item -> item == null || item.isBlockedPlaybackEntry());
         // Episode order is playback identity, not presentation state. Assign it once before a
         // user can reverse the list so automatic danmaku matching never mistakes UI position
-        // for the real episode number.
+        // for the real episode number. Rebuild old cached indexes only when filtering actually
+        // removed a pseudo episode; otherwise a user-selected reverse order must keep its stable
+        // original identities.
         for (int i = 0; i < episodes.size(); i++) {
-            if (episodes.get(i).getIndex() <= 0) episodes.get(i).setIndex(i + 1);
+            if (episodes.size() != originalSize || episodes.get(i).getIndex() <= 0) {
+                episodes.get(i).setIndex(i + 1);
+            }
         }
         return episodes;
     }
 
     public void setEpisodes(String url) {
+        if (url == null || url.trim().isEmpty()) return;
         String[] urls = url.contains("#") ? url.split("#") : new String[]{url};
+        int index = getEpisodes().size() + 1;
         for (int i = 0; i < urls.length; i++) {
             String[] split = urls[i].split("\\$", 2);
-            String number = String.format(Locale.getDefault(), "%02d", i + 1);
+            String number = String.format(Locale.getDefault(), "%02d", index);
             Episode episode = split.length > 1 ? Episode.create(split[0].isEmpty() ? number : split[0].trim(), split[1]) : Episode.create(number, urls[i]);
-            episode.setIndex(i + 1);
-            if (!getEpisodes().contains(episode)) getEpisodes().add(episode);
+            if (episode.isBlockedPlaybackEntry() || getEpisodes().contains(episode)) continue;
+            episode.setIndex(index++);
+            getEpisodes().add(episode);
         }
     }
 
@@ -157,7 +166,7 @@ public class Flag implements Parcelable, Diffable<Flag> {
         // episode). The merged flag owns the global, stable order of every newly accepted item.
         int next = Math.max(getEpisodes().size(), getEpisodes().stream().mapToInt(Episode::getIndex).max().orElse(0)) + 1;
         for (Episode item : items) {
-            if (getEpisodes().contains(item)) continue;
+            if (item == null || item.isBlockedPlaybackEntry() || getEpisodes().contains(item)) continue;
             item.setIndex(next++);
             if (rev) getEpisodes().add(0, item);
             else getEpisodes().add(item);
