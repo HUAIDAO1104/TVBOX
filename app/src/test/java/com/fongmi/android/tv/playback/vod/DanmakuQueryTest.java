@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.playback.vod;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -32,5 +33,31 @@ public class DanmakuQueryTest {
 
         assertEquals("推理笔记", query.searchTitle());
         assertTrue(query.year().isEmpty());
+    }
+
+    @Test
+    public void stripsAggregateEpisodeCountFromProviderTitles() {
+        DanmakuQuery query = DanmakuQuery.from("欢天喜地七仙女2005全38集");
+
+        assertEquals("欢天喜地七仙女2005", query.searchTitle());
+        assertTrue(query.candidates().contains("欢天喜地七仙女"));
+        assertEquals("2005", query.year());
+        assertEquals("某剧", DanmakuQuery.from("某剧共40集").searchTitle());
+        assertEquals("某剧", DanmakuQuery.from("某剧38集全").searchTitle());
+        assertEquals("某剧", DanmakuQuery.from("某剧共 40 集").searchTitle());
+    }
+
+    @Test
+    public void neverStripsAmbiguousYearsWithoutMetadataEvidence() {
+        DanmakuQuery query = DanmakuQuery.from("欢天喜地七仙女2005");
+
+        assertEquals("欢天喜地七仙女2005", query.searchTitle());
+        assertTrue(query.year().isEmpty());
+        assertFalse(query.candidates().contains("欢天喜地七仙女"));
+        // Real title numbers must keep their identity as the primary term.
+        DanmakuQuery numberedTitle = DanmakuQuery.from("请回答1988");
+        assertEquals("请回答1988", numberedTitle.searchTitle());
+        assertFalse(numberedTitle.candidates().contains("请回答"));
+        assertEquals("2046", DanmakuQuery.from("2046").searchTitle());
     }
 }

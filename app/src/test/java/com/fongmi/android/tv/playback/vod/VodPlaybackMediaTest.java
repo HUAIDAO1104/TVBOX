@@ -24,6 +24,15 @@ public class VodPlaybackMediaTest {
     }
 
     @Test
+    public void aggregateEpisodeCountNeverBecomesTheEpisodeQuery() {
+        // Labels carrying the season total used to resolve every episode to the finale.
+        assertEquals("5", VodPlaybackMedia.resolveEpisodeQuery("全38集第5集", 5));
+        assertEquals("5", VodPlaybackMedia.resolveEpisodeQuery("05(全38集)", 5));
+        assertEquals("38", VodPlaybackMedia.resolveEpisodeQuery("第38集", 38));
+        assertEquals("7", VodPlaybackMedia.resolveEpisodeQuery("全38集", 7));
+    }
+
+    @Test
     public void playbackIdentityIncludesSourceAndEpisodeUrlNotOnlyVisibleLabels() {
         com.fongmi.android.tv.bean.History first = new com.fongmi.android.tv.bean.History();
         first.setKey("repoA|site|vodA");

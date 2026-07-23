@@ -121,4 +121,28 @@ public class DanmakuMatchTest {
         assertFalse(DanmakuMatch.isReliable("名侦探柯南【绀青之拳】", "1", "名侦探柯南【电视剧】from 360 - 第1集"));
         assertEquals(DanmakuMatch.canonicalTitle("庆余年【电视剧】【4K】"), DanmakuMatch.canonicalTitle("庆余年"));
     }
+
+    @Test
+    public void aggregateEpisodeCountIsNeverAnEpisodeNumber() {
+        assertEquals(null, DanmakuMatch.episodeNumber("全38集"));
+        assertEquals(null, DanmakuMatch.episodeNumber("共40集"));
+        assertEquals(null, DanmakuMatch.episodeNumber("38集全"));
+        assertEquals(null, DanmakuMatch.episodeNumber("全 38 集"));
+        assertEquals(null, DanmakuMatch.episodeNumber("共 40集"));
+        assertEquals(null, DanmakuMatch.episodeNumber("38集 全"));
+        assertEquals(Integer.valueOf(1), DanmakuMatch.episodeNumber("全38集第1集"));
+        assertEquals(Integer.valueOf(2), DanmakuMatch.episodeNumber("全 38 集 第2集"));
+        assertEquals(Integer.valueOf(5), DanmakuMatch.episodeNumber("(全38集)第5集"));
+        assertEquals(Integer.valueOf(38), DanmakuMatch.episodeNumber("第38集"));
+    }
+
+    @Test
+    public void aggregateEntryCannotImpersonateTheFinale() {
+        assertFalse(DanmakuMatch.isReliable("欢天喜地七仙女", "38",
+                "欢天喜地七仙女(2005)【电视剧】from 360 - 【youku】 全38集"));
+        List<String> response = List.of(
+                "欢天喜地七仙女(2005)【电视剧】from 360 - 【youku】 全38集",
+                "欢天喜地七仙女(2005)【电视剧】from 360 - 【youku】 第38集");
+        assertEquals(response.get(1), DanmakuMatch.best("欢天喜地七仙女", "38", response, item -> item));
+    }
 }

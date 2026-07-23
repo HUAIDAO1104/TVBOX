@@ -22,12 +22,15 @@ public final class DanmakuQuery {
     private static final String YEAR = "(?:19|20)\\d{2}";
     private static final String CATEGORY = "(?:国产(?:剧)?|国剧|大陆(?:剧)?|内地(?:剧)?|华语|港剧|台剧|美剧|英剧|韩剧|日剧|泰剧|海外剧|电视剧|连续剧|剧集|电影|综艺|动漫|动画|短剧)";
     private static final String RELEASE = "(?:高清修复(?:版)?|蓝光修复(?:版)?|4k修复(?:版)?|修复版|4k|8k|2160p|1080p|720p|hdr(?:10)?|sdr|uhd|fhd|hd|bd|web[-_. ]?dl|blu[-_. ]?ray|杜比|蓝光|超清|高清|国语|粤语|普通话|中字|双语|中英双字|简中|繁中|字幕|全集|完结|已完结|完整版|无删减版?)";
+    private static final String AGGREGATE_COUNT = "(?:[全共]\\s*\\d{1,4}\\s*集(?:\\s*全)?|\\d{1,4}\\s*集\\s*全)";
     private static final Pattern LEADING_WRAPPED = Pattern.compile("^\\s*[【\\[（(]\\s*([^】\\]）)]{1,40})\\s*[】\\]）)]\\s*");
     private static final Pattern TRAILING_WRAPPED = Pattern.compile("\\s*[【\\[（(]\\s*([^】\\]）)]{1,40})\\s*[】\\]）)]\\s*$");
     private static final Pattern TITLE_WRAPPER = Pattern.compile("^[《〈【\\[（(]\\s*(.+?)\\s*[》〉】\\]）)]$");
     private static final Pattern LEADING_YEAR = Pattern.compile("^\\s*(" + YEAR + ")(?=\\s*[._·:：|/\\-]+|\\s+)(?:\\s*[._·:：|/\\-]+\\s*|\\s+)", Pattern.CASE_INSENSITIVE);
     private static final Pattern TRAILING_RELEASE = Pattern.compile("(?:\\s*[._·:：|/\\-]+\\s*|\\s+)(" + RELEASE + ")\\s*$", Pattern.CASE_INSENSITIVE);
-    private static final Pattern STRONG_TRAILING_RELEASE = Pattern.compile("(?:高清修复(?:版)?|蓝光修复(?:版)?|4k修复(?:版)?|修复版|全集|完结|已完结|完整版|无删减版?)\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern STRONG_TRAILING_RELEASE = Pattern.compile("(?:高清修复(?:版)?|蓝光修复(?:版)?|4k修复(?:版)?|修复版|全集|完结|已完结|完整版|无删减版?|" + AGGREGATE_COUNT + ")\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern AGGREGATE_EPISODE_COUNT = Pattern.compile(AGGREGATE_COUNT, Pattern.CASE_INSENSITIVE);
+    private static final Pattern TRAILING_BARE_YEAR = Pattern.compile("^(.{2,}?)[\\s._·:：|/\\-]*((?:19|20)\\d{2})$");
     private static final Pattern METADATA_TOKEN = Pattern.compile(CATEGORY + "|" + RELEASE + "|" + YEAR, Pattern.CASE_INSENSITIVE);
     private static final Pattern METADATA_SEPARATOR = Pattern.compile("[\\s._·:：|/\\-]+");
     private static final Pattern EDGE_SYMBOL = Pattern.compile("^[\\p{So}\\p{Sk}\\p{Sm}\\p{Cf}\\s]+|[\\p{So}\\p{Sk}\\p{Sm}\\p{Cf}\\s]+$");
@@ -51,6 +54,7 @@ public final class DanmakuQuery {
                 .replace("&nbsp;", " ")
                 .replaceAll("<[^>]{1,80}>", " ")
                 .trim();
+        boolean hadAggregateEpisodeCount = AGGREGATE_EPISODE_COUNT.matcher(text).find();
         String year = "";
 
         for (int pass = 0; pass < 4; pass++) {
@@ -89,7 +93,16 @@ public final class DanmakuQuery {
         String primary = text.isEmpty() ? raw : text;
         Set<String> ordered = new LinkedHashSet<>();
         add(ordered, primary);
-        if (!year.isEmpty()) add(ordered, primary + " " + year);
+        // A glued year is ambiguous for real titles such as "请回答1988". Only split it when the
+        // original provider label also carried an aggregate episode-count suffix, which is
+        // explicit metadata evidence, and retain the year as a strict edition constraint.
+        Matcher bareYear = TRAILING_BARE_YEAR.matcher(primary);
+        if (hadAggregateEpisodeCount && bareYear.matches()
+                && bareYear.group(1).trim().codePointCount(0, bareYear.group(1).trim().length()) >= 4) {
+            if (year.isEmpty()) year = bareYear.group(2);
+            add(ordered, bareYear.group(1).trim());
+        }
+        if (!year.isEmpty() && !primary.endsWith(year)) add(ordered, primary + " " + year);
         if (!raw.equals(primary)) add(ordered, raw);
         return new DanmakuQuery(raw, primary, year, new ArrayList<>(ordered));
     }

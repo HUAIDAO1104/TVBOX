@@ -12,7 +12,10 @@ import java.util.regex.Pattern;
 /** Deterministic ranking for automatic danmaku selection. */
 public final class DanmakuMatch {
 
-    private static final Pattern NUMBER = Pattern.compile("(?:第\\s*)?0*(\\d{1,4})\\s*[集期话回]");
+    // Aggregate markers such as 全38集/共38集/38集全 describe the season size, never the episode.
+    // Strip the entire marker (including spaced variants) before parsing an actual episode.
+    private static final Pattern AGGREGATE_COUNT = Pattern.compile("(?:[全共]\\s*\\d{1,4}\\s*[集期话回](?:\\s*全)?|\\d{1,4}\\s*[集期话回]\\s*全)");
+    private static final Pattern NUMBER = Pattern.compile("(?<![全共0-9])(?:第\\s*)?0*(\\d{1,4})\\s*[集期话回](?!全)");
     private static final Pattern SEASON_EPISODE = Pattern.compile("(?i)S\\s*0*(\\d{1,2})\\s*E\\s*0*(\\d{1,3})");
     private static final Pattern FILE_EPISODE = Pattern.compile("(?:^|[\\]）】}\\s._-])0*(\\d{1,3})(?=\\s*\\.(?:mkv|mp4|avi|mov|ts|m2ts|webm)(?:$|[\\s【\\[]))", Pattern.CASE_INSENSITIVE);
     private static final Pattern SHORT_EPISODE = Pattern.compile("^\\s*0*(\\d{1,3})\\s*$");
@@ -134,13 +137,14 @@ public final class DanmakuMatch {
 
     static Integer episodeNumber(String value) {
         if (value == null) return null;
-        Matcher seasonEpisode = SEASON_EPISODE.matcher(value);
+        String episodeValue = AGGREGATE_COUNT.matcher(value).replaceAll(" ");
+        Matcher seasonEpisode = SEASON_EPISODE.matcher(episodeValue);
         if (seasonEpisode.find()) return Integer.parseInt(seasonEpisode.group(2));
-        Matcher number = NUMBER.matcher(value);
+        Matcher number = NUMBER.matcher(episodeValue);
         if (number.find()) return Integer.parseInt(number.group(1));
-        Matcher fileEpisode = FILE_EPISODE.matcher(value);
+        Matcher fileEpisode = FILE_EPISODE.matcher(episodeValue);
         if (fileEpisode.find()) return Integer.parseInt(fileEpisode.group(1));
-        Matcher shortEpisode = SHORT_EPISODE.matcher(value);
+        Matcher shortEpisode = SHORT_EPISODE.matcher(episodeValue);
         return shortEpisode.find() ? Integer.parseInt(shortEpisode.group(1)) : null;
     }
 

@@ -78,7 +78,8 @@ public class DanmakuApi {
     private static void search(int generation, DanmakuQuery query, String year, String type, String episode,
                                Consumer<Danmaku> found, int candidateIndex) {
         if (generation != REQUEST_GENERATION.get() || candidateIndex >= query.candidates().size()) return;
-        createCall(query.candidates().get(candidateIndex), episode).enqueue(new Callback() {
+        String candidateTitle = query.candidates().get(candidateIndex);
+        createCall(candidateTitle, episode).enqueue(new Callback() {
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) {
                 try (Response closeable = response) {
@@ -87,7 +88,11 @@ public class DanmakuApi {
                         search(generation, query, year, type, episode, found, candidateIndex + 1);
                         return;
                     }
-                    Danmaku best = bestMatch(query, year, type, episode, Danmaku.arrayFrom(closeable.body().string()));
+                    // Match against the title actually sent in this round. Earlier rounds may use a
+                    // decorated provider title whose canonical form can never equal a catalogue
+                    // entry; judging those results with the cleaned fallback title would reject
+                    // every correct candidate and skip automatic loading entirely.
+                    Danmaku best = bestMatch(candidateTitle, query, year, type, episode, Danmaku.arrayFrom(closeable.body().string()));
                     if (best == null) {
                         search(generation, query, year, type, episode, found, candidateIndex + 1);
                         return;
@@ -120,6 +125,11 @@ public class DanmakuApi {
     static Danmaku bestMatch(DanmakuQuery query, String year, String type, String episode, List<Danmaku> items) {
         String expectedYear = TextUtils.isEmpty(year) ? query.year() : year.trim();
         return DanmakuMatch.best(query.searchTitle(), expectedYear, type, episode, items, Danmaku::getName);
+    }
+
+    static Danmaku bestMatch(String title, DanmakuQuery query, String year, String type, String episode, List<Danmaku> items) {
+        String expectedYear = year == null || year.isEmpty() ? query.year() : year.trim();
+        return DanmakuMatch.best(title, expectedYear, type, episode, items, Danmaku::getName);
     }
 
     public static void cancel() {
