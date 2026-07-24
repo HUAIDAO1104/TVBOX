@@ -34,11 +34,25 @@ public class PlaySpec {
         this.key = key;
         this.url = url;
         this.drm = drm;
-        this.subs = subs;
+        this.subs = sanitizeSubs(subs);
         this.format = format;
         this.headers = headers;
         this.danmakus = sanitizeDanmakus(danmakus);
         this.metadata = metadata;
+    }
+
+    static List<Sub> sanitizeSubs(List<Sub> items) {
+        if (items == null) return null;
+        List<Sub> result = new ArrayList<>();
+        for (Sub item : items) {
+            // The same repository spiders that inject a "小白弹幕" pseudo danmaku also ship it as
+            // a subtitle entry. As a track it renders as a dead, often unsupported item in the
+            // playback track picker, and the player wastes time fetching its non-actionable URL
+            // on every playback start. Reject it at the shared media boundary.
+            if (item == null || item.isBlockedSource()) continue;
+            result.add(item);
+        }
+        return result;
     }
 
     static List<Danmaku> sanitizeDanmakus(List<Danmaku> items) {

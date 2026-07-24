@@ -13,6 +13,8 @@ import com.fongmi.android.tv.utils.UrlUtil;
 import com.github.catvod.utils.Trans;
 import com.google.gson.annotations.SerializedName;
 
+import java.util.Objects;
+
 public class Sub {
 
     @SerializedName("url")
@@ -74,6 +76,15 @@ public class Sub {
 
     public boolean isForced() {
         return (flag & C.SELECTION_FLAG_FORCED) != 0;
+    }
+
+    /**
+     * Repository spiders inject a non-actionable pseudo subtitle (the same "小白弹幕" entry seen
+     * in danmaku lists). As an ExoPlayer track it appears as a dead, unsupported item in the
+     * playback track picker and its URL is fetched on every playback start for nothing.
+     */
+    public boolean isBlockedSource() {
+        return Danmaku.isBlockedSourceLabel(Objects.toString(name, "") + " " + Objects.toString(url, ""));
     }
 
     public boolean isEmpty() {

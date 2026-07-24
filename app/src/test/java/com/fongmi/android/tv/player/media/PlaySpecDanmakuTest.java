@@ -21,4 +21,17 @@ public class PlaySpecDanmakuTest {
         assertEquals(1, sanitized.size());
         assertFalse(sanitized.get(0).isSelected());
     }
+
+    @Test
+    public void repositoryGhostSubtitleNeverBecomesATrack() {
+        com.fongmi.android.tv.bean.Sub ghost = com.fongmi.android.tv.bean.Sub.from("小白弹幕", "https://example.invalid/ad", "", "text/vtt");
+        com.fongmi.android.tv.bean.Sub normal = com.fongmi.android.tv.bean.Sub.from("简体中文", "https://example.invalid/zhs.vtt", "zh", "text/vtt");
+
+        List<com.fongmi.android.tv.bean.Sub> sanitized = PlaySpec.sanitizeSubs(List.of(ghost, normal));
+
+        assertEquals(1, sanitized.size());
+        org.junit.Assert.assertSame(normal, sanitized.get(0));
+        org.junit.Assert.assertTrue(ghost.isBlockedSource());
+        assertFalse(normal.isBlockedSource());
+    }
 }
