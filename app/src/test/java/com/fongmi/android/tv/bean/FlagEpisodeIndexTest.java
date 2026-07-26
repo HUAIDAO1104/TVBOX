@@ -6,6 +6,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 public class FlagEpisodeIndexTest {
 
@@ -71,6 +72,23 @@ public class FlagEpisodeIndexTest {
         assertEquals(3, third.getIndex());
     }
 
+    @Test
+    public void selectingFromLongPlaylistPerformsOneNormalizationScan() {
+        Flag flag = new Flag("长剧线路");
+        List<Episode> episodes = flag.getEpisodes();
+        for (int i = 0; i < 800; i++) episodes.add(new CountingEpisode("第" + (i + 1) + "集", "url-" + i));
+        // Normalize legacy indexes once, then measure only the hot selection path.
+        flag.getEpisodes();
+        CountingEpisode.indexReads = 0;
+
+        flag.toggle(true, episodes.get(630));
+
+        // A cached list reference reads each legacy index once. Repeated getEpisodes() calls in
+        // the selection loop would exceed 600k reads for this fixture.
+        org.junit.Assert.assertTrue(CountingEpisode.indexReads <= episodes.size() * 2);
+        assertEquals(630, flag.getPosition());
+    }
+
     private static Flag flagWith(String... names) {
         Flag flag = new Flag("测试线路");
         for (int i = 0; i < names.length; i++) flag.getEpisodes().add(episode(names[i], "url-" + (i + 1), i + 1));
@@ -83,7 +101,7 @@ public class FlagEpisodeIndexTest {
         return episode;
     }
 
-    private static final class TestEpisode extends Episode {
+    private static class TestEpisode extends Episode {
 
         private final String name;
         private final String url;
@@ -101,6 +119,21 @@ public class FlagEpisodeIndexTest {
         @Override
         public String getUrl() {
             return url;
+        }
+    }
+
+    private static final class CountingEpisode extends TestEpisode {
+
+        private static int indexReads;
+
+        private CountingEpisode(String name, String url) {
+            super(name, url);
+        }
+
+        @Override
+        public int getIndex() {
+            indexReads++;
+            return super.getIndex();
         }
     }
 }

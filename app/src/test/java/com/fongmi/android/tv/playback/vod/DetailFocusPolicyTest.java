@@ -24,4 +24,19 @@ public class DetailFocusPolicyTest {
         assertTrue(DetailFocusPolicy.posterCanReceiveFocus(0.21f));
         assertFalse(DetailFocusPolicy.posterCanReceiveFocus(0.2f));
     }
+
+    @Test
+    public void episodeViewportStaysBoundedForLongPlaylists() {
+        assertEquals(0, DetailFocusPolicy.episodeViewportRows(0, 2, 6));
+        assertEquals(1, DetailFocusPolicy.episodeViewportRows(1, 2, 6));
+        assertEquals(2, DetailFocusPolicy.episodeViewportRows(4, 2, 6));
+        assertEquals(6, DetailFocusPolicy.episodeViewportRows(600, 2, 6));
+    }
+
+    @Test
+    public void focusedControlScrollsOnlyWhenOutsideSafeViewport() {
+        assertEquals(-14, DetailFocusPolicy.focusScrollDelta(10, 44, 0, 720, 24));
+        assertEquals(0, DetailFocusPolicy.focusScrollDelta(100, 44, 0, 720, 24));
+        assertEquals(28, DetailFocusPolicy.focusScrollDelta(680, 44, 0, 720, 24));
+    }
 }

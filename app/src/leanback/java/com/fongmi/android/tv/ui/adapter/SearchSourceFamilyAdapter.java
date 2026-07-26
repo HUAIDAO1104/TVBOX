@@ -91,7 +91,6 @@ public final class SearchSourceFamilyAdapter extends RecyclerView.Adapter<Search
             view.animate().cancel();
             view.animate().scaleX(focused ? 1.025f : 1f).scaleY(focused ? 1.025f : 1f)
                     .setDuration(focused ? 150 : 100).start();
-            if (focused) listener.onSelect(item);
         });
         holder.binding.getRoot().setContentDescription(item.name() + " " + item.status());
     }

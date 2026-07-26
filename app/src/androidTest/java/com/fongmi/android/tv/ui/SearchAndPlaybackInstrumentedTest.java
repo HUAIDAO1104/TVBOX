@@ -35,10 +35,12 @@ import com.fongmi.android.tv.databinding.AdapterSearchWorkBinding;
 import com.fongmi.android.tv.databinding.AdapterEpisodeBinding;
 import com.fongmi.android.tv.databinding.DialogRepositoryEditBinding;
 import com.fongmi.android.tv.model.SearchProgress;
+import com.fongmi.android.tv.playback.vod.DetailFocusPolicy;
 import com.fongmi.android.tv.service.PlaybackService;
 import com.fongmi.android.tv.ui.activity.VideoActivity;
 import com.fongmi.android.tv.ui.adapter.EpisodeAdapter;
 import com.fongmi.android.tv.ui.adapter.FlagAdapter;
+import com.fongmi.android.tv.ui.adapter.SearchSourceFamilyAdapter;
 import com.fongmi.android.tv.ui.search.SearchSource;
 
 import org.junit.Test;
@@ -51,6 +53,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.gson.JsonObject;
@@ -138,6 +141,43 @@ public class SearchAndPlaybackInstrumentedTest {
     }
 
     @Test
+    public void searchSourceFocusDoesNotRebuildResultsUntilConfirm() throws Exception {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        instrumentation.runOnMainSync(() -> {
+            try {
+                var targetContext = instrumentation.getTargetContext();
+                var context = new ContextThemeWrapper(targetContext, R.style.Theme_App);
+                AtomicInteger selected = new AtomicInteger();
+                SearchSourceFamilyAdapter adapter = new SearchSourceFamilyAdapter(item -> selected.incrementAndGet());
+                adapter.submit(List.of(
+                        new SearchSourceFamilyAdapter.Item("all", "全部", "20", true),
+                        new SearchSourceFamilyAdapter.Item("source-a", "来源 A", "12", false)));
+
+                RecyclerView recycler = new RecyclerView(context);
+                recycler.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(context));
+                recycler.setAdapter(adapter);
+                int widthSpec = View.MeasureSpec.makeMeasureSpec(360, View.MeasureSpec.EXACTLY);
+                int heightSpec = View.MeasureSpec.makeMeasureSpec(320, View.MeasureSpec.EXACTLY);
+                recycler.measure(widthSpec, heightSpec);
+                recycler.layout(0, 0, 360, 320);
+
+                RecyclerView.ViewHolder holder = recycler.findViewHolderForAdapterPosition(1);
+                assertNotNull(holder);
+                View.OnFocusChangeListener focusListener = holder.itemView.getOnFocusChangeListener();
+                assertNotNull(focusListener);
+                focusListener.onFocusChange(holder.itemView, true);
+                assertEquals(0, selected.get());
+                holder.itemView.performClick();
+                assertEquals(1, selected.get());
+            } catch (Throwable throwable) {
+                failure.set(throwable);
+            }
+        });
+        if (failure.get() != null) throw new AssertionError(failure.get());
+    }
+
+    @Test
     public void aggregateResultLayoutKeepsFocusInsideBodyAndUsesThreeByFourPoster() {
         var context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         var inflater = LayoutInflater.from(context);
@@ -211,7 +251,7 @@ public class SearchAndPlaybackInstrumentedTest {
     }
 
     @Test
-    public void detailEpisodeGridKeepsAllItemsInTwoColumnsAndMarqueesLongNames() throws Exception {
+    public void detailEpisodeGridVirtualizesSixHundredItemsAndMarqueesLongNames() throws Exception {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         AtomicReference<Throwable> failure = new AtomicReference<>();
         instrumentation.runOnMainSync(() -> {
@@ -252,13 +292,14 @@ public class SearchAndPlaybackInstrumentedTest {
                 binding.episode.setItemAnimator(null);
                 EpisodeAdapter episodeAdapter = new EpisodeAdapter(item -> { });
                 ArrayList<Episode> episodes = new ArrayList<>();
-                for (int i = 1; i <= 37; i++) episodes.add(Episode.create("第" + i + "集", "https://fixture.invalid/" + i));
+                for (int i = 1; i <= 600; i++) episodes.add(Episode.create("第" + i + "集", "https://fixture.invalid/" + i));
                 episodes.set(15, Episode.create(fullName, "https://fixture.invalid/16"));
                 episodes.get(15).setSelected(true);
                 episodeAdapter.addAll(episodes);
                 binding.episode.setAdapter(episodeAdapter);
                 ViewGroup.LayoutParams episodeParams = binding.episode.getLayoutParams();
-                episodeParams.height = ((episodes.size() + 1) / 2) * (int) (52 * targetContext.getResources().getDisplayMetrics().density);
+                episodeParams.height = DetailFocusPolicy.episodeViewportRows(episodes.size(), 2, 6)
+                        * (int) (52 * targetContext.getResources().getDisplayMetrics().density);
                 binding.episode.setLayoutParams(episodeParams);
 
                 int width = targetContext.getResources().getDisplayMetrics().widthPixels;
@@ -271,12 +312,19 @@ public class SearchAndPlaybackInstrumentedTest {
                 AdapterEpisodeBinding episodeCard = AdapterEpisodeBinding.inflate(
                         LayoutInflater.from(context), new FrameLayout(context), false);
                 assertEquals(2, layout.getSpanCount());
-                assertEquals(37, episodeAdapter.getItemCount());
+                assertEquals(600, episodeAdapter.getItemCount());
+                assertTrue(binding.episode.isNestedScrollingEnabled());
+                // The old detail layout expanded to every episode row, which forced RecyclerView
+                // to create hundreds of children on the UI thread. A six-row viewport must keep
+                // the complete adapter data while only materializing the visible neighborhood.
+                assertTrue(binding.episode.getChildCount() < episodeAdapter.getItemCount());
+                assertTrue(binding.episode.getLayoutParams().height
+                        <= 6 * (int) (52 * targetContext.getResources().getDisplayMetrics().density));
                 episodes.get(15).setSelected(false);
-                episodes.get(30).setSelected(true);
+                episodes.get(590).setSelected(true);
                 episodeAdapter.refreshSelection();
-                assertEquals(37, episodeAdapter.getItemCount());
-                assertEquals(30, episodeAdapter.getPosition());
+                assertEquals(600, episodeAdapter.getItemCount());
+                assertEquals(590, episodeAdapter.getPosition());
                 assertEquals(TextUtils.TruncateAt.MARQUEE, episodeCard.text.getEllipsize());
                 assertEquals(-1, episodeCard.text.getMarqueeRepeatLimit());
                 assertEquals(View.GONE, binding.detailBackdrop.getVisibility());

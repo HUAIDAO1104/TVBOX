@@ -37,8 +37,9 @@ public class PartAdapter extends RecyclerView.Adapter<PartAdapter.ViewHolder> {
     }
 
     public void setNextFocusUp(int nextFocusUp) {
+        if (this.nextFocusUp == nextFocusUp) return;
         this.nextFocusUp = nextFocusUp;
-        notifyDataSetChanged();
+        if (!mItems.isEmpty()) notifyItemRangeChanged(0, mItems.size());
     }
 
     @Override

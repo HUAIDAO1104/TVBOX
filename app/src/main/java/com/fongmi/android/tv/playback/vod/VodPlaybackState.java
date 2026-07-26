@@ -107,7 +107,8 @@ public class VodPlaybackState {
     public Episode getEpisode() {
         Flag flag = getFlag();
         int position = flag.getPosition();
-        return flag.getEpisodes().get(position >= 0 && position < flag.getEpisodes().size() ? position : 0);
+        List<Episode> episodes = flag.getEpisodes();
+        return episodes.get(position >= 0 && position < episodes.size() ? position : 0);
     }
 
     public boolean hasEpisode() {

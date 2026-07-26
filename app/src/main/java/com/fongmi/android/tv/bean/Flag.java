@@ -107,14 +107,18 @@ public class Flag implements Parcelable, Diffable<Flag> {
     public void setEpisodes(String url) {
         if (url == null || url.trim().isEmpty()) return;
         String[] urls = url.contains("#") ? url.split("#") : new String[]{url};
-        int index = getEpisodes().size() + 1;
+        // getEpisodes() validates the complete collection for legacy cached data. Calling it
+        // repeatedly while parsing a long short-drama playlist turns a linear import into a
+        // quadratic main-thread operation. Keep one validated reference for this mutation.
+        List<Episode> items = getEpisodes();
+        int index = items.size() + 1;
         for (int i = 0; i < urls.length; i++) {
             String[] split = urls[i].split("\\$", 2);
             String number = String.format(Locale.getDefault(), "%02d", index);
             Episode episode = split.length > 1 ? Episode.create(split[0].isEmpty() ? number : split[0].trim(), split[1]) : Episode.create(number, urls[i]);
-            if (episode.isBlockedPlaybackEntry() || getEpisodes().contains(episode)) continue;
+            if (episode.isBlockedPlaybackEntry() || items.contains(episode)) continue;
             episode.setIndex(index++);
-            getEpisodes().add(episode);
+            items.add(episode);
         }
     }
 
@@ -128,8 +132,12 @@ public class Flag implements Parcelable, Diffable<Flag> {
     }
 
     private void setSelected(Episode episode) {
-        setPosition(getEpisodes().indexOf(episode));
-        for (int i = 0; i < getEpisodes().size(); i++) getEpisodes().get(i).setSelected(i == getPosition());
+        // A previous implementation called getEpisodes() in the loop condition and body. Since
+        // that getter normalizes the full list, changing one episode was O(n²) and could block an
+        // Android 9 TV for seconds on long playlists.
+        List<Episode> items = getEpisodes();
+        setPosition(items.indexOf(episode));
+        for (int i = 0; i < items.size(); i++) items.get(i).setSelected(i == getPosition());
     }
 
     public int getPosition() {
@@ -146,17 +154,18 @@ public class Flag implements Parcelable, Diffable<Flag> {
     }
 
     public Episode find(String remarks, boolean strict) {
-        if (getEpisodes().isEmpty()) return null;
-        if (getEpisodes().size() == 1) return getEpisodes().get(0);
+        List<Episode> items = getEpisodes();
+        if (items.isEmpty()) return null;
+        if (items.size() == 1) return items.get(0);
         int number = Util.getNumber(remarks);
-        return getEpisodes().stream()
+        return items.stream()
                 .map(episode -> new Episode.Rule(episode, episode.getScore(remarks, number)))
                 .filter(Episode.Rule::find).max(Comparator.comparingInt(Episode.Rule::score)).map(Episode.Rule::episode)
-                .orElseGet(() -> isPositionValid() ? getEpisodes().get(getPosition()) : strict ? null : getEpisodes().get(0));
+                .orElseGet(() -> isPositionValid(items) ? items.get(getPosition()) : strict ? null : items.get(0));
     }
 
-    private boolean isPositionValid() {
-        return getPosition() >= 0 && getPosition() < getEpisodes().size();
+    private boolean isPositionValid(List<Episode> items) {
+        return getPosition() >= 0 && getPosition() < items.size();
     }
 
     public void mergeEpisodes(List<Episode> items, boolean rev) {
@@ -164,12 +173,13 @@ public class Flag implements Parcelable, Diffable<Flag> {
         // page-local presentation indexes, so carrying them into the merged flag would give
         // different episodes the same playback identity (and consequently the wrong danmaku
         // episode). The merged flag owns the global, stable order of every newly accepted item.
-        int next = Math.max(getEpisodes().size(), getEpisodes().stream().mapToInt(Episode::getIndex).max().orElse(0)) + 1;
+        List<Episode> episodes = getEpisodes();
+        int next = Math.max(episodes.size(), episodes.stream().mapToInt(Episode::getIndex).max().orElse(0)) + 1;
         for (Episode item : items) {
-            if (item == null || item.isBlockedPlaybackEntry() || getEpisodes().contains(item)) continue;
+            if (item == null || item.isBlockedPlaybackEntry() || episodes.contains(item)) continue;
             item.setIndex(next++);
-            if (rev) getEpisodes().add(0, item);
-            else getEpisodes().add(item);
+            if (rev) episodes.add(0, item);
+            else episodes.add(item);
         }
     }
 

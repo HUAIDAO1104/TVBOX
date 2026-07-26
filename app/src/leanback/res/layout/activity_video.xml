@@ -321,7 +321,7 @@
                         android:layout_marginBottom="10dp"
                         android:clipChildren="false"
                         android:clipToPadding="false"
-                        android:nestedScrollingEnabled="false"
+                        android:nestedScrollingEnabled="true"
                         android:overScrollMode="never"
                         android:visibility="gone"
                         tools:visibility="visible" />

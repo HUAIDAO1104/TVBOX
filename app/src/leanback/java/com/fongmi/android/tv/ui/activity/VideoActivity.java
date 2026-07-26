@@ -125,6 +125,8 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     private static final String MODE_DETAIL = "DETAIL";
     private static final String MODE_PLAY_NOW = "PLAY_NOW";
     private static final int REQUEST_CLOUD_LOGIN = 2031;
+    private static final int DETAIL_EPISODE_COLUMNS = 2;
+    private static final int DETAIL_EPISODE_MAX_VISIBLE_ROWS = 6;
     private static final String EXTRA_REPOSITORY_CANDIDATES = "repository_candidates";
     private static final String STATE_DETAIL_SCROLL = "detail_scroll";
     private static final String STATE_DETAIL_FOCUS = "detail_focus";
@@ -488,10 +490,10 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         mBinding.flag.addOnChildViewHolderSelectedListener(new OnChildViewHolderSelectedListener() {
             @Override
             public void onChildViewHolderSelected(@NonNull RecyclerView parent, @Nullable RecyclerView.ViewHolder child, int position, int subposition) {
-                if (mFlagAdapter.getItemCount() > 0) onItemClick(mFlagAdapter.get(position));
-                // Binding a source selects its row programmatically. Scrolling the outer detail
-                // page for that non-focused selection clipped the back button on first render.
-                // Only reveal the row when the user has actually moved focus into this list.
+                // Focus navigation must never execute a real source switch. The previous
+                // focus-to-activate behavior rebuilt the complete episode grid for every DPAD
+                // step and made traversing a long source row appear frozen. Confirm/click remains
+                // the single explicit activation path through FlagAdapter.
                 if (child != null && child.itemView.hasFocus()) ensureFocusVisible(child.itemView);
             }
         });
@@ -524,9 +526,9 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         mBinding.flag.setHorizontalSpacing(ResUtil.dp2px(6));
         mBinding.flag.setRowHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
         mBinding.flag.setAdapter(mFlagAdapter = new FlagAdapter(this));
-        mBinding.episode.setLayoutManager(new GridLayoutManager(this, 2));
+        mBinding.episode.setLayoutManager(new GridLayoutManager(this, DETAIL_EPISODE_COLUMNS));
         mBinding.episode.setItemAnimator(null);
-        mBinding.episode.setNestedScrollingEnabled(false);
+        mBinding.episode.setNestedScrollingEnabled(true);
         mBinding.episode.setAdapter(mEpisodeAdapter = new EpisodeAdapter(this));
         mBinding.quality.setHorizontalSpacing(ResUtil.dp2px(8));
         mBinding.quality.setRowHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -933,17 +935,28 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     @Override
     public void renderFlagSelection(Flag item) {
         if (item == null || item.isBlockedPlaybackSource()) return;
-        mBinding.flag.setSelectedPosition(mFlagAdapter.indexOf(item));
-        notifyItemChanged(mBinding.flag, mFlagAdapter);
+        int position = mFlagAdapter.indexOf(item);
+        if (position >= 0 && mBinding.flag.getSelectedPosition() != position) {
+            mBinding.flag.setSelectedPosition(position);
+        }
+        mFlagAdapter.refreshSelection();
         mCurrentSourceName = cleanSourceName(item.getShow());
-        if (TextUtils.isEmpty(mCurrentSourceName)) mCurrentSourceName = getString(R.string.detail_v2_source_fallback, mFlagAdapter.indexOf(item) + 1);
+        if (TextUtils.isEmpty(mCurrentSourceName)) mCurrentSourceName = getString(R.string.detail_v2_source_fallback, position + 1);
         mBinding.control.controlStatus.setText(getString(R.string.detail_v2_current_source, mCurrentSourceName));
     }
 
     @Override
     public void renderEpisodeSelection(Episode item) {
         mEpisodeAdapter.refreshSelection();
-        mBinding.episode.scrollToPosition(mEpisodeAdapter.getPosition());
+        int position = mEpisodeAdapter.getPosition();
+        if (isFullscreen()) {
+            // The detail list is hidden behind fullscreen playback. Relayout/scrolling it here
+            // steals a frame from next-episode playback on TV hardware; retain only restore state.
+            mEpisodePosition = position;
+            if (mDetailListId == R.id.episode) mDetailListPosition = position;
+        } else {
+            mBinding.episode.scrollToPosition(position);
+        }
         updatePrimaryAction();
     }
 
@@ -1238,7 +1251,8 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     private void updateEpisodeGridHeight(int itemCount) {
         ViewGroup.LayoutParams params = mBinding.episode.getLayoutParams();
-        int rows = (itemCount + 1) / 2;
+        int rows = DetailFocusPolicy.episodeViewportRows(
+                itemCount, DETAIL_EPISODE_COLUMNS, DETAIL_EPISODE_MAX_VISIBLE_ROWS);
         int height = rows * ResUtil.dp2px(52);
         if (params.height == height) return;
         params.height = height;
@@ -1306,8 +1320,6 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         mBinding.keep.setNextFocusDownId(firstDetailRow);
         mBinding.content.setNextFocusDownId(firstDetailRow);
         mBinding.change.setNextFocusDownId(firstDetailRow);
-        notifyItemChanged(mBinding.part, mPartAdapter);
-        notifyItemChanged(mBinding.flag, mFlagAdapter);
         if (mRestoreDetailPending) restoreDetailStateWhenReady(mDetailListId);
     }
 
@@ -1468,10 +1480,11 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
             target.getLocationOnScreen(child);
             mBinding.scroll.getLocationOnScreen(viewport);
             int safe = ResUtil.dp2px(24);
-            int top = viewport[1] + safe;
-            int bottom = viewport[1] + mBinding.scroll.getHeight() - safe;
-            if (child[1] < top) mBinding.scroll.smoothScrollBy(0, child[1] - top);
-            else if (child[1] + target.getHeight() > bottom) mBinding.scroll.smoothScrollBy(0, child[1] + target.getHeight() - bottom);
+            int delta = DetailFocusPolicy.focusScrollDelta(
+                    child[1], target.getHeight(), viewport[1], mBinding.scroll.getHeight(), safe);
+            // Deterministic one-frame scrolling prevents held DPAD input from repeatedly
+            // restarting NestedScrollView's animation and starving focus search.
+            if (delta != 0) mBinding.scroll.scrollBy(0, delta);
         };
         mBinding.scroll.post(mPendingFocusScroll);
     }
