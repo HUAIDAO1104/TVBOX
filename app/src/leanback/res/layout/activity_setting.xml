@@ -449,6 +449,32 @@
                         </androidx.appcompat.widget.LinearLayoutCompat>
 
                         <androidx.appcompat.widget.LinearLayoutCompat
+                            android:id="@+id/bootStart"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:layout_marginTop="8dp"
+                            android:background="@drawable/settings_v2_selector_row"
+                            android:stateListAnimator="@animator/settings_v2_focus_scale"
+                            android:focusable="true"
+                            android:focusableInTouchMode="true"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/SettingsV2.RowLabel"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/setting_boot_start" />
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/bootStartText"
+                                style="@style/SettingsV2.RowValue"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="end"
+                                tools:text="On" />
+                        </androidx.appcompat.widget.LinearLayoutCompat>
+
+                        <androidx.appcompat.widget.LinearLayoutCompat
                             android:id="@+id/size"
                             android:layout_width="match_parent"
                             android:layout_height="48dp"

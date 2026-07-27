@@ -80,6 +80,8 @@
     <string name="danmaku_search_action">搜尋</string>
     <string name="danmaku_search_running">正在搜尋 <xliff:g name="count">%d</xliff:g> 條線路…</string>
     <string name="danmaku_search_result">找到 <xliff:g name="count">%d</xliff:g> 個匹配彈幕源</string>
+    <string name="danmaku_result_focus">已選中 <xliff:g name="position">%1$d</xliff:g>/<xliff:g name="total">%2$d</xliff:g> · <xliff:g name="name">%3$s</xliff:g></string>
+    <string name="danmaku_result_selected">正在使用 · <xliff:g name="name">%1$s</xliff:g></string>
     <string name="danmaku_search_no_playback">請先播放影片，再手動匹配彈幕</string>
     <string name="danmaku_search_configure_api">請先在設定的彈幕頁面配置搜尋接口</string>
     <string name="danmaku_text_size">字體縮放</string>
@@ -139,6 +141,7 @@
     <string name="setting_player">播放設定</string>
     <string name="setting_danmaku">彈幕設定</string>
     <string name="setting_incognito">無痕模式</string>
+    <string name="setting_boot_start">開機進入片多多</string>
     <string name="setting_theme_color">主題色彩</string>
     <string name="setting_auto">自動</string>
     <string name="setting_custom">自訂</string>

@@ -115,6 +115,29 @@ public class DanmakuMatchTest {
     }
 
     @Test
+    public void animationOutranksLiveActionRegardlessOfProviderOrder() {
+        List<String> response = List.of(
+                "凡人修仙传(2025)【真人版电视剧】from 360 - 第12集",
+                "凡人修仙传(2020)【国产动漫】from 360 - 第12集",
+                "凡人修仙传(2020)【番剧】from bilibili - 第12集");
+        assertEquals(response.get(1), DanmakuMatch.best(
+                "凡人修仙传", "2020", "国产动漫", "12", response, item -> item));
+        assertTrue(DanmakuMatch.displayScore(
+                        "凡人修仙传", "", "动画", "12", response.get(1))
+                > DanmakuMatch.displayScore(
+                        "凡人修仙传", "", "动画", "12", response.get(0)));
+    }
+
+    @Test
+    public void unknownProviderTypeRemainsSafeFallback() {
+        List<String> response = List.of("凡人修仙传 from 360 - 第3集");
+        assertEquals(response.get(0), DanmakuMatch.best(
+                "凡人修仙传", "", "国漫", "3", response, item -> item));
+        assertEquals("anime", DanmakuMatch.normalizeMediaType("国产动画年番"));
+        assertEquals("series", DanmakuMatch.normalizeMediaType("真人版"));
+    }
+
+    @Test
     public void bracketedSubtitleRemainsPartOfWorkIdentity() {
         assertFalse(DanmakuMatch.canonicalTitle("名侦探柯南【绀青之拳】")
                 .equals(DanmakuMatch.canonicalTitle("名侦探柯南")));

@@ -209,6 +209,14 @@ public class VodPlaybackState {
 
     public void setDetailMetadata(Vod item) {
         detailYear = item == null ? "" : item.getYear();
-        detailType = item == null ? "" : item.getTypeName();
+        if (item == null) {
+            detailType = "";
+        } else if (!item.getTypeName().isEmpty()) {
+            detailType = item.getTypeName();
+        } else {
+            // Several anime repositories only expose the medium in tag/remarks. Preserve it for
+            // danmaku disambiguation instead of treating the live-action edition as equivalent.
+            detailType = (item.getTag() + " " + item.getRemarks()).trim();
+        }
     }
 }

@@ -34,6 +34,7 @@ import androidx.media3.ui.danmaku.DanmakuConfig;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.player.PlayerManager;
+import com.fongmi.android.tv.player.danmaku.FilteringBiliParser;
 import com.fongmi.android.tv.player.media.PlaySpec;
 import com.fongmi.android.tv.player.util.PlayerHelper;
 import com.fongmi.android.tv.service.PlaybackService;
@@ -362,6 +363,9 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     private void configurePlayerView() {
         PlayerView playerView = getPlayerView();
         playerView.setRender(PlayerSetting.getRender());
+        // Repository advertising may arrive as an actual fixed-bottom XML comment rather than a
+        // media-source label. Register the filtered parser before attaching any danmaku source.
+        playerView.getDanmakuController().registerParser(FilteringBiliParser.INSTANCE);
         playerView.setDanmakuOkHttpClient(OkHttp.player());
         playerView.setDanmakuEnabled(DanmakuSetting.isShow());
         playerView.setDanmakuConfig(DanmakuSetting.getConfig());

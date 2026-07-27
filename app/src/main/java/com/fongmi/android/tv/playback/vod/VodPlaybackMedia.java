@@ -15,6 +15,7 @@ import java.util.WeakHashMap;
 public final class VodPlaybackMedia {
 
     private static final Map<PlayerManager, String> REQUEST_IDENTITIES = new WeakHashMap<>();
+    private static final Map<PlayerManager, DanmakuMatchContext> MATCH_CONTEXTS = new WeakHashMap<>();
 
     public static MediaMetadata metadata(History history, Episode episode) {
         String title = history.getVodName();
@@ -35,10 +36,15 @@ public final class VodPlaybackMedia {
     public static void searchDanmaku(Result result, History history, Episode episode, int stableEpisodeIndex,
                                      String year, String type, PlayerManager player) {
         invalidate(player);
-        if (!DanmakuApi.canSearch()) return;
         String title = history.getVodName();
         String episodeName = episode.getName();
         String episodeQuery = resolveEpisodeQuery(episodeName, stableEpisodeIndex);
+        synchronized (MATCH_CONTEXTS) {
+            MATCH_CONTEXTS.put(player, new DanmakuMatchContext(title, year, type, episodeQuery));
+        }
+        // Keep the context even when automatic matching is disabled so manual search can still
+        // rank animation/live-action editions correctly.
+        if (!DanmakuApi.canSearch()) return;
         String identity = identityOf(history, episode, stableEpisodeIndex) + '\u001f'
                 + Objects.toString(year, "") + '\u001f' + Objects.toString(type, "");
         synchronized (REQUEST_IDENTITIES) {
@@ -61,7 +67,18 @@ public final class VodPlaybackMedia {
         synchronized (REQUEST_IDENTITIES) {
             REQUEST_IDENTITIES.remove(player);
         }
+        synchronized (MATCH_CONTEXTS) {
+            MATCH_CONTEXTS.remove(player);
+        }
         player.setDanmaku(Danmaku.empty());
+    }
+
+    public static DanmakuMatchContext contextOf(PlayerManager player) {
+        if (player == null) return DanmakuMatchContext.empty();
+        synchronized (MATCH_CONTEXTS) {
+            DanmakuMatchContext context = MATCH_CONTEXTS.get(player);
+            return context == null ? DanmakuMatchContext.empty() : context;
+        }
     }
 
     static String identityOf(History history, Episode episode, int stableEpisodeIndex) {

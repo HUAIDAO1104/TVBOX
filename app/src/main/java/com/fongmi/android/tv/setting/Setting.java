@@ -139,6 +139,14 @@ public class Setting {
         Prefers.put("incognito", incognito);
     }
 
+    public static boolean isBootStart() {
+        return Prefers.getBoolean("boot_start", true);
+    }
+
+    public static void putBootStart(boolean bootStart) {
+        Prefers.put("boot_start", bootStart);
+    }
+
     public static boolean getUpdate() {
         return Prefers.getBoolean("update", true);
     }

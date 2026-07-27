@@ -122,9 +122,12 @@ public final class DanmakuMatch {
             if (!expectedYear.isEmpty() && !expectedYear.equals(candidateYear)) continue;
             if (expectedYear.isEmpty() && !candidateYear.isEmpty()) years.add(candidateYear);
             String candidateMediaType = candidateType(candidate);
-            if (!expectedType.isEmpty() && !expectedType.equals(candidateMediaType)) continue;
+            // A known conflict (for example an animation request versus a live-action edition)
+            // is unsafe. Unknown provider types remain eligible as a lower-ranked fallback,
+            // otherwise providers that omit 【类型】 would intermittently produce no danmaku.
+            if (!expectedType.isEmpty() && !candidateMediaType.isEmpty() && !expectedType.equals(candidateMediaType)) continue;
             if (expectedType.isEmpty() && !candidateMediaType.isEmpty()) types.add(candidateMediaType);
-            int score = score(title, episode, candidate);
+            int score = displayScore(title, year, type, episode, candidate);
             if (best == null || score > bestScore) {
                 best = item;
                 bestScore = score;
@@ -133,6 +136,31 @@ public final class DanmakuMatch {
         if (expectedYear.isEmpty() && years.size() > 1) return null;
         if (expectedType.isEmpty() && types.size() > 1) return null;
         return best;
+    }
+
+    /**
+     * Ranking shared by automatic and manual matching. Manual search keeps lower-ranked
+     * alternatives visible, while putting the correct medium/year/episode at the front.
+     */
+    public static int displayScore(String title, String year, String type, String episode, String candidate) {
+        int value = score(title, episode, candidate);
+        if (value <= Integer.MIN_VALUE / 4) return value;
+        String expectedYear = normalizeYear(year);
+        String actualYear = candidateYear(candidate);
+        if (!expectedYear.isEmpty()) {
+            value += expectedYear.equals(actualYear) ? 90 : actualYear.isEmpty() ? -15 : -240;
+        }
+        String expectedType = normalizeMediaType(type);
+        String actualType = candidateType(candidate);
+        if (!expectedType.isEmpty()) {
+            value += expectedType.equals(actualType) ? 180 : actualType.isEmpty() ? -20 : -360;
+        }
+        return value;
+    }
+
+    public static boolean isSameWork(String first, String second) {
+        String left = canonicalTitle(first);
+        return left.length() >= 2 && left.equals(canonicalTitle(second));
     }
 
     static Integer episodeNumber(String value) {
@@ -194,19 +222,22 @@ public final class DanmakuMatch {
         return matcher.find() ? matcher.group() : "";
     }
 
-    private static String candidateType(String value) {
+    static String candidateType(String value) {
         Matcher matcher = TYPE_META.matcher(value == null ? "" : value);
         while (matcher.find()) {
             String type = normalizeMediaType(matcher.group(1));
             if (!type.isEmpty()) return type;
         }
-        return "";
+        // Some endpoints put edition information outside 【】, e.g. “真人版” or “国产动漫”.
+        return normalizeMediaType(value);
     }
 
-    private static String normalizeMediaType(String value) {
+    static String normalizeMediaType(String value) {
         String type = value == null ? "" : value.toLowerCase(Locale.ROOT);
         if (type.contains("综艺") || type.contains("专访") || type.contains("真人秀")) return "variety";
-        if (type.contains("动漫") || type.contains("动画")) return "anime";
+        if (type.contains("动漫") || type.contains("动画") || type.contains("番剧") || type.contains("国漫")
+                || type.contains("日漫") || type.contains("卡通") || type.contains("年番")) return "anime";
+        if (type.contains("真人版") || type.contains("真人剧") || type.contains("实拍版")) return "series";
         if (type.contains("电影") || type.matches(".*(?:动作|喜剧|爱情|科幻|恐怖|纪录|故事)片.*")) return "movie";
         if (type.contains("电视剧") || type.contains("连续剧") || type.contains("短剧") || type.contains("国剧")
                 || type.matches(".*(?:国产|大陆|内地|美|英|韩|日|泰|港|台)剧.*")) return "series";

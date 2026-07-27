@@ -1,5 +1,6 @@
 package com.fongmi.android.tv.ui.adapter;
 
+import android.content.res.Resources;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.fongmi.android.tv.bean.Danmaku;
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.AdapterDanmakuBinding;
 
 import java.util.ArrayList;
@@ -24,11 +26,15 @@ public class DanmakuAdapter extends RecyclerView.Adapter<DanmakuAdapter.ViewHold
         this.listener = listener;
         this.mItems = new ArrayList<>();
         this.selectedUrl = "";
+        setHasStableIds(true);
     }
 
     public interface OnClickListener {
 
         void onItemClick(Danmaku item);
+
+        default void onItemFocus(Danmaku item, int position, int total) {
+        }
     }
 
     public void clear() {
@@ -86,6 +92,14 @@ public class DanmakuAdapter extends RecyclerView.Adapter<DanmakuAdapter.ViewHold
         return RecyclerView.NO_POSITION;
     }
 
+    public int indexOfUrl(String url) {
+        return indexOf(url);
+    }
+
+    public Danmaku getItem(int position) {
+        return position < 0 || position >= mItems.size() ? null : mItems.get(position);
+    }
+
     private static boolean isDisplayable(Danmaku item) {
         return item != null && !item.isEmpty() && !item.isBlockedSource();
     }
@@ -100,6 +114,12 @@ public class DanmakuAdapter extends RecyclerView.Adapter<DanmakuAdapter.ViewHold
         return mItems.size();
     }
 
+    @Override
+    public long getItemId(int position) {
+        Danmaku item = getItem(position);
+        return item == null ? RecyclerView.NO_ID : item.getUrl().hashCode();
+    }
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -109,8 +129,15 @@ public class DanmakuAdapter extends RecyclerView.Adapter<DanmakuAdapter.ViewHold
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Danmaku item = mItems.get(position);
-        holder.binding.text.setText(item.getName());
+        Resources resources = holder.itemView.getResources();
+        holder.binding.text.setText(item.isSelected()
+                ? resources.getString(R.string.danmaku_result_selected, item.getName())
+                : item.getName());
         holder.binding.text.setSelected(item.isSelected());
+        if (!holder.itemView.hasFocus()) {
+            holder.itemView.setScaleX(1.0f);
+            holder.itemView.setScaleY(1.0f);
+        }
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
@@ -121,11 +148,26 @@ public class DanmakuAdapter extends RecyclerView.Adapter<DanmakuAdapter.ViewHold
             super(binding.getRoot());
             this.binding = binding;
             itemView.setOnClickListener(this);
+            itemView.setOnFocusChangeListener((view, hasFocus) -> {
+                view.animate().cancel();
+                view.animate()
+                        .scaleX(hasFocus ? 1.035f : 1.0f)
+                        .scaleY(hasFocus ? 1.035f : 1.0f)
+                        .setDuration(hasFocus ? 110L : 80L)
+                        .start();
+                if (!hasFocus) return;
+                view.bringToFront();
+                int position = getBindingAdapterPosition();
+                Danmaku item = getItem(position);
+                if (item != null) listener.onItemFocus(item, position, getItemCount());
+            });
         }
 
         @Override
         public void onClick(View view) {
-            listener.onItemClick(mItems.get(getLayoutPosition()));
+            int position = getBindingAdapterPosition();
+            Danmaku item = getItem(position);
+            if (item != null) listener.onItemClick(item);
         }
     }
 }

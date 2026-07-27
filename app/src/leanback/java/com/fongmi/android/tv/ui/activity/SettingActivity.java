@@ -96,6 +96,7 @@ public class SettingActivity extends FocusSafeSettingsActivity implements Config
         mBinding.doh.setAlpha(hasDoh ? 1.0f : 0.55f);
         mBinding.dohText.setText(hasDoh ? doh[Math.min(getDohIndex(), doh.length - 1)] : getString(R.string.none));
         mBinding.incognitoText.setText(Setting.getSwitch(Setting.isIncognito()));
+        mBinding.bootStartText.setText(Setting.getSwitch(Setting.isBootStart()));
         mBinding.sizeText.setText((size = ResUtil.getStringArray(R.array.select_size))[PlayerSetting.getSize()]);
         setCloudPriorityText();
     }
@@ -131,6 +132,7 @@ public class SettingActivity extends FocusSafeSettingsActivity implements Config
         mBinding.liveHome.setOnClickListener(this::onLiveHome);
         mBinding.wall.setOnLongClickListener(this::onWallEdit);
         mBinding.incognito.setOnClickListener(this::setIncognito);
+        mBinding.bootStart.setOnClickListener(this::setBootStart);
         mBinding.vodHistory.setOnClickListener(this::onVodHistory);
         mBinding.liveHistory.setOnClickListener(this::onLiveHistory);
         mBinding.wallDefault.setOnClickListener(this::setWallDefault);
@@ -267,6 +269,11 @@ public class SettingActivity extends FocusSafeSettingsActivity implements Config
     private void setIncognito(View view) {
         Setting.putIncognito(!Setting.isIncognito());
         mBinding.incognitoText.setText(Setting.getSwitch(Setting.isIncognito()));
+    }
+
+    private void setBootStart(View view) {
+        Setting.putBootStart(!Setting.isBootStart());
+        mBinding.bootStartText.setText(Setting.getSwitch(Setting.isBootStart()));
     }
 
     private void setCloudPriority(View view) {

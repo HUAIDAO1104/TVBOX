@@ -80,6 +80,8 @@
     <string name="danmaku_search_action">Search</string>
     <string name="danmaku_search_running">Searching <xliff:g name="count">%d</xliff:g> providers…</string>
     <string name="danmaku_search_result"><xliff:g name="count">%d</xliff:g> matching sources found</string>
+    <string name="danmaku_result_focus"><xliff:g name="position">%1$d</xliff:g>/<xliff:g name="total">%2$d</xliff:g> selected · <xliff:g name="name">%3$s</xliff:g></string>
+    <string name="danmaku_result_selected">In use · <xliff:g name="name">%1$s</xliff:g></string>
     <string name="danmaku_search_no_playback">Play a video before manually matching danmaku</string>
     <string name="danmaku_search_configure_api">Configure a danmaku search API in Settings first</string>
     <string name="danmaku_text_size">Text scale</string>
@@ -140,6 +142,7 @@
     <string name="setting_player">Player setting</string>
     <string name="setting_danmaku">Danmaku setting</string>
     <string name="setting_incognito">Incognito mode</string>
+    <string name="setting_boot_start">Open Pian Duo Duo after TV boots</string>
     <string name="setting_theme_color">Theme color</string>
     <string name="setting_auto">Auto</string>
     <string name="setting_custom">Custom</string>

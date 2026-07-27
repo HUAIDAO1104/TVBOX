@@ -3,6 +3,7 @@ package com.fongmi.android.tv.ui.dialog;
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
 
+import android.view.View;
 import android.view.inputmethod.EditorInfo;
 
 import androidx.annotation.NonNull;
@@ -14,6 +15,9 @@ import com.fongmi.android.tv.bean.Danmaku;
 import com.fongmi.android.tv.databinding.ViewDanmakuSearchEmbeddedBinding;
 import com.fongmi.android.tv.player.PlayerManager;
 import com.fongmi.android.tv.playback.vod.DanmakuQuery;
+import com.fongmi.android.tv.playback.vod.DanmakuMatch;
+import com.fongmi.android.tv.playback.vod.DanmakuMatchContext;
+import com.fongmi.android.tv.playback.vod.VodPlaybackMedia;
 import com.fongmi.android.tv.ui.adapter.DanmakuAdapter;
 import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
 import com.fongmi.android.tv.utils.KeyUtil;
@@ -26,6 +30,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import okhttp3.Call;
@@ -41,6 +46,11 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
     private final Map<String, Danmaku> results;
     private final List<Call> calls;
     private final AtomicInteger requestId;
+    private DanmakuMatchContext matchContext;
+    private String searchTitle;
+    private String searchYear;
+    private String searchType;
+    private String searchEpisode;
     private int pending;
 
     DanmakuSearchPanel(ViewDanmakuSearchEmbeddedBinding binding, PlayerManager player) {
@@ -50,6 +60,11 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         this.results = new LinkedHashMap<>();
         this.calls = new ArrayList<>();
         this.requestId = new AtomicInteger();
+        this.matchContext = VodPlaybackMedia.contextOf(player);
+        this.searchTitle = "";
+        this.searchYear = "";
+        this.searchType = "";
+        this.searchEpisode = "";
         this.adapter.setSelected(player == null ? null : player.getSelectedDanmaku());
     }
 
@@ -91,6 +106,11 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
     private void search() {
         String keyword = binding.keyword.getText() == null ? "" : binding.keyword.getText().toString().trim();
         if (keyword.isEmpty() || player == null || player.getMetadata() == null) return;
+        matchContext = VodPlaybackMedia.contextOf(player);
+        searchTitle = DanmakuQuery.from(keyword).searchTitle();
+        boolean sameWork = DanmakuMatch.isSameWork(searchTitle, matchContext.getTitle());
+        searchYear = sameWork ? matchContext.getYear() : "";
+        searchType = sameWork ? matchContext.getType() : "";
         int id = requestId.incrementAndGet();
         for (Call call : calls) call.cancel();
         calls.clear();
@@ -100,8 +120,9 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         binding.empty.setVisibility(GONE);
         binding.progress.setVisibility(VISIBLE);
         Util.hideKeyboard(binding.keyword);
-        String episode = player.getMetadata().artist == null ? "" : player.getMetadata().artist.toString().trim();
-        calls.addAll(DanmakuApi.newCalls(keyword, episode));
+        String metadataEpisode = player.getMetadata().artist == null ? "" : player.getMetadata().artist.toString().trim();
+        searchEpisode = matchContext.getEpisode().isEmpty() ? metadataEpisode : matchContext.getEpisode();
+        calls.addAll(DanmakuApi.newCalls(keyword, searchEpisode));
         pending = calls.size();
         binding.providerStatus.setText(ResUtil.getString(R.string.danmaku_search_running, pending));
         for (Call call : calls) call.enqueue(callback(id));
@@ -129,14 +150,19 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
 
     private void merge(int id, List<Danmaku> items) {
         if (id != requestId.get()) return;
-        List<Danmaku> added = new ArrayList<>();
+        String focusedUrl = focusedUrl();
         for (Danmaku item : items) {
             if (item == null || item.isEmpty() || results.containsKey(item.getUrl())) continue;
             results.put(item.getUrl(), item);
-            added.add(item);
         }
         pending = Math.max(0, pending - 1);
-        adapter.addAll(added);
+        List<Danmaku> ranked = new ArrayList<>(results.values());
+        ranked.sort(Comparator
+                .comparingInt((Danmaku item) -> DanmakuMatch.displayScore(
+                        searchTitle, searchYear, searchType, searchEpisode, item.getName()))
+                .reversed()
+                .thenComparing(Danmaku::getName, String.CASE_INSENSITIVE_ORDER));
+        adapter.setItems(ranked);
         binding.recycler.setVisibility(results.isEmpty() ? GONE : VISIBLE);
         binding.progress.setVisibility(pending == 0 ? GONE : VISIBLE);
         binding.empty.setVisibility(pending == 0 && results.isEmpty() ? VISIBLE : GONE);
@@ -144,7 +170,29 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         binding.providerStatus.setText(pending == 0
                 ? ResUtil.getString(R.string.danmaku_search_result, results.size())
                 : ResUtil.getString(R.string.danmaku_search_running, pending));
-        if (!results.isEmpty() && Util.isLeanback() && !binding.recycler.hasFocus()) binding.recycler.requestFocus();
+        if (!results.isEmpty() && Util.isLeanback()) restoreResultFocus(focusedUrl);
+    }
+
+    private String focusedUrl() {
+        View focused = binding.recycler.getFocusedChild();
+        if (focused == null) return "";
+        androidx.recyclerview.widget.RecyclerView.ViewHolder holder =
+                binding.recycler.findContainingViewHolder(focused);
+        Danmaku item = holder == null ? null : adapter.getItem(holder.getBindingAdapterPosition());
+        return item == null ? "" : item.getUrl();
+    }
+
+    private void restoreResultFocus(String focusedUrl) {
+        int position = adapter.indexOfUrl(focusedUrl);
+        if (position < 0) position = 0;
+        int target = position;
+        binding.recycler.scrollToPosition(target);
+        binding.recycler.post(() -> {
+            androidx.recyclerview.widget.RecyclerView.ViewHolder holder =
+                    binding.recycler.findViewHolderForAdapterPosition(target);
+            if (holder != null) holder.itemView.requestFocus();
+            else binding.recycler.requestFocus();
+        });
     }
 
     @Override
@@ -154,6 +202,13 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         // selected the same URL but the renderer failed to load it.
         player.setDanmaku(item, true);
         adapter.setSelected(item);
+    }
+
+    @Override
+    public void onItemFocus(Danmaku item, int position, int total) {
+        binding.providerStatus.setText(ResUtil.getString(
+                R.string.danmaku_result_focus, position + 1, total, item.getName()));
+        binding.recycler.scrollToPosition(position);
     }
 
     void destroy() {
