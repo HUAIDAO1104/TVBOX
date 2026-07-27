@@ -50,6 +50,7 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         this.results = new LinkedHashMap<>();
         this.calls = new ArrayList<>();
         this.requestId = new AtomicInteger();
+        this.adapter.setSelected(player == null ? null : player.getSelectedDanmaku());
     }
 
     void bind() {
@@ -128,11 +129,14 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
 
     private void merge(int id, List<Danmaku> items) {
         if (id != requestId.get()) return;
+        List<Danmaku> added = new ArrayList<>();
         for (Danmaku item : items) {
-            if (item != null && !item.isEmpty()) results.putIfAbsent(item.getUrl(), item);
+            if (item == null || item.isEmpty() || results.containsKey(item.getUrl())) continue;
+            results.put(item.getUrl(), item);
+            added.add(item);
         }
         pending = Math.max(0, pending - 1);
-        adapter.setItems(new ArrayList<>(results.values()));
+        adapter.addAll(added);
         binding.recycler.setVisibility(results.isEmpty() ? GONE : VISIBLE);
         binding.progress.setVisibility(pending == 0 ? GONE : VISIBLE);
         binding.empty.setVisibility(pending == 0 && results.isEmpty() ? VISIBLE : GONE);
@@ -146,8 +150,10 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
     @Override
     public void onItemClick(Danmaku item) {
         if (player == null) return;
-        player.setDanmaku(item.isSelected() ? Danmaku.empty() : item);
-        adapter.notifyDataSetChanged();
+        // A manual choice is always an explicit retry, including when automatic matching already
+        // selected the same URL but the renderer failed to load it.
+        player.setDanmaku(item, true);
+        adapter.setSelected(item);
     }
 
     void destroy() {

@@ -87,7 +87,7 @@ public final class DanmakuSearchDialog extends BaseBottomSheetDialog implements 
 
     @Override
     public void onItemClick(Danmaku item) {
-        player.setDanmaku(item.isSelected() ? Danmaku.empty() : item);
+        player.setDanmaku(item, true);
         dismiss();
     }
 

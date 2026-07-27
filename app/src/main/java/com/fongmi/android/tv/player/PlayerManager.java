@@ -495,8 +495,21 @@ public class PlayerManager implements ParseCallback {
     }
 
     public void setDanmaku(Danmaku item) {
+        setDanmaku(item, false);
+    }
+
+    /**
+     * Selects a danmaku source and optionally remounts it even when its URI has not changed.
+     *
+     * <p>A failed automatic load leaves the selected URI in {@link PlaySpec}. Manual search can
+     * then return the same URI, and the activity's duplicate-source guard correctly treats a
+     * normal selection as a no-op. An explicit user selection is different: it is a retry and
+     * must detach the failed source before attaching it again.</p>
+     */
+    public void setDanmaku(Danmaku item, boolean forceReload) {
         if (spec == null) return;
         spec.setDanmaku(item);
+        if (forceReload && getSelectedDanmakuUri() != null) callback.onDanmakuSourceChanged(null);
         notifyDanmakuSourceChanged();
     }
 

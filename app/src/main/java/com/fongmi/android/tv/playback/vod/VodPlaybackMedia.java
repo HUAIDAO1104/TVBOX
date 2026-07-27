@@ -47,7 +47,10 @@ public final class VodPlaybackMedia {
         DanmakuApi.search(title, year, type, episodeQuery, danmaku -> {
             if (!isCurrentIdentity(player, identity)) return;
             if (!matchesCurrent(player, title, episodeName)) return;
-            player.setDanmaku(danmaku);
+            // Remount the source for every verified episode. A previous episode or an early
+            // renderer failure may have left the same URI cached as selected even though no
+            // comments were attached to the current PlayerView.
+            player.setDanmaku(danmaku, true);
         });
     }
 
