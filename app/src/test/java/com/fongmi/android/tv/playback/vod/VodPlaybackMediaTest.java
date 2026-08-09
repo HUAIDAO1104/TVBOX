@@ -48,4 +48,30 @@ public class VodPlaybackMediaTest {
         assertFalse(VodPlaybackMedia.identityOf(first, episodeA, 1)
                 .equals(VodPlaybackMedia.identityOf(first, episodeB, 1)));
     }
+
+    @Test
+    public void manualDanmakuPreferenceIsScopedToWorkSeasonNotEpisode() {
+        DanmakuMatchContext episodeOne = new DanmakuMatchContext(
+                "一起同过窗 第二季", "2017", "国产剧", "1");
+        DanmakuMatchContext episodeTwelve = new DanmakuMatchContext(
+                "一起同过窗第2季", "2017", "电视剧", "12");
+        DanmakuMatchContext firstSeason = new DanmakuMatchContext(
+                "一起同过窗 第一季", "2016", "国产剧", "12");
+
+        assertEquals(DanmakuManualMatchStore.preferenceKey(episodeOne),
+                DanmakuManualMatchStore.preferenceKey(episodeTwelve));
+        assertFalse(DanmakuManualMatchStore.preferenceKey(episodeOne)
+                .equals(DanmakuManualMatchStore.preferenceKey(firstSeason)));
+    }
+
+    @Test
+    public void manualEndpointIdentityNeverPersistsRawCredentialUrl() {
+        String url = "https://example.test/danmaku?token=very-secret";
+        String first = DanmakuManualMatchStore.sourceKey(url);
+
+        assertEquals(first, DanmakuManualMatchStore.sourceKey(url));
+        assertFalse(first.isEmpty());
+        assertFalse(first.contains("very-secret"));
+        assertFalse(first.equals(DanmakuManualMatchStore.sourceKey(url + "-other")));
+    }
 }

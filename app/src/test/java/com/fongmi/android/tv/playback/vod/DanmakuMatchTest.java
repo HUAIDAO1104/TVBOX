@@ -182,4 +182,30 @@ public class DanmakuMatchTest {
                 "欢天喜地七仙女(2005)【电视剧】from 360 - 【youku】 第38集");
         assertEquals(response.get(1), DanmakuMatch.best("欢天喜地七仙女", "38", response, item -> item));
     }
+
+    @Test
+    public void manualChoiceRetargetsSameSeasonAndProviderForFollowingEpisode() {
+        String selected = "一起同过窗 第二季(2017)【电视剧】from 360 - 第3集";
+        List<String> response = List.of(
+                "一起同过窗 第一季(2016)【电视剧】from 360 - 第4集",
+                "一起同过窗 第二季(2017)【电视剧】from bilibili - 第4集",
+                "一起同过窗 第二季(2017)【电视剧】from 360 - 第5集",
+                "一起同过窗 第二季(2017)【电视剧】from 360 - 第4集");
+
+        assertEquals(response.get(3), DanmakuMatch.bestPreferred(
+                selected, "2017", "国产剧", "4", response, item -> item));
+        assertEquals(null, DanmakuMatch.bestPreferred(
+                selected, "2017", "国产剧", "6", response, item -> item));
+    }
+
+    @Test
+    public void manualChoiceCannotCrossIntoAnotherEditionOrMedium() {
+        String selected = "凡人修仙传 年番(2024)【动漫】from 360 - 第100集";
+        List<String> response = List.of(
+                "凡人修仙传(2020)【电视剧】from 360 - 第101集",
+                "凡人修仙传 年番(2024)【动漫】from other - 第101集");
+
+        assertEquals(null, DanmakuMatch.bestPreferred(
+                selected, "2024", "国产动画年番", "101", response, item -> item));
+    }
 }

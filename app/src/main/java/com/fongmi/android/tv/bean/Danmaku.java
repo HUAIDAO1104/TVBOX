@@ -29,6 +29,9 @@ public class Danmaku {
     private String url;
 
     private boolean selected;
+    // Runtime-only identity of the manual-search endpoint that returned this item. The endpoint
+    // itself may contain credentials, so only its non-reversible fingerprint is carried/stored.
+    private transient String sourceKey;
 
     public static List<Danmaku> arrayFrom(String str) {
         Type listType = TypeToken.getParameterized(List.class, Danmaku.class).getType();
@@ -105,6 +108,14 @@ public class Danmaku {
 
     public void setSelected(boolean selected) {
         this.selected = selected;
+    }
+
+    public String getSourceKey() {
+        return Objects.toString(sourceKey, "");
+    }
+
+    public void setSourceKey(String sourceKey) {
+        this.sourceKey = sourceKey;
     }
 
     public boolean isEmpty() {

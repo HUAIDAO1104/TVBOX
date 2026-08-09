@@ -9,6 +9,7 @@ import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.bean.Danmaku;
 import com.fongmi.android.tv.impl.Callback;
 import com.fongmi.android.tv.playback.vod.DanmakuMatch;
+import com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore;
 import com.fongmi.android.tv.playback.vod.DanmakuQuery;
 import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.github.catvod.net.OkHttp;
@@ -17,6 +18,7 @@ import com.github.catvod.utils.Trans;
 import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -72,43 +74,76 @@ public class DanmakuApi {
         final int generation = REQUEST_GENERATION.incrementAndGet();
         OkHttp.cancel(TAG);
         DanmakuQuery query = DanmakuQuery.from(name);
-        search(generation, query, Objects.toString(year, ""), Objects.toString(type, ""), episode, found, 0);
+        search(generation, query, Objects.toString(year, ""), Objects.toString(type, ""), episode,
+                "", List.of(DanmakuSetting.getAutomaticApiUrl()), found, 0, 0);
+    }
+
+    /** Reuses a user-confirmed catalogue/provider identity while resolving a new episode URL. */
+    public static void searchPreferred(String name, String year, String type, String episode,
+                                       String selectedName, String selectedSourceKey,
+                                       Consumer<Danmaku> found) {
+        final int generation = REQUEST_GENERATION.incrementAndGet();
+        OkHttp.cancel(TAG);
+        DanmakuQuery query = DanmakuQuery.from(name);
+        LinkedHashSet<String> ordered = new LinkedHashSet<>();
+        for (String apiUrl : DanmakuSetting.getSearchApiUrls()) {
+            if (DanmakuManualMatchStore.sourceKey(apiUrl).equals(selectedSourceKey)) ordered.add(apiUrl);
+        }
+        ordered.add(DanmakuSetting.getAutomaticApiUrl());
+        ordered.addAll(DanmakuSetting.getSearchApiUrls());
+        ordered.removeIf(value -> value == null || value.isBlank());
+        search(generation, query, Objects.toString(year, ""), Objects.toString(type, ""), episode,
+                Objects.toString(selectedName, ""), new ArrayList<>(ordered), found, 0, 0);
     }
 
     private static void search(int generation, DanmakuQuery query, String year, String type, String episode,
-                               Consumer<Danmaku> found, int candidateIndex) {
+                               String preferredName, List<String> apiUrls, Consumer<Danmaku> found,
+                               int candidateIndex, int apiIndex) {
         if (generation != REQUEST_GENERATION.get() || candidateIndex >= query.candidates().size()) return;
+        if (apiIndex >= apiUrls.size()) {
+            search(generation, query, year, type, episode, preferredName, apiUrls, found,
+                    candidateIndex + 1, 0);
+            return;
+        }
         String candidateTitle = query.candidates().get(candidateIndex);
-        createCall(candidateTitle, episode).enqueue(new Callback() {
+        createCall(candidateTitle, episode, apiUrls.get(apiIndex)).enqueue(new Callback() {
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) {
                 try (Response closeable = response) {
                     if (generation != REQUEST_GENERATION.get()) return;
                     if (closeable.body() == null) {
-                        search(generation, query, year, type, episode, found, candidateIndex + 1);
+                        search(generation, query, year, type, episode, preferredName, apiUrls, found,
+                                candidateIndex, apiIndex + 1);
                         return;
                     }
                     // Match against the title actually sent in this round. Earlier rounds may use a
                     // decorated provider title whose canonical form can never equal a catalogue
                     // entry; judging those results with the cleaned fallback title would reject
                     // every correct candidate and skip automatic loading entirely.
-                    Danmaku best = bestMatch(candidateTitle, query, year, type, episode, Danmaku.arrayFrom(closeable.body().string()));
+                    List<Danmaku> items = Danmaku.arrayFrom(closeable.body().string());
+                    Danmaku best = preferredName.isEmpty()
+                            ? bestMatch(candidateTitle, query, year, type, episode, items)
+                            : DanmakuMatch.bestPreferred(preferredName, year, type, episode,
+                                    items, Danmaku::getName);
                     if (best == null) {
-                        search(generation, query, year, type, episode, found, candidateIndex + 1);
+                        search(generation, query, year, type, episode, preferredName, apiUrls, found,
+                                candidateIndex, apiIndex + 1);
                         return;
                     }
                     App.post(() -> {
                         if (generation == REQUEST_GENERATION.get()) found.accept(best);
                     });
                 } catch (Exception ignored) {
-                    search(generation, query, year, type, episode, found, candidateIndex + 1);
+                    search(generation, query, year, type, episode, preferredName, apiUrls, found,
+                            candidateIndex, apiIndex + 1);
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 if (generation == REQUEST_GENERATION.get()) {
-                    search(generation, query, year, type, episode, found, candidateIndex + 1);
+                    search(generation, query, year, type, episode, preferredName, apiUrls, found,
+                            candidateIndex, apiIndex + 1);
                 }
             }
         });

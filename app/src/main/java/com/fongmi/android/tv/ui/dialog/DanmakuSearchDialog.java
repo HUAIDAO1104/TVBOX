@@ -19,6 +19,9 @@ import com.fongmi.android.tv.api.DanmakuApi;
 import com.fongmi.android.tv.bean.Danmaku;
 import com.fongmi.android.tv.databinding.DialogDanmakuSearchBinding;
 import com.fongmi.android.tv.player.PlayerManager;
+import com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore;
+import com.fongmi.android.tv.playback.vod.VodPlaybackMedia;
+import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.ui.adapter.DanmakuAdapter;
 import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
 import com.fongmi.android.tv.utils.KeyUtil;
@@ -69,7 +72,8 @@ public final class DanmakuSearchDialog extends BaseBottomSheetDialog implements 
         binding.recycler.setHasFixedSize(false);
         binding.recycler.addItemDecoration(new SpaceItemDecoration(1, 16));
         CharSequence title = player.getMetadata().title;
-        setKeyword(title == null ? "" : title);
+        String preferred = VodPlaybackMedia.preferredSearchQuery(player);
+        setKeyword(preferred.isEmpty() ? (title == null ? "" : title) : preferred);
         Util.showKeyboard(binding.keyword);
     }
 
@@ -87,6 +91,7 @@ public final class DanmakuSearchDialog extends BaseBottomSheetDialog implements 
 
     @Override
     public void onItemClick(Danmaku item) {
+        VodPlaybackMedia.rememberManualMatch(player, binding.keyword.getText().toString(), item);
         player.setDanmaku(item, true);
         dismiss();
     }
@@ -129,6 +134,9 @@ public final class DanmakuSearchDialog extends BaseBottomSheetDialog implements 
     public void onResponse(@NonNull Call call, @NonNull Response response) {
         try {
             List<Danmaku> items = Danmaku.arrayFrom(response.body().string());
+            String apiUrl = DanmakuSetting.getSearchApiUrls().stream().findFirst().orElse("");
+            String sourceKey = DanmakuManualMatchStore.sourceKey(apiUrl);
+            for (Danmaku item : items) item.setSourceKey(sourceKey);
             if (items.isEmpty()) throw new Exception(ResUtil.getString(R.string.error_empty));
             else App.post(() -> onSuccess(items));
         } catch (Exception e) {

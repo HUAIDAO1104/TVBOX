@@ -39,25 +39,31 @@ public final class VodPlaybackMedia {
         String title = history.getVodName();
         String episodeName = episode.getName();
         String episodeQuery = resolveEpisodeQuery(episodeName, stableEpisodeIndex);
+        DanmakuMatchContext matchContext = new DanmakuMatchContext(title, year, type, episodeQuery);
         synchronized (MATCH_CONTEXTS) {
-            MATCH_CONTEXTS.put(player, new DanmakuMatchContext(title, year, type, episodeQuery));
+            MATCH_CONTEXTS.put(player, matchContext);
         }
         // Keep the context even when automatic matching is disabled so manual search can still
         // rank animation/live-action editions correctly.
         if (!DanmakuApi.canSearch()) return;
+        DanmakuManualMatchStore.Selection preferred = DanmakuManualMatchStore.get().find(matchContext);
         String identity = identityOf(history, episode, stableEpisodeIndex) + '\u001f'
-                + Objects.toString(year, "") + '\u001f' + Objects.toString(type, "");
+                + Objects.toString(year, "") + '\u001f' + Objects.toString(type, "") + '\u001f'
+                + (preferred == null ? "" : preferred.selectedName());
         synchronized (REQUEST_IDENTITIES) {
             REQUEST_IDENTITIES.put(player, identity);
         }
-        DanmakuApi.search(title, year, type, episodeQuery, danmaku -> {
+        java.util.function.Consumer<Danmaku> apply = danmaku -> {
             if (!isCurrentIdentity(player, identity)) return;
             if (!matchesCurrent(player, title, episodeName)) return;
             // Remount the source for every verified episode. A previous episode or an early
             // renderer failure may have left the same URI cached as selected even though no
             // comments were attached to the current PlayerView.
             player.setDanmaku(danmaku, true);
-        });
+        };
+        if (preferred == null) DanmakuApi.search(title, year, type, episodeQuery, apply);
+        else DanmakuApi.searchPreferred(preferred.query(), year, type, episodeQuery,
+                preferred.selectedName(), preferred.sourceKey(), apply);
     }
 
     /** Invalidates both the network request and the renderer source before a media transition. */
@@ -79,6 +85,17 @@ public final class VodPlaybackMedia {
             DanmakuMatchContext context = MATCH_CONTEXTS.get(player);
             return context == null ? DanmakuMatchContext.empty() : context;
         }
+    }
+
+    /** Records a user-confirmed work/provider mapping for this and subsequent episodes. */
+    public static void rememberManualMatch(PlayerManager player, String query, Danmaku selected) {
+        DanmakuManualMatchStore.get().remember(contextOf(player), query, selected);
+    }
+
+    /** Returns the last successful manual query for the current work/season, when available. */
+    public static String preferredSearchQuery(PlayerManager player) {
+        DanmakuManualMatchStore.Selection selection = DanmakuManualMatchStore.get().find(contextOf(player));
+        return selection == null ? "" : selection.query();
     }
 
     static String identityOf(History history, Episode episode, int stableEpisodeIndex) {

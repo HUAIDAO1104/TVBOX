@@ -17,8 +17,10 @@ import com.fongmi.android.tv.player.PlayerManager;
 import com.fongmi.android.tv.playback.vod.DanmakuQuery;
 import com.fongmi.android.tv.playback.vod.DanmakuMatch;
 import com.fongmi.android.tv.playback.vod.DanmakuMatchContext;
+import com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore;
 import com.fongmi.android.tv.playback.vod.DanmakuResultGrouper;
 import com.fongmi.android.tv.playback.vod.VodPlaybackMedia;
+import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.ui.adapter.DanmakuAdapter;
 import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
 import com.fongmi.android.tv.utils.KeyUtil;
@@ -75,7 +77,10 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         binding.recycler.setHasFixedSize(false);
         binding.recycler.addItemDecoration(new SpaceItemDecoration(1, 12));
         if (player != null && player.getMetadata() != null && player.getMetadata().title != null) {
-            String title = DanmakuQuery.from(player.getMetadata().title.toString()).searchTitle();
+            String preferred = VodPlaybackMedia.preferredSearchQuery(player);
+            String title = preferred.isEmpty()
+                    ? DanmakuQuery.from(player.getMetadata().title.toString()).searchTitle()
+                    : preferred;
             binding.keyword.setText(title);
             binding.keyword.setSelection(title.length());
         }
@@ -124,21 +129,27 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         Util.hideKeyboard(binding.keyword);
         String metadataEpisode = player.getMetadata().artist == null ? "" : player.getMetadata().artist.toString().trim();
         searchEpisode = matchContext.getEpisode().isEmpty() ? metadataEpisode : matchContext.getEpisode();
+        List<String> apiUrls = DanmakuSetting.getSearchApiUrls();
         calls.addAll(DanmakuApi.newCalls(keyword, searchEpisode));
         pending = calls.size();
         binding.providerStatus.setText(ResUtil.getString(R.string.danmaku_search_running, pending));
-        for (Call call : calls) {
-            call.enqueue(callback(id, searchTitle, searchYear, searchType, searchEpisode));
+        for (int index = 0; index < calls.size(); index++) {
+            String sourceKey = index < apiUrls.size()
+                    ? DanmakuManualMatchStore.sourceKey(apiUrls.get(index)) : "";
+            calls.get(index).enqueue(callback(
+                    id, searchTitle, searchYear, searchType, searchEpisode, sourceKey));
         }
     }
 
-    private Callback callback(int id, String title, String year, String type, String episode) {
+    private Callback callback(int id, String title, String year, String type, String episode,
+                              String sourceKey) {
         return new Callback() {
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) {
                 List<Danmaku> items = new ArrayList<>();
                 try {
                     if (response.body() != null) items = Danmaku.arrayFrom(response.body().string());
+                    for (Danmaku item : items) item.setSourceKey(sourceKey);
                 } catch (Exception ignored) {
                 }
                 // A provider may return hundreds of entries covering every episode and season.
@@ -213,6 +224,8 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         if (player == null) return;
         // A manual choice is always an explicit retry, including when automatic matching already
         // selected the same URL but the renderer failed to load it.
+        String query = binding.keyword.getText() == null ? "" : binding.keyword.getText().toString();
+        VodPlaybackMedia.rememberManualMatch(player, query, item);
         player.setDanmaku(item, true);
         adapter.setSelected(item);
     }

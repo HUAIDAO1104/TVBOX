@@ -179,6 +179,66 @@ public final class DanmakuMatch {
     }
 
     /**
+     * Re-targets an explicit manual choice to another episode of the same catalogue entry.
+     *
+     * <p>The selected URL is deliberately not reused because it belongs to the old episode.
+     * Instead, the stable work/season, year, medium and provider encoded in the confirmed result
+     * are used as hard constraints while the current episode remains mandatory.</p>
+     */
+    public static <T> T bestPreferred(String selectedName, String year, String type, String episode,
+                                      List<T> items, Function<T, String> name) {
+        if (items == null || canonicalTitle(selectedName).length() < 2) return null;
+        T best = null;
+        int bestScore = Integer.MIN_VALUE;
+        for (T item : items) {
+            if (item == null) continue;
+            String candidate = name.apply(item);
+            if (!isPreferredFamily(selectedName, year, type, episode, candidate)) continue;
+            int score = displayScore(selectedName, preferredYear(selectedName, year),
+                    preferredType(selectedName, type), episode, candidate);
+            if (sameNonEmpty(resultPlatform(selectedName), resultPlatform(candidate))) score += 40;
+            if (best == null || score > bestScore) {
+                best = item;
+                bestScore = score;
+            }
+        }
+        return best;
+    }
+
+    static boolean isPreferredFamily(String selectedName, String year, String type, String episode,
+                                     String candidate) {
+        String selectedTitle = canonicalTitle(selectedName);
+        if (selectedTitle.length() < 2 || !selectedTitle.equals(canonicalTitle(candidate))) return false;
+        if (!isEpisodeCompatible(episode, candidate)) return false;
+
+        String expectedYear = preferredYear(selectedName, year);
+        String actualYear = candidateYear(candidate);
+        if (!expectedYear.isEmpty() && !expectedYear.equals(actualYear)) return false;
+
+        String expectedType = preferredType(selectedName, type);
+        String actualType = candidateType(candidate);
+        if (!expectedType.isEmpty() && !expectedType.equals(actualType)) return false;
+
+        String expectedProvider = resultProvider(selectedName);
+        String actualProvider = resultProvider(candidate);
+        return expectedProvider.isEmpty() || expectedProvider.equalsIgnoreCase(actualProvider);
+    }
+
+    private static String preferredYear(String selectedName, String fallback) {
+        String selectedYear = candidateYear(selectedName);
+        return selectedYear.isEmpty() ? normalizeYear(fallback) : selectedYear;
+    }
+
+    private static String preferredType(String selectedName, String fallback) {
+        String selectedType = candidateType(selectedName);
+        return selectedType.isEmpty() ? normalizeMediaType(fallback) : selectedType;
+    }
+
+    private static boolean sameNonEmpty(String first, String second) {
+        return first != null && second != null && !first.isEmpty() && first.equalsIgnoreCase(second);
+    }
+
+    /**
      * Ranking shared by automatic and manual matching. Manual search keeps lower-ranked
      * alternatives visible, while putting the correct medium/year/episode at the front.
      */
@@ -307,7 +367,7 @@ public final class DanmakuMatch {
         return matcher.find() ? matcher.group(1) : "";
     }
 
-    private static String normalizeYear(String value) {
+    static String normalizeYear(String value) {
         Matcher matcher = Pattern.compile("(?:19|20)\\d{2}").matcher(value == null ? "" : value);
         return matcher.find() ? matcher.group() : "";
     }
