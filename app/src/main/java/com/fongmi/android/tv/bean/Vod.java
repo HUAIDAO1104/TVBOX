@@ -156,7 +156,7 @@ public class Vod implements Parcelable, Diffable<Vod> {
     }
 
     public String getRemarks() {
-        return TextUtils.isEmpty(vodRemarks) ? "" : vodRemarks.trim();
+        return vodRemarks == null || vodRemarks.isEmpty() ? "" : vodRemarks.trim();
     }
 
     public void setRemarks(String vodRemarks) {
@@ -220,7 +220,7 @@ public class Vod implements Parcelable, Diffable<Vod> {
     }
 
     public String getTag() {
-        return TextUtils.isEmpty(vodTag) ? "" : vodTag;
+        return vodTag == null || vodTag.isEmpty() ? "" : vodTag;
     }
 
     public String getAction() {

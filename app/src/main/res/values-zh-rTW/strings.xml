@@ -80,6 +80,9 @@
     <string name="danmaku_search_action">搜尋</string>
     <string name="danmaku_search_running">正在搜尋 <xliff:g name="count">%d</xliff:g> 條線路…</string>
     <string name="danmaku_search_result">找到 <xliff:g name="count">%d</xliff:g> 個匹配彈幕源</string>
+    <string name="danmaku_group_season">第 <xliff:g name="season">%1$d</xliff:g> 季 · <xliff:g name="source">%2$s</xliff:g></string>
+    <string name="danmaku_group_unseasoned">正篇 · <xliff:g name="source">%1$s</xliff:g></string>
+    <string name="danmaku_group_other_source">其他來源</string>
     <string name="danmaku_result_focus">已選中 <xliff:g name="position">%1$d</xliff:g>/<xliff:g name="total">%2$d</xliff:g> · <xliff:g name="name">%3$s</xliff:g></string>
     <string name="danmaku_result_selected">正在使用 · <xliff:g name="name">%1$s</xliff:g></string>
     <string name="danmaku_search_no_playback">請先播放影片，再手動匹配彈幕</string>

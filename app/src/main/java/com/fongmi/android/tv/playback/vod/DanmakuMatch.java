@@ -31,6 +31,8 @@ public final class DanmakuMatch {
     private static final Pattern TRAILING_TITLE_TAG = Pattern.compile("(?i)[\\s._·:：|/\\-]*" + TITLE_TAG_VALUE + "$");
     private static final Pattern PREFERRED_360 = Pattern.compile("(?i)(?:^|\\b)from\\s*360(?:\\b|$)");
     private static final Pattern PROVIDER_SUFFIX = Pattern.compile("(?i)\\s*from\\s+.*$");
+    private static final Pattern PROVIDER = Pattern.compile("(?i)\\bfrom\\s+([^\\s【(（-]+)");
+    private static final Pattern PLATFORM = Pattern.compile("-\\s*【([^】]{1,24})】");
     private static final Pattern YEAR_META = Pattern.compile("[（(]\\s*((?:19|20)\\d{2})\\s*[）)]");
     private static final Pattern TYPE_META = Pattern.compile("【([^】]{1,20})】");
     private static final Pattern EPISODE_META = Pattern.compile("(?i)(?:S\\s*0*\\d{1,2}\\s*E\\s*0*\\d{1,3}|(?:第\\s*)?0*\\d{1,4}\\s*[集期话回]|(?:EP?|E)\\s*0*\\d{1,3})(?=$|[\\s._-])");
@@ -93,6 +95,44 @@ public final class DanmakuMatch {
         return expectedSeason == null || candidateSeason == null || expectedSeason.equals(candidateSeason);
     }
 
+    /**
+     * Metadata-aware reliability used by automatic matching. Some repositories omit a season
+     * suffix from the visible title but still provide the release year or season in remarks.
+     * Those signals may disambiguate a same-base season; without either signal we retain the
+     * conservative exact-title behavior above and never guess another season.
+     */
+    static boolean isReliable(String title, String year, String type, String episode, String candidate) {
+        if (isReliable(title, episode, candidate)) {
+            if (!metadataCompatible(year, type, candidate)) return false;
+            Integer expectedSeason = expectedSeason(title, type, episode);
+            if (expectedSeason == null) return true;
+            Integer candidateSeason = seasonNumber(candidate);
+            // Providers normally omit "第一季" from the original edition. It remains safe when
+            // the visible title is otherwise an exact identity; later seasons must be explicit.
+            return expectedSeason.equals(candidateSeason)
+                    || expectedSeason == 1 && candidateSeason == null && isSameWork(title, candidate);
+        }
+        if (!isSameBaseWork(title, candidate)) return false;
+        if (NOISE.matcher(candidate).find()
+                && !NOISE.matcher((title == null ? "" : title) + " " + (type == null ? "" : type)).find()) return false;
+
+        Integer expectedEpisode = episodeNumber(episode);
+        Integer candidateEpisode = episodeNumber(candidate);
+        if (expectedEpisode != null && !expectedEpisode.equals(candidateEpisode)) return false;
+
+        Integer expectedSeason = expectedSeason(title, type, episode);
+        Integer candidateSeason = seasonNumber(candidate);
+        if (expectedSeason != null) {
+            if (candidateSeason == null || !expectedSeason.equals(candidateSeason)) return false;
+        } else {
+            String expectedYear = normalizeYear(year);
+            // A missing season can only cross the exact-title boundary when a matching year
+            // identifies the edition. This keeps base-title requests from silently choosing S2.
+            if (expectedYear.isEmpty() || !expectedYear.equals(candidateYear(candidate))) return false;
+        }
+        return metadataCompatible(year, type, candidate);
+    }
+
     /** Selects a reliable result independently of provider response order. */
     public static <T> T best(String title, String episode, List<T> items, Function<T, String> name) {
         return best(title, "", episode, items, name);
@@ -117,7 +157,7 @@ public final class DanmakuMatch {
         for (T item : items) {
             if (item == null) continue;
             String candidate = name.apply(item);
-            if (!isReliable(title, episode, candidate)) continue;
+            if (!isReliable(title, year, type, episode, candidate)) continue;
             String candidateYear = candidateYear(candidate);
             if (!expectedYear.isEmpty() && !expectedYear.equals(candidateYear)) continue;
             if (expectedYear.isEmpty() && !candidateYear.isEmpty()) years.add(candidateYear);
@@ -144,7 +184,22 @@ public final class DanmakuMatch {
      */
     public static int displayScore(String title, String year, String type, String episode, String candidate) {
         int value = score(title, episode, candidate);
-        if (value <= Integer.MIN_VALUE / 4) return value;
+        if (value <= Integer.MIN_VALUE / 4) {
+            if (!isSameBaseWork(title, candidate)) return value;
+            // Manual matching intentionally keeps other seasons visible. They remain far below
+            // an exact identity, but can now be presented in explicit season/source groups.
+            value = 20;
+            Integer expectedEpisode = episodeNumber(episode);
+            Integer candidateEpisode = episodeNumber(candidate);
+            if (expectedEpisode != null && candidateEpisode != null) {
+                value += expectedEpisode.equals(candidateEpisode) ? 70 : -120;
+            }
+        }
+        Integer expectedSeason = expectedSeason(title, type, episode);
+        Integer actualSeason = seasonNumber(candidate);
+        if (expectedSeason != null) {
+            value += expectedSeason.equals(actualSeason) ? 120 : actualSeason == null ? -80 : -220;
+        }
         String expectedYear = normalizeYear(year);
         String actualYear = candidateYear(candidate);
         if (!expectedYear.isEmpty()) {
@@ -163,6 +218,34 @@ public final class DanmakuMatch {
         return left.length() >= 2 && left.equals(canonicalTitle(second));
     }
 
+    public static boolean isSameBaseWork(String first, String second) {
+        String left = baseTitle(first);
+        return left.length() >= 2 && left.equals(baseTitle(second));
+    }
+
+    /** Returns true when a provider result can represent the episode currently being played. */
+    public static boolean isEpisodeCompatible(String episode, String candidate) {
+        Integer expected = episodeNumber(episode);
+        Integer actual = episodeNumber(candidate);
+        // The built-in endpoint returns a complete season for an episode query. Once the current
+        // episode is known, an aggregate or unnumbered result is as unsafe as an explicit mismatch.
+        return expected == null || expected.equals(actual);
+    }
+
+    public static Integer resultSeason(String value) {
+        return seasonNumber(value);
+    }
+
+    public static String resultProvider(String value) {
+        Matcher matcher = PROVIDER.matcher(value == null ? "" : value);
+        return matcher.find() ? matcher.group(1).trim() : "";
+    }
+
+    public static String resultPlatform(String value) {
+        Matcher matcher = PLATFORM.matcher(value == null ? "" : value);
+        return matcher.find() ? matcher.group(1).trim() : "";
+    }
+
     static Integer episodeNumber(String value) {
         if (value == null) return null;
         String episodeValue = AGGREGATE_COUNT.matcher(value).replaceAll(" ");
@@ -176,12 +259,15 @@ public final class DanmakuMatch {
         return shortEpisode.find() ? Integer.parseInt(shortEpisode.group(1)) : null;
     }
 
-    private static Integer seasonNumber(String value) {
+    static Integer seasonNumber(String value) {
         if (value == null) return null;
         Matcher seasonEpisode = SEASON_EPISODE.matcher(value);
         if (seasonEpisode.find()) return Integer.parseInt(seasonEpisode.group(1));
         Matcher season = SEASON.matcher(value);
-        return season.find() ? parseNumber(season.group(1)) : null;
+        if (season.find()) return parseNumber(season.group(1));
+        // Reuse title normalization for aliases such as Ⅱ, II and a trailing Arabic season.
+        Matcher suffix = Pattern.compile("#(\\d+)$").matcher(canonicalTitle(value));
+        return suffix.find() ? Integer.parseInt(suffix.group(1)) : null;
     }
 
     static String canonicalTitle(String value) {
@@ -210,6 +296,10 @@ public final class DanmakuMatch {
         Matcher arabic = TRAILING_ARABIC.matcher(text);
         if (arabic.matches()) return arabic.group(1) + "#" + Integer.parseInt(arabic.group(2));
         return text;
+    }
+
+    static String baseTitle(String value) {
+        return canonicalTitle(value).replaceFirst("#\\d+$", "");
     }
 
     static String candidateYear(String value) {
@@ -242,6 +332,19 @@ public final class DanmakuMatch {
         if (type.contains("电视剧") || type.contains("连续剧") || type.contains("短剧") || type.contains("国剧")
                 || type.matches(".*(?:国产|大陆|内地|美|英|韩|日|泰|港|台)剧.*")) return "series";
         return "";
+    }
+
+    private static boolean metadataCompatible(String year, String type, String candidate) {
+        String expectedYear = normalizeYear(year);
+        String actualYear = candidateYear(candidate);
+        if (!expectedYear.isEmpty() && !actualYear.isEmpty() && !expectedYear.equals(actualYear)) return false;
+        String expectedType = normalizeMediaType(type);
+        String actualType = candidateType(candidate);
+        return expectedType.isEmpty() || actualType.isEmpty() || expectedType.equals(actualType);
+    }
+
+    private static Integer expectedSeason(String title, String type, String episode) {
+        return firstNonNull(seasonNumber(episode), firstNonNull(seasonNumber(title), seasonNumber(type)));
     }
 
     private static String stripMetadataBrackets(String value) {

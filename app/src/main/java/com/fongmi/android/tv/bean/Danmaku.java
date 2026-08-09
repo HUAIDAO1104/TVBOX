@@ -1,7 +1,6 @@
 package com.fongmi.android.tv.bean;
 
 import android.net.Uri;
-import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -21,6 +20,9 @@ import java.util.Objects;
 
 public class Danmaku {
 
+    private static final String BUILT_IN_HTTP_PREFIX = "http://danmu.xyy.red/";
+    private static final String BUILT_IN_HTTPS_PREFIX = "https://danmu.xyy.red/";
+
     @SerializedName("name")
     private String name;
     @SerializedName("url")
@@ -33,15 +35,27 @@ public class Danmaku {
         List<Danmaku> items = App.gson().fromJson(str, listType);
         if (items == null) return Collections.emptyList();
         List<Danmaku> result = new ArrayList<>();
-        for (Danmaku item : items) if (item != null && !item.isBlockedSource()) result.add(item);
+        for (Danmaku item : items) {
+            if (item == null || item.isBlockedSource()) continue;
+            item.setUrl(normalizeSourceUrl(item.getUrl()));
+            result.add(item);
+        }
         return result;
     }
 
     public static Danmaku from(String path) {
         Danmaku danmaku = new Danmaku();
         danmaku.setName(path);
-        danmaku.setUrl(path);
+        danmaku.setUrl(normalizeSourceUrl(path));
         return danmaku;
+    }
+
+    /** Avoids the built-in provider's slow HTTP-to-HTTPS redirect on older TV firmware. */
+    public static String normalizeSourceUrl(String value) {
+        String url = Objects.toString(value, "").trim();
+        return url.startsWith(BUILT_IN_HTTP_PREFIX)
+                ? BUILT_IN_HTTPS_PREFIX + url.substring(BUILT_IN_HTTP_PREFIX.length())
+                : url;
     }
 
     public static Danmaku empty() {
@@ -70,7 +84,7 @@ public class Danmaku {
     }
 
     public String getName() {
-        return TextUtils.isEmpty(name) ? getUrl() : name;
+        return name == null || name.isEmpty() ? getUrl() : name;
     }
 
     public void setName(String name) {
@@ -78,7 +92,7 @@ public class Danmaku {
     }
 
     public String getUrl() {
-        return TextUtils.isEmpty(url) ? "" : url;
+        return url == null || url.isEmpty() ? "" : url;
     }
 
     public void setUrl(String url) {

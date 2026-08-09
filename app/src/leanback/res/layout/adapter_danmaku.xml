@@ -1,14 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.textview.MaterialTextView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/text"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/selector_dialog_glass_card"
-    android:ellipsize="marquee"
+    android:descendantFocusability="blocksDescendants"
     android:focusable="true"
     android:focusableInTouchMode="true"
-    android:singleLine="true"
-    android:textColor="@color/text"
-    android:textSize="14sp"
-    tools:text="愛奇異彈幕" />
+    android:orientation="vertical">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/group"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="3dp"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:textColor="?attr/colorPrimary"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        tools:text="第 2 季 · 360 / qq"
+        tools:visibility="visible" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="marquee"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:textColor="@color/text"
+        android:textSize="14sp"
+        tools:text="一起同过窗Ⅱ（2017）· 第 1 集" />
+
+</LinearLayout>

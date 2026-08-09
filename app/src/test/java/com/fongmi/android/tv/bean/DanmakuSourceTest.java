@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.bean;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -29,5 +30,13 @@ public class DanmakuSourceTest {
         assertTrue(Danmaku.isBlockedSourceLabel("小白播放器专用弹幕入口"));
         assertFalse(Danmaku.isBlockedSourceLabel("弹幕设置"));
         assertFalse(Danmaku.isBlockedSourceLabel("弹幕开"));
+    }
+
+    @Test
+    public void upgradesOnlyTheBuiltInCommentEndpointToHttps() {
+        assertEquals("https://danmu.xyy.red/api/v2/comment/274234?format=xml",
+                Danmaku.normalizeSourceUrl("http://danmu.xyy.red/api/v2/comment/274234?format=xml"));
+        assertEquals("http://example.com/comments.xml",
+                Danmaku.normalizeSourceUrl("http://example.com/comments.xml"));
     }
 }

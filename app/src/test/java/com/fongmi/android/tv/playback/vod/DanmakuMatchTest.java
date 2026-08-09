@@ -106,6 +106,20 @@ public class DanmakuMatchTest {
     }
 
     @Test
+    public void yearAndSeasonMetadataSelectTheCorrectTogetherWindowSeason() {
+        List<String> response = List.of(
+                "一起同过窗第三季(2022)【电视剧】from 360 - 【qq】 第1集",
+                "一起同过窗Ⅱ(2017)【电视剧】from 360 - 【qq】 第1集",
+                "一起同过窗(2016)【电视剧】from 360 - 【youku】 第1集");
+
+        assertEquals(response.get(1), DanmakuMatch.best(
+                "一起同过窗", "2017", "电视剧 第二季", "1", response, item -> item));
+        assertEquals(response.get(2), DanmakuMatch.best(
+                "一起同过窗", "2016", "电视剧 第一季", "1", response, item -> item));
+        assertEquals(Integer.valueOf(2), DanmakuMatch.resultSeason(response.get(1)));
+    }
+
+    @Test
     public void detailMediaTypeDisambiguatesSameTitleMovieAndSeries() {
         List<String> response = List.of(
                 "同名作品(2019)【电影】from 360 - 第1集",

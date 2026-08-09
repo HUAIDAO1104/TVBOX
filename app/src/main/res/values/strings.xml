@@ -80,6 +80,9 @@
     <string name="danmaku_search_action">Search</string>
     <string name="danmaku_search_running">Searching <xliff:g name="count">%d</xliff:g> providers…</string>
     <string name="danmaku_search_result"><xliff:g name="count">%d</xliff:g> matching sources found</string>
+    <string name="danmaku_group_season">Season <xliff:g name="season">%1$d</xliff:g> · <xliff:g name="source">%2$s</xliff:g></string>
+    <string name="danmaku_group_unseasoned">Main title · <xliff:g name="source">%1$s</xliff:g></string>
+    <string name="danmaku_group_other_source">Other source</string>
     <string name="danmaku_result_focus"><xliff:g name="position">%1$d</xliff:g>/<xliff:g name="total">%2$d</xliff:g> selected · <xliff:g name="name">%3$s</xliff:g></string>
     <string name="danmaku_result_selected">In use · <xliff:g name="name">%1$s</xliff:g></string>
     <string name="danmaku_search_no_playback">Play a video before manually matching danmaku</string>

@@ -17,6 +17,7 @@ import com.fongmi.android.tv.player.PlayerManager;
 import com.fongmi.android.tv.playback.vod.DanmakuQuery;
 import com.fongmi.android.tv.playback.vod.DanmakuMatch;
 import com.fongmi.android.tv.playback.vod.DanmakuMatchContext;
+import com.fongmi.android.tv.playback.vod.DanmakuResultGrouper;
 import com.fongmi.android.tv.playback.vod.VodPlaybackMedia;
 import com.fongmi.android.tv.ui.adapter.DanmakuAdapter;
 import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
@@ -30,7 +31,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import okhttp3.Call;
@@ -51,12 +51,13 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
     private String searchYear;
     private String searchType;
     private String searchEpisode;
+    private boolean resultFocusInitialized;
     private int pending;
 
     DanmakuSearchPanel(ViewDanmakuSearchEmbeddedBinding binding, PlayerManager player) {
         this.binding = binding;
         this.player = player;
-        this.adapter = new DanmakuAdapter(this);
+        this.adapter = new DanmakuAdapter(this, true);
         this.results = new LinkedHashMap<>();
         this.calls = new ArrayList<>();
         this.requestId = new AtomicInteger();
@@ -116,6 +117,7 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         calls.clear();
         results.clear();
         adapter.clear();
+        resultFocusInitialized = false;
         binding.recycler.setVisibility(GONE);
         binding.empty.setVisibility(GONE);
         binding.progress.setVisibility(VISIBLE);
@@ -125,10 +127,12 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         calls.addAll(DanmakuApi.newCalls(keyword, searchEpisode));
         pending = calls.size();
         binding.providerStatus.setText(ResUtil.getString(R.string.danmaku_search_running, pending));
-        for (Call call : calls) call.enqueue(callback(id));
+        for (Call call : calls) {
+            call.enqueue(callback(id, searchTitle, searchYear, searchType, searchEpisode));
+        }
     }
 
-    private Callback callback(int id) {
+    private Callback callback(int id, String title, String year, String type, String episode) {
         return new Callback() {
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) {
@@ -137,7 +141,11 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
                     if (response.body() != null) items = Danmaku.arrayFrom(response.body().string());
                 } catch (Exception ignored) {
                 }
-                List<Danmaku> value = items;
+                // A provider may return hundreds of entries covering every episode and season.
+                // Filter and sort that payload on OkHttp's worker thread so TV navigation never
+                // competes with response parsing on the main thread.
+                List<Danmaku> value = DanmakuResultGrouper.prepare(
+                        title, year, type, episode, items);
                 App.post(() -> merge(id, value));
             }
 
@@ -151,26 +159,31 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
     private void merge(int id, List<Danmaku> items) {
         if (id != requestId.get()) return;
         String focusedUrl = focusedUrl();
+        boolean hadResultFocus = binding.recycler.hasFocus();
         for (Danmaku item : items) {
             if (item == null || item.isEmpty() || results.containsKey(item.getUrl())) continue;
             results.put(item.getUrl(), item);
         }
         pending = Math.max(0, pending - 1);
-        List<Danmaku> ranked = new ArrayList<>(results.values());
-        ranked.sort(Comparator
-                .comparingInt((Danmaku item) -> DanmakuMatch.displayScore(
-                        searchTitle, searchYear, searchType, searchEpisode, item.getName()))
-                .reversed()
-                .thenComparing(Danmaku::getName, String.CASE_INSENSITIVE_ORDER));
+        List<Danmaku> ranked = DanmakuResultGrouper.prepare(
+                searchTitle, searchYear, searchType, searchEpisode, results.values());
         adapter.setItems(ranked);
-        binding.recycler.setVisibility(results.isEmpty() ? GONE : VISIBLE);
+        binding.recycler.setVisibility(ranked.isEmpty() ? GONE : VISIBLE);
         binding.progress.setVisibility(pending == 0 ? GONE : VISIBLE);
-        binding.empty.setVisibility(pending == 0 && results.isEmpty() ? VISIBLE : GONE);
+        binding.empty.setVisibility(pending == 0 && ranked.isEmpty() ? VISIBLE : GONE);
         binding.empty.setText(R.string.error_empty);
         binding.providerStatus.setText(pending == 0
-                ? ResUtil.getString(R.string.danmaku_search_result, results.size())
+                ? ResUtil.getString(R.string.danmaku_search_result, ranked.size())
                 : ResUtil.getString(R.string.danmaku_search_running, pending));
-        if (!results.isEmpty() && Util.isLeanback()) restoreResultFocus(focusedUrl);
+        if (ranked.isEmpty() || !Util.isLeanback()) return;
+        if (!resultFocusInitialized) {
+            resultFocusInitialized = true;
+            restoreResultFocus("");
+        } else if (hadResultFocus && adapter.indexOfUrl(focusedUrl) < 0) {
+            // DiffUtil normally keeps the focused holder. Only recover when the focused source
+            // actually disappeared; never steal focus merely because another provider arrived.
+            restoreResultFocus(focusedUrl);
+        }
     }
 
     private String focusedUrl() {
@@ -208,7 +221,6 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
     public void onItemFocus(Danmaku item, int position, int total) {
         binding.providerStatus.setText(ResUtil.getString(
                 R.string.danmaku_result_focus, position + 1, total, item.getName()));
-        binding.recycler.scrollToPosition(position);
     }
 
     void destroy() {

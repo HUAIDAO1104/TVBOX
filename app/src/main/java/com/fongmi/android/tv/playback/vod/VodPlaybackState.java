@@ -211,12 +211,11 @@ public class VodPlaybackState {
         detailYear = item == null ? "" : item.getYear();
         if (item == null) {
             detailType = "";
-        } else if (!item.getTypeName().isEmpty()) {
-            detailType = item.getTypeName();
         } else {
-            // Several anime repositories only expose the medium in tag/remarks. Preserve it for
-            // danmaku disambiguation instead of treating the live-action edition as equivalent.
-            detailType = (item.getTag() + " " + item.getRemarks()).trim();
+            // Medium and season are not consistently stored in one field. Keep all descriptive
+            // metadata so matching can read "动漫" from tags and "第二季" from remarks without
+            // allowing either field to overwrite the other.
+            detailType = (item.getTypeName() + " " + item.getTag() + " " + item.getRemarks()).trim();
         }
     }
 }
