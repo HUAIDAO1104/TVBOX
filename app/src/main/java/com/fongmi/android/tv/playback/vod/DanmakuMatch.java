@@ -207,21 +207,37 @@ public final class DanmakuMatch {
 
     static boolean isPreferredFamily(String selectedName, String year, String type, String episode,
                                      String candidate) {
+        return isEpisodeCompatible(episode, candidate)
+                && isSamePreferredCatalogue(selectedName, year, type, candidate);
+    }
+
+    /**
+     * Identifies another episode belonging to the exact catalogue row a person selected.
+     *
+     * <p>Episode URLs themselves are intentionally excluded.  Title/season, known edition
+     * metadata, upstream provider and platform remain stable across a season and are therefore
+     * safe to use when building the per-episode index from one manual-search response.</p>
+     */
+    static boolean isSamePreferredCatalogue(String selectedName, String year, String type,
+                                             String candidate) {
         String selectedTitle = canonicalTitle(selectedName);
         if (selectedTitle.length() < 2 || !selectedTitle.equals(canonicalTitle(candidate))) return false;
-        if (!isEpisodeCompatible(episode, candidate)) return false;
 
         String expectedYear = preferredYear(selectedName, year);
         String actualYear = candidateYear(candidate);
-        if (!expectedYear.isEmpty() && !expectedYear.equals(actualYear)) return false;
+        if (!expectedYear.isEmpty() && !actualYear.isEmpty() && !expectedYear.equals(actualYear)) return false;
 
         String expectedType = preferredType(selectedName, type);
         String actualType = candidateType(candidate);
-        if (!expectedType.isEmpty() && !expectedType.equals(actualType)) return false;
+        if (!expectedType.isEmpty() && !actualType.isEmpty() && !expectedType.equals(actualType)) return false;
 
         String expectedProvider = resultProvider(selectedName);
         String actualProvider = resultProvider(candidate);
-        return expectedProvider.isEmpty() || expectedProvider.equalsIgnoreCase(actualProvider);
+        if (!expectedProvider.isEmpty() && !expectedProvider.equalsIgnoreCase(actualProvider)) return false;
+
+        String expectedPlatform = resultPlatform(selectedName);
+        String actualPlatform = resultPlatform(candidate);
+        return expectedPlatform.isEmpty() || expectedPlatform.equalsIgnoreCase(actualPlatform);
     }
 
     private static String preferredYear(String selectedName, String fallback) {

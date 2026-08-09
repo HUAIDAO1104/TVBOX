@@ -199,6 +199,22 @@ public class DanmakuMatchTest {
     }
 
     @Test
+    public void manualChoiceKeepsTheExactPlatformAcrossTogetherWindowEpisodes() {
+        String selected = "一起同过窗Ⅱ(2017)【电视剧】from 360 - 【youku】 第2集";
+        List<String> response = List.of(
+                "一起同过窗Ⅱ(2017)【电视剧】from 360 - 【qq】 第3集",
+                "一起同过窗(2016)【电视剧】from 360 - 【youku】 第3集",
+                "一起同过窗Ⅱ(2017)【电视剧】from 360 - 【youku】 第3集");
+
+        assertEquals(response.get(2), DanmakuMatch.bestPreferred(
+                selected, "2017", "国产剧 第二季", "3", response, item -> item));
+        assertTrue(DanmakuMatch.isSamePreferredCatalogue(
+                selected, "2017", "国产剧 第二季", response.get(2)));
+        assertFalse(DanmakuMatch.isSamePreferredCatalogue(
+                selected, "2017", "国产剧 第二季", response.get(0)));
+    }
+
+    @Test
     public void manualChoiceCannotCrossIntoAnotherEditionOrMedium() {
         String selected = "凡人修仙传 年番(2024)【动漫】from 360 - 第100集";
         List<String> response = List.of(

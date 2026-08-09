@@ -46,6 +46,7 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
     private final DanmakuAdapter adapter;
     private final PlayerManager player;
     private final Map<String, Danmaku> results;
+    private final Map<String, List<Danmaku>> sourceCatalogues;
     private final List<Call> calls;
     private final AtomicInteger requestId;
     private DanmakuMatchContext matchContext;
@@ -54,6 +55,7 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
     private String searchType;
     private String searchEpisode;
     private boolean resultFocusInitialized;
+    private boolean automaticRestoreStarted;
     private int pending;
 
     DanmakuSearchPanel(ViewDanmakuSearchEmbeddedBinding binding, PlayerManager player) {
@@ -61,6 +63,7 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         this.player = player;
         this.adapter = new DanmakuAdapter(this, true);
         this.results = new LinkedHashMap<>();
+        this.sourceCatalogues = new LinkedHashMap<>();
         this.calls = new ArrayList<>();
         this.requestId = new AtomicInteger();
         this.matchContext = VodPlaybackMedia.contextOf(player);
@@ -84,6 +87,7 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
             binding.keyword.setText(title);
             binding.keyword.setSelection(title.length());
         }
+        restoreCachedResult();
         binding.submit.setOnClickListener(view -> search());
         binding.keyword.setOnEditorActionListener((view, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_SEARCH) search();
@@ -99,6 +103,11 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
 
     void show(boolean focus) {
         binding.getRoot().setVisibility(VISIBLE);
+        if (!automaticRestoreStarted && results.isEmpty()
+                && !VodPlaybackMedia.preferredSearchQuery(player).isEmpty()) {
+            automaticRestoreStarted = true;
+            binding.getRoot().post(this::search);
+        }
         if (!focus) return;
         binding.keyword.requestFocus();
         if (!Util.isLeanback()) Util.showKeyboard(binding.keyword);
@@ -121,6 +130,7 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         for (Call call : calls) call.cancel();
         calls.clear();
         results.clear();
+        sourceCatalogues.clear();
         adapter.clear();
         resultFocusInitialized = false;
         binding.recycler.setVisibility(GONE);
@@ -157,18 +167,24 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
                 // competes with response parsing on the main thread.
                 List<Danmaku> value = DanmakuResultGrouper.prepare(
                         title, year, type, episode, items);
-                App.post(() -> merge(id, value));
+                List<Danmaku> catalogue = items;
+                App.post(() -> merge(id, value, sourceKey, catalogue));
             }
 
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                App.post(() -> merge(id, Collections.emptyList()));
+                App.post(() -> merge(id, Collections.emptyList(), sourceKey,
+                        Collections.emptyList()));
             }
         };
     }
 
-    private void merge(int id, List<Danmaku> items) {
+    private void merge(int id, List<Danmaku> items, String sourceKey,
+                       List<Danmaku> catalogue) {
         if (id != requestId.get()) return;
+        if (!sourceKey.isEmpty() && catalogue != null && !catalogue.isEmpty()) {
+            sourceCatalogues.put(sourceKey, catalogue);
+        }
         String focusedUrl = focusedUrl();
         boolean hadResultFocus = binding.recycler.hasFocus();
         for (Danmaku item : items) {
@@ -225,7 +241,9 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         // A manual choice is always an explicit retry, including when automatic matching already
         // selected the same URL but the renderer failed to load it.
         String query = binding.keyword.getText() == null ? "" : binding.keyword.getText().toString();
-        VodPlaybackMedia.rememberManualMatch(player, query, item);
+        List<Danmaku> catalogue = sourceCatalogues.get(item.getSourceKey());
+        VodPlaybackMedia.rememberManualMatch(player, query, item,
+                catalogue == null ? Collections.emptyList() : catalogue);
         player.setDanmaku(item, true);
         adapter.setSelected(item);
     }
@@ -240,5 +258,17 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         requestId.incrementAndGet();
         for (Call call : calls) call.cancel();
         calls.clear();
+        sourceCatalogues.clear();
+    }
+
+    private void restoreCachedResult() {
+        Danmaku cached = VodPlaybackMedia.preferredEpisode(player);
+        if (cached == null || cached.isEmpty()) return;
+        results.put(cached.getUrl(), cached);
+        adapter.setItems(List.of(cached));
+        binding.recycler.setVisibility(VISIBLE);
+        binding.progress.setVisibility(GONE);
+        binding.empty.setVisibility(GONE);
+        binding.providerStatus.setText(ResUtil.getString(R.string.danmaku_search_result, 1));
     }
 }

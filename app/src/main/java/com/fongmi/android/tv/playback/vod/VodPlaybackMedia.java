@@ -62,8 +62,19 @@ public final class VodPlaybackMedia {
             player.setDanmaku(danmaku, true);
         };
         if (preferred == null) DanmakuApi.search(title, year, type, episodeQuery, apply);
-        else DanmakuApi.searchPreferred(preferred.query(), year, type, episodeQuery,
-                preferred.selectedName(), preferred.sourceKey(), apply);
+        else {
+            Danmaku cached = preferred.episode(episodeQuery);
+            if (cached != null) apply.accept(cached);
+            else DanmakuApi.searchPreferred(preferred.query(), year, type, episodeQuery,
+                    preferred.selectedName(), preferred.sourceKey(), (danmaku, catalogue) -> {
+                        // Upgrade selections saved by older releases as soon as one fallback
+                        // response succeeds. The rest of the season then follows the zero-search
+                        // cached path without requiring another manual click.
+                        DanmakuManualMatchStore.get().remember(
+                                matchContext, preferred.query(), danmaku, catalogue);
+                        apply.accept(danmaku);
+                    });
+        }
     }
 
     /** Invalidates both the network request and the renderer source before a media transition. */
@@ -90,6 +101,18 @@ public final class VodPlaybackMedia {
     /** Records a user-confirmed work/provider mapping for this and subsequent episodes. */
     public static void rememberManualMatch(PlayerManager player, String query, Danmaku selected) {
         DanmakuManualMatchStore.get().remember(contextOf(player), query, selected);
+    }
+
+    /** Stores the full response behind a manual row so following episodes need no catalogue search. */
+    public static void rememberManualMatch(PlayerManager player, String query, Danmaku selected,
+                                           java.util.List<Danmaku> catalogue) {
+        DanmakuManualMatchStore.get().remember(contextOf(player), query, selected, catalogue);
+    }
+
+    public static Danmaku preferredEpisode(PlayerManager player) {
+        DanmakuMatchContext context = contextOf(player);
+        DanmakuManualMatchStore.Selection selection = DanmakuManualMatchStore.get().find(context);
+        return selection == null ? null : selection.episode(context.getEpisode());
     }
 
     /** Returns the last successful manual query for the current work/season, when available. */

@@ -4,7 +4,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.fongmi.android.tv.bean.Danmaku;
+
 import org.junit.Test;
+
+import java.util.List;
 
 public class VodPlaybackMediaTest {
 
@@ -73,5 +77,31 @@ public class VodPlaybackMediaTest {
         assertFalse(first.isEmpty());
         assertFalse(first.contains("very-secret"));
         assertFalse(first.equals(DanmakuManualMatchStore.sourceKey(url + "-other")));
+    }
+
+    @Test
+    public void manualSelectionCachesEveryEpisodeFromTheExactSeasonAndPlatform() {
+        Danmaku selected = danmaku(
+                "一起同过窗Ⅱ(2017)【电视剧】from 360 - 【youku】 第2集", "episode-2");
+        List<Danmaku> catalogue = List.of(
+                selected,
+                danmaku("一起同过窗Ⅱ(2017)【电视剧】from 360 - 【qq】 第3集", "wrong-platform"),
+                danmaku("一起同过窗(2016)【电视剧】from 360 - 【youku】 第3集", "wrong-season"),
+                danmaku("一起同过窗Ⅱ(2017)【电视剧】from 360 - 【youku】 第3集", "episode-3"));
+        DanmakuMatchContext context = new DanmakuMatchContext(
+                "一起同过窗 第二季", "2017", "国产剧", "2");
+
+        var cached = DanmakuManualMatchStore.buildEpisodeCache(context, selected, catalogue);
+
+        assertEquals(2, cached.size());
+        assertEquals("episode-2", cached.get("2").url());
+        assertEquals("episode-3", cached.get("3").url());
+    }
+
+    private static Danmaku danmaku(String name, String url) {
+        Danmaku item = Danmaku.from(url);
+        item.setName(name);
+        item.setSourceKey("source");
+        return item;
     }
 }

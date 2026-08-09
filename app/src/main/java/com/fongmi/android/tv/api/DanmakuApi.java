@@ -20,7 +20,9 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import okhttp3.Call;
@@ -81,7 +83,7 @@ public class DanmakuApi {
     /** Reuses a user-confirmed catalogue/provider identity while resolving a new episode URL. */
     public static void searchPreferred(String name, String year, String type, String episode,
                                        String selectedName, String selectedSourceKey,
-                                       Consumer<Danmaku> found) {
+                                       BiConsumer<Danmaku, List<Danmaku>> found) {
         final int generation = REQUEST_GENERATION.incrementAndGet();
         OkHttp.cancel(TAG);
         DanmakuQuery query = DanmakuQuery.from(name);
@@ -92,8 +94,53 @@ public class DanmakuApi {
         ordered.add(DanmakuSetting.getAutomaticApiUrl());
         ordered.addAll(DanmakuSetting.getSearchApiUrls());
         ordered.removeIf(value -> value == null || value.isBlank());
-        search(generation, query, Objects.toString(year, ""), Objects.toString(type, ""), episode,
-                Objects.toString(selectedName, ""), new ArrayList<>(ordered), found, 0, 0);
+        searchPreferredParallel(generation, query.searchTitle(), Objects.toString(year, ""),
+                Objects.toString(type, ""), episode, Objects.toString(selectedName, ""),
+                new ArrayList<>(ordered), found);
+    }
+
+    /**
+     * A remembered manual query has already been verified by the person using the app. Query its
+     * eligible endpoints concurrently: the old candidate-by-endpoint recursion multiplied every
+     * unavailable endpoint's 30 second timeout and was the source of minute-long episode changes.
+     */
+    private static void searchPreferredParallel(int generation, String query, String year,
+                                                String type, String episode, String preferredName,
+                                                List<String> apiUrls,
+                                                BiConsumer<Danmaku, List<Danmaku>> found) {
+        if (generation != REQUEST_GENERATION.get() || query.isEmpty() || apiUrls.isEmpty()) return;
+        AtomicBoolean delivered = new AtomicBoolean();
+        List<Call> calls = new ArrayList<>();
+        for (String apiUrl : apiUrls) calls.add(createCall(query, episode, apiUrl));
+        for (int index = 0; index < calls.size(); index++) {
+            Call current = calls.get(index);
+            String apiUrl = apiUrls.get(index);
+            current.enqueue(new Callback() {
+                @Override
+                public void onResponse(@NonNull Call call, @NonNull Response response) {
+                    try (Response closeable = response) {
+                        if (generation != REQUEST_GENERATION.get() || delivered.get()
+                                || closeable.body() == null) return;
+                        List<Danmaku> items = Danmaku.arrayFrom(closeable.body().string());
+                        String sourceKey = DanmakuManualMatchStore.sourceKey(apiUrl);
+                        for (Danmaku item : items) item.setSourceKey(sourceKey);
+                        Danmaku best = DanmakuMatch.bestPreferred(preferredName, year, type,
+                                episode, items, Danmaku::getName);
+                        if (best == null || !delivered.compareAndSet(false, true)) return;
+                        for (Call pending : calls) if (pending != call) pending.cancel();
+                        App.post(() -> {
+                            if (generation == REQUEST_GENERATION.get()) found.accept(best, items);
+                        });
+                    } catch (Exception ignored) {
+                    }
+                }
+
+                @Override
+                public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                    // Other independent endpoints continue; one timeout cannot block them.
+                }
+            });
+        }
     }
 
     private static void search(int generation, DanmakuQuery query, String year, String type, String episode,
