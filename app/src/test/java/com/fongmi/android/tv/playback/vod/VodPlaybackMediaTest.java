@@ -2,6 +2,7 @@ package com.fongmi.android.tv.playback.vod;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import com.fongmi.android.tv.bean.Danmaku;
@@ -96,6 +97,53 @@ public class VodPlaybackMediaTest {
         assertEquals(2, cached.size());
         assertEquals("episode-2", cached.get("2").url());
         assertEquals("episode-3", cached.get("3").url());
+    }
+
+    @Test
+    public void releaseObfuscatedEpisodeCacheMigratesWithoutLinkedTreeMapCast() {
+        String raw = "{\"work\":{\"a\":\"一起同过窗\","
+                + "\"b\":\"一起同过窗Ⅱ(2017)【电视剧】from 360 - 【youku】 第2集\","
+                + "\"c\":\"source\",\"d\":{"
+                + "\"2\":{\"a\":\"第二集\",\"b\":\"episode-2\"},"
+                + "\"3\":{\"a\":\"第三集\",\"b\":\"episode-3\"}}}}";
+
+        DanmakuManualMatchStore.Selection selection =
+                DanmakuManualMatchStore.decode(raw).get("work");
+
+        assertNotNull(selection);
+        assertEquals("episode-2", selection.episode("第2集").getUrl());
+        assertEquals("episode-3", selection.episode("第3集").getUrl());
+        assertTrue(selection.hasEpisodes());
+    }
+
+    @Test
+    public void stableManualCacheRoundTripSurvivesFutureMinificationChanges() {
+        String legacy = "{\"work\":{\"a\":\"一起同过窗\","
+                + "\"b\":\"一起同过窗Ⅱ 第2集\",\"c\":\"source\","
+                + "\"d\":{\"2\":{\"a\":\"第二集\",\"b\":\"episode-2\"}}}}";
+        var decoded = DanmakuManualMatchStore.decode(legacy);
+        String stable = DanmakuManualMatchStore.encode(decoded);
+        DanmakuManualMatchStore.Selection restored =
+                DanmakuManualMatchStore.decode(stable).get("work");
+
+        assertTrue(stable.contains("\"schema\":2"));
+        assertTrue(stable.contains("\"episodes\""));
+        assertNotNull(restored);
+        assertEquals("episode-2", restored.episode("2").getUrl());
+    }
+
+    @Test
+    public void legacyKeywordOnlyMappingRemainsUsableAfterMigration() {
+        String raw = "{\"work\":{\"a\":\"一起同过窗\","
+                + "\"b\":\"一起同过窗Ⅱ 第2集\",\"c\":\"source\","
+                + "\"d\":1720000000000}}";
+
+        DanmakuManualMatchStore.Selection selection =
+                DanmakuManualMatchStore.decode(raw).get("work");
+
+        assertNotNull(selection);
+        assertEquals("一起同过窗", selection.query());
+        assertFalse(selection.hasEpisodes());
     }
 
     private static Danmaku danmaku(String name, String url) {

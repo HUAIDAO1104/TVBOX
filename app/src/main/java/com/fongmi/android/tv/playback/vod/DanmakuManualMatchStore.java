@@ -1,11 +1,11 @@
 package com.fongmi.android.tv.playback.vod;
 
-import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.bean.Danmaku;
 import com.github.catvod.utils.Prefers;
-import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
-import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.LinkedHashMap;
@@ -13,22 +13,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** Persists an explicit manual danmaku choice at work/season scope, never episode URL scope. */
+/** Persists a manual work/season choice plus a bounded cache of its confirmed episode URLs. */
 public final class DanmakuManualMatchStore {
 
     private static final String PREF_KEY = "danmaku_manual_matches_v1";
+    private static final int SCHEMA_VERSION = 2;
     private static final int MAX_ENTRIES = 64;
     private static final int MAX_EPISODES_PER_ENTRY = 160;
-    private static final Type MAP_TYPE = TypeToken.getParameterized(
-            LinkedHashMap.class, String.class, Selection.class).getType();
 
     private final LinkedHashMap<String, Selection> entries = new LinkedHashMap<>();
 
     private DanmakuManualMatchStore() {
+        String saved = Prefers.getString(PREF_KEY, "");
         try {
-            Map<String, Selection> saved = App.gson().fromJson(Prefers.getString(PREF_KEY, ""), MAP_TYPE);
-            if (saved != null) entries.putAll(saved);
+            entries.putAll(decode(saved));
             trim();
+            // v5.5.55/56 used reflectively serialized, obfuscated field names. Rewrite any
+            // existing value once into the explicit schema so future R8 changes stay compatible.
+            if (!saved.isBlank()) persist();
         } catch (Throwable ignored) {
             entries.clear();
         }
@@ -129,9 +131,69 @@ public final class DanmakuManualMatchStore {
 
     private void persist() {
         try {
-            Prefers.put(PREF_KEY, App.gson().toJson(entries, MAP_TYPE));
+            Prefers.put(PREF_KEY, encode(entries));
         } catch (Throwable ignored) {
         }
+    }
+
+    static LinkedHashMap<String, Selection> decode(String raw) {
+        LinkedHashMap<String, Selection> result = new LinkedHashMap<>();
+        if (raw == null || raw.isBlank()) return result;
+        try {
+            JsonElement parsed = JsonParser.parseString(raw);
+            if (!parsed.isJsonObject()) return result;
+            JsonObject root = parsed.getAsJsonObject();
+            JsonObject stored = root.has("schema") && root.has("entries")
+                    && root.get("entries").isJsonObject()
+                    ? root.getAsJsonObject("entries") : root;
+            for (Map.Entry<String, JsonElement> entry : stored.entrySet()) {
+                if (!entry.getValue().isJsonObject()) continue;
+                Selection selection = Selection.fromJson(entry.getValue().getAsJsonObject());
+                if (selection.query().isEmpty() || selection.selectedName().isEmpty()) continue;
+                result.put(entry.getKey(), selection);
+                if (result.size() >= MAX_ENTRIES) break;
+            }
+        } catch (Throwable ignored) {
+            result.clear();
+        }
+        return result;
+    }
+
+    static String encode(Map<String, Selection> values) {
+        JsonObject root = new JsonObject();
+        JsonObject stored = new JsonObject();
+        root.addProperty("schema", SCHEMA_VERSION);
+        if (values != null) {
+            for (Map.Entry<String, Selection> entry : values.entrySet()) {
+                if (entry.getKey() == null || entry.getValue() == null) continue;
+                stored.add(entry.getKey(), entry.getValue().toJson());
+            }
+        }
+        root.add("entries", stored);
+        return root.toString();
+    }
+
+    private static String string(JsonObject object, String... names) {
+        for (String name : names) {
+            JsonElement value = object.get(name);
+            if (value != null && value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
+                return value.getAsString();
+            }
+        }
+        return "";
+    }
+
+    private static long number(JsonObject object, String... names) {
+        for (String name : names) {
+            JsonElement value = object.get(name);
+            if (value == null || !value.isJsonPrimitive()
+                    || !value.getAsJsonPrimitive().isNumber()) continue;
+            try {
+                return value.getAsLong();
+            } catch (RuntimeException ignored) {
+            }
+        }
+        return 0L;
     }
 
     public static final class Selection {
@@ -152,6 +214,45 @@ public final class DanmakuManualMatchStore {
             this.sourceKey = sourceKey;
             this.episodes = episodes;
             this.updatedAt = updatedAt;
+        }
+
+        private static Selection fromJson(JsonObject object) {
+            String query = string(object, "query", "a");
+            String selectedName = string(object, "selectedName", "b");
+            String sourceKey = string(object, "sourceKey", "c");
+            long updatedAt = number(object, "updatedAt", "e", "d");
+            LinkedHashMap<String, CachedEpisode> episodes = new LinkedHashMap<>();
+            JsonElement episodeValue = object.has("episodes")
+                    ? object.get("episodes") : object.get("d");
+            if (episodeValue != null && episodeValue.isJsonObject()) {
+                for (Map.Entry<String, JsonElement> entry
+                        : episodeValue.getAsJsonObject().entrySet()) {
+                    if (!entry.getValue().isJsonObject()) continue;
+                    CachedEpisode cached = CachedEpisode.fromJson(
+                            entry.getValue().getAsJsonObject());
+                    if (cached.url().isEmpty()) continue;
+                    episodes.put(entry.getKey(), cached);
+                    if (episodes.size() >= MAX_EPISODES_PER_ENTRY) break;
+                }
+            }
+            return new Selection(query, selectedName, sourceKey, episodes, updatedAt);
+        }
+
+        private JsonObject toJson() {
+            JsonObject object = new JsonObject();
+            JsonObject cachedEpisodes = new JsonObject();
+            object.addProperty("query", query());
+            object.addProperty("selectedName", selectedName());
+            object.addProperty("sourceKey", sourceKey());
+            object.addProperty("updatedAt", updatedAt());
+            if (episodes != null) {
+                for (Map.Entry<String, CachedEpisode> entry : episodes.entrySet()) {
+                    if (entry.getKey() == null || entry.getValue() == null) continue;
+                    cachedEpisodes.add(entry.getKey(), entry.getValue().toJson());
+                }
+            }
+            object.add("episodes", cachedEpisodes);
+            return object;
         }
 
         public String query() {
@@ -219,6 +320,18 @@ public final class DanmakuManualMatchStore {
         static CachedEpisode from(Danmaku item) {
             return new CachedEpisode(item == null ? "" : item.getName(),
                     item == null ? "" : item.getUrl());
+        }
+
+        static CachedEpisode fromJson(JsonObject object) {
+            return new CachedEpisode(string(object, "name", "a"),
+                    string(object, "url", "b"));
+        }
+
+        JsonObject toJson() {
+            JsonObject object = new JsonObject();
+            object.addProperty("name", name());
+            object.addProperty("url", url());
+            return object;
         }
 
         String name() {
