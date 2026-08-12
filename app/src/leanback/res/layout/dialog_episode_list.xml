@@ -7,7 +7,10 @@
     android:clipChildren="false"
     android:clipToPadding="false"
     android:orientation="vertical"
-    android:padding="18dp">
+    android:paddingStart="22dp"
+    android:paddingTop="22dp"
+    android:paddingEnd="22dp"
+    android:paddingBottom="16dp">
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/title"
@@ -16,18 +19,18 @@
         android:ellipsize="end"
         android:maxLines="1"
         android:text="@string/episode_picker_title"
-        android:textColor="?attr/colorOnSurface"
-        android:textSize="20sp"
+        android:textColor="@color/tv_text_primary"
+        android:textSize="22sp"
         android:textStyle="bold" />
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/current"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="5dp"
         android:ellipsize="end"
         android:maxLines="1"
-        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textColor="@color/tv_text_secondary"
         android:textSize="13sp"
         tools:text="线路一 · 第 12 集" />
 
@@ -35,56 +38,61 @@
         android:id="@+id/sourceSection"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
+        android:layout_marginTop="18dp"
         android:orientation="vertical">
 
         <com.google.android.material.textview.MaterialTextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/episode_picker_sources"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:textSize="13sp" />
+            android:textColor="@color/tv_text_secondary"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
-        <androidx.recyclerview.widget.RecyclerView
+        <androidx.leanback.widget.HorizontalGridView
             android:id="@+id/flag"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_height="46dp"
+            android:layout_marginTop="7dp"
             android:clipChildren="false"
             android:clipToPadding="false"
             android:overScrollMode="never"
-            android:paddingEnd="8dp"
-            tools:itemCount="4"
-            tools:listitem="@layout/adapter_flag" />
+            android:paddingStart="3dp"
+            android:paddingEnd="3dp" />
 
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="14dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
         <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/episodeTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/episode_picker_title"
-            android:textColor="?attr/colorOnSurface"
+            android:textColor="@color/tv_text_primary"
             android:textSize="16sp"
             android:textStyle="bold" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/reverse"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/shape_accent"
-            android:clickable="true"
+            android:layout_height="38dp"
+            android:background="@drawable/selector_dialog_glass_card"
             android:focusable="true"
-            android:minWidth="70dp"
+            android:focusableInTouchMode="true"
+            android:gravity="center"
+            android:minWidth="76dp"
+            android:nextFocusDown="@id/episode"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
             android:text="@string/episode_picker_forward"
-            android:textColor="@color/selector_control"
+            android:textColor="@color/tv_text_primary"
             android:textSize="13sp" />
 
     </LinearLayout>
@@ -93,24 +101,28 @@
         android:id="@+id/episode"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="10dp"
         android:layout_weight="1"
         android:clipChildren="false"
         android:clipToPadding="false"
         android:overScrollMode="never"
-        android:paddingBottom="8dp"
+        android:paddingStart="3dp"
+        android:paddingTop="3dp"
+        android:paddingEnd="3dp"
+        android:paddingBottom="10dp"
         app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
         app:spanCount="2"
         tools:itemCount="12"
-        tools:listitem="@layout/adapter_episode_grid" />
+        tools:listitem="@layout/adapter_episode" />
 
     <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/hint"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:gravity="center"
-        android:text="@string/episode_picker_hint_touch"
-        android:textColor="?attr/colorOnSurfaceVariant"
+        android:text="@string/episode_picker_hint_tv"
+        android:textColor="@color/tv_text_tertiary"
         android:textSize="12sp" />
 
 </LinearLayout>

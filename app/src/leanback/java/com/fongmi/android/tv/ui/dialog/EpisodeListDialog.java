@@ -10,7 +10,6 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewbinding.ViewBinding;
 
@@ -21,13 +20,13 @@ import com.fongmi.android.tv.databinding.DialogEpisodeListBinding;
 import com.fongmi.android.tv.playback.vod.EpisodePickerPolicy;
 import com.fongmi.android.tv.ui.adapter.EpisodeAdapter;
 import com.fongmi.android.tv.ui.adapter.FlagAdapter;
-import com.fongmi.android.tv.ui.base.ViewType;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.utils.ResUtil;
 
 import java.util.Collections;
 import java.util.List;
 
-/** Touch-first complete episode selector shared by portrait and landscape phones. */
+/** Complete, playback-safe episode selector used from the fullscreen TV controller. */
 public class EpisodeListDialog extends BaseSideSheetDialog implements FlagAdapter.OnClickListener, EpisodeAdapter.OnClickListener {
 
     private static final String TAG = "episode_picker";
@@ -74,21 +73,20 @@ public class EpisodeListDialog extends BaseSideSheetDialog implements FlagAdapte
 
     @Override
     protected int getWidth() {
-        boolean landscape = ResUtil.getScreenWidth() > ResUtil.getScreenHeight();
-        return Math.round(ResUtil.getScreenWidth() * (landscape ? 0.46f : 0.82f));
+        int screen = ResUtil.getScreenWidth();
+        return Math.min(Math.max(Math.round(screen * 0.46f), ResUtil.dp2px(520)), ResUtil.dp2px(760));
     }
 
     @Override
     protected void initView() {
-        binding.title.setText(title.isEmpty() ? getString(R.string.episode_picker_title) : title);
-        binding.flag.setLayoutManager(new LinearLayoutManager(requireContext(), RecyclerView.HORIZONTAL, false));
-        binding.flag.setHasFixedSize(true);
-        binding.flag.setItemAnimator(null);
+        binding.title.setText(title.isEmpty() ? getString(R.string.episode_picker_title) : SearchDisplayName.removeEmoji(title));
+        binding.flag.setHorizontalSpacing(ResUtil.dp2px(6));
+        binding.flag.setRowHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
         binding.flag.setAdapter(flagAdapter = new FlagAdapter(this));
         binding.episode.setLayoutManager(new GridLayoutManager(requireContext(), 2));
         binding.episode.setHasFixedSize(true);
         binding.episode.setItemAnimator(null);
-        binding.episode.setAdapter(episodeAdapter = new EpisodeAdapter(this, ViewType.GRID));
+        binding.episode.setAdapter(episodeAdapter = new EpisodeAdapter(this));
         reload(true);
     }
 
@@ -112,7 +110,7 @@ public class EpisodeListDialog extends BaseSideSheetDialog implements FlagAdapte
         dismissAllowingStateLoss();
     }
 
-    private void reload(boolean scroll) {
+    private void reload(boolean focusEpisode) {
         List<Flag> flags = safeFlags();
         flagAdapter.addAll(flags);
         Flag selected = selectedFlag(flags);
@@ -120,11 +118,29 @@ public class EpisodeListDialog extends BaseSideSheetDialog implements FlagAdapte
         episodeAdapter.addAll(episodes);
         binding.sourceSection.setVisibility(flags.size() > 1 ? View.VISIBLE : View.GONE);
         binding.reverse.setVisibility(episodes.size() > 1 ? View.VISIBLE : View.GONE);
+        episodeAdapter.setFocusBounds(flags.size() > 1 ? R.id.flag : R.id.reverse, View.NO_ID);
         binding.reverse.setText(listener().isEpisodePickerReversed() ? R.string.play_reverse : R.string.episode_picker_forward);
         binding.current.setText(getString(R.string.episode_picker_current,
-                selected == null ? getString(R.string.episode_picker_sources) : selected.getShow(),
+                selected == null ? getString(R.string.episode_picker_sources) : SearchDisplayName.removeEmoji(selected.getShow()),
                 currentEpisodeName(episodes)));
-        if (scroll && !episodes.isEmpty()) binding.episode.scrollToPosition(episodeAdapter.getPosition());
+        if (!focusEpisode || episodes.isEmpty()) return;
+        int position = episodeAdapter.getPosition();
+        focusEpisode(position, 2);
+    }
+
+    private void focusEpisode(int position, int remainingAttempts) {
+        binding.episode.scrollToPosition(position);
+        binding.episode.post(() -> {
+            if (binding == null || !isAdded()) return;
+            RecyclerView.ViewHolder holder = binding.episode.findViewHolderForAdapterPosition(position);
+            if (holder != null) {
+                holder.itemView.requestFocus();
+            } else if (remainingAttempts > 0) {
+                binding.episode.postDelayed(() -> focusEpisode(position, remainingAttempts - 1), 32L);
+            } else {
+                binding.reverse.requestFocus();
+            }
+        });
     }
 
     private List<Flag> safeFlags() {
@@ -141,7 +157,7 @@ public class EpisodeListDialog extends BaseSideSheetDialog implements FlagAdapte
         int position = EpisodePickerPolicy.selectedEpisodePosition(episodes);
         if (position < 0) return getString(R.string.episode_picker_title);
         Episode episode = episodes.get(position);
-        return episode.getDesc() + episode.getName();
+        return SearchDisplayName.removeEmoji(episode.getDesc() + episode.getName());
     }
 
     private Listener listener() {

@@ -37,6 +37,16 @@
                 android:nextFocusDown="@id/next"
                 android:text="@string/play_next" />
 
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/episodes"
+                style="@style/PlayerV2.Control"
+                android:layout_marginEnd="9dp"
+                android:nextFocusUp="@id/episodes"
+                android:nextFocusDown="@id/episodes"
+                android:text="@string/episode_picker_action"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
             <!-- Touch-only playback actions. They remain gone for the TV flavour and are enabled
                  at runtime for the mobile flavour, which shares this landscape presentation. -->
             <com.google.android.material.textview.MaterialTextView

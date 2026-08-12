@@ -113,7 +113,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Objects;
 
-public class VideoActivity extends PlaybackActivity implements Clock.Callback, CustomKeyDown.Listener, TrackDialog.Listener, ControlDialog.Listener, ParseDialog.Listener, VodPlaybackHost, FlagAdapter.OnClickListener, EpisodeAdapter.OnClickListener, QualityAdapter.OnClickListener, QuickAdapter.OnClickListener, CastDialog.Listener, InfoDialog.Listener {
+public class VideoActivity extends PlaybackActivity implements Clock.Callback, CustomKeyDown.Listener, TrackDialog.Listener, ControlDialog.Listener, ParseDialog.Listener, VodPlaybackHost, FlagAdapter.OnClickListener, EpisodeAdapter.OnClickListener, EpisodeListDialog.Listener, QualityAdapter.OnClickListener, QuickAdapter.OnClickListener, CastDialog.Listener, InfoDialog.Listener {
 
     private ActivityVideoBinding mBinding;
     private ViewGroup.LayoutParams mFrameParams;
@@ -1030,7 +1030,37 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void onEpisodes() {
-        EpisodeListDialog.create().episodes(mEpisodeAdapter.getItems()).show(this);
+        EpisodeListDialog.create().title(mBinding.name.getText().toString()).show(this);
+    }
+
+    @Override
+    public List<Flag> getEpisodePickerFlags() {
+        return mFlagAdapter.getItems();
+    }
+
+    @Override
+    public boolean isEpisodePickerReversed() {
+        return mHistory != null && mHistory.isRevSort();
+    }
+
+    @Override
+    public void onEpisodePickerFlag(Flag item) {
+        onItemClick(item);
+    }
+
+    @Override
+    public void onEpisodePickerEpisode(Episode item) {
+        onItemClick(item);
+    }
+
+    @Override
+    public void onEpisodePickerReverse() {
+        if (mHistory != null) onReverse();
+    }
+
+    @Override
+    public void onEpisodePickerDismissed() {
+        if (!isFinishing() && !isDestroyed() && isFullscreen()) showControl();
     }
 
     private void onChoose() {

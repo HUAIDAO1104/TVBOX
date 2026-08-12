@@ -52,6 +52,13 @@
     <string name="play_invert">反转</string>
     <string name="play_across">跨类</string>
     <string name="play_reverse">倒序</string>
+    <string name="episode_picker_action">选集</string>
+    <string name="episode_picker_title">完整选集</string>
+    <string name="episode_picker_sources">播放线路</string>
+    <string name="episode_picker_current">%1$s · %2$s</string>
+    <string name="episode_picker_forward">正序</string>
+    <string name="episode_picker_hint_tv">选择线路和剧集 · 返回键关闭面板</string>
+    <string name="episode_picker_hint_touch">轻触剧集即可播放</string>
     <string name="play_track_text">字幕</string>
     <string name="play_track_audio">音轨</string>
     <string name="play_track_video">视轨</string>

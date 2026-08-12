@@ -80,6 +80,7 @@ import com.fongmi.android.tv.ui.dialog.ChapterDialog;
 import com.fongmi.android.tv.ui.dialog.ContentDialog;
 import com.fongmi.android.tv.ui.dialog.DanmakuSettingDialog;
 import com.fongmi.android.tv.ui.dialog.EditionDialog;
+import com.fongmi.android.tv.ui.dialog.EpisodeListDialog;
 import com.fongmi.android.tv.ui.dialog.ParseDialog;
 import com.fongmi.android.tv.ui.dialog.PlayerEngineDialog;
 import com.fongmi.android.tv.ui.dialog.SubtitleDialog;
@@ -91,6 +92,7 @@ import com.fongmi.android.tv.playback.vod.VodPlayRequest;
 import com.fongmi.android.tv.playback.vod.PlaybackOverlayPolicy;
 import com.fongmi.android.tv.playback.vod.DetailFocusPolicy;
 import com.fongmi.android.tv.playback.vod.DetailSourceFallbackPolicy;
+import com.fongmi.android.tv.playback.vod.EpisodePickerPolicy;
 import com.fongmi.android.tv.playback.vod.VodPlaybackController;
 import com.fongmi.android.tv.playback.vod.VodPlaybackHost;
 import com.fongmi.android.tv.playback.vod.VodPlaybackMedia;
@@ -119,7 +121,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.Future;
 
-public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, CustomKeyDownVod.Listener, TrackDialog.Listener, ParseDialog.Listener, ArrayAdapter.OnClickListener, FlagAdapter.OnClickListener, EpisodeAdapter.OnClickListener, QualityAdapter.OnClickListener, QuickAdapter.OnClickListener, Clock.Callback {
+public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, CustomKeyDownVod.Listener, TrackDialog.Listener, ParseDialog.Listener, ArrayAdapter.OnClickListener, FlagAdapter.OnClickListener, EpisodeAdapter.OnClickListener, EpisodeListDialog.Listener, QualityAdapter.OnClickListener, QuickAdapter.OnClickListener, Clock.Callback {
 
     private static final String EXTRA_START_MODE = "start_mode";
     private static final String MODE_DETAIL = "DETAIL";
@@ -460,6 +462,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         mBinding.control.action.text.setUpListener(this::onSubtitleClick);
         mBinding.control.action.text.setDownListener(this::onSubtitleClick);
         mBinding.control.action.next.setOnClickListener(view -> checkNext());
+        mBinding.control.action.episodes.setOnClickListener(view -> onEpisodes());
         mBinding.control.action.prev.setOnClickListener(view -> checkPrev());
         mBinding.control.action.scale.setOnClickListener(view -> onScale());
         mBinding.control.action.speed.setOnClickListener(view -> onSpeed());
@@ -569,6 +572,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     private List<View> getVisiblePlaybackControls() {
         List<View> controls = new ArrayList<>();
         addVisiblePlaybackControl(controls, mBinding.control.action.next);
+        addVisiblePlaybackControl(controls, mBinding.control.action.episodes);
         addVisiblePlaybackControl(controls, mBinding.control.action.playPause);
         addVisiblePlaybackControl(controls, mBinding.control.action.rewind);
         addVisiblePlaybackControl(controls, mBinding.control.action.forward);
@@ -918,6 +922,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         mBinding.flag.setVisibility(visible ? View.VISIBLE : View.GONE);
         mBinding.sourceHeader.setVisibility(visible ? View.VISIBLE : View.GONE);
         mFlagAdapter.addAll(items);
+        updateEpisodePickerAction();
         setR2Callback();
         restoreDetailStateWhenReady(R.id.flag);
     }
@@ -1243,6 +1248,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         // upper metadata pane pushes sources below the first TV viewport.
         mBinding.episodeAction.setVisibility(View.GONE);
         mEpisodeAdapter.addAll(items);
+        updateEpisodePickerAction();
         updateEpisodeGridHeight(items.size());
         setArrayAdapter(items.size());
         updatePrimaryAction();
@@ -1271,6 +1277,51 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         } else {
             onPlay();
         }
+    }
+
+    private void updateEpisodePickerAction() {
+        boolean visible = mFlagAdapter != null && mEpisodeAdapter != null
+                && EpisodePickerPolicy.shouldShowAction(mFlagAdapter.getItemCount(), mEpisodeAdapter.getItemCount());
+        mBinding.control.action.episodes.setVisibility(visible ? View.VISIBLE : View.GONE);
+        configurePlaybackControlFocus();
+    }
+
+    private void onEpisodes() {
+        if (mEpisodeAdapter == null || mEpisodeAdapter.getItemCount() == 0) return;
+        mFocus2 = mBinding.control.action.episodes;
+        App.removeCallbacks(mR1);
+        EpisodeListDialog.create().title(getVodName()).show(this);
+    }
+
+    @Override
+    public List<Flag> getEpisodePickerFlags() {
+        return mFlagAdapter == null ? new ArrayList<>() : mFlagAdapter.getItems();
+    }
+
+    @Override
+    public boolean isEpisodePickerReversed() {
+        return mHistory != null && mHistory.isRevSort();
+    }
+
+    @Override
+    public void onEpisodePickerFlag(Flag item) {
+        onItemClick(item);
+    }
+
+    @Override
+    public void onEpisodePickerEpisode(Episode item) {
+        onItemClick(item);
+    }
+
+    @Override
+    public void onEpisodePickerReverse() {
+        if (mHistory != null) onRevSort();
+    }
+
+    @Override
+    public void onEpisodePickerDismissed() {
+        if (isFinishing() || isDestroyed() || !isFullscreen()) return;
+        showControl(mBinding.control.action.episodes);
     }
 
     private void setQualityVisible(boolean visible) {

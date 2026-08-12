@@ -98,6 +98,10 @@ public class EpisodeAdapter extends RecyclerView.Adapter<EpisodeAdapter.ViewHold
         return mItems.get(current);
     }
 
+    public List<Episode> getItems() {
+        return new ArrayList<>(mItems);
+    }
+
     @Override
     public int getItemCount() {
         return mItems.size();

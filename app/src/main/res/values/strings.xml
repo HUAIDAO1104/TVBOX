@@ -52,6 +52,13 @@
     <string name="play_invert">Invert</string>
     <string name="play_across">Across</string>
     <string name="play_reverse">Reverse</string>
+    <string name="episode_picker_action">Episodes</string>
+    <string name="episode_picker_title">Choose episode</string>
+    <string name="episode_picker_sources">Playback sources</string>
+    <string name="episode_picker_current">%1$s · %2$s</string>
+    <string name="episode_picker_forward">Forward order</string>
+    <string name="episode_picker_hint_tv">Choose a source and episode · Back closes this panel</string>
+    <string name="episode_picker_hint_touch">Tap an episode once to play</string>
     <string name="play_track_text">Text</string>
     <string name="play_track_audio">Audio</string>
     <string name="play_track_video">Video</string>
