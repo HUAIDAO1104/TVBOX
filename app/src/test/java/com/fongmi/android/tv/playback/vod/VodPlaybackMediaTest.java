@@ -146,6 +146,23 @@ public class VodPlaybackMediaTest {
         assertFalse(selection.hasEpisodes());
     }
 
+    @Test
+    public void retiredProviderEpisodeCacheFallsBackToFreshResolution() {
+        String raw = "{\"work\":{\"query\":\"一起同过窗 第二季\","
+                + "\"selectedName\":\"一起同过窗Ⅱ(2017)【电视剧】from 360 - 【youku】 第2集\","
+                + "\"sourceKey\":\"retired\",\"episodes\":{"
+                + "\"2\":{\"name\":\"第二集\",\"url\":"
+                + "\"https://danmu.xyy.red/api/v2/comment/274234?format=xml\"}}}}";
+
+        DanmakuManualMatchStore.Selection selection =
+                DanmakuManualMatchStore.decode(raw).get("work");
+
+        assertNotNull(selection);
+        assertTrue(selection.hasEpisodes());
+        assertEquals("一起同过窗 第二季", selection.query());
+        assertEquals(null, selection.episode("第2集"));
+    }
+
     private static Danmaku danmaku(String name, String url) {
         Danmaku item = Danmaku.from(url);
         item.setName(name);

@@ -20,8 +20,8 @@ import java.util.Objects;
 
 public class Danmaku {
 
-    private static final String BUILT_IN_HTTP_PREFIX = "http://danmu.xyy.red/";
-    private static final String BUILT_IN_HTTPS_PREFIX = "https://danmu.xyy.red/";
+    private static final String RETIRED_HTTP_PREFIX = "http://danmu.xyy.red/";
+    private static final String RETIRED_HTTPS_PREFIX = "https://danmu.xyy.red/";
 
     @SerializedName("name")
     private String name;
@@ -41,6 +41,10 @@ public class Danmaku {
         for (Danmaku item : items) {
             if (item == null || item.isBlockedSource()) continue;
             item.setUrl(normalizeSourceUrl(item.getUrl()));
+            // Comment IDs are local to each danmu_api deployment. Rewriting the old hostname to
+            // another provider can silently load the wrong work, so retired URLs must be
+            // discarded and freshly resolved by title/season/episode instead.
+            if (isRetiredSourceUrl(item.getUrl())) continue;
             result.add(item);
         }
         return result;
@@ -53,12 +57,15 @@ public class Danmaku {
         return danmaku;
     }
 
-    /** Avoids the built-in provider's slow HTTP-to-HTTPS redirect on older TV firmware. */
+    /** Normalizes whitespace only; provider-local comment IDs must never be host-rewritten. */
     public static String normalizeSourceUrl(String value) {
-        String url = Objects.toString(value, "").trim();
-        return url.startsWith(BUILT_IN_HTTP_PREFIX)
-                ? BUILT_IN_HTTPS_PREFIX + url.substring(BUILT_IN_HTTP_PREFIX.length())
-                : url;
+        return Objects.toString(value, "").trim();
+    }
+
+    public static boolean isRetiredSourceUrl(String value) {
+        String url = Objects.toString(value, "").trim().toLowerCase(Locale.ROOT);
+        return url.startsWith(RETIRED_HTTP_PREFIX) || url.startsWith(RETIRED_HTTPS_PREFIX)
+                || url.equals("http://danmu.xyy.red") || url.equals("https://danmu.xyy.red");
     }
 
     public static Danmaku empty() {

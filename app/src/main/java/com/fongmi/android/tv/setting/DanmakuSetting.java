@@ -10,10 +10,16 @@ import com.github.catvod.utils.Prefers;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 
 public class DanmakuSetting {
 
-    static final String DEFAULT_API_URL = "https://danmu.xyy.red/api/v2/fongmi/danmaku?name={name}&episode={episode}";
+    // The previous built-in service (danmu.xyy.red) stopped completing TLS handshakes in
+    // August 2026. Keep the default independent from repository configuration, but point it at
+    // a currently compatible public deployment of the same FongMi API contract.
+    static final String DEFAULT_API_URL = "https://dm.ljiaovm.com/luosen/api/v2/fongmi/danmaku?name={name}&episode={episode}";
+    private static final String RETIRED_API_HOST = "danmu.xyy.red";
 
     private static final float MIN_TEXT_SCALE = 0.5f;
     private static final float MAX_TEXT_SCALE = 3.0f;
@@ -327,13 +333,22 @@ public class DanmakuSetting {
     }
 
     private static void addUrl(LinkedHashSet<String> urls, String value) {
-        if (!isBlank(value)) urls.add(value.trim());
+        if (!isBlank(value) && !isRetiredApiUrl(value)) urls.add(value.trim());
     }
 
     static String resolveApiUrl(String userUrl, String repositoryUrl) {
-        if (!isBlank(userUrl)) return userUrl.trim();
-        if (!isBlank(repositoryUrl)) return repositoryUrl.trim();
+        if (!isBlank(userUrl) && !isRetiredApiUrl(userUrl)) return userUrl.trim();
+        if (!isBlank(repositoryUrl) && !isRetiredApiUrl(repositoryUrl)) return repositoryUrl.trim();
         return DEFAULT_API_URL;
+    }
+
+    /** Prevents a stale preference or repository config from re-enabling the retired service. */
+    static boolean isRetiredApiUrl(String value) {
+        String url = Objects.toString(value, "").trim().toLowerCase(Locale.ROOT);
+        return url.startsWith("http://" + RETIRED_API_HOST + "/")
+                || url.startsWith("https://" + RETIRED_API_HOST + "/")
+                || url.equals("http://" + RETIRED_API_HOST)
+                || url.equals("https://" + RETIRED_API_HOST);
     }
 
     private static boolean isBlank(String value) {

@@ -276,6 +276,10 @@ public final class DanmakuManualMatchStore {
             if (number == null || episodes == null) return null;
             CachedEpisode cached = episodes.get(String.valueOf(number));
             if (cached == null || cached.url().isEmpty()) return null;
+            // The retired provider's comment IDs cannot be reused on another deployment. Return
+            // a cache miss so playback keeps the confirmed title/season identity and resolves a
+            // fresh URL from the replacement endpoint.
+            if (Danmaku.isRetiredSourceUrl(cached.url())) return null;
             Danmaku result = Danmaku.from(cached.url());
             result.setName(cached.name());
             result.setSourceKey(sourceKey());

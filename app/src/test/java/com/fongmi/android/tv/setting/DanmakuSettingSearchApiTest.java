@@ -21,4 +21,14 @@ public class DanmakuSettingSearchApiTest {
                 Collections.singletonList("https://default"),
                 DanmakuSetting.resolveSearchApiUrls("", null, "https://default"));
     }
+
+    @Test
+    public void retiredBuiltInEndpointCannotBeRestoredByOldPreferencesOrRepository() {
+        String retired = "https://danmu.xyy.red/api/v2/fongmi/danmaku?name={name}&episode={episode}";
+        assertEquals(
+                Collections.singletonList("https://default"),
+                DanmakuSetting.resolveSearchApiUrls(retired, "http://danmu.xyy.red/danmaku", "https://default"));
+        assertEquals(DanmakuSetting.DEFAULT_API_URL,
+                DanmakuSetting.resolveApiUrl(retired, "http://danmu.xyy.red/danmaku"));
+    }
 }

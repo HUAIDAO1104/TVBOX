@@ -33,9 +33,13 @@ public class DanmakuSourceTest {
     }
 
     @Test
-    public void upgradesOnlyTheBuiltInCommentEndpointToHttps() {
-        assertEquals("https://danmu.xyy.red/api/v2/comment/274234?format=xml",
+    public void retiredCommentIdsAreDetectedWithoutUnsafeHostRewriting() {
+        assertEquals("http://danmu.xyy.red/api/v2/comment/274234?format=xml",
                 Danmaku.normalizeSourceUrl("http://danmu.xyy.red/api/v2/comment/274234?format=xml"));
+        assertTrue(Danmaku.isRetiredSourceUrl(
+                "https://danmu.xyy.red/api/v2/comment/274234?format=xml"));
+        assertFalse(Danmaku.isRetiredSourceUrl(
+                "https://dm.ljiaovm.com/luosen/api/v2/comment/1?format=xml"));
         assertEquals("http://example.com/comments.xml",
                 Danmaku.normalizeSourceUrl("http://example.com/comments.xml"));
     }
