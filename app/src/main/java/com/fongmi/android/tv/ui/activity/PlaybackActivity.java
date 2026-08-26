@@ -30,11 +30,15 @@ import androidx.media3.ui.PlayerSeekView;
 import androidx.media3.ui.PlayerView;
 import androidx.media3.ui.TimeBar;
 import androidx.media3.ui.danmaku.DanmakuConfig;
+import androidx.media3.ui.danmaku.DanmakuController;
 
+import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.player.PlayerManager;
 import com.fongmi.android.tv.player.danmaku.FilteringBiliParser;
+import com.fongmi.android.tv.player.danmaku.DanmakuHttp;
+import com.fongmi.android.tv.player.danmaku.DanmakuLoadPolicy;
 import com.fongmi.android.tv.player.media.PlaySpec;
 import com.fongmi.android.tv.player.util.PlayerHelper;
 import com.fongmi.android.tv.service.PlaybackService;
@@ -42,7 +46,6 @@ import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.utils.ResUtil;
-import com.github.catvod.net.OkHttp;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.ArrayList;
@@ -64,6 +67,14 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     private boolean lock;
     private boolean danmakuSourceApplied;
     private Uri appliedDanmakuUri;
+    private Uri retryDanmakuUri;
+    private int danmakuRetryCount;
+
+    private final Runnable retryDanmaku = () -> {
+        if (isFinishing() || isDestroyed() || retryDanmakuUri == null
+                || !Objects.equals(appliedDanmakuUri, retryDanmakuUri)) return;
+        getPlayerView().setDanmakuSource(retryDanmakuUri);
+    };
 
     protected MediaController controller() {
         return mController;
@@ -366,7 +377,24 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         // Repository advertising may arrive as an actual fixed-bottom XML comment rather than a
         // media-source label. Register the filtered parser before attaching any danmaku source.
         playerView.getDanmakuController().registerParser(FilteringBiliParser.INSTANCE);
-        playerView.setDanmakuOkHttpClient(OkHttp.player());
+        playerView.setDanmakuOkHttpClient(DanmakuHttp.client());
+        playerView.getDanmakuController().setListener(new DanmakuController.Listener() {
+            @Override
+            public void onLoadCompleted(@NonNull Uri uri, int itemCount) {
+                if (!Objects.equals(uri, appliedDanmakuUri)) return;
+                danmakuRetryCount = 0;
+                retryDanmakuUri = null;
+            }
+
+            @Override
+            public void onLoadError(@NonNull Uri uri, @NonNull java.io.IOException error) {
+                if (!Objects.equals(uri, appliedDanmakuUri)
+                        || !DanmakuLoadPolicy.shouldRetry(error, danmakuRetryCount)) return;
+                danmakuRetryCount++;
+                retryDanmakuUri = uri;
+                App.post(retryDanmaku, 350);
+            }
+        });
         playerView.setDanmakuEnabled(DanmakuSetting.isShow());
         playerView.setDanmakuConfig(DanmakuSetting.getConfig());
         playerView.getSubtitleView().setStyle(getCaptionStyle());
@@ -389,6 +417,9 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
 
     protected final void applyDanmakuSource(Uri uri) {
         if (danmakuSourceApplied && Objects.equals(appliedDanmakuUri, uri)) return;
+        App.removeCallbacks(retryDanmaku);
+        retryDanmakuUri = null;
+        danmakuRetryCount = 0;
         getPlayerView().setDanmakuSource(uri);
         appliedDanmakuUri = uri;
         danmakuSourceApplied = true;
@@ -565,6 +596,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
 
     @Override
     protected void onDestroy() {
+        App.removeCallbacks(retryDanmaku);
         clearForeverObservers();
         super.onDestroy();
         releasePlaybackService();
