@@ -16,4 +16,14 @@ public class DanmakuLoadPolicyTest {
         assertFalse(DanmakuLoadPolicy.shouldRetryResponseCode(404));
         assertFalse(DanmakuLoadPolicy.shouldRetryResponseCode(403));
     }
+
+    @Test
+    public void retriesTransientDocumentDownloadOnlyOnce() {
+        assertTrue(DanmakuLoadPolicy.shouldRetry(
+                new DanmakuDocumentCache.HttpStatusException(503), 0));
+        assertFalse(DanmakuLoadPolicy.shouldRetry(
+                new DanmakuDocumentCache.HttpStatusException(503), 1));
+        assertFalse(DanmakuLoadPolicy.shouldRetry(
+                new DanmakuDocumentCache.HttpStatusException(404), 0));
+    }
 }

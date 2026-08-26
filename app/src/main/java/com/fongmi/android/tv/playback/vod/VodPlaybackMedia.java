@@ -8,6 +8,7 @@ import com.fongmi.android.tv.bean.Episode;
 import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.player.PlayerManager;
+import com.fongmi.android.tv.player.danmaku.DanmakuDocumentCache;
 import java.util.Objects;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -113,6 +114,17 @@ public final class VodPlaybackMedia {
         DanmakuMatchContext context = contextOf(player);
         DanmakuManualMatchStore.Selection selection = DanmakuManualMatchStore.get().find(context);
         return selection == null ? null : selection.episode(context.getEpisode());
+    }
+
+    /** Warms the next confirmed episode after the current document is mounted successfully. */
+    public static void prefetchNextDanmaku(PlayerManager player) {
+        DanmakuMatchContext context = contextOf(player);
+        Integer current = DanmakuMatch.episodeNumber(context.getEpisode());
+        if (current == null || current <= 0) return;
+        DanmakuManualMatchStore.Selection selection = DanmakuManualMatchStore.get().find(context);
+        if (selection == null) return;
+        Danmaku next = selection.episode(String.valueOf(current + 1));
+        if (next != null && next.getUri() != null) DanmakuDocumentCache.prefetch(next.getUri());
     }
 
     /** Returns the last successful manual query for the current work/season, when available. */

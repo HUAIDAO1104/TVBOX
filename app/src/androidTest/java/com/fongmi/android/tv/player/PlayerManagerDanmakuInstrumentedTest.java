@@ -68,6 +68,40 @@ public class PlayerManagerDanmakuInstrumentedTest {
     }
 
     @Test
+    public void replayRemountsSelectedDanmakuSource() throws Exception {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        List<Uri> changes = new ArrayList<>();
+        Throwable[] failure = new Throwable[1];
+        instrumentation.runOnMainSync(() -> {
+            PlayerManager manager = null;
+            try {
+                manager = new PlayerManager(new Callback(changes));
+                PlaySpec spec = PlaySpec.from(
+                        "fixture",
+                        "https://example.invalid/video.mp4",
+                        null,
+                        new MediaMetadata.Builder().setTitle("测试剧").setArtist("第3集").build());
+                Field field = PlayerManager.class.getDeclaredField("spec");
+                field.setAccessible(true);
+                field.set(manager, spec);
+                Danmaku source = Danmaku.from("https://example.invalid/episode-3.xml");
+                manager.setDanmaku(source);
+                changes.clear();
+
+                manager.replay(0);
+
+                assertEquals(1, changes.size());
+                assertEquals(source.getUri(), changes.get(0));
+            } catch (Throwable throwable) {
+                failure[0] = throwable;
+            } finally {
+                if (manager != null) manager.release();
+            }
+        });
+        if (failure[0] != null) throw new AssertionError(failure[0]);
+    }
+
+    @Test
     public void compactSearchButtonFitsCompleteLabel() {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         Throwable[] failure = new Throwable[1];

@@ -11,8 +11,15 @@ public final class DanmakuLoadPolicy {
     }
 
     public static boolean shouldRetry(IOException error, int retryCount) {
-        if (retryCount >= 1 || !(error instanceof HttpDataSource.InvalidResponseCodeException)) return false;
-        int responseCode = ((HttpDataSource.InvalidResponseCodeException) error).responseCode;
+        if (retryCount >= 1 || error == null) return false;
+        int responseCode;
+        if (error instanceof HttpDataSource.InvalidResponseCodeException) {
+            responseCode = ((HttpDataSource.InvalidResponseCodeException) error).responseCode;
+        } else if (error instanceof DanmakuDocumentCache.HttpStatusException) {
+            responseCode = ((DanmakuDocumentCache.HttpStatusException) error).statusCode();
+        } else {
+            return false;
+        }
         return shouldRetryResponseCode(responseCode);
     }
 

@@ -36,11 +36,13 @@ import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.player.PlayerManager;
-import com.fongmi.android.tv.player.danmaku.FilteringBiliParser;
+import com.fongmi.android.tv.player.danmaku.DanmakuDocumentCache;
 import com.fongmi.android.tv.player.danmaku.DanmakuHttp;
 import com.fongmi.android.tv.player.danmaku.DanmakuLoadPolicy;
+import com.fongmi.android.tv.player.danmaku.FilteringBiliParser;
 import com.fongmi.android.tv.player.media.PlaySpec;
 import com.fongmi.android.tv.player.util.PlayerHelper;
+import com.fongmi.android.tv.playback.vod.VodPlaybackMedia;
 import com.fongmi.android.tv.service.PlaybackService;
 import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.setting.PlayerSetting;
@@ -67,13 +69,19 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     private boolean lock;
     private boolean danmakuSourceApplied;
     private Uri appliedDanmakuUri;
+    private Uri resolvedDanmakuUri;
     private Uri retryDanmakuUri;
+    private DanmakuDocumentCache.Ticket danmakuLoadTicket;
+    private int danmakuLoadGeneration;
     private int danmakuRetryCount;
 
     private final Runnable retryDanmaku = () -> {
         if (isFinishing() || isDestroyed() || retryDanmakuUri == null
                 || !Objects.equals(appliedDanmakuUri, retryDanmakuUri)) return;
-        getPlayerView().setDanmakuSource(retryDanmakuUri);
+        Uri source = retryDanmakuUri;
+        retryDanmakuUri = null;
+        DanmakuDocumentCache.invalidate(source);
+        startDanmakuResolution(source);
     };
 
     protected MediaController controller() {
@@ -381,18 +389,27 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         playerView.getDanmakuController().setListener(new DanmakuController.Listener() {
             @Override
             public void onLoadCompleted(@NonNull Uri uri, int itemCount) {
-                if (!Objects.equals(uri, appliedDanmakuUri)) return;
+                if (!Objects.equals(uri, resolvedDanmakuUri)) return;
+                if (itemCount <= 0) {
+                    scheduleDanmakuRetry(null, true);
+                    return;
+                }
                 danmakuRetryCount = 0;
                 retryDanmakuUri = null;
+                // Loading and selecting a source are not the same as mounting its items in the
+                // current time window. An explicit refresh here makes the first comments visible
+                // after replay, surface recreation and automatic episode transitions.
+                playerView.setDanmakuSource(uri);
+                // Manual season selections already contain neighbouring episode URLs. Warm the
+                // next document only after the current one is visible so playback traffic wins.
+                if (mService != null && isOwner()) VodPlaybackMedia.prefetchNextDanmaku(player());
             }
 
             @Override
             public void onLoadError(@NonNull Uri uri, @NonNull java.io.IOException error) {
-                if (!Objects.equals(uri, appliedDanmakuUri)
-                        || !DanmakuLoadPolicy.shouldRetry(error, danmakuRetryCount)) return;
-                danmakuRetryCount++;
-                retryDanmakuUri = uri;
-                App.post(retryDanmaku, 350);
+                if (!Objects.equals(uri, resolvedDanmakuUri)) return;
+                boolean localDocument = "file".equalsIgnoreCase(uri.getScheme());
+                scheduleDanmakuRetry(error, localDocument);
             }
         });
         playerView.setDanmakuEnabled(DanmakuSetting.isShow());
@@ -416,13 +433,78 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     }
 
     protected final void applyDanmakuSource(Uri uri) {
-        if (danmakuSourceApplied && Objects.equals(appliedDanmakuUri, uri)) return;
+        if (uri == null) {
+            App.removeCallbacks(retryDanmaku);
+            retryDanmakuUri = null;
+            cancelDanmakuResolution();
+            danmakuLoadGeneration++;
+            danmakuRetryCount = 0;
+            appliedDanmakuUri = null;
+            resolvedDanmakuUri = null;
+            danmakuSourceApplied = true;
+            getPlayerView().setDanmakuSource(null);
+            return;
+        }
+        boolean sameSource = danmakuSourceApplied && Objects.equals(appliedDanmakuUri, uri);
+        if (sameSource && resolvedDanmakuUri != null) {
+            // DanmakuController refreshes its current window for the same URI without another
+            // parse/download. This is the required replay/resume path that the old duplicate
+            // guard accidentally suppressed.
+            getPlayerView().setDanmakuSource(resolvedDanmakuUri);
+            return;
+        }
+        if (sameSource && danmakuLoadTicket != null) return;
+        if (sameSource && retryDanmakuUri != null) return;
         App.removeCallbacks(retryDanmaku);
         retryDanmakuUri = null;
+        cancelDanmakuResolution();
         danmakuRetryCount = 0;
-        getPlayerView().setDanmakuSource(uri);
         appliedDanmakuUri = uri;
+        resolvedDanmakuUri = null;
         danmakuSourceApplied = true;
+        getPlayerView().setDanmakuSource(null);
+        startDanmakuResolution(uri);
+    }
+
+    private void startDanmakuResolution(Uri source) {
+        cancelDanmakuResolution();
+        int generation = ++danmakuLoadGeneration;
+        resolvedDanmakuUri = null;
+        // Always detach first. When a failed/empty document is downloaded again to the same local
+        // path, DanmakuController otherwise sees an equal URI and only refreshes its old empty
+        // item window instead of reparsing the repaired file.
+        getPlayerView().setDanmakuSource(null);
+        danmakuLoadTicket = DanmakuDocumentCache.load(source, new DanmakuDocumentCache.Listener() {
+            @Override
+            public void onReady(Uri original, Uri local) {
+                if (generation != danmakuLoadGeneration || isFinishing() || isDestroyed()
+                        || !Objects.equals(appliedDanmakuUri, original)) return;
+                danmakuLoadTicket = null;
+                resolvedDanmakuUri = local;
+                getPlayerView().setDanmakuSource(local);
+            }
+
+            @Override
+            public void onFailure(Uri original, java.io.IOException error) {
+                if (generation != danmakuLoadGeneration || isFinishing() || isDestroyed()
+                        || !Objects.equals(appliedDanmakuUri, original)) return;
+                danmakuLoadTicket = null;
+                scheduleDanmakuRetry(error, false);
+            }
+        });
+    }
+
+    private void scheduleDanmakuRetry(java.io.IOException error, boolean corruptDocument) {
+        if (appliedDanmakuUri == null || danmakuRetryCount >= 1) return;
+        if (!corruptDocument && !DanmakuLoadPolicy.shouldRetry(error, danmakuRetryCount)) return;
+        danmakuRetryCount++;
+        retryDanmakuUri = appliedDanmakuUri;
+        App.post(retryDanmaku, 350);
+    }
+
+    private void cancelDanmakuResolution() {
+        if (danmakuLoadTicket != null) danmakuLoadTicket.cancel();
+        danmakuLoadTicket = null;
     }
 
     private void releasePlaybackService() {
@@ -597,6 +679,8 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     @Override
     protected void onDestroy() {
         App.removeCallbacks(retryDanmaku);
+        cancelDanmakuResolution();
+        danmakuLoadGeneration++;
         clearForeverObservers();
         super.onDestroy();
         releasePlaybackService();

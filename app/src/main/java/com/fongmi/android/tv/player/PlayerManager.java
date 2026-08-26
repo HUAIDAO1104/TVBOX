@@ -343,6 +343,9 @@ public class PlayerManager implements ParseCallback {
         if (positionMs == C.TIME_UNSET) player.seekToDefaultPosition();
         else player.seekTo(positionMs);
         player.play();
+        // A replay keeps the same PlaySpec, so no normal media-change callback is emitted. Notify
+        // the danmaku host explicitly so it remounts the selected episode at the new time window.
+        notifyDanmakuSourceChanged();
     }
 
     public void seekTo(long time) {
