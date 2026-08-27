@@ -49,6 +49,9 @@ public final class DanmakuDocumentCache {
 
     public interface Listener {
 
+        default void onProgress(Uri source, int percent) {
+        }
+
         void onReady(Uri source, Uri local);
 
         void onFailure(Uri source, IOException error);
@@ -121,7 +124,8 @@ public final class DanmakuDocumentCache {
                     if (declared > MAX_DOCUMENT_BYTES) {
                         throw new IOException("Danmaku document is too large: " + declared);
                     }
-                    writeAtomically(target, body.byteStream());
+                    writeAtomically(target, body.byteStream(), declared,
+                            percent -> download.progress(percent));
                     if (!isUsable(target)) {
                         invalidate(source);
                         throw new IOException("Danmaku document is empty or incomplete");
@@ -209,7 +213,8 @@ public final class DanmakuDocumentCache {
         return new File(directory, cacheKey(source.toString()) + ".xml");
     }
 
-    private static void writeAtomically(File target, InputStream input) throws IOException {
+    private static void writeAtomically(File target, InputStream input, long declared,
+                                        java.util.function.IntConsumer progress) throws IOException {
         File parent = target.getParentFile();
         if (parent != null && !parent.exists() && !parent.mkdirs()) {
             throw new IOException("Unable to create danmaku cache directory");
@@ -218,12 +223,20 @@ public final class DanmakuDocumentCache {
         if (partial.exists()) partial.delete();
         byte[] buffer = new byte[16 * 1024];
         long total = 0;
+        int lastPercent = -1;
         try (InputStream source = input; FileOutputStream output = new FileOutputStream(partial)) {
             int count;
             while ((count = source.read(buffer)) != -1) {
                 total += count;
                 if (total > MAX_DOCUMENT_BYTES) throw new IOException("Danmaku document exceeds limit");
                 output.write(buffer, 0, count);
+                if (declared > 0) {
+                    int percent = (int) Math.min(99, total * 100 / declared);
+                    if (percent >= lastPercent + 5) {
+                        lastPercent = percent;
+                        progress.accept(percent);
+                    }
+                }
             }
             output.getFD().sync();
         } catch (IOException error) {
@@ -238,6 +251,7 @@ public final class DanmakuDocumentCache {
             partial.delete();
             throw new IOException("Unable to commit danmaku cache");
         }
+        progress.accept(100);
     }
 
     private static void prune(File protectedFile) {
@@ -305,6 +319,19 @@ public final class DanmakuDocumentCache {
             for (Subscription subscription : result) subscription.download = null;
             subscribers.clear();
             return result;
+        }
+
+        private void progress(int percent) {
+            List<Subscription> snapshot;
+            synchronized (DOWNLOADS) {
+                snapshot = new ArrayList<>(subscribers);
+            }
+            for (Subscription subscription : snapshot) {
+                if (subscription.cancelled) continue;
+                App.post(() -> {
+                    if (!subscription.cancelled) subscription.listener.onProgress(subscription.source, percent);
+                });
+            }
         }
     }
 

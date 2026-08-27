@@ -17,7 +17,7 @@ import java.util.Objects;
 public final class DanmakuManualMatchStore {
 
     private static final String PREF_KEY = "danmaku_manual_matches_v1";
-    private static final int SCHEMA_VERSION = 2;
+    private static final int SCHEMA_VERSION = 3;
     private static final int MAX_ENTRIES = 64;
     private static final int MAX_EPISODES_PER_ENTRY = 160;
 
@@ -44,10 +44,29 @@ public final class DanmakuManualMatchStore {
         String key = preferenceKey(context);
         if (key.isEmpty()) return null;
         Selection selection = entries.get(key);
+        String matchedKey = key;
+        if (selection == null) {
+            String legacy = legacyPreferenceKey(context);
+            selection = entries.get(legacy);
+            matchedKey = legacy;
+        }
+        if (selection == null) {
+            String prefix = key + '\u001f';
+            for (Map.Entry<String, Selection> entry : entries.entrySet()) {
+                if (entry.getKey().startsWith(prefix) && compatible(context, entry.getValue())) {
+                    matchedKey = entry.getKey();
+                    selection = entry.getValue();
+                    break;
+                }
+            }
+        }
         if (selection == null || selection.query().isEmpty() || selection.selectedName().isEmpty()) return null;
+        if (!compatible(context, selection)) return null;
         // Refresh insertion order so frequently used mappings survive the bounded cache.
+        entries.remove(matchedKey);
         entries.remove(key);
         entries.put(key, selection);
+        if (!matchedKey.equals(key)) persist();
         return selection;
     }
 
@@ -106,8 +125,27 @@ public final class DanmakuManualMatchStore {
         if (context == null) return "";
         String title = DanmakuMatch.canonicalTitle(context.getTitle());
         if (title.length() < 2) return "";
+        // Work + explicit season is the stable identity. Repository metadata often disappears or
+        // changes wording between sources/episodes, so year/type must validate a saved choice but
+        // must not make it unreachable.
+        return title;
+    }
+
+    static String legacyPreferenceKey(DanmakuMatchContext context) {
+        String title = preferenceKey(context);
+        if (title.isEmpty()) return "";
         return title + '\u001f' + DanmakuMatch.normalizeYear(context.getYear()) + '\u001f'
                 + DanmakuMatch.normalizeMediaType(context.getType());
+    }
+
+    private static boolean compatible(DanmakuMatchContext context, Selection selection) {
+        if (context == null || selection == null) return false;
+        String expectedYear = DanmakuMatch.normalizeYear(context.getYear());
+        String actualYear = DanmakuMatch.candidateYear(selection.selectedName());
+        if (!expectedYear.isEmpty() && !actualYear.isEmpty() && !expectedYear.equals(actualYear)) return false;
+        String expectedType = DanmakuMatch.normalizeMediaType(context.getType());
+        String actualType = DanmakuMatch.candidateType(selection.selectedName());
+        return expectedType.isEmpty() || actualType.isEmpty() || expectedType.equals(actualType);
     }
 
     /** Non-reversible endpoint identity; configured URLs and possible credentials are not copied. */

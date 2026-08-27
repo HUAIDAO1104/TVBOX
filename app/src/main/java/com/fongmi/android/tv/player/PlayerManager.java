@@ -25,6 +25,7 @@ import com.fongmi.android.tv.bean.Track;
 import com.fongmi.android.tv.impl.ParseCallback;
 import com.fongmi.android.tv.player.engine.PlayerEngine;
 import com.fongmi.android.tv.player.engine.PlayerEngineFactory;
+import com.fongmi.android.tv.player.danmaku.DanmakuStatus;
 import com.fongmi.android.tv.player.media.PlaySpec;
 import com.fongmi.android.tv.player.parse.ParseJob;
 import com.fongmi.android.tv.player.track.TrackUtil;
@@ -280,6 +281,11 @@ public class PlayerManager implements ParseCallback {
 
     public void sendDanmaku(String text) {
         callback.onDanmakuSent(text);
+    }
+
+    public void notifyDanmakuStatus(DanmakuStatus status) {
+        if (status == null) return;
+        App.post(() -> callback.onDanmakuStatusChanged(status));
     }
 
     public String setSpeed(float speed) {
@@ -557,6 +563,8 @@ public class PlayerManager implements ParseCallback {
         void onDanmakuEnabledChanged(boolean enabled);
 
         void onDanmakuSent(String text);
+
+        void onDanmakuStatusChanged(DanmakuStatus status);
     }
 
     private final Player.Listener listener = new Player.Listener() {

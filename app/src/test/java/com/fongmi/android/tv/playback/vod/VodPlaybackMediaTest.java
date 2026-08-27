@@ -126,7 +126,7 @@ public class VodPlaybackMediaTest {
         DanmakuManualMatchStore.Selection restored =
                 DanmakuManualMatchStore.decode(stable).get("work");
 
-        assertTrue(stable.contains("\"schema\":2"));
+        assertTrue(stable.contains("\"schema\":3"));
         assertTrue(stable.contains("\"episodes\""));
         assertNotNull(restored);
         assertEquals("episode-2", restored.episode("2").getUrl());
@@ -161,6 +161,23 @@ public class VodPlaybackMediaTest {
         assertTrue(selection.hasEpisodes());
         assertEquals("一起同过窗 第二季", selection.query());
         assertEquals(null, selection.episode("第2集"));
+    }
+
+    @Test
+    public void manualMappingSurvivesRepositoryMetadataDriftButKeepsSeasonBoundary() {
+        DanmakuMatchContext original = new DanmakuMatchContext(
+                "一起同过窗 第二季", "2017", "国产剧", "2");
+        DanmakuMatchContext sparse = new DanmakuMatchContext(
+                "一起同过窗Ⅱ", "", "", "9");
+        DanmakuMatchContext otherSeason = new DanmakuMatchContext(
+                "一起同过窗 第一季", "2016", "电视剧", "9");
+
+        assertEquals(DanmakuManualMatchStore.preferenceKey(original),
+                DanmakuManualMatchStore.preferenceKey(sparse));
+        assertFalse(DanmakuManualMatchStore.preferenceKey(original)
+                .equals(DanmakuManualMatchStore.preferenceKey(otherSeason)));
+        assertFalse(DanmakuManualMatchStore.legacyPreferenceKey(original)
+                .equals(DanmakuManualMatchStore.legacyPreferenceKey(sparse)));
     }
 
     private static Danmaku danmaku(String name, String url) {

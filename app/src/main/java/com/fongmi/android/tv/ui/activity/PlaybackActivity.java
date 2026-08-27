@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -13,6 +14,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.accessibility.CaptioningManager;
+import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -39,6 +42,7 @@ import com.fongmi.android.tv.player.PlayerManager;
 import com.fongmi.android.tv.player.danmaku.DanmakuDocumentCache;
 import com.fongmi.android.tv.player.danmaku.DanmakuHttp;
 import com.fongmi.android.tv.player.danmaku.DanmakuLoadPolicy;
+import com.fongmi.android.tv.player.danmaku.DanmakuStatus;
 import com.fongmi.android.tv.player.danmaku.FilteringBiliParser;
 import com.fongmi.android.tv.player.media.PlaySpec;
 import com.fongmi.android.tv.player.util.PlayerHelper;
@@ -74,6 +78,10 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     private DanmakuDocumentCache.Ticket danmakuLoadTicket;
     private int danmakuLoadGeneration;
     private int danmakuRetryCount;
+    private TextView danmakuStatusView;
+    private final Runnable hideDanmakuStatus = () -> {
+        if (danmakuStatusView != null) danmakuStatusView.setVisibility(View.GONE);
+    };
 
     private final Runnable retryDanmaku = () -> {
         if (isFinishing() || isDestroyed() || retryDanmakuUri == null
@@ -396,6 +404,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
                 }
                 danmakuRetryCount = 0;
                 retryDanmakuUri = null;
+                player().notifyDanmakuStatus(DanmakuStatus.ready(itemCount));
                 // Loading and selecting a source are not the same as mounting its items in the
                 // current time window. An explicit refresh here makes the first comments visible
                 // after replay, surface recreation and automatic episode transitions.
@@ -474,7 +483,14 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         // path, DanmakuController otherwise sees an equal URI and only refreshes its old empty
         // item window instead of reparsing the repaired file.
         getPlayerView().setDanmakuSource(null);
+        if (mService != null) player().notifyDanmakuStatus(DanmakuStatus.downloading(0));
         danmakuLoadTicket = DanmakuDocumentCache.load(source, new DanmakuDocumentCache.Listener() {
+            @Override
+            public void onProgress(Uri original, int percent) {
+                if (generation == danmakuLoadGeneration && Objects.equals(appliedDanmakuUri, original)
+                        && mService != null) player().notifyDanmakuStatus(DanmakuStatus.downloading(percent));
+            }
+
             @Override
             public void onReady(Uri original, Uri local) {
                 if (generation != danmakuLoadGeneration || isFinishing() || isDestroyed()
@@ -495,11 +511,16 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     }
 
     private void scheduleDanmakuRetry(java.io.IOException error, boolean corruptDocument) {
-        if (appliedDanmakuUri == null || danmakuRetryCount >= 1) return;
-        if (!corruptDocument && !DanmakuLoadPolicy.shouldRetry(error, danmakuRetryCount)) return;
-        danmakuRetryCount++;
-        retryDanmakuUri = appliedDanmakuUri;
-        App.post(retryDanmaku, 350);
+        boolean retry = appliedDanmakuUri != null && danmakuRetryCount < 1
+                && (corruptDocument || DanmakuLoadPolicy.shouldRetry(error, danmakuRetryCount));
+        if (retry) {
+            danmakuRetryCount++;
+            retryDanmakuUri = appliedDanmakuUri;
+            App.post(retryDanmaku, 350);
+            return;
+        }
+        if (mService != null) player().notifyDanmakuStatus(DanmakuStatus.failed(corruptDocument
+                ? DanmakuStatus.Failure.EMPTY_DOCUMENT : DanmakuStatus.Failure.DOWNLOAD));
     }
 
     private void cancelDanmakuResolution() {
@@ -603,7 +624,73 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         public void onDanmakuSent(String text) {
             if (isOwner()) getPlayerView().sendDanmaku(text);
         }
+
+        @Override
+        public void onDanmakuStatusChanged(DanmakuStatus status) {
+            if (isOwner()) showDanmakuStatus(status);
+        }
     };
+
+    private void showDanmakuStatus(DanmakuStatus status) {
+        App.removeCallbacks(hideDanmakuStatus);
+        if (status == null || status.stage() == DanmakuStatus.Stage.HIDDEN) {
+            if (danmakuStatusView != null) danmakuStatusView.setVisibility(View.GONE);
+            return;
+        }
+        TextView view = ensureDanmakuStatusView();
+        view.setText(danmakuStatusText(status));
+        view.setVisibility(View.VISIBLE);
+        view.setAlpha(0f);
+        view.animate().alpha(1f).setDuration(160).start();
+        if (status.stage() == DanmakuStatus.Stage.READY) App.post(hideDanmakuStatus, 2400);
+        else if (status.stage() == DanmakuStatus.Stage.FAILED) App.post(hideDanmakuStatus, 8000);
+    }
+
+    private TextView ensureDanmakuStatusView() {
+        if (danmakuStatusView != null) return danmakuStatusView;
+        FrameLayout root = findViewById(android.R.id.content);
+        TextView view = new TextView(this);
+        int horizontal = ResUtil.dp2px(18);
+        int vertical = ResUtil.dp2px(9);
+        view.setPadding(horizontal, vertical, horizontal, vertical);
+        view.setTextColor(Color.WHITE);
+        view.setTextSize(com.fongmi.android.tv.utils.Util.isLeanback() ? 18 : 14);
+        view.setFocusable(false);
+        view.setClickable(false);
+        view.setElevation(ResUtil.dp2px(10));
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(Color.argb(190, 14, 17, 24));
+        background.setCornerRadius(ResUtil.dp2px(18));
+        background.setStroke(ResUtil.dp2px(1), Color.argb(90, 255, 255, 255));
+        view.setBackground(background);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.gravity = android.view.Gravity.TOP | android.view.Gravity.CENTER_HORIZONTAL;
+        params.topMargin = ResUtil.dp2px(com.fongmi.android.tv.utils.Util.isLeanback() ? 28 : 16);
+        root.addView(view, params);
+        danmakuStatusView = view;
+        return view;
+    }
+
+    private String danmakuStatusText(DanmakuStatus status) {
+        return switch (status.stage()) {
+            case MATCHING -> getString(R.string.danmaku_status_matching);
+            case RESTORING -> getString(R.string.danmaku_status_restoring);
+            case DOWNLOADING -> status.progress() > 0
+                    ? getString(R.string.danmaku_status_downloading_percent, status.progress())
+                    : getString(R.string.danmaku_status_downloading);
+            case READY -> getString(R.string.danmaku_status_ready, status.itemCount());
+            case FAILED -> getString(R.string.danmaku_status_failed, switch (status.failure()) {
+                case DISABLED -> getString(R.string.danmaku_failure_disabled);
+                case NO_MATCH -> getString(R.string.danmaku_failure_no_match);
+                case NETWORK -> getString(R.string.danmaku_failure_network);
+                case INVALID_RESPONSE -> getString(R.string.danmaku_failure_invalid);
+                case EMPTY_DOCUMENT -> getString(R.string.danmaku_failure_empty);
+                default -> getString(R.string.danmaku_failure_download);
+            });
+            default -> "";
+        };
+    }
 
     @Override
     protected void initView(Bundle savedInstanceState) {
@@ -679,6 +766,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     @Override
     protected void onDestroy() {
         App.removeCallbacks(retryDanmaku);
+        App.removeCallbacks(hideDanmakuStatus);
         cancelDanmakuResolution();
         danmakuLoadGeneration++;
         clearForeverObservers();

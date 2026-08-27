@@ -33,6 +33,7 @@ import com.fongmi.android.tv.browse.BrowseTree;
 import com.fongmi.android.tv.event.ActionEvent;
 import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.player.PlayerManager;
+import com.fongmi.android.tv.player.danmaku.DanmakuStatus;
 import com.fongmi.android.tv.player.media.PlaySpec;
 import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.utils.Task;
@@ -514,6 +515,11 @@ public class PlaybackService extends MediaLibraryService implements MediaLibrary
         playerCallbacks.forEach(callback -> callback.onDanmakuSent(text));
     }
 
+    @Override
+    public void onDanmakuStatusChanged(DanmakuStatus status) {
+        playerCallbacks.forEach(callback -> callback.onDanmakuStatusChanged(status));
+    }
+
     private final Player.Listener listener = new Player.Listener() {
         @Override
         public void onPlaybackStateChanged(int state) {
@@ -606,6 +612,9 @@ public class PlaybackService extends MediaLibraryService implements MediaLibrary
         }
 
         default void onDanmakuSent(String text) {
+        }
+
+        default void onDanmakuStatusChanged(DanmakuStatus status) {
         }
     }
 

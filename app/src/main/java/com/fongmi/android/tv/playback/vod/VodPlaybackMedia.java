@@ -9,6 +9,7 @@ import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.player.PlayerManager;
 import com.fongmi.android.tv.player.danmaku.DanmakuDocumentCache;
+import com.fongmi.android.tv.player.danmaku.DanmakuStatus;
 import java.util.Objects;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -46,7 +47,10 @@ public final class VodPlaybackMedia {
         }
         // Keep the context even when automatic matching is disabled so manual search can still
         // rank animation/live-action editions correctly.
-        if (!DanmakuApi.canSearch()) return;
+        if (!DanmakuApi.canSearch()) {
+            player.notifyDanmakuStatus(DanmakuStatus.failed(DanmakuStatus.Failure.DISABLED));
+            return;
+        }
         DanmakuManualMatchStore.Selection preferred = DanmakuManualMatchStore.get().find(matchContext);
         String identity = identityOf(history, episode, stableEpisodeIndex) + '\u001f'
                 + Objects.toString(year, "") + '\u001f' + Objects.toString(type, "") + '\u001f'
@@ -62,19 +66,35 @@ public final class VodPlaybackMedia {
             // comments were attached to the current PlayerView.
             player.setDanmaku(danmaku, true);
         };
-        if (preferred == null) DanmakuApi.search(title, year, type, episodeQuery, apply);
-        else {
+        DanmakuApi.SearchCallback callback = new DanmakuApi.SearchCallback() {
+            @Override
+            public void onFound(Danmaku danmaku, java.util.List<Danmaku> catalogue) {
+                if (!isCurrentIdentity(player, identity)) return;
+                String query = preferred == null ? DanmakuQuery.from(title).searchTitle() : preferred.query();
+                DanmakuManualMatchStore.get().remember(matchContext, query, danmaku, catalogue);
+                apply.accept(danmaku);
+            }
+
+            @Override
+            public void onFailure(DanmakuApi.SearchFailure failure) {
+                if (!isCurrentIdentity(player, identity)) return;
+                DanmakuStatus.Failure reason = switch (failure) {
+                    case NO_MATCH -> DanmakuStatus.Failure.NO_MATCH;
+                    case NETWORK -> DanmakuStatus.Failure.NETWORK;
+                    case INVALID_RESPONSE -> DanmakuStatus.Failure.INVALID_RESPONSE;
+                };
+                player.notifyDanmakuStatus(DanmakuStatus.failed(reason));
+            }
+        };
+        if (preferred == null) {
+            player.notifyDanmakuStatus(DanmakuStatus.matching());
+            DanmakuApi.searchDetailed(title, year, type, episodeQuery, callback);
+        } else {
+            player.notifyDanmakuStatus(DanmakuStatus.restoring());
             Danmaku cached = preferred.episode(episodeQuery);
             if (cached != null) apply.accept(cached);
-            else DanmakuApi.searchPreferred(preferred.query(), year, type, episodeQuery,
-                    preferred.selectedName(), preferred.sourceKey(), (danmaku, catalogue) -> {
-                        // Upgrade selections saved by older releases as soon as one fallback
-                        // response succeeds. The rest of the season then follows the zero-search
-                        // cached path without requiring another manual click.
-                        DanmakuManualMatchStore.get().remember(
-                                matchContext, preferred.query(), danmaku, catalogue);
-                        apply.accept(danmaku);
-                    });
+            else DanmakuApi.searchPreferredDetailed(preferred.query(), year, type, episodeQuery,
+                    preferred.selectedName(), preferred.sourceKey(), callback);
         }
     }
 
@@ -89,6 +109,7 @@ public final class VodPlaybackMedia {
             MATCH_CONTEXTS.remove(player);
         }
         player.setDanmaku(Danmaku.empty());
+        player.notifyDanmakuStatus(DanmakuStatus.hidden());
     }
 
     public static DanmakuMatchContext contextOf(PlayerManager player) {

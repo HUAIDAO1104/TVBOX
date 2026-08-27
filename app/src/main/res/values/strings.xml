@@ -319,4 +319,16 @@
         <item>Select subtitle track</item>
     </string-array>
 
+    <string name="danmaku_status_matching">Matching danmaku…</string>
+    <string name="danmaku_status_restoring">Restoring confirmed danmaku source…</string>
+    <string name="danmaku_status_downloading">Loading danmaku…</string>
+    <string name="danmaku_status_downloading_percent">Loading danmaku %1$d%%</string>
+    <string name="danmaku_status_ready">Danmaku ready · %1$d comments</string>
+    <string name="danmaku_status_failed">Danmaku failed: %1$s</string>
+    <string name="danmaku_failure_disabled">automatic loading is disabled</string>
+    <string name="danmaku_failure_no_match">no exact match for this title and episode</string>
+    <string name="danmaku_failure_network">all danmaku services timed out or are unreachable</string>
+    <string name="danmaku_failure_invalid">the service returned invalid data</string>
+    <string name="danmaku_failure_download">the comment file could not be downloaded</string>
+    <string name="danmaku_failure_empty">the comment file is empty or cannot be parsed</string>
 </resources>
