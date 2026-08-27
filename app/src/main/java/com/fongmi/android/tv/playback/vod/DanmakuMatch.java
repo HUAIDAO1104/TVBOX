@@ -1,6 +1,8 @@
 package com.fongmi.android.tv.playback.vod;
 
 import java.text.Normalizer;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -179,6 +181,29 @@ public final class DanmakuMatch {
     }
 
     /**
+     * Returns every reliable automatic candidate in deterministic preference order.
+     *
+     * <p>{@link #best(String, String, String, String, List, Function)} remains the ambiguity
+     * gate: when year/type metadata cannot distinguish two editions this method returns no
+     * candidates rather than weakening matching safety.  Once the identity is safe, retaining
+     * the lower-ranked rows lets the loader fall back when the preferred provider has a stale
+     * or temporarily unavailable comment document.</p>
+     */
+    public static <T> List<T> ranked(String title, String year, String type, String episode,
+                                     List<T> items, Function<T, String> name) {
+        T anchor = best(title, year, type, episode, items, name);
+        if (anchor == null || items == null) return List.of();
+        List<T> result = new ArrayList<>();
+        for (T item : items) {
+            if (item == null || !isReliable(title, year, type, episode, name.apply(item))) continue;
+            result.add(item);
+        }
+        result.sort(Comparator.comparingInt((T item) ->
+                displayScore(title, year, type, episode, name.apply(item))).reversed());
+        return result;
+    }
+
+    /**
      * Re-targets an explicit manual choice to another episode of the same catalogue entry.
      *
      * <p>The selected URL is deliberately not reused because it belongs to the old episode.
@@ -203,6 +228,25 @@ public final class DanmakuMatch {
             }
         }
         return best;
+    }
+
+    /** Returns the confirmed catalogue's current-episode alternatives in preference order. */
+    public static <T> List<T> rankedPreferred(String selectedName, String year, String type,
+                                              String episode, List<T> items,
+                                              Function<T, String> name) {
+        if (items == null || bestPreferred(selectedName, year, type, episode, items, name) == null) {
+            return List.of();
+        }
+        List<T> result = new ArrayList<>();
+        for (T item : items) {
+            if (item == null || !isPreferredFamily(selectedName, year, type, episode,
+                    name.apply(item))) continue;
+            result.add(item);
+        }
+        result.sort(Comparator.comparingInt((T item) -> displayScore(selectedName,
+                preferredYear(selectedName, year), preferredType(selectedName, type), episode,
+                name.apply(item))).reversed());
+        return result;
     }
 
     static boolean isPreferredFamily(String selectedName, String year, String type, String episode,

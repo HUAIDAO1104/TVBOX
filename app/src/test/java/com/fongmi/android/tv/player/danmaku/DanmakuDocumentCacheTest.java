@@ -5,8 +5,17 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
+
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 
 public class DanmakuDocumentCacheTest {
+
+    @Rule
+    public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     @Test
     public void onlyMaterialisesImmutableCommentDocuments() {
@@ -28,5 +37,22 @@ public class DanmakuDocumentCacheTest {
         assertFalse(first.equals(DanmakuDocumentCache.cacheKey(
                 "https://example.com/comment/2.xml")));
         assertEquals(64, first.length());
+    }
+
+    @Test
+    public void usableDocumentMustContainAnActualCommentEntry() throws Exception {
+        File valid = temporaryFolder.newFile("valid.xml");
+        File empty = temporaryFolder.newFile("empty.xml");
+        File error = temporaryFolder.newFile("error.xml");
+        Files.writeString(valid.toPath(), "<?xml version=\"1.0\"?><i><d p=\"0,1\">hello</d></i>",
+                StandardCharsets.UTF_8);
+        Files.writeString(empty.toPath(), "<?xml version=\"1.0\"?><i></i>                         ",
+                StandardCharsets.UTF_8);
+        Files.writeString(error.toPath(), "<error>upstream unavailable</error>                     ",
+                StandardCharsets.UTF_8);
+
+        assertTrue(DanmakuDocumentCache.isUsable(valid));
+        assertFalse(DanmakuDocumentCache.isUsable(empty));
+        assertFalse(DanmakuDocumentCache.isUsable(error));
     }
 }

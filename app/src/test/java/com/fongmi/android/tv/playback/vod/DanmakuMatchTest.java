@@ -73,6 +73,32 @@ public class DanmakuMatchTest {
     }
 
     @Test
+    public void automaticRankingRetainsSafeFallbackProviders() {
+        List<String> response = List.of(
+                "一起同过窗Ⅱ(2017)【电视剧】from bilibili - 【bilibili】 第1集",
+                "一起同过窗Ⅱ(2017)【电视剧】from 360 - 【youku】 第1集",
+                "一起同过窗(2016)【电视剧】from 360 - 【qq】 第1集",
+                "一起同过窗Ⅱ(2017)【电视剧】from 360 - 【youku】 第2集");
+
+        List<String> ranked = DanmakuMatch.ranked("一起同过窗 第二季", "2017",
+                "电视剧", "1", response, item -> item);
+
+        assertEquals(2, ranked.size());
+        assertEquals(response.get(1), ranked.get(0));
+        assertEquals(response.get(0), ranked.get(1));
+    }
+
+    @Test
+    public void automaticFallbackNeverWeakensEditionAmbiguityGuard() {
+        List<String> response = List.of(
+                "同名作品(2019)【电影】from 360 - 第1集",
+                "同名作品(2024)【电视剧】from bilibili - 第1集");
+
+        assertTrue(DanmakuMatch.ranked("同名作品", "", "", "1", response,
+                item -> item).isEmpty());
+    }
+
+    @Test
     public void neverTreatsASubstringAsTheSameWork() {
         assertFalse(DanmakuMatch.isReliable("仙女", "2", "仙女湖(2012)【电视剧】from 360 - 第2集"));
         assertFalse(DanmakuMatch.isReliable("庆余年", "1", "庆余年第二季(2024)【电视剧】from 360 - 第1集"));

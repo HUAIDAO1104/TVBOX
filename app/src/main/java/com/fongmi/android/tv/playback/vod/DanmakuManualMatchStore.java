@@ -96,6 +96,13 @@ public final class DanmakuManualMatchStore {
         persist();
     }
 
+    /** Removes one stale document while retaining the user's confirmed work/provider choice. */
+    public synchronized void forgetEpisode(DanmakuMatchContext context) {
+        Selection selection = find(context);
+        if (selection == null || context == null || !selection.removeEpisode(context.getEpisode())) return;
+        persist();
+    }
+
     static LinkedHashMap<String, CachedEpisode> buildEpisodeCache(
             DanmakuMatchContext context, Danmaku selected, List<Danmaku> catalogue) {
         LinkedHashMap<String, CachedEpisode> result = new LinkedHashMap<>();
@@ -343,6 +350,12 @@ public final class DanmakuManualMatchStore {
                 merged.remove(merged.keySet().iterator().next());
             }
             return merged;
+        }
+
+        private boolean removeEpisode(String episode) {
+            Integer number = DanmakuMatch.episodeNumber(episode);
+            return number != null && episodes != null
+                    && episodes.remove(String.valueOf(number)) != null;
         }
     }
 

@@ -68,6 +68,13 @@ public final class VodPlaybackMedia {
         };
         DanmakuApi.SearchCallback callback = new DanmakuApi.SearchCallback() {
             @Override
+            public void onProgress(int percent) {
+                if (isCurrentIdentity(player, identity)) {
+                    player.notifyDanmakuStatus(DanmakuStatus.downloading(percent));
+                }
+            }
+
+            @Override
             public void onFound(Danmaku danmaku, java.util.List<Danmaku> catalogue) {
                 if (!isCurrentIdentity(player, identity)) return;
                 String query = preferred == null ? DanmakuQuery.from(title).searchTitle() : preferred.query();
@@ -82,6 +89,7 @@ public final class VodPlaybackMedia {
                     case NO_MATCH -> DanmakuStatus.Failure.NO_MATCH;
                     case NETWORK -> DanmakuStatus.Failure.NETWORK;
                     case INVALID_RESPONSE -> DanmakuStatus.Failure.INVALID_RESPONSE;
+                    case DOWNLOAD -> DanmakuStatus.Failure.DOWNLOAD;
                 };
                 player.notifyDanmakuStatus(DanmakuStatus.failed(reason));
             }
@@ -92,9 +100,60 @@ public final class VodPlaybackMedia {
         } else {
             player.notifyDanmakuStatus(DanmakuStatus.restoring());
             Danmaku cached = preferred.episode(episodeQuery);
-            if (cached != null) apply.accept(cached);
-            else DanmakuApi.searchPreferredDetailed(preferred.query(), year, type, episodeQuery,
-                    preferred.selectedName(), preferred.sourceKey(), callback);
+            DanmakuApi.SearchCallback preferredCallback = new DanmakuApi.SearchCallback() {
+                @Override
+                public void onProgress(int percent) {
+                    callback.onProgress(percent);
+                }
+
+                @Override
+                public void onFound(Danmaku item, java.util.List<Danmaku> catalogue) {
+                    callback.onFound(item, catalogue);
+                }
+
+                @Override
+                public void onFailure(DanmakuApi.SearchFailure failure) {
+                    if (!isCurrentIdentity(player, identity)) return;
+                    // A saved manual/automatic catalogue can disappear or change platform IDs.
+                    // Keep it as the first choice, then relax only the provider/platform while
+                    // preserving strict title, season, year, type and episode matching.
+                    player.notifyDanmakuStatus(DanmakuStatus.matching());
+                    DanmakuApi.searchDetailed(title, year, type, episodeQuery, callback);
+                }
+            };
+            Runnable resolveFresh = () -> DanmakuApi.searchPreferredDetailed(preferred.query(),
+                    year, type, episodeQuery, preferred.selectedName(), preferred.sourceKey(),
+                    preferredCallback);
+            if (cached == null) {
+                resolveFresh.run();
+            } else {
+                // A saved episode URL is an identity hint, not proof that the provider still
+                // serves its document. Verify it before mounting; on 404/5xx/empty XML, discard
+                // only that episode and transparently resolve the same confirmed season through
+                // the remaining providers.
+                DanmakuDocumentCache.load(cached.getUri(), new DanmakuDocumentCache.Listener() {
+                    @Override
+                    public void onProgress(android.net.Uri source, int percent) {
+                        if (isCurrentIdentity(player, identity)) {
+                            player.notifyDanmakuStatus(DanmakuStatus.downloading(percent));
+                        }
+                    }
+
+                    @Override
+                    public void onReady(android.net.Uri source, android.net.Uri local) {
+                        if (isCurrentIdentity(player, identity)) apply.accept(cached);
+                    }
+
+                    @Override
+                    public void onFailure(android.net.Uri source, java.io.IOException error) {
+                        if (!isCurrentIdentity(player, identity)) return;
+                        DanmakuDocumentCache.invalidate(source);
+                        DanmakuManualMatchStore.get().forgetEpisode(matchContext);
+                        player.notifyDanmakuStatus(DanmakuStatus.matching());
+                        resolveFresh.run();
+                    }
+                });
+            }
         }
     }
 

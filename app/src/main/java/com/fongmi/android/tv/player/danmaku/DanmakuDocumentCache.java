@@ -199,10 +199,32 @@ public final class DanmakuDocumentCache {
             int index = count >= 3 && (prefix[0] & 0xff) == 0xef
                     && (prefix[1] & 0xff) == 0xbb && (prefix[2] & 0xff) == 0xbf ? 3 : 0;
             while (index < count && Character.isWhitespace((char) (prefix[index] & 0xff))) index++;
-            // Reject cached HTML/JSON error bodies while accepting an XML declaration/root with
-            // optional BOM and leading whitespace.
-            return index < count && prefix[index] == '<';
+            // Reject cached HTML/JSON error bodies and XML error/empty documents. A provider can
+            // answer 200 with an XML envelope containing no comments; treating that as usable
+            // makes automatic matching persist a source that the renderer can never display.
+            return index < count && prefix[index] == '<' && containsCommentEntry(file);
         } catch (IOException ignored) {
+            return false;
+        }
+    }
+
+    private static boolean containsCommentEntry(File file) throws IOException {
+        try (InputStream input = new java.io.FileInputStream(file)) {
+            byte[] buffer = new byte[8 * 1024];
+            int beforePrevious = -1;
+            int previous = -1;
+            int count;
+            while ((count = input.read(buffer)) != -1) {
+                for (int i = 0; i < count; i++) {
+                    int current = buffer[i] & 0xff;
+                    if (beforePrevious == '<' && (previous == 'd' || previous == 'D')
+                            && (current == '>' || Character.isWhitespace((char) current))) {
+                        return true;
+                    }
+                    beforePrevious = previous;
+                    previous = current;
+                }
+            }
             return false;
         }
     }

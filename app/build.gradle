@@ -19,8 +19,8 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // Keep compatibility fixes on a strictly newer version so TV installers do not retain
         // the previous APK while preserving its database for the migration chain below.
-        versionCode 613
-        versionName "5.5.62-danmaku-status"
+        versionCode 614
+        versionName "5.5.63-danmaku-fallback"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
