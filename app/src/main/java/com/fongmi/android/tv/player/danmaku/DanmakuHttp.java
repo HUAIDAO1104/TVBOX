@@ -15,9 +15,9 @@ import okhttp3.Response;
 public final class DanmakuHttp {
 
     static final long CACHE_SIZE_BYTES = 48L * 1024L * 1024L;
-    static final int CONNECT_TIMEOUT_SECONDS = 6;
-    static final int READ_TIMEOUT_SECONDS = 24;
-    static final int CALL_TIMEOUT_SECONDS = 26;
+    static final int CONNECT_TIMEOUT_SECONDS = 8;
+    static final int READ_TIMEOUT_SECONDS = 42;
+    static final int CALL_TIMEOUT_SECONDS = 45;
     static final int CACHE_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 
     private static volatile OkHttpClient client;

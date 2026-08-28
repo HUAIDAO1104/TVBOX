@@ -18,6 +18,7 @@ public final class VodPlaybackMedia {
 
     private static final Map<PlayerManager, String> REQUEST_IDENTITIES = new WeakHashMap<>();
     private static final Map<PlayerManager, DanmakuMatchContext> MATCH_CONTEXTS = new WeakHashMap<>();
+    private static final Map<PlayerManager, Integer> MANUAL_REQUESTS = new WeakHashMap<>();
 
     public static MediaMetadata metadata(History history, Episode episode) {
         String title = history.getVodName();
@@ -167,6 +168,9 @@ public final class VodPlaybackMedia {
         synchronized (MATCH_CONTEXTS) {
             MATCH_CONTEXTS.remove(player);
         }
+        synchronized (MANUAL_REQUESTS) {
+            MANUAL_REQUESTS.remove(player);
+        }
         player.setDanmaku(Danmaku.empty());
         player.notifyDanmakuStatus(DanmakuStatus.hidden());
     }
@@ -190,6 +194,100 @@ public final class VodPlaybackMedia {
         DanmakuManualMatchStore.get().remember(contextOf(player), query, selected, catalogue);
     }
 
+    /**
+     * Applies a manual row only after its document is available.
+     *
+     * <p>The search service returns rotating comment ids. Persisting a clicked row before its
+     * document was verified poisoned every following episode with the same stale id. A failed
+     * click now resolves the same title/season/provider once more, then stores only the verified
+     * replacement.</p>
+     */
+    public static void applyManualMatch(PlayerManager player, String query, Danmaku selected,
+                                        java.util.List<Danmaku> catalogue,
+                                        java.util.function.Consumer<Danmaku> onApplied,
+                                        Runnable onFailure) {
+        if (player == null || selected == null || selected.getUri() == null) {
+            if (onFailure != null) onFailure.run();
+            return;
+        }
+        DanmakuApi.cancel();
+        DanmakuMatchContext context = contextOf(player);
+        String effectiveQuery = Objects.toString(query, "").trim();
+        if (effectiveQuery.isEmpty()) effectiveQuery = DanmakuQuery.from(context.getTitle()).searchTitle();
+        int request = beginManualRequest(player);
+        player.notifyDanmakuStatus(DanmakuStatus.downloading(0));
+        String finalQuery = effectiveQuery;
+        java.util.List<Danmaku> initialCatalogue = catalogue == null
+                ? java.util.Collections.emptyList() : catalogue;
+        java.util.function.BiConsumer<Danmaku, java.util.List<Danmaku>> commit = (item, items) -> {
+            if (!isCurrentManualRequest(player, request)) return;
+            java.util.List<Danmaku> resolved = items == null || items.isEmpty()
+                    ? initialCatalogue : items;
+            DanmakuManualMatchStore.get().remember(context, finalQuery, item, resolved);
+            player.setDanmaku(item, true);
+            if (onApplied != null) onApplied.accept(item);
+        };
+        Runnable failed = () -> {
+            if (!isCurrentManualRequest(player, request)) return;
+            player.notifyDanmakuStatus(DanmakuStatus.failed(DanmakuStatus.Failure.DOWNLOAD));
+            if (onFailure != null) onFailure.run();
+        };
+        DanmakuDocumentCache.load(selected.getUri(), new DanmakuDocumentCache.Listener() {
+            @Override
+            public void onProgress(android.net.Uri source, int percent) {
+                if (isCurrentManualRequest(player, request)) {
+                    player.notifyDanmakuStatus(DanmakuStatus.downloading(percent));
+                }
+            }
+
+            @Override
+            public void onReady(android.net.Uri source, android.net.Uri local) {
+                commit.accept(selected, initialCatalogue);
+            }
+
+            @Override
+            public void onFailure(android.net.Uri source, java.io.IOException error) {
+                if (!isCurrentManualRequest(player, request)) return;
+                DanmakuDocumentCache.invalidate(source);
+                player.notifyDanmakuStatus(DanmakuStatus.matching());
+                DanmakuApi.searchPreferredDetailed(finalQuery, context.getYear(), context.getType(),
+                        context.getEpisode(), selected.getName(), selected.getSourceKey(),
+                        new DanmakuApi.SearchCallback() {
+                            @Override
+                            public void onProgress(int percent) {
+                                if (isCurrentManualRequest(player, request)) {
+                                    player.notifyDanmakuStatus(DanmakuStatus.downloading(percent));
+                                }
+                            }
+
+                            @Override
+                            public void onFound(Danmaku item, java.util.List<Danmaku> items) {
+                                commit.accept(item, items);
+                            }
+
+                            @Override
+                            public void onFailure(DanmakuApi.SearchFailure failure) {
+                                failed.run();
+                            }
+                        });
+            }
+        });
+    }
+
+    private static int beginManualRequest(PlayerManager player) {
+        synchronized (MANUAL_REQUESTS) {
+            int next = MANUAL_REQUESTS.getOrDefault(player, 0) + 1;
+            MANUAL_REQUESTS.put(player, next);
+            return next;
+        }
+    }
+
+    private static boolean isCurrentManualRequest(PlayerManager player, int request) {
+        synchronized (MANUAL_REQUESTS) {
+            return MANUAL_REQUESTS.getOrDefault(player, 0) == request;
+        }
+    }
+
     public static Danmaku preferredEpisode(PlayerManager player) {
         DanmakuMatchContext context = contextOf(player);
         DanmakuManualMatchStore.Selection selection = DanmakuManualMatchStore.get().find(context);
@@ -203,8 +301,39 @@ public final class VodPlaybackMedia {
         if (current == null || current <= 0) return;
         DanmakuManualMatchStore.Selection selection = DanmakuManualMatchStore.get().find(context);
         if (selection == null) return;
-        Danmaku next = selection.episode(String.valueOf(current + 1));
-        if (next != null && next.getUri() != null) DanmakuDocumentCache.prefetch(next.getUri());
+        String nextEpisode = String.valueOf(current + 1);
+        Danmaku next = selection.episode(nextEpisode);
+        if (next == null || next.getUri() == null) return;
+        DanmakuDocumentCache.load(next.getUri(), new DanmakuDocumentCache.Listener() {
+            @Override
+            public void onReady(android.net.Uri source, android.net.Uri local) {
+            }
+
+            @Override
+            public void onFailure(android.net.Uri source, java.io.IOException error) {
+                DanmakuDocumentCache.invalidate(source);
+                // Full-season catalogues contain short-lived generated URLs. If the neighbour is
+                // already stale, refresh that exact confirmed work/provider in the background so
+                // pressing "next" reuses a verified local document instead of paying the repair
+                // cost after playback has switched.
+                DanmakuApi.searchPreferredDetailed(selection.query(), context.getYear(),
+                        context.getType(), nextEpisode, selection.selectedName(),
+                        selection.sourceKey(), new DanmakuApi.SearchCallback() {
+                            @Override
+                            public void onFound(Danmaku item, java.util.List<Danmaku> catalogue) {
+                                DanmakuMatchContext nextContext = new DanmakuMatchContext(
+                                        context.getTitle(), context.getYear(), context.getType(),
+                                        nextEpisode);
+                                DanmakuManualMatchStore.get().remember(nextContext,
+                                        selection.query(), item, catalogue);
+                            }
+
+                            @Override
+                            public void onFailure(DanmakuApi.SearchFailure failure) {
+                            }
+                        });
+            }
+        });
     }
 
     /** Returns the last successful manual query for the current work/season, when available. */

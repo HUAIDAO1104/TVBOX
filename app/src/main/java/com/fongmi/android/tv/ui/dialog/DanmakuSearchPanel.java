@@ -242,10 +242,9 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         // selected the same URL but the renderer failed to load it.
         String query = binding.keyword.getText() == null ? "" : binding.keyword.getText().toString();
         List<Danmaku> catalogue = sourceCatalogues.get(item.getSourceKey());
-        VodPlaybackMedia.rememberManualMatch(player, query, item,
-                catalogue == null ? Collections.emptyList() : catalogue);
-        player.setDanmaku(item, true);
-        adapter.setSelected(item);
+        VodPlaybackMedia.applyManualMatch(player, query, item,
+                catalogue == null ? Collections.emptyList() : catalogue,
+                adapter::setSelected, null);
     }
 
     @Override

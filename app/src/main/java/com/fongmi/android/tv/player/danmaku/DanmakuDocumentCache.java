@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -86,26 +87,43 @@ public final class DanmakuDocumentCache {
                 return subscription;
             }
         }
-        Call call;
+        Request request;
         try {
-            call = DanmakuHttp.client().newCall(new Request.Builder().url(source.toString()).get().build());
+            request = new Request.Builder().url(source.toString()).get().build();
         } catch (RuntimeException error) {
             App.post(() -> listener.onFailure(source, new IOException(error)));
             return () -> {
             };
         }
-        pending = new PendingDownload(key, call);
+        pending = new PendingDownload(key, request);
         pending.add(subscription);
         synchronized (DOWNLOADS) {
             PendingDownload existing = DOWNLOADS.get(key);
             if (existing != null) {
-                call.cancel();
                 existing.add(subscription);
                 return subscription;
             }
             DOWNLOADS.put(key, pending);
         }
-        PendingDownload download = pending;
+        enqueue(pending);
+        return subscription;
+    }
+
+    private static void enqueue(PendingDownload download) {
+        synchronized (DOWNLOADS) {
+            if (DOWNLOADS.get(download.key) != download || download.cancelled) return;
+            download.retryRunnable = null;
+        }
+        Call call;
+        try {
+            call = DanmakuHttp.client().newCall(download.request);
+        } catch (RuntimeException error) {
+            complete(download, null, new IOException(error));
+            return;
+        }
+        Uri source = Uri.parse(download.request.url().toString());
+        File target = fileFor(source);
+        download.call = call;
         call.enqueue(new Callback() {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException error) {
@@ -116,7 +134,7 @@ public final class DanmakuDocumentCache {
             public void onResponse(@NonNull Call call, @NonNull Response response) {
                 try (Response closeable = response) {
                     if (!closeable.isSuccessful()) {
-                        throw new HttpStatusException(closeable.code());
+                        throw new HttpStatusException(closeable.code(), retryAfterMillis(closeable));
                     }
                     ResponseBody body = closeable.body();
                     if (body == null) throw new IOException("Empty danmaku response");
@@ -133,11 +151,35 @@ public final class DanmakuDocumentCache {
                     prune(target);
                     complete(download, Uri.fromFile(target), null);
                 } catch (IOException error) {
-                    complete(download, null, error);
+                    if (!scheduleRetry(download, error)) complete(download, null, error);
                 }
             }
         });
-        return subscription;
+    }
+
+    private static boolean scheduleRetry(PendingDownload download, IOException error) {
+        long delay = DanmakuLoadPolicy.sameSourceRetryDelayMillis(error, download.retryCount);
+        if (delay < 0) return false;
+        synchronized (DOWNLOADS) {
+            if (DOWNLOADS.get(download.key) != download || download.cancelled
+                    || download.subscribers.isEmpty()) return false;
+            download.retryCount++;
+            download.progress(Math.min(90, download.retryCount * 12));
+            Runnable retry = () -> enqueue(download);
+            download.retryRunnable = retry;
+            App.post(retry, delay);
+        }
+        return true;
+    }
+
+    private static long retryAfterMillis(Response response) {
+        String value = response.header("Retry-After", "").trim();
+        if (value.isEmpty()) return -1L;
+        try {
+            return TimeUnit.SECONDS.toMillis(Long.parseLong(value));
+        } catch (NumberFormatException ignored) {
+            return -1L;
+        }
     }
 
     /** Warms one confirmed neighbouring episode without touching the renderer. */
@@ -298,6 +340,8 @@ public final class DanmakuDocumentCache {
         synchronized (DOWNLOADS) {
             if (DOWNLOADS.get(download.key) != download) return;
             DOWNLOADS.remove(download.key);
+            if (download.retryRunnable != null) App.removeCallbacks(download.retryRunnable);
+            download.retryRunnable = null;
             subscribers = download.detach();
         }
         for (Subscription subscription : subscribers) {
@@ -308,7 +352,7 @@ public final class DanmakuDocumentCache {
                         subscription.listener.onReady(subscription.source, local);
                     }
                 });
-            } else if (!download.call.isCanceled()) {
+            } else if (!download.cancelled) {
                 IOException failure = error == null
                         ? new IOException("Danmaku download failed") : error;
                 App.post(() -> {
@@ -323,12 +367,17 @@ public final class DanmakuDocumentCache {
     private static final class PendingDownload {
 
         private final String key;
-        private final Call call;
+        private final Request request;
         private final List<Subscription> subscribers = new ArrayList<>();
+        private volatile Call call;
+        private volatile boolean cancelled;
+        private Runnable retryRunnable;
+        private int retryCount;
+        private int lastProgress = -1;
 
-        private PendingDownload(String key, Call call) {
+        private PendingDownload(String key, Request request) {
             this.key = key;
-            this.call = call;
+            this.request = request;
         }
 
         private void add(Subscription subscription) {
@@ -346,6 +395,8 @@ public final class DanmakuDocumentCache {
         private void progress(int percent) {
             List<Subscription> snapshot;
             synchronized (DOWNLOADS) {
+                if (percent <= lastProgress) return;
+                lastProgress = percent;
                 snapshot = new ArrayList<>(subscribers);
             }
             for (Subscription subscription : snapshot) {
@@ -379,7 +430,10 @@ public final class DanmakuDocumentCache {
                 owner.subscribers.remove(this);
                 download = null;
                 if (owner.subscribers.isEmpty() && DOWNLOADS.remove(owner.key, owner)) {
-                    owner.call.cancel();
+                    owner.cancelled = true;
+                    if (owner.retryRunnable != null) App.removeCallbacks(owner.retryRunnable);
+                    owner.retryRunnable = null;
+                    if (owner.call != null) owner.call.cancel();
                 }
             }
         }
@@ -388,14 +442,24 @@ public final class DanmakuDocumentCache {
     static final class HttpStatusException extends IOException {
 
         private final int statusCode;
+        private final long retryAfterMillis;
 
         HttpStatusException(int statusCode) {
+            this(statusCode, -1L);
+        }
+
+        HttpStatusException(int statusCode, long retryAfterMillis) {
             super("Danmaku HTTP " + statusCode);
             this.statusCode = statusCode;
+            this.retryAfterMillis = retryAfterMillis;
         }
 
         int statusCode() {
             return statusCode;
+        }
+
+        long retryAfterMillis() {
+            return retryAfterMillis;
         }
     }
 }

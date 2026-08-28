@@ -91,9 +91,8 @@ public final class DanmakuSearchDialog extends BaseBottomSheetDialog implements 
 
     @Override
     public void onItemClick(Danmaku item) {
-        VodPlaybackMedia.rememberManualMatch(player, binding.keyword.getText().toString(), item);
-        player.setDanmaku(item, true);
-        dismiss();
+        VodPlaybackMedia.applyManualMatch(player, binding.keyword.getText().toString(), item,
+                java.util.Collections.emptyList(), applied -> dismiss(), null);
     }
 
     private void setKeyword(CharSequence text) {

@@ -12,6 +12,7 @@ import com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore;
 import com.fongmi.android.tv.playback.vod.DanmakuMatch;
 import com.fongmi.android.tv.playback.vod.DanmakuQuery;
 import com.fongmi.android.tv.player.danmaku.DanmakuDocumentCache;
+import com.fongmi.android.tv.player.danmaku.DanmakuLoadPolicy;
 import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.github.catvod.net.OkHttp;
 import com.github.catvod.utils.Trans;
@@ -92,7 +93,7 @@ public class DanmakuApi {
         OkHttp.cancel(TAG);
         searchCandidateParallel(generation, DanmakuQuery.from(name), Objects.toString(year, ""),
                 Objects.toString(type, ""), episode, "", orderedEndpoints(""), callback, 0,
-                new SearchStats());
+                0, new SearchStats());
     }
 
     public static void searchPreferred(String name, String year, String type, String episode,
@@ -115,7 +116,7 @@ public class DanmakuApi {
         OkHttp.cancel(TAG);
         searchCandidateParallel(generation, DanmakuQuery.from(name), Objects.toString(year, ""),
                 Objects.toString(type, ""), episode, Objects.toString(selectedName, ""),
-                orderedEndpoints(selectedSourceKey), callback, 0, new SearchStats());
+                orderedEndpoints(selectedSourceKey), callback, 0, 0, new SearchStats());
     }
 
     private static SearchCallback callback(Consumer<Danmaku> found) {
@@ -142,7 +143,8 @@ public class DanmakuApi {
     private static void searchCandidateParallel(int generation, DanmakuQuery query, String year,
                                                 String type, String episode, String preferredName,
                                                 List<String> apiUrls, SearchCallback callback,
-                                                int candidateIndex, SearchStats stats) {
+                                                int candidateIndex, int refreshCount,
+                                                SearchStats stats) {
         if (generation != REQUEST_GENERATION.get()) return;
         if (candidateIndex >= query.candidates().size() || apiUrls.isEmpty()) {
             SearchFailure failure = stats.download.get() > 0 ? SearchFailure.DOWNLOAD
@@ -155,6 +157,7 @@ public class DanmakuApi {
         }
         String candidateTitle = query.candidates().get(candidateIndex);
         AtomicBoolean finished = new AtomicBoolean();
+        AtomicBoolean refreshSource = new AtomicBoolean();
         AtomicInteger remaining = new AtomicInteger(apiUrls.size());
         List<Call> calls = new ArrayList<>();
         List<DanmakuDocumentCache.Ticket> validations =
@@ -188,7 +191,7 @@ public class DanmakuApi {
                             return;
                         }
                         verifyCandidates(generation, candidates, items, 0, finished, calls,
-                                validations, stats, this::completeOne, callback);
+                                validations, stats, refreshSource, this::completeOne, callback);
                     } catch (Exception error) {
                         stats.invalid.incrementAndGet();
                         completeOne();
@@ -205,8 +208,18 @@ public class DanmakuApi {
                 private void completeOne() {
                     if (generation != REQUEST_GENERATION.get() || finished.get()) return;
                     if (remaining.decrementAndGet() == 0 && finished.compareAndSet(false, true)) {
-                        searchCandidateParallel(generation, query, year, type, episode,
-                                preferredName, apiUrls, callback, candidateIndex + 1, stats);
+                        if (refreshSource.get() && refreshCount < 1) {
+                            // The service creates short-lived comment ids. A freshly returned id
+                            // can still answer 404/5xx while its backing document is being
+                            // prepared. Re-run the same strict title/season/episode query once to
+                            // obtain a new id instead of accepting a wrong season or failing fast.
+                            App.post(() -> searchCandidateParallel(generation, query, year, type,
+                                    episode, preferredName, apiUrls, callback, candidateIndex,
+                                    refreshCount + 1, stats), 1_200L);
+                        } else {
+                            searchCandidateParallel(generation, query, year, type, episode,
+                                    preferredName, apiUrls, callback, candidateIndex + 1, 0, stats);
+                        }
                     }
                 }
             });
@@ -225,7 +238,8 @@ public class DanmakuApi {
                                          List<Danmaku> catalogue, int index,
                                          AtomicBoolean finished, List<Call> calls,
                                          List<DanmakuDocumentCache.Ticket> validations,
-                                         SearchStats stats, Runnable exhausted,
+                                         SearchStats stats, AtomicBoolean refreshSource,
+                                         Runnable exhausted,
                                          SearchCallback callback) {
         if (generation != REQUEST_GENERATION.get() || finished.get()) return;
         if (index >= candidates.size()) {
@@ -235,12 +249,12 @@ public class DanmakuApi {
         Danmaku item = candidates.get(index);
         if (item == null || item.getUri() == null) {
             verifyCandidates(generation, candidates, catalogue, index + 1, finished, calls,
-                    validations, stats, exhausted, callback);
+                    validations, stats, refreshSource, exhausted, callback);
             return;
         }
         if (stats.rejectedUrls.contains(item.getUrl())) {
             verifyCandidates(generation, candidates, catalogue, index + 1, finished, calls,
-                    validations, stats, exhausted, callback);
+                    validations, stats, refreshSource, exhausted, callback);
             return;
         }
         DanmakuDocumentCache.Ticket ticket = DanmakuDocumentCache.load(item.getUri(),
@@ -270,10 +284,13 @@ public class DanmakuApi {
                     public void onFailure(android.net.Uri source, IOException error) {
                         if (generation != REQUEST_GENERATION.get() || finished.get()) return;
                         stats.download.incrementAndGet();
+                        if (DanmakuLoadPolicy.shouldRefreshSource(error)) {
+                            refreshSource.set(true);
+                        }
                         stats.rejectedUrls.add(item.getUrl());
                         DanmakuDocumentCache.invalidate(source);
                         verifyCandidates(generation, candidates, catalogue, index + 1, finished,
-                                calls, validations, stats, exhausted, callback);
+                                calls, validations, stats, refreshSource, exhausted, callback);
                     }
                 });
         validations.add(ticket);

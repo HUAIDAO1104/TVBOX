@@ -20,7 +20,10 @@ public class DanmakuHttpTest {
 
     @Test
     public void boundsTheNetworkWait() {
-        assertTrue(DanmakuHttp.CALL_TIMEOUT_SECONDS < 30);
+        // Real generated XML documents regularly take 20-30 seconds on the provider. Keep a
+        // finite ceiling, but do not abort a healthy later episode at the old 26-second limit.
+        assertTrue(DanmakuHttp.CALL_TIMEOUT_SECONDS >= 40);
+        assertTrue(DanmakuHttp.CALL_TIMEOUT_SECONDS <= 45);
         assertTrue(DanmakuHttp.CONNECT_TIMEOUT_SECONDS < DanmakuHttp.CALL_TIMEOUT_SECONDS);
         assertTrue(DanmakuHttp.READ_TIMEOUT_SECONDS < DanmakuHttp.CALL_TIMEOUT_SECONDS);
     }
