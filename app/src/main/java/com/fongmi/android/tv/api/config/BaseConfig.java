@@ -35,6 +35,7 @@ abstract class BaseConfig {
     protected boolean sync;
     protected volatile Config config;
     private volatile Future<?> future;
+    private volatile java.util.concurrent.ScheduledFuture<?> deadline;
 
     protected abstract String getTag();
 
@@ -82,7 +83,16 @@ abstract class BaseConfig {
     public void load(Callback callback) {
         int id = taskId.incrementAndGet();
         if (future != null && !future.isDone()) future.cancel(true);
-        future = Task.submit(() -> loadConfig(id, config, callback));
+        if (deadline != null) deadline.cancel(false);
+        Config requested = config;
+        future = Task.submit(() -> loadConfig(id, requested, callback));
+        deadline = Task.scheduler().schedule(() -> {
+            if (taskId.get() != id || future == null || future.isDone()) return;
+            if (!taskId.compareAndSet(id, id + 1)) return;
+            future.cancel(true);
+            OkHttp.cancel(getTag());
+            App.post(() -> { if (taskId.get() == id + 1) callback.error("配置加载超时，请重试"); });
+        }, 30, java.util.concurrent.TimeUnit.SECONDS);
         callback.start();
     }
 
@@ -93,15 +103,18 @@ abstract class BaseConfig {
             load(config);
             if (taskId.get() != id) return;
             if (config.equals(this.config)) config.update();
-            App.post(callback::success);
+            App.post(() -> { if (taskId.get() == id) callback.success(); });
         } catch (Throwable e) {
             com.github.catvod.crawler.SpiderDebug.log(e);
-            if (isCanceled(e)) return;
+            if (isCanceled(e) && Thread.currentThread().isInterrupted()) return;
             if (taskId.get() != id) return;
-            if (TextUtils.isEmpty(config.getUrl())) App.post(() -> callback.error(""));
-            else App.post(() -> callback.error(Notify.getError(R.string.error_config_get, e)));
+            if (TextUtils.isEmpty(config.getUrl())) App.post(() -> { if (taskId.get() == id) callback.error(""); });
+            else App.post(() -> { if (taskId.get() == id) callback.error(Notify.getError(R.string.error_config_get, e)); });
         } finally {
-            if (taskId.get() == id) postEvent();
+            if (taskId.get() == id) {
+                if (deadline != null) deadline.cancel(false);
+                postEvent();
+            }
         }
     }
 

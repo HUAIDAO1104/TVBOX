@@ -27,6 +27,8 @@ public class RepositoryActivity extends BaseActivity implements RepositoryAdapte
     private final RepositoryManager manager = RepositoryManager.get();
     private ActivityRepositoryBinding binding;
     private RepositoryAdapter adapter;
+    private int loadGeneration;
+    private Runnable pendingRefresh;
 
     public static void start(Activity activity) {
         activity.startActivity(new Intent(activity, RepositoryActivity.class));
@@ -58,14 +60,28 @@ public class RepositoryActivity extends BaseActivity implements RepositoryAdapte
     }
 
     private void refresh() {
-        try {
-            adapter.submit(manager.getAll());
-            binding.empty.setText(R.string.repository_empty);
-        } catch (Throwable error) {
-            adapter.submit(Collections.emptyList());
-            binding.empty.setText(R.string.repository_load_failed);
-        }
-        binding.empty.setVisibility(adapter.getItemCount() == 0 ? android.view.View.VISIBLE : android.view.View.GONE);
+        int generation = ++loadGeneration;
+        if (pendingRefresh != null) com.fongmi.android.tv.App.removeCallbacks(pendingRefresh);
+        pendingRefresh = () -> com.fongmi.android.tv.utils.Task.execute(() -> {
+            try {
+                java.util.List<Repository> items = manager.getAll();
+                java.util.Map<Long, Integer> counts = new java.util.HashMap<>();
+                for (Repository item : items) counts.put(item.getId(), manager.getItemCount(item.getId()));
+                com.fongmi.android.tv.App.post(() -> {
+                    if (generation != loadGeneration || isFinishing() || isDestroyed()) return;
+                    adapter.submit(items, counts);
+                    binding.empty.setText(R.string.repository_empty);
+                    binding.empty.setVisibility(items.isEmpty() ? android.view.View.VISIBLE : android.view.View.GONE);
+                });
+            } catch (Throwable error) {
+                com.fongmi.android.tv.App.post(() -> {
+                    if (generation != loadGeneration || isFinishing() || isDestroyed()) return;
+                    binding.empty.setText(R.string.repository_load_failed);
+                    binding.empty.setVisibility(android.view.View.VISIBLE);
+                });
+            }
+        });
+        com.fongmi.android.tv.App.post(pendingRefresh, 80);
     }
 
     @Override

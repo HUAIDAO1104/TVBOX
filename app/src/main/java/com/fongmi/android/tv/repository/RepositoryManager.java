@@ -73,11 +73,7 @@ public class RepositoryManager {
     }
 
     public int getMappingCount(long repositoryId) {
-        int count = 0;
-        for (RepositoryItem item : getAllItems(repositoryId)) {
-            if (AppDatabase.get().getConfigDao().find(item.getUrl(), item.getType()) != null) count++;
-        }
-        return count;
+        return AppDatabase.get().getRepositoryItemDao().countMappings(repositoryId);
     }
 
     public Repository save(Repository repository) {

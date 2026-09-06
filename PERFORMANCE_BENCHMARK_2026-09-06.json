@@ -1,0 +1,94 @@
+{
+  "date": "2026-09-06",
+  "environment": "Android TV API 36 arm64 emulator; fixed snapshots; no real search requests",
+  "fixture": {
+    "source_count": 40,
+    "rows_per_source": 20,
+    "total_cards": 800,
+    "poster_urls": false
+  },
+  "before": {
+    "main_thread_wall_ms": 2450,
+    "main_thread_cpu_ms": 2399
+  },
+  "after": {
+    "main_thread_wall_ms": 603,
+    "main_thread_cpu_ms": 577
+  },
+  "sample_count_per_build": 1,
+  "limitations": [
+    "Single before/after sample; not a mean or percentile.",
+    "Measures synchronous snapshot processing, not provider network time or complete search latency.",
+    "Remaining 603 ms main-thread work can still cause jank."
+  ],
+  "jvm_tests": {
+    "passed": 245,
+    "failed": 0
+  },
+  "tv_instrumentation_tests": {
+    "passed": 6,
+    "failed": 0
+  },
+  "asyncIndexSamples": {
+    "environment": "API 36 Android TV arm64 emulator",
+    "method": "test-thread main-loop task roundtrip every ~16ms during indexing; not frame time or user input latency",
+    "runs": [
+      {
+        "rows": 500,
+        "totalMs": 324,
+        "samples": 17,
+        "mainP95Ms": 29,
+        "mainMaxMs": 29
+      },
+      {
+        "rows": 1000,
+        "totalMs": 506,
+        "samples": 28,
+        "mainP95Ms": 1,
+        "mainMaxMs": 13
+      },
+      {
+        "rows": 3000,
+        "totalMs": 1509,
+        "samples": 87,
+        "mainP95Ms": 1,
+        "mainMaxMs": 10
+      },
+      {
+        "rows": 3000,
+        "totalMs": 1585,
+        "samples": 86,
+        "mainP95Ms": 1,
+        "mainMaxMs": 64
+      }
+    ],
+    "limitations": "Synthetic data, sparse single-run samples, no actual source network speed or real-TV frame rate claim."
+  },
+  "finalRegressionSamples": {
+    "environmentNote": "同一 API 36 TV 模拟器，宿主同时执行四种正式包的 R8 构建，存在 CPU 竞争；不代表真机网络或帧率。",
+    "rows": [
+      {
+        "count": 500,
+        "deliveryMs": 1003,
+        "samples": 45,
+        "mainPostP95Ms": 12,
+        "mainPostMaxMs": 124
+      },
+      {
+        "count": 1000,
+        "deliveryMs": 1687,
+        "samples": 87,
+        "mainPostP95Ms": 5,
+        "mainPostMaxMs": 55
+      },
+      {
+        "count": 3000,
+        "deliveryMs": 4297,
+        "samples": 216,
+        "mainPostP95Ms": 5,
+        "mainPostMaxMs": 116
+      }
+    ],
+    "watchdogMs": 23386
+  }
+}

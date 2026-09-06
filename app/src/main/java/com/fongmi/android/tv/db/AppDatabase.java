@@ -61,17 +61,30 @@ public abstract class AppDatabase extends RoomDatabase {
         backup(new com.fongmi.android.tv.impl.Callback());
     }
 
+    private static final java.util.concurrent.atomic.AtomicBoolean backingUp = new java.util.concurrent.atomic.AtomicBoolean();
+
     public static void backup(com.fongmi.android.tv.impl.Callback callback) {
+        if (!backingUp.compareAndSet(false, true)) { App.post(callback::error); return; }
         Task.execute(() -> {
-            File file = new File(Path.tv(), "tv-" + LocalDate.now().format(Formatters.DATE) + ".bk");
-            Backup backup = Backup.create();
-            if (backup.getConfig().isEmpty()) {
-                App.post(callback::error);
-            } else {
-                Path.write(file, backup.toString().getBytes());
-                FileUtil.gzipCompress(file);
+            File temporary = new File(Path.tv(), ".backup-" + System.nanoTime() + ".tmp");
+            try {
+                Backup backup = Backup.create();
+                if (backup.getConfig().isEmpty()) throw new java.io.IOException("Empty backup");
+                File destination = new File(Path.tv(), "tv-" + LocalDate.now().format(Formatters.DATE) + ".bk.gz");
+                try (java.io.FileOutputStream file = new java.io.FileOutputStream(temporary);
+                     java.util.zip.GZIPOutputStream zip = new java.util.zip.GZIPOutputStream(file)) {
+                    zip.write(backup.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                    zip.finish();
+                    file.getFD().sync();
+                }
+                if (!temporary.renameTo(destination)) throw new java.io.IOException("Cannot finish backup");
                 App.post(callback::success);
                 cleanOld();
+            } catch (Exception error) {
+                App.post(callback::error);
+            } finally {
+                temporary.delete();
+                backingUp.set(false);
             }
         });
     }

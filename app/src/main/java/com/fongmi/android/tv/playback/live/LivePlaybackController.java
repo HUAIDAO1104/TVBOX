@@ -72,7 +72,7 @@ public class LivePlaybackController {
         state.setPendingRequest(request);
         host.requestUrl(request);
         host.showProgress();
-        host.stopPlaybackForRefresh();
+        // Keep the previous picture until the new URL is ready; startPlayback replaces it.
     }
 
     public void onUrlResult(Result result) {

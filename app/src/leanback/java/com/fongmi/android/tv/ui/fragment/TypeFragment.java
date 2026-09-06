@@ -22,6 +22,7 @@ import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.Product;
 import com.fongmi.android.tv.R;
+import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Cache;
 import com.fongmi.android.tv.bean.Filter;
@@ -73,6 +74,8 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     private ArrayObjectAdapter mAdapter;
     private ArrayObjectAdapter mLast;
     private CustomScroller mScroller;
+    private final Runnable filterRefresh = this::onRefresh;
+    private boolean refreshingFirstPage;
     private SiteViewModel mViewModel;
     private List<Filter> mFilters;
     private boolean headerVisible;
@@ -222,21 +225,35 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         adapter.notifyArrayItemRangeChanged(0, adapter.size());
         if (item.isSelected()) mExtends.put(key, item.getV());
         else mExtends.remove(key);
-        onRefresh();
+        App.post(filterRefresh, 220);
     }
 
     private void getVideo() {
         mLast = null;
         checkFilter();
-        mScroller.reset();
+        refreshingFirstPage = true;
+        mScroller.beginRefresh();
         getVideo(getTypeId(), "1");
     }
 
     private void getVideo(String typeId, String page) {
-        mViewModel.categoryContent(getKey(), typeId, page, true, mExtends);
+        mViewModel.categoryContent(getKey(), typeId, page, true, new HashMap<>(mExtends));
     }
 
     private void setAdapter(Result result) {
+        if (result == null) return;
+        if (result.hasMsg()) {
+            if (refreshingFirstPage) mScroller.cancelRefresh();
+            refreshingFirstPage = false;
+            mSwipeLayout.setRefreshing(false);
+            if (mAdapter.size() > (filterVisible ? mFilters.size() : 0)) mProgressLayout.showContent();
+            return;
+        }
+        if (refreshingFirstPage) {
+            int filters = filterVisible ? mFilters.size() : 0;
+            if (mAdapter.size() > filters) mAdapter.removeItems(filters, mAdapter.size() - filters);
+            refreshingFirstPage = false;
+        }
         boolean first = mScroller.first();
         boolean flag = mExtends.isEmpty();
         int size = result.getList().size();
@@ -325,13 +342,18 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     private void checkFilter() {
         int adapterSize = mAdapter.size();
         int filterSize = filterVisible ? mFilters.size() : 0;
-        if (adapterSize > filterSize) mAdapter.removeItems(filterSize, mAdapter.size() - filterSize);
         if (adapterSize == 0) mProgressLayout.showProgress();
         else mSwipeLayout.setRefreshing(true);
     }
 
     public void onRefresh() {
+        App.removeCallbacks(filterRefresh);
         getVideo();
+    }
+
+    @Override public void onDestroyView() {
+        App.removeCallbacks(filterRefresh);
+        super.onDestroyView();
     }
 
     @Override

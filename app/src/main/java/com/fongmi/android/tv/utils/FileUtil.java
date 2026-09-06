@@ -80,10 +80,21 @@ public class FileUtil {
         }
     }
 
+    private static final java.util.concurrent.atomic.AtomicBoolean clearingCache = new java.util.concurrent.atomic.AtomicBoolean();
+
     public static void clearCache(Callback callback) {
+        if (!clearingCache.compareAndSet(false, true)) { App.post(() -> callback.error("缓存清理正在进行")); return; }
         Task.execute(() -> {
-            Path.clear(Path.cache());
-            App.post(callback::success);
+            try {
+                com.fongmi.android.tv.player.exo.MediaSourceFactory.clearStoredResources();
+                com.bumptech.glide.Glide.get(App.get()).clearDiskCache();
+                // Executing plugins and in-flight search processes own these directories.
+                java.util.Set<String> protectedNames = java.util.Set.of("exo", "jar", "js", "py", "search-worker-1", "search-worker-2");
+                for (File child : Path.list(Path.cache())) if (!protectedNames.contains(child.getName())) Path.clear(child);
+                App.post(callback::success);
+            } catch (Exception error) {
+                App.post(() -> callback.error("缓存清理失败，请稍后重试"));
+            } finally { clearingCache.set(false); }
         });
     }
 

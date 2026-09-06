@@ -147,6 +147,7 @@ public class PlayerManagerDanmakuInstrumentedTest {
         @Override public void onDanmakuSourceChanged(Uri uri) { changes.add(uri); }
         @Override public void onDanmakuConfigChanged(DanmakuConfig config) {}
         @Override public void onDanmakuEnabledChanged(boolean enabled) {}
+        @Override public void onDanmakuStatusChanged(com.fongmi.android.tv.player.danmaku.DanmakuStatus status) {}
         @Override public void onDanmakuSent(String text) {}
     }
 }

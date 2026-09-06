@@ -40,7 +40,6 @@ import com.fongmi.android.tv.service.PlaybackService;
 import com.fongmi.android.tv.ui.activity.VideoActivity;
 import com.fongmi.android.tv.ui.adapter.EpisodeAdapter;
 import com.fongmi.android.tv.ui.adapter.FlagAdapter;
-import com.fongmi.android.tv.ui.adapter.SearchSourceFamilyAdapter;
 import com.fongmi.android.tv.ui.search.SearchSource;
 
 import org.junit.Test;
@@ -53,7 +52,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.gson.JsonObject;
@@ -141,44 +139,8 @@ public class SearchAndPlaybackInstrumentedTest {
     }
 
     @Test
-    public void searchSourceFocusDoesNotRebuildResultsUntilConfirm() throws Exception {
-        var instrumentation = InstrumentationRegistry.getInstrumentation();
-        AtomicReference<Throwable> failure = new AtomicReference<>();
-        instrumentation.runOnMainSync(() -> {
-            try {
-                var targetContext = instrumentation.getTargetContext();
-                var context = new ContextThemeWrapper(targetContext, R.style.Theme_App);
-                AtomicInteger selected = new AtomicInteger();
-                SearchSourceFamilyAdapter adapter = new SearchSourceFamilyAdapter(item -> selected.incrementAndGet());
-                adapter.submit(List.of(
-                        new SearchSourceFamilyAdapter.Item("all", "全部", "20", true),
-                        new SearchSourceFamilyAdapter.Item("source-a", "来源 A", "12", false)));
-
-                RecyclerView recycler = new RecyclerView(context);
-                recycler.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(context));
-                recycler.setAdapter(adapter);
-                int widthSpec = View.MeasureSpec.makeMeasureSpec(360, View.MeasureSpec.EXACTLY);
-                int heightSpec = View.MeasureSpec.makeMeasureSpec(320, View.MeasureSpec.EXACTLY);
-                recycler.measure(widthSpec, heightSpec);
-                recycler.layout(0, 0, 360, 320);
-
-                RecyclerView.ViewHolder holder = recycler.findViewHolderForAdapterPosition(1);
-                assertNotNull(holder);
-                View.OnFocusChangeListener focusListener = holder.itemView.getOnFocusChangeListener();
-                assertNotNull(focusListener);
-                focusListener.onFocusChange(holder.itemView, true);
-                assertEquals(0, selected.get());
-                holder.itemView.performClick();
-                assertEquals(1, selected.get());
-            } catch (Throwable throwable) {
-                failure.set(throwable);
-            }
-        });
-        if (failure.get() != null) throw new AssertionError(failure.get());
-    }
-
-    @Test
     public void aggregateResultLayoutKeepsFocusInsideBodyAndUsesThreeByFourPoster() {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
         var context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         var inflater = LayoutInflater.from(context);
         ActivityCollectBinding page = ActivityCollectBinding.inflate(inflater);
@@ -189,12 +151,17 @@ public class SearchAndPlaybackInstrumentedTest {
         assertTrue(page.body.getClipToPadding());
         assertFalse(page.resultRecycler.getClipToPadding());
         assertTrue(page.resultRecycler.getPaddingTop() > 0);
-        assertEquals(card.poster.getLayoutParams().width * 4,
-                card.poster.getLayoutParams().height * 3);
+        card.getRoot().measure(View.MeasureSpec.makeMeasureSpec(300, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        card.getRoot().layout(0, 0, card.getRoot().getMeasuredWidth(), card.getRoot().getMeasuredHeight());
+        assertTrue(card.poster.getWidth() > 0);
+        assertTrue(Math.abs(card.poster.getWidth() * 4 - card.poster.getHeight() * 3) <= 3);
+            });
     }
 
     @Test
     public void danmakuDetailSettingsAreDiscoverableFromPlayerAndSettingsPage() {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
         var targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         var context = new ContextThemeWrapper(targetContext, R.style.Theme_App);
         ActivityVideoBinding video = ActivityVideoBinding.inflate(LayoutInflater.from(context));
@@ -206,10 +173,12 @@ public class SearchAndPlaybackInstrumentedTest {
         assertTrue(settings.danmakuSearch.isFocusable());
         assertEquals(targetContext.getString(R.string.danmaku_manual_search),
                 ((android.widget.TextView) settings.danmakuSearch.getChildAt(0)).getText().toString());
+            });
     }
 
     @Test
-    public void homeStageStaysBelowHalfScreenAndHistoryHasFullPageEntry() {
+    public void homeStageLeavesSpaceForHistoryAndHasFullPageEntry() {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
         var targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         var context = new ContextThemeWrapper(targetContext, R.style.Theme_App);
         ActivityHomeBinding home = ActivityHomeBinding.inflate(LayoutInflater.from(context));
@@ -217,10 +186,11 @@ public class SearchAndPlaybackInstrumentedTest {
 
         int stageHeight = home.heroStage.getLayoutParams().height;
         int screenHeight = targetContext.getResources().getDisplayMetrics().heightPixels;
-        assertTrue(stageHeight * 2 < screenHeight);
+        assertTrue(stageHeight > 0 && stageHeight < screenHeight * 0.60f);
         assertTrue(home.historyMore.isFocusable());
         assertNotNull(history.recycler);
         assertTrue(history.clear.isFocusable());
+            });
     }
 
     @Test

@@ -49,7 +49,10 @@ public final class SearchSourcePreference {
 
     public static boolean isEnabled(Site site, Set<String> selected) {
         if (site == null) return false;
-        return isEnabled(site.getName(), site.getConfigName(), site.getRepositoryName(), site.getKey(), selected);
+        if (selected != null && selected.stream().anyMatch(value -> value.startsWith("site_")) && selected.contains(id(site))) return true;
+        Set<String> legacy = new LinkedHashSet<>();
+        if (selected != null) for (String item : selected) if (!item.startsWith("site_")) legacy.add(item);
+        return isEnabled(site.getName(), site.getConfigName(), site.getRepositoryName(), site.getKey(), legacy);
     }
 
     static boolean isEnabled(String name, String configName, String repositoryName, String key,
@@ -68,7 +71,7 @@ public final class SearchSourcePreference {
             for (Site site : sites) {
                 if (site == null || !site.isSearchable()) continue;
                 String label = SearchDisplayName.clean(site == null ? "" : site.getName());
-                if (!label.isEmpty()) result.add(label);
+                if (!label.isEmpty()) result.add(id(site));
             }
         }
         return new ArrayList<>(result);
@@ -92,9 +95,11 @@ public final class SearchSourcePreference {
         LinkedHashSet<String> resolved = new LinkedHashSet<>();
 
         if (!explicit.isEmpty()) {
-            for (Site site : searchable) {
-                String label = SearchDisplayName.clean(site.getName());
-                if (!label.isEmpty() && isEnabled(site, explicit)) resolved.add(label);
+            for (String saved : explicit) {
+                List<Site> exact = searchable.stream()
+                        .filter(site -> id(site).equals(saved) || SearchDisplayName.clean(site.getName()).equals(saved)).toList();
+                if (!exact.isEmpty()) exact.forEach(site -> resolved.add(id(site)));
+                else for (Site site : searchable) if (isEnabled(site, Set.of(saved))) resolved.add(id(site));
             }
         }
 
@@ -103,19 +108,32 @@ public final class SearchSourcePreference {
             for (String preferred : DEFAULT_SOURCES) {
                 for (Site site : searchable) {
                     String label = SearchDisplayName.clean(site.getName());
-                    if (!label.isEmpty() && isEnabled(site, Set.of(preferred))) resolved.add(label);
+                    if (!label.isEmpty() && isEnabled(site, Set.of(preferred))) resolved.add(id(site));
                 }
             }
             if (resolved.isEmpty() && home != null && home.isSearchable()) {
                 String label = SearchDisplayName.clean(home.getName());
-                if (!label.isEmpty()) resolved.add(label);
+                if (!label.isEmpty()) resolved.add(id(home));
             }
             if (resolved.isEmpty() && !searchable.isEmpty()) {
                 String label = SearchDisplayName.clean(searchable.get(0).getName());
-                if (!label.isEmpty()) resolved.add(label);
+                if (!label.isEmpty()) resolved.add(id(searchable.get(0)));
             }
         }
         return resolved;
+    }
+
+    public static String id(Site site) {
+        return SearchStableIds.create("site", site.getRepositoryId() + "\u001f" + site.getConfigUrl() + "\u001f" + site.getKey());
+    }
+
+    public static String label(String id, List<Site> sites) {
+        if (sites != null) for (Site site : sites) if (site != null && id(site).equals(id)) {
+            String name = SearchDisplayName.clean(site.getName());
+            long duplicates = sites.stream().filter(other -> SearchDisplayName.clean(other.getName()).equals(name)).count();
+            return duplicates > 1 ? name + " · " + site.getKey() : name;
+        }
+        return id;
     }
 
     public static boolean isFourKDefault(String sourceName) {

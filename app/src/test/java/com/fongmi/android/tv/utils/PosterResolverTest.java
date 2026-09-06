@@ -12,6 +12,14 @@ public class PosterResolverTest {
         PosterResolver.clearForTest();
     }
 
+    @Test public void leastRecentlyUsedTitlesAreEvicted() {
+        for (int i = 0; i < 512; i++) PosterResolver.remember("独立作品" + i, "https://example.test/" + i);
+        assertEquals("https://example.test/0", PosterResolver.resolve("独立作品0", ""));
+        PosterResolver.remember("新增作品", "https://example.test/new");
+        assertEquals("", PosterResolver.resolve("独立作品1", ""));
+        assertEquals("https://example.test/0", PosterResolver.resolve("独立作品0", ""));
+    }
+
     @Test
     public void missingPosterBorrowsFromSameNormalizedWork() {
         PosterResolver.remember("庆余年 第二季 4K", "https://img.example/season2.jpg");

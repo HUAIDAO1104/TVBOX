@@ -35,6 +35,9 @@ public final class SearchWorkAdapter extends RecyclerView.Adapter<SearchWorkAdap
         void onShowSources(SearchWork work);
     }
 
+    private static final java.util.concurrent.ExecutorService diffs = java.util.concurrent.Executors.newSingleThreadExecutor(r -> new Thread(r, "search-list-diff"));
+    private volatile int generation;
+    private Map<String, Integer> sourceCounts = Map.of();
     private final Listener listener;
     private final int columns;
     private List<SearchWork> items = List.of();
@@ -46,15 +49,34 @@ public final class SearchWorkAdapter extends RecyclerView.Adapter<SearchWorkAdap
         setHasStableIds(true);
     }
 
-    public void submit(List<SearchWork> next) {
+    public void submit(List<SearchWork> next) { submit(next, () -> {}); }
+
+    /** A source switch is a complete, cached page replacement and should respond immediately. */
+    public void replace(List<SearchWork> next) {
+        generation++;
+        items = List.copyOf(next);
+        notifyDataSetChanged();
+    }
+
+    public void updateSourceCounts(Map<String, Integer> next) {
+        if (sourceCounts.equals(next)) return;
+        sourceCounts = Map.copyOf(next);
+        if (!items.isEmpty()) notifyItemRangeChanged(0, items.size(), "sources");
+    }
+
+    public void submit(List<SearchWork> next, Runnable committed) {
+        int version = ++generation;
         List<SearchWork> safe = next == null ? List.of() : List.copyOf(next);
         List<SearchWork> previous = items;
-        if (previous.equals(safe)) return;
+        if (previous.equals(safe)) { committed.run(); return; }
         if (isPureAppend(previous, safe)) {
             items = safe;
             notifyItemRangeInserted(previous.size(), safe.size() - previous.size());
+            committed.run();
             return;
         }
+        diffs.execute(() -> {
+        if (version != generation) return;
         DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
             @Override public int getOldListSize() { return previous.size(); }
             @Override public int getNewListSize() { return safe.size(); }
@@ -65,8 +87,13 @@ public final class SearchWorkAdapter extends RecyclerView.Adapter<SearchWorkAdap
                 return previous.get(oldItemPosition).equals(safe.get(newItemPosition));
             }
         }, false);
-        items = safe;
-        diff.dispatchUpdatesTo(this);
+        com.fongmi.android.tv.App.post(() -> {
+            if (version != generation) return;
+            items = safe;
+            diff.dispatchUpdatesTo(this);
+            committed.run();
+        });
+        });
     }
 
     private static boolean isPureAppend(List<SearchWork> previous, List<SearchWork> next) {
@@ -136,7 +163,6 @@ public final class SearchWorkAdapter extends RecyclerView.Adapter<SearchWorkAdap
         String sourceName = recommended == null ? "" : SearchDisplayName.clean(recommended.siteName());
         if (sourceName.isEmpty() && recommended != null) sourceName = recommended.siteName();
         if (sourceName.isEmpty()) sourceName = holder.itemView.getContext().getString(R.string.search_v2_source_unknown);
-        if (SearchSourcePreference.isFourKDefault(sourceName)) sourceName += " · 4K";
         String meta = join(work.year(), work.area(), work.type());
         String update = displayUpdate(work, holder);
         holder.binding.name.setText(work.displayTitle());
@@ -145,9 +171,11 @@ public final class SearchWorkAdapter extends RecyclerView.Adapter<SearchWorkAdap
         holder.binding.update.setText(update);
         holder.binding.update.setVisibility(update.isEmpty() ? View.GONE : View.VISIBLE);
         holder.binding.source.setText(sourceName);
+        int count = recommended == null ? work.sourceCount() : sourceCounts.getOrDefault(recommended.stableId(), work.sourceCount());
         holder.binding.sourceCount.setText(holder.itemView.getContext().getResources().getQuantityString(
-                R.plurals.search_v2_card_source_count, work.sourceCount(), work.sourceCount()));
-        holder.binding.sourceCount.setVisibility(work.sourceCount() > 1 ? View.VISIBLE : View.GONE);
+                R.plurals.search_v2_card_source_count, count, count));
+        holder.binding.sourceCount.setVisibility(count > 1 ? View.VISIBLE : View.GONE);
+        holder.itemView.setOnFocusChangeListener((view, focused) -> holder.binding.name.setSelected(focused));
         holder.binding.getRoot().setContentDescription(join(work.displayTitle(), meta, update,
                 holder.binding.source.getText().toString(), holder.binding.sourceCount.getText().toString()));
         holder.binding.getRoot().setOnClickListener(view -> listener.onOpen(work));
@@ -170,7 +198,7 @@ public final class SearchWorkAdapter extends RecyclerView.Adapter<SearchWorkAdap
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position, @NonNull List<Object> payloads) {
-        if (!payloads.isEmpty()) {
+        if (!payloads.isEmpty() && !payloads.contains("sources")) {
             SearchWork work = items.get(position);
             ImgUtil.loadPoster(work.displayTitle(), resolvePoster(work, posterOverrides), holder.binding.poster);
             return;

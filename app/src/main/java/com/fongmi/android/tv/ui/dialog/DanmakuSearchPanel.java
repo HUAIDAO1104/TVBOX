@@ -57,6 +57,8 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
     private boolean resultFocusInitialized;
     private boolean automaticRestoreStarted;
     private int pending;
+    private int renderVersion;
+    private final java.util.concurrent.ExecutorService sorter = java.util.concurrent.Executors.newSingleThreadExecutor(r -> new Thread(r, "danmaku-results"));
 
     DanmakuSearchPanel(ViewDanmakuSearchEmbeddedBinding binding, PlayerManager player) {
         this.binding = binding;
@@ -192,8 +194,22 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
             results.put(item.getUrl(), item);
         }
         pending = Math.max(0, pending - 1);
-        List<Danmaku> ranked = DanmakuResultGrouper.prepare(
-                searchTitle, searchYear, searchType, searchEpisode, results.values());
+        List<Danmaku> snapshot = List.copyOf(results.values());
+        String title = searchTitle, year = searchYear, type = searchType, episode = searchEpisode;
+        int version = ++renderVersion;
+        sorter.execute(() -> {
+            if (id != requestId.get()) return;
+            List<Danmaku> ranked = DanmakuResultGrouper.prepare(title, year, type, episode, snapshot);
+            App.post(() -> {
+                if (id != requestId.get() || version != renderVersion) return;
+                displayRanked(ranked);
+            });
+        });
+    }
+
+    private void displayRanked(List<Danmaku> ranked) {
+        String focusedUrl = focusedUrl();
+        boolean hadResultFocus = binding.recycler.hasFocus();
         adapter.setItems(ranked);
         binding.recycler.setVisibility(ranked.isEmpty() ? GONE : VISIBLE);
         binding.progress.setVisibility(pending == 0 ? GONE : VISIBLE);
@@ -203,10 +219,7 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
                 ? ResUtil.getString(R.string.danmaku_search_result, ranked.size())
                 : ResUtil.getString(R.string.danmaku_search_running, pending));
         if (ranked.isEmpty() || !Util.isLeanback()) return;
-        if (!resultFocusInitialized) {
-            resultFocusInitialized = true;
-            restoreResultFocus("");
-        } else if (hadResultFocus && adapter.indexOfUrl(focusedUrl) < 0) {
+        if (hadResultFocus && adapter.indexOfUrl(focusedUrl) < 0) {
             // DiffUtil normally keeps the focused holder. Only recover when the focused source
             // actually disappeared; never steal focus merely because another provider arrived.
             restoreResultFocus(focusedUrl);
@@ -255,6 +268,7 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
 
     void destroy() {
         requestId.incrementAndGet();
+        sorter.shutdownNow();
         for (Call call : calls) call.cancel();
         calls.clear();
         sourceCatalogues.clear();

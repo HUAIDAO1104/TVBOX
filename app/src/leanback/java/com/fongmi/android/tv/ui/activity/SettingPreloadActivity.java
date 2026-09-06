@@ -70,6 +70,8 @@ public class SettingPreloadActivity extends FocusSafeSettingsActivity {
     }
 
     public void setPreload(int type, int value) {
+        com.fongmi.android.tv.utils.Notify.show(type == PreloadDialog.SIZE
+                ? "缓存容量上限将在下次启动应用时生效" : "预加载设置将在下次播放时生效");
         if (type == PreloadDialog.THREADS) {
             PreloadSetting.putPreloadThreads(value);
             setPreloadThreadsText();

@@ -38,18 +38,35 @@ public class RepositoryAdapter extends RecyclerView.Adapter<RepositoryAdapter.Vi
 
     private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault());
     private final RepositoryManager manager = RepositoryManager.get();
+    private java.util.Map<Long, String> content = java.util.Map.of();
+    private java.util.Map<Long, Integer> counts = java.util.Map.of();
     private final List<Repository> items = new ArrayList<>();
     private final Listener listener;
 
     public RepositoryAdapter(Listener listener) {
         this.listener = listener;
+        setHasStableIds(true);
     }
 
-    public void submit(List<Repository> repositories) {
+    public void submit(List<Repository> repositories, java.util.Map<Long, Integer> counts) {
+        java.util.List<Repository> previous = java.util.List.copyOf(items);
+        java.util.Map<Long, String> oldContent = content;
+        this.counts = counts;
+        java.util.Map<Long, String> nextContent = new java.util.HashMap<>();
+        for (Repository item : repositories) nextContent.put(item.getId(), item.getName() + item.getUrl() + meta(item) + item.isEnabled());
+        androidx.recyclerview.widget.DiffUtil.DiffResult diff = androidx.recyclerview.widget.DiffUtil.calculateDiff(new androidx.recyclerview.widget.DiffUtil.Callback() {
+            @Override public int getOldListSize() { return previous.size(); }
+            @Override public int getNewListSize() { return repositories.size(); }
+            @Override public boolean areItemsTheSame(int old, int next) { return previous.get(old).getId() == repositories.get(next).getId(); }
+            @Override public boolean areContentsTheSame(int old, int next) { return java.util.Objects.equals(oldContent.get(previous.get(old).getId()), nextContent.get(repositories.get(next).getId())); }
+        });
         items.clear();
         items.addAll(repositories);
-        notifyDataSetChanged();
+        content = nextContent;
+        diff.dispatchUpdatesTo(this);
     }
+
+    @Override public long getItemId(int position) { return items.get(position).getId(); }
 
     @Override
     public int getItemCount() {
@@ -79,7 +96,7 @@ public class RepositoryAdapter extends RecyclerView.Adapter<RepositoryAdapter.Vi
     }
 
     private String meta(Repository item) {
-        int count = manager.getItemCount(item.getId());
+        int count = counts.getOrDefault(item.getId(), 0);
         int statusRes = switch (item.getStatus()) {
             case RepositoryStatus.SYNCING -> R.string.repository_status_syncing;
             case RepositoryStatus.SUCCESS -> R.string.repository_status_success;

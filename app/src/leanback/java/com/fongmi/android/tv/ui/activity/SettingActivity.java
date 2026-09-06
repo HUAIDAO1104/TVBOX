@@ -105,7 +105,7 @@ public class SettingActivity extends FocusSafeSettingsActivity implements Config
         FileUtil.getCacheSize(new Callback() {
             @Override
             public void success(String result) {
-                mBinding.cacheText.setText(result);
+                if (!isFinishing() && !isDestroyed()) mBinding.cacheText.setText(result);
             }
         });
     }
@@ -310,26 +310,46 @@ public class SettingActivity extends FocusSafeSettingsActivity implements Config
     }
 
     private void onCache(View view) {
+        view.setEnabled(false);
+        mBinding.cacheText.setText("正在清理…");
         FileUtil.clearCache(new Callback() {
             @Override
             public void success() {
+                if (isFinishing() || isDestroyed()) return;
+                view.setEnabled(true);
                 setCacheText();
+                Notify.show("缓存已清理，运行中的来源组件已保留");
+            }
+            @Override public void error(String message) {
+                if (isFinishing() || isDestroyed()) return;
+                view.setEnabled(true);
+                setCacheText();
+                Notify.show(message);
             }
         });
     }
 
     private void onBackup(View view) {
-        PermissionUtil.requestFile(this, allGranted -> AppDatabase.backup(new Callback() {
+        view.setEnabled(false);
+        Notify.show("正在备份…");
+        PermissionUtil.requestFile(this, allGranted -> {
+            if (!allGranted) { view.setEnabled(true); return; }
+            AppDatabase.backup(new Callback() {
             @Override
             public void success() {
+                if (isFinishing() || isDestroyed()) return;
+                view.setEnabled(true);
                 Notify.show(R.string.backup_success);
             }
 
             @Override
             public void error() {
+                if (isFinishing() || isDestroyed()) return;
+                view.setEnabled(true);
                 Notify.show(R.string.backup_fail);
             }
-        }));
+            });
+        });
     }
 
     private void onRestore(View view) {

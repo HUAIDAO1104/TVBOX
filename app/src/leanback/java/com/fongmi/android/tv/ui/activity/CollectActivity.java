@@ -52,6 +52,7 @@ import com.google.gson.reflect.TypeToken;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -75,6 +76,13 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
 
     private ActivityCollectBinding binding;
     private SiteViewModel viewModel;
+    private com.fongmi.android.tv.model.SearchResultsViewModel resultsModel;
+    private Map<String, SearchWork> groupedWorks = Map.of();
+    private final Map<String, Site> sitesByFamily = new LinkedHashMap<>();
+    private final Map<String, String> labelsByFamily = new LinkedHashMap<>();
+    private final Map<String, Parcelable> familyScrollStates = new LinkedHashMap<>();
+    private final Map<String, String> familyWorkIds = new LinkedHashMap<>();
+    private final Map<String, String> familySourceIds = new LinkedHashMap<>();
     private SearchWorkAdapter workAdapter;
     private SearchSourcePanelAdapter sourceAdapter;
     private SearchSourceFamilyAdapter sourceFamilyAdapter;
@@ -84,13 +92,10 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
     private Map<String, Vod> vodBySource = new LinkedHashMap<>();
     private final Map<String, Vod> allVodBySource = new LinkedHashMap<>();
     private final Map<String, List<Vod>> fallbackCandidatesBySource = new LinkedHashMap<>();
-    private final Map<String, SearchSource> sourceCache = new LinkedHashMap<>();
-    private final Map<String, Integer> sourceFamilyCounts = new LinkedHashMap<>();
     private final Map<String, SearchAggregator> aggregatorsByFamily = new LinkedHashMap<>();
     private final Map<String, Map<String, Vod>> vodByFamily = new LinkedHashMap<>();
     private final Map<String, String> borrowedPosterBySource = new LinkedHashMap<>();
     private final Set<String> enabledSearchFamilies = new LinkedHashSet<>();
-    private SearchAggregator fallbackAggregator;
     private String selectedWorkId;
     private String selectedSourceId;
     private String panelWorkId;
@@ -134,7 +139,17 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         setupLists();
         setupViewModel();
         saveKeyword();
-        resetAndSearch(false);
+        String selection = SearchSourcePreference.serialize(resolveSelectedSourceFamilies());
+        viewModel.restoreCachedSearch(getKeyword(), resolveSelectedSourceFamilies());
+        if (viewModel.hasSearch(getKeyword(), selection)) {
+            enabledSearchFamilies.addAll(resolveSelectedSourceFamilies());
+            ensureActiveSourceFamily();
+            initializeFamilyCaches();
+            binding.result.setText(getString(R.string.collect_result, getKeyword()));
+            updateSourceFilterLabel();
+            updateSourceFamilyLane();
+            applySearchSnapshot(viewModel.getAggregateSearch().getValue());
+        } else resetAndSearch(false);
         binding.body.post(this::focusActiveSourceFamily);
     }
 
@@ -142,9 +157,10 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
     protected void initEvent() {
         binding.stop.setOnClickListener(view -> {
             if (progress.running()) viewModel.stopSearch();
-            else resetAndSearch(true);
+            else showSearchActions();
         });
-        binding.retry.setOnClickListener(view -> resetAndSearch(true));
+        binding.retry.setOnClickListener(view -> showSearchActions());
+        binding.more.setOnClickListener(view -> showSearchActions());
         binding.sourceClose.setOnClickListener(view -> closeSourcePanel());
         binding.sourceFilter.setOnClickListener(view -> showSourceFilter());
     }
@@ -159,7 +175,17 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         pendingRestoreSourceId = null;
         pendingLayoutState = null;
         activeSourceFamily = "";
-        resetAndSearch(false);
+        String selection = SearchSourcePreference.serialize(resolveSelectedSourceFamilies());
+        viewModel.restoreCachedSearch(getKeyword(), resolveSelectedSourceFamilies());
+        if (viewModel.hasSearch(getKeyword(), selection)) {
+            enabledSearchFamilies.addAll(resolveSelectedSourceFamilies());
+            ensureActiveSourceFamily();
+            initializeFamilyCaches();
+            binding.result.setText(getString(R.string.collect_result, getKeyword()));
+            updateSourceFilterLabel();
+            updateSourceFamilyLane();
+            applySearchSnapshot(viewModel.getAggregateSearch().getValue());
+        } else resetAndSearch(false);
         binding.body.post(this::focusActiveSourceFamily);
     }
 
@@ -188,7 +214,14 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
 
     private void setupViewModel() {
         viewModel = new ViewModelProvider(this).get(SiteViewModel.class);
+        resultsModel = new ViewModelProvider(this).get(com.fongmi.android.tv.model.SearchResultsViewModel.class);
+        resultsModel.results().observe(this, this::displayIndex);
         viewModel.getAggregateSearch().observe(this, this::applySearchSnapshot);
+        viewModel.getSourceProgress().observe(this, value -> {
+            if (aggregator == null) return;
+            updateSourceFamilyLane();
+            renderState(resolveState(progress));
+        });
         viewModel.getSearchProgress().observe(this, value -> {
             if (value == null) return;
             if (progress.session() > 0 && value.session() > 0 && value.session() < progress.session()) return;
@@ -197,7 +230,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
             progress = value;
             if (!value.running()) {
                 renderPendingSnapshot();
-                if (finishedNow && latestSnapshot != null) finalizeFallbackCandidates();
+
             }
             renderState(resolveState(value));
             // Result snapshots update this lane in batches. Empty/failed sources only need one
@@ -209,9 +242,13 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
     }
 
     private void resetAndSearch(boolean focusStop) {
+        resultsModel.reset();
+        familyScrollStates.clear();
+        familyWorkIds.clear();
+        familySourceIds.clear();
+        groupedWorks = Map.of();
         viewModel.stopSearch();
         closeSourcePanel(false);
-        fallbackAggregator = new SearchAggregator(getKeyword());
         latestSnapshot = null;
         pendingSnapshot = null;
         snapshotRenderScheduled = false;
@@ -219,8 +256,6 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         vodBySource = new LinkedHashMap<>();
         allVodBySource.clear();
         fallbackCandidatesBySource.clear();
-        sourceCache.clear();
-        sourceFamilyCounts.clear();
         aggregatorsByFamily.clear();
         vodByFamily.clear();
         borrowedPosterBySource.clear();
@@ -241,13 +276,51 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         Set<String> searchAllowList = Set.copyOf(enabledSearchFamilies);
         viewModel.searchAllContent(getKeyword(), false,
                 site -> SearchSourcePreference.isEnabled(site, searchAllowList));
+        viewModel.rememberSelection(SearchSourcePreference.serialize(searchAllowList));
         if (focusStop) binding.stop.post(binding.stop::requestFocus);
+    }
+
+    private SiteViewModel.SourceState familyState(String family) {
+        if (viewModel == null || SOURCE_FAMILY_ALL.equals(family)) return null;
+        Site site = sitesByFamily.get(family);
+        return site == null ? null : viewModel.sourceState(site);
+    }
+
+    private void showSearchActions() {
+        String family = activeSourceFamily;
+        boolean specific = !SOURCE_FAMILY_ALL.equals(family);
+        List<String> labels = new ArrayList<>();
+        List<Runnable> actions = new ArrayList<>();
+        if (specific) {
+            labels.add("查看全部已返回结果");
+            actions.add(() -> onSelect(new SearchSourceFamilyAdapter.Item(SOURCE_FAMILY_ALL, "全部", "", false)));
+            SiteViewModel.SourceState state = familyState(family);
+            if (state != null && !state.busy() && state.hasMore()) {
+                labels.add(state.failed() ? "重试当前页" : "加载此来源下一页");
+                actions.add(() -> viewModel.requestMore(site -> matchesSourceFamily(site, family), true));
+            }
+            labels.add("重新搜索此来源（保留已显示结果）");
+            actions.add(() -> viewModel.requestMore(site -> matchesSourceFamily(site, family), false));
+        }
+        labels.add("重试失败或已停止的来源");
+        actions.add(() -> {
+            boolean started = viewModel.requestMore(site -> {
+                SiteViewModel.SourceState state = viewModel.sourceState(site);
+                return state != null && state.failed();
+            }, false);
+            if (!started) com.fongmi.android.tv.utils.Notify.show("没有需要重试的来源");
+        });
+        labels.add("重新搜索全部已选来源");
+        actions.add(() -> resetAndSearch(true));
+        new MaterialAlertDialogBuilder(this).setTitle("搜索操作")
+                .setItems(labels.toArray(new String[0]), (dialog, which) -> actions.get(which).run())
+                .setNegativeButton(android.R.string.cancel, null).show();
     }
 
     private void showSourceFilter() {
         List<String> choices = SearchSourcePreference.choices(VodConfig.get().getSites());
         String[] displayChoices = choices.stream().map(source -> {
-            return SearchSourcePreference.isFourKDefault(source) ? source + " · 4K" : source;
+            return SearchSourcePreference.label(source, VodConfig.get().getSites());
         }).toArray(String[]::new);
         Set<String> pending = new LinkedHashSet<>(selectedSourceFamilies());
         boolean[] checked = new boolean[choices.size()];
@@ -354,11 +427,13 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
 
     private void applySearchSnapshot(SearchSnapshot snapshot) {
         if (snapshot == null || aggregator == null) return;
+        if (snapshot.session() < viewModel.currentSearchSession()) return;
         int latestSession = latestSnapshot == null ? 0 : latestSnapshot.session();
         if (latestSession > 0 && snapshot.session() < latestSession) return;
         if (progress.session() > 0 && snapshot.session() < progress.session()) return;
         pendingSnapshot = snapshot;
-        if (snapshot.results().isEmpty() || !progress.running()) {
+        if (snapshot.results().isEmpty() || !progress.running()
+                || latestSnapshot == null || latestSnapshot.results().isEmpty()) {
             renderPendingSnapshot();
         } else if (!snapshotRenderScheduled) {
             snapshotRenderScheduled = true;
@@ -376,96 +451,44 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         if (snapshot == null) return;
         pendingSnapshot = null;
         if (latestSnapshot != null && snapshot.session() < latestSnapshot.session()) return;
-        SearchSnapshot previous = latestSnapshot;
-        latestSnapshot = snapshot;
-        if (isAppendOnly(previous, snapshot)) {
-            int from = previous == null ? 0 : previous.results().size();
-            appendResults(snapshot.results().subList(from, snapshot.results().size()));
-            if (!progress.running()) finalizeFallbackCandidates();
-            submitWorks();
-            updateSourceFamilyLane();
-            renderState(resolveState(progress));
-        } else {
-            rebuildForActiveSource();
-        }
+        resultsModel.submit(getKeyword(), visibleSourceFamilies(), snapshot);
     }
 
-    private boolean isAppendOnly(SearchSnapshot previous, SearchSnapshot next) {
-        if (previous == null) return true;
-        if (previous.session() != next.session() || previous.results().size() > next.results().size()) return false;
-        for (int index = 0; index < previous.results().size(); index++) {
-            // SearchSnapshot copies only the list container. Existing Result instances are durable,
-            // so identity is a cheap and strict check that no earlier result was replaced.
-            if (previous.results().get(index) != next.results().get(index)) return false;
-        }
-        return true;
-    }
-
-    private void appendResults(List<Result> results) {
-        if (results == null || results.isEmpty()) return;
-        Set<String> enabledFamilies = visibleSourceFamilies();
-        ensureFamilyCaches(enabledFamilies);
-        ensureSourceFamilyCountKeys(enabledFamilies);
-        for (Result result : results) {
-            for (Vod vod : result.getList()) {
-                Site site = vod.getSite() == null ? new Site() : vod.getSite();
-                incrementSourceFamilyCounts(site, enabledFamilies);
-                SearchSource source = sourceCache.computeIfAbsent(rawSourceKey(vod), ignored -> sourceFrom(vod));
-                allVodBySource.put(source.stableId(), vod);
-                refreshBorrowedPosters(fallbackAggregator.add(source).work());
-                if (progress.running()) fallbackCandidatesBySource.put(source.stableId(), List.of(vod));
-                addToFamily(SOURCE_FAMILY_ALL, source, vod);
-                for (String family : enabledFamilies) {
-                    if (matchesSourceFamily(site, family)) addToFamily(family, source, vod);
-                }
-            }
-        }
-        workAdapter.updatePosterOverrides(borrowedPosterBySource);
-    }
-
-    private void rebuildForActiveSource() {
-        SearchAggregator fallbackGroups = new SearchAggregator(getKeyword());
-        Map<String, Vod> allSources = new LinkedHashMap<>();
+    private void displayIndex(com.fongmi.android.tv.ui.search.SearchResultIndex.Snapshot index) {
+        if (index == null || isFinishing() || isDestroyed()) return;
+        if (progress.session() > index.raw().session()) return;
+        if (latestSnapshot != null && latestSnapshot.session() > index.raw().session()) return;
+        latestSnapshot = index.raw();
         aggregatorsByFamily.clear();
+        aggregatorsByFamily.putAll(index.families());
         vodByFamily.clear();
-        borrowedPosterBySource.clear();
-        initializeFamilyCaches();
-        boolean buildCrossSourceFallback = !progress.running();
-        List<Result> results = latestSnapshot == null ? List.of() : latestSnapshot.results();
-        for (Result result : results) {
-            List<Vod> items = new ArrayList<>(result.getList());
-            for (Vod vod : items) {
-                Site site = vod.getSite() == null ? new Site() : vod.getSite();
-                SearchSource source = sourceCache.computeIfAbsent(rawSourceKey(vod), ignored -> sourceFrom(vod));
-                allSources.put(source.stableId(), vod);
-                refreshBorrowedPosters(fallbackGroups.add(source).work());
-                addToFamily(SOURCE_FAMILY_ALL, source, vod);
-                for (String family : visibleSourceFamilies()) {
-                    if (matchesSourceFamily(site, family)) addToFamily(family, source, vod);
-                }
-            }
-        }
-        fallbackAggregator = fallbackGroups;
-        activateFamily(activeSourceFamily);
+        vodByFamily.putAll(index.vods());
         allVodBySource.clear();
-        allVodBySource.putAll(allSources);
+        allVodBySource.putAll(index.allVods());
+        fallbackCandidatesBySource.clear();
+        fallbackCandidatesBySource.putAll(index.candidates());
+        borrowedPosterBySource.clear();
+        borrowedPosterBySource.putAll(index.posters());
+        groupedWorks = index.groups();
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        groupedWorks.forEach((id, work) -> counts.put(id, (int) work.sources().stream().map(source -> source.repositoryId() + source.configId() + source.siteKey()).distinct().count()));
+        workAdapter.updateSourceCounts(counts);
+        activateFamily(activeSourceFamily);
         workAdapter.updatePosterOverrides(borrowedPosterBySource);
-        rebuildSourceFamilyCounts();
-        if (buildCrossSourceFallback) {
-            rebuildFallbackCandidates(fallbackGroups, allSources);
-        } else {
-            // While results stream in, keep direct navigation cheap and deterministic. The final
-            // snapshot computes normalized-title fallback groups once, instead of repeating an
-            // O(n²) grouping pass for every returning source.
-            fallbackCandidatesBySource.clear();
-            allSources.forEach((stableId, vod) -> fallbackCandidatesBySource.put(stableId, List.of(vod)));
-        }
         submitWorks();
         updateSourceFamilyLane();
         renderState(resolveState(progress));
     }
 
     private void initializeFamilyCaches() {
+        sitesByFamily.clear();
+        labelsByFamily.clear();
+        List<Site> configured = VodConfig.get().getSites();
+        for (Site site : configured) {
+            String family = SearchSourcePreference.id(site);
+            sitesByFamily.put(family, site);
+            labelsByFamily.put(family, SearchSourcePreference.label(family, configured));
+        }
         ensureFamilyCaches(visibleSourceFamilies());
         activateFamily(activeSourceFamily);
     }
@@ -479,13 +502,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         }
     }
 
-    private void addToFamily(String family, SearchSource source, Vod vod) {
-        SearchAggregator familyAggregator = aggregatorsByFamily.get(family);
-        Map<String, Vod> familySources = vodByFamily.get(family);
-        if (familyAggregator == null || familySources == null) return;
-        SearchAggregator.Update update = familyAggregator.addUnaggregated(source);
-        if (update.changed()) familySources.put(source.stableId(), vod);
-    }
+
 
     private void activateFamily(String family) {
         String target = aggregatorsByFamily.containsKey(family) ? family : SOURCE_FAMILY_ALL;
@@ -495,57 +512,11 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
     }
 
     /** Shares a real poster only inside a cautiously normalized cross-source work group. */
-    private void refreshBorrowedPosters(SearchWork work) {
-        if (work == null || work.sources().isEmpty()) return;
-        // Keep every real candidate. A provider often returns an expiring or blocked image while
-        // another source in the same group has valid artwork; ImgUtil can then fail over without
-        // ever showing the branded last-resort tile.
-        for (SearchSource source : work.rankedSources()) {
-            String candidate = source.posterUrl();
-            if (candidate == null || candidate.isBlank()) continue;
-            PosterResolver.remember(work.displayTitle(), candidate);
-        }
-        for (SearchSource source : work.sources()) {
-            String candidate = source.posterUrl();
-            if (candidate != null && !candidate.isBlank()) PosterResolver.remember(source.title(), candidate);
-        }
-        String poster = "";
-        for (SearchSource source : work.rankedSources()) {
-            if (!source.requiresLogin() && source.posterUrl() != null && !source.posterUrl().isBlank()) {
-                poster = source.posterUrl();
-                break;
-            }
-        }
-        if (poster.isBlank()) {
-            for (SearchSource source : work.rankedSources()) {
-                if (source.posterUrl() != null && !source.posterUrl().isBlank()) {
-                    poster = source.posterUrl();
-                    break;
-                }
-            }
-        }
-        if (poster.isBlank()) return;
-        for (SearchSource source : work.sources()) borrowedPosterBySource.put(source.stableId(), poster);
-    }
 
-    private void finalizeFallbackCandidates() {
-        if (fallbackAggregator == null || allVodBySource.isEmpty()) return;
-        rebuildFallbackCandidates(fallbackAggregator, allVodBySource);
-    }
 
-    private void rebuildFallbackCandidates(SearchAggregator grouped, Map<String, Vod> allSources) {
-        fallbackCandidatesBySource.clear();
-        for (SearchWork work : grouped.works()) {
-            List<Vod> candidates = new ArrayList<>();
-            for (SearchSource source : work.rankedSources()) {
-                Vod vod = allSources.get(source.stableId());
-                if (vod != null && vod.getSite() != null) candidates.add(vod);
-            }
-            if (candidates.isEmpty()) continue;
-            List<Vod> snapshot = List.copyOf(candidates);
-            for (SearchSource source : work.sources()) fallbackCandidatesBySource.put(source.stableId(), snapshot);
-        }
-    }
+
+
+
 
     private boolean matchesSourceFamily(Site site, String family) {
         if (SOURCE_FAMILY_ALL.equals(family)) return true;
@@ -561,50 +532,21 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
     private void updateSourceFamilyLane() {
         if (sourceFamilyAdapter == null) return;
         Set<String> enabled = visibleSourceFamilies();
-        ensureSourceFamilyCountKeys(enabled);
         if (!SOURCE_FAMILY_ALL.equals(activeSourceFamily) && !enabled.contains(activeSourceFamily)) {
-            activeSourceFamily = SOURCE_FAMILY_ALL;
+            activateFamily(SOURCE_FAMILY_ALL);
         }
         List<SearchSourceFamilyAdapter.Item> items = new ArrayList<>();
-        items.add(sourceFamilyItem(SOURCE_FAMILY_ALL, getString(R.string.search_v2_source_lane_all),
-                sourceFamilyCounts.getOrDefault(SOURCE_FAMILY_ALL, 0)));
+        items.add(sourceFamilyItem(SOURCE_FAMILY_ALL, getString(R.string.search_v2_source_lane_all)));
         for (String family : enabled) {
             String label;
             if (SearchSourcePreference.ALL_OTHER_SOURCES.equals(family)) {
                 label = getString(R.string.search_v2_source_filter_other);
             } else {
-                label = family + (SearchSourcePreference.isFourKDefault(family) ? " · 4K" : "");
+                label = labelsByFamily.getOrDefault(family, family);
             }
-            items.add(sourceFamilyItem(family, label, sourceFamilyCounts.getOrDefault(family, 0)));
+            items.add(sourceFamilyItem(family, label));
         }
         sourceFamilyAdapter.submit(items);
-    }
-
-    private void rebuildSourceFamilyCounts() {
-        Set<String> enabled = visibleSourceFamilies();
-        sourceFamilyCounts.clear();
-        ensureSourceFamilyCountKeys(enabled);
-        if (latestSnapshot == null) return;
-        for (Result result : latestSnapshot.results()) {
-            for (Vod vod : result.getList()) {
-                incrementSourceFamilyCounts(vod.getSite() == null ? new Site() : vod.getSite(), enabled);
-            }
-        }
-    }
-
-    private void ensureSourceFamilyCountKeys(Set<String> enabled) {
-        sourceFamilyCounts.putIfAbsent(SOURCE_FAMILY_ALL, 0);
-        for (String family : enabled) sourceFamilyCounts.putIfAbsent(family, 0);
-        sourceFamilyCounts.keySet().removeIf(key -> !SOURCE_FAMILY_ALL.equals(key) && !enabled.contains(key));
-    }
-
-    private void incrementSourceFamilyCounts(Site site, Set<String> enabled) {
-        sourceFamilyCounts.computeIfPresent(SOURCE_FAMILY_ALL, (key, count) -> count + 1);
-        for (String family : enabled) {
-            if (matchesSourceFamily(site, family)) {
-                sourceFamilyCounts.computeIfPresent(family, (key, count) -> count + 1);
-            }
-        }
     }
 
     private void ensureActiveSourceFamily() {
@@ -615,10 +557,21 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         }
     }
 
-    private SearchSourceFamilyAdapter.Item sourceFamilyItem(String id, String label, int count) {
-        String status = progress.running() && count == 0
-                ? getString(R.string.search_v2_source_lane_searching)
-                : String.valueOf(count);
+    private SearchSourceFamilyAdapter.Item sourceFamilyItem(String id, String label) {
+        // Count the exact cards used by the grid, after relevance filtering and ID deduplication.
+        // Raw provider rows can include duplicates, trailers, or unrelated titles.
+        SearchAggregator family = aggregatorsByFamily.get(id);
+        int count = family == null ? 0 : family.workCount();
+        SiteViewModel.SourceState state = familyState(id);
+        String status = state == null ? (progress.running() && count == 0 ? "…" : String.valueOf(count))
+                : switch (state.phase()) {
+                    case QUEUED -> count > 0 ? count + " 等" : "排队";
+                    case RUNNING -> count > 0 ? count + " …" : "搜索中";
+                    case FAILED -> count > 0 ? count + " !" : "失败";
+                    case TIMED_OUT -> count > 0 ? count + " !" : "超时";
+                    case CANCELLED -> count > 0 ? String.valueOf(count) : "已停止";
+                    default -> String.valueOf(count);
+                };
         return new SearchSourceFamilyAdapter.Item(id, label, status, id.equals(activeSourceFamily));
     }
 
@@ -629,71 +582,40 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         boolean keepSourceFocus = currentFocus != null
                 && binding.sourceFamilyRecycler.findContainingViewHolder(currentFocus) != null;
         closeSourcePanel(false);
+        familyScrollStates.put(activeSourceFamily, binding.resultRecycler.getLayoutManager().onSaveInstanceState());
+        familyWorkIds.put(activeSourceFamily, focusedWorkId());
+        familySourceIds.put(activeSourceFamily, focusedWorkSourceId());
         activeSourceFamily = item.id();
-        selectedWorkId = null;
-        selectedSourceId = null;
+        selectedWorkId = familyWorkIds.get(activeSourceFamily);
+        selectedSourceId = familySourceIds.get(activeSourceFamily);
         binding.resultArea.animate().cancel();
         binding.resultArea.setAlpha(0.72f);
         activateFamily(activeSourceFamily);
+        if (progress.running() && !SOURCE_FAMILY_ALL.equals(activeSourceFamily)) {
+            String preferred = activeSourceFamily;
+            viewModel.prioritizeSearch(site -> matchesSourceFamily(site, preferred));
+        }
         updateSourceFamilyLane();
+        workAdapter.replace(aggregator.snapshot());
         submitWorks();
         renderState(resolveState(progress));
-        binding.resultRecycler.scrollToPosition(0);
+        Parcelable scrollState = familyScrollStates.get(activeSourceFamily);
+        if (scrollState != null) binding.resultRecycler.getLayoutManager().onRestoreInstanceState(scrollState);
+        else binding.resultRecycler.scrollToPosition(0);
         binding.resultArea.animate().alpha(1f).setDuration(120).start();
-        if (!keepSourceFocus && workAdapter.getItemCount() > 0) focusWork(null, null);
+        if (!keepSourceFocus && workAdapter.getItemCount() > 0) focusWork(selectedWorkId, selectedSourceId);
     }
 
-    private SearchSource sourceFrom(Vod vod) {
-        Site site = vod.getSite() == null ? new Site() : vod.getSite();
-        SearchSourceHealthStore.Snapshot health = SearchSourceHealthStore.get().snapshot(site.getKey());
-        String scope = site.getRepositoryId() == 0
-                ? "current:" + site.getConfigUrl()
-                : String.valueOf(site.getRepositoryId());
-        String config = site.getConfigName().isEmpty() ? getString(R.string.search_v2_current_repository) : site.getConfigName();
-        return SearchSource.builder()
-                .repositoryId(scope)
-                .repositoryName(site.getRepositoryName())
-                .configId(config)
-                .siteKey(site.getKey())
-                .siteName(site.getName())
-                .vodId(vod.getId())
-                .title(vod.getName())
-                .posterUrl(vod.getPic())
-                .year(vod.getYear())
-                .area(vod.getArea())
-                .type(vod.getTypeName())
-                .actors(vod.getActor())
-                .remarks(vod.getRemarks())
-                .episodeCount(parseEpisodeCount(vod.getRemarks()))
-                .availability(health.availability())
-                .detailsAvailable(!vod.getId().isEmpty())
-                .deviceCompatible(true)
-                .requiresLogin(requiresLogin(site))
-                .lastSuccessAtMillis(health.lastSuccessAtMillis())
-                .responseTimeMillis(health.responseTimeMillis())
-                .recentFailureCount(health.recentFailureCount())
-                .repositoryPriority(site.getRepositoryPriority())
-                .build();
-    }
 
-    private String rawSourceKey(Vod vod) {
-        Site site = vod.getSite() == null ? new Site() : vod.getSite();
-        return site.getRepositoryId() + "\u0000" + site.getConfigUrl() + "\u0000" + site.getKey()
-                + "\u0000" + vod.getId() + "\u0000" + vod.getName();
-    }
 
-    private int parseEpisodeCount(String remarks) {
-        if (remarks == null || remarks.isBlank()) return 0;
-        Matcher matcher = EPISODE_COUNT.matcher(remarks);
-        int result = 0;
-        while (matcher.find()) result = Math.max(result, Integer.parseInt(matcher.group(1)));
-        return result;
-    }
 
-    private boolean requiresLogin(Site site) {
-        String value = (site.getName() + " " + site.getConfigName()).toLowerCase(Locale.ROOT);
-        return value.contains("网盘") || value.contains("云盘") || value.contains("夸克")
-                || value.contains("uc") || value.contains("阿里") || value.contains("迅雷");
+
+
+
+
+
+    private int visibleSiteCount() {
+        return (int) vodBySource.values().stream().map(vod -> vod.getSiteKey()).distinct().count();
     }
 
     private void submitWorks() {
@@ -704,9 +626,10 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
                 && focusedHolder.getBindingAdapterPosition() != RecyclerView.NO_POSITION;
         String focused = focusedWorkId();
         String focusedSource = focusedWorkSourceId();
-        workAdapter.submit(aggregator.snapshot());
+        workAdapter.submit(aggregator.snapshot(), () -> {
+        if (isFinishing() || isDestroyed()) return;
         binding.resultSummary.setText(getString(R.string.search_v2_result_summary,
-                aggregator.workCount(), aggregator.sourceCount()));
+                aggregator.workCount(), visibleSiteCount()));
         if (focused != null) selectedWorkId = focused;
         if (focusedSource != null) selectedSourceId = focusedSource;
         updateOpenPanel();
@@ -715,6 +638,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
                 && workAdapter.positionContainingSource(focusedSource) >= 0) {
             focusWork(focused, focusedSource);
         }
+        });
     }
 
     private void updateOpenPanel() {
@@ -730,7 +654,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         panelWorkId = work.stableId();
         selectedWorkId = work.stableId();
         binding.sourceTitle.setText(getString(R.string.search_v2_source_title, work.displayTitle()));
-        boolean changed = sourceAdapter.submit(work.rankedSources(), work.recommendedSource(), work.displayTitle());
+        boolean changed = sourceAdapter.submit(alternatives(work).rankedSources(), work.recommendedSource(), work.displayTitle());
         if (changed) restoreSourceFocus(focusedSource);
     }
 
@@ -762,6 +686,13 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
     }
 
     private SearchUiState resolveState(SearchProgress value) {
+        SiteViewModel.SourceState family = familyState(activeSourceFamily);
+        if (family != null && aggregator.workCount() == 0) {
+            if (family.busy()) return SearchUiState.SEARCHING;
+            if (family.phase() == SiteViewModel.SourcePhase.CANCELLED) return SearchUiState.CANCELLED;
+            if (family.failed()) return SearchUiState.ERROR;
+            return SearchUiState.EMPTY;
+        }
         if (value.cancelled()) return SearchUiState.CANCELLED;
         if (value.running()) return aggregator.workCount() > 0 ? SearchUiState.PARTIAL_SUCCESS : SearchUiState.SEARCHING;
         if (aggregator.workCount() > 0) {
@@ -779,7 +710,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         binding.stateBadge.setText(getStateLabel(state));
         binding.stateBadge.setTextColor(ContextCompat.getColor(this, getStateColor(state)));
         int workCount = aggregator == null ? 0 : aggregator.workCount();
-        int sourceCount = aggregator == null ? 0 : aggregator.sourceCount();
+        int sourceCount = aggregator == null ? 0 : visibleSiteCount();
         int unavailable = progress.failed() + progress.timedOut();
         if (progress.running()) {
             binding.resultSummary.setText(getString(R.string.search_v2_compact_searching,
@@ -800,7 +731,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         boolean hasResults = aggregator != null && aggregator.workCount() > 0;
         boolean canRestartAtTop = !running && hasResults
                 && (state == SearchUiState.CANCELLED || state == SearchUiState.PARTIAL_SUCCESS);
-        binding.stop.setText(running ? R.string.search_v2_stop : R.string.search_v2_retry);
+        binding.stop.setText(running ? getString(R.string.search_v2_stop) : "重试失败源");
         binding.stop.setVisibility(running || canRestartAtTop ? View.VISIBLE : View.GONE);
         binding.resultRecycler.setVisibility(hasResults ? View.VISIBLE : View.INVISIBLE);
         boolean showPanel = !hasResults && state != SearchUiState.IDLE;
@@ -811,7 +742,9 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         if (showPanel) {
             if (loading) {
                 binding.stateTitle.setText(R.string.search_v2_loading_title);
-                binding.stateMessage.setText(R.string.search_v2_loading_message);
+                SiteViewModel.SourceState family = familyState(activeSourceFamily);
+                binding.stateMessage.setText(family != null && family.phase() == SiteViewModel.SourcePhase.QUEUED
+                        ? "此来源正在排队，已优先安排。可切换到其他来源浏览已返回的结果。" : getString(R.string.search_v2_loading_message));
             } else if (state == SearchUiState.EMPTY) {
                 binding.stateTitle.setText(R.string.search_v2_empty_title);
                 binding.stateMessage.setText(progress.total() == 0 ? R.string.search_v2_no_source_message : R.string.search_v2_empty_message);
@@ -873,7 +806,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         selectedSourceId = sourceAnchor(work);
         panelWorkId = work.stableId();
         binding.sourceTitle.setText(getString(R.string.search_v2_source_title, work.displayTitle()));
-        sourceAdapter.submit(work.rankedSources(), work.recommendedSource(), work.displayTitle());
+        sourceAdapter.submit(alternatives(work).rankedSources(), work.recommendedSource(), work.displayTitle());
         binding.sourceScrim.setVisibility(View.VISIBLE);
         binding.sourcePanel.setVisibility(View.VISIBLE);
         binding.sourcePanel.bringToFront();
@@ -890,9 +823,14 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         openSource(source);
     }
 
+    private SearchWork alternatives(SearchWork work) {
+        if (work == null || work.sources().isEmpty()) return work;
+        return groupedWorks.getOrDefault(work.sources().get(0).stableId(), work);
+    }
+
     private void openSource(SearchSource source) {
         if (source == null || openingSource) return;
-        Vod selected = vodBySource.get(source.stableId());
+        Vod selected = allVodBySource.get(source.stableId());
         if (selected == null || selected.getSite() == null) return;
         openingSource = true;
         suspendSearchForPlayback();
@@ -1081,8 +1019,6 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         boolean headerHasFocus = focus == null || focus == binding.stop || focus == binding.sourceFilter;
         if (!headerHasFocus || selectedWorkId != null) return;
         if (workAdapter.getItemCount() > 0) {
-            activeSourceFamily = SOURCE_FAMILY_ALL;
-            updateSourceFamilyLane();
             binding.body.post(this::focusActiveSourceFamily);
         } else if (binding.retry.getVisibility() == View.VISIBLE) {
             binding.body.post(binding.retry::requestFocus);

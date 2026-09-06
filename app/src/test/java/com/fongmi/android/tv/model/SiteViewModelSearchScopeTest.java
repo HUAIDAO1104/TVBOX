@@ -13,7 +13,7 @@ import java.util.Map;
 public class SiteViewModelSearchScopeTest {
 
     @Test
-    public void collapsesDuplicateBackendDeclarationsEvenWhenKeysDiffer() {
+    public void keepsDistinctRoutingKeysEvenWhenBackendDeclarationsMatch() {
         Site first = site("warehouse@source-a", "csp_Test", "plugin.jar", "config-a", true);
         Site duplicate = site("warehouse@source-b", "csp_Test", "plugin.jar", "config-a", true);
         Site distinctExtension = site("warehouse@source-c", "csp_Test", "plugin.jar", "config-b", true);
@@ -22,8 +22,8 @@ public class SiteViewModelSearchScopeTest {
         Map<String, Site> selected = SiteViewModel.uniqueSearchableSites(
                 List.of(first, duplicate, distinctExtension, disabled), value -> true);
 
-        assertEquals(2, selected.size());
-        assertEquals(List.of(first, distinctExtension), List.copyOf(selected.values()));
+        assertEquals(3, selected.size());
+        assertEquals(List.of(first, duplicate, distinctExtension), List.copyOf(selected.values()));
     }
 
     @Test

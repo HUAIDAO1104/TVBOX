@@ -21,7 +21,9 @@ public class PreCache {
     public void start(ExoPlayer player, MediaItem mediaItem) {
         this.mediaItem = mediaItem;
         this.player = player;
-        restart();
+        MediaSourceFactory.prepareCache(() -> {
+            if (this.player == player && this.mediaItem == mediaItem) restart();
+        });
     }
 
     public void stop() {

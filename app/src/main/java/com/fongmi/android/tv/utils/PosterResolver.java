@@ -4,7 +4,7 @@ import com.fongmi.android.tv.ui.search.SearchTitleNormalizer;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.LinkedHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -17,12 +17,22 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public final class PosterResolver {
 
     private static final int MAX_CANDIDATES = 12;
-    private static final Map<String, CopyOnWriteArrayList<String>> POSTERS = new ConcurrentHashMap<>();
+    private static final int MAX_TITLES = 512;
+    private static final Map<String, CopyOnWriteArrayList<String>> POSTERS = boundedMap();
+    private static final Map<String, String> KEYS = boundedMap();
+
+    private static <V> Map<String, V> boundedMap() {
+        return new LinkedHashMap<>(64, 0.75f, true) {
+            @Override protected boolean removeEldestEntry(Map.Entry<String, V> entry) {
+                return size() > MAX_TITLES;
+            }
+        };
+    }
 
     private PosterResolver() {
     }
 
-    public static String resolve(String title, String candidate) {
+    public static synchronized String resolve(String title, String candidate) {
         String key = key(title);
         String url = clean(candidate);
         if (!url.isEmpty()) {
@@ -38,7 +48,7 @@ public final class PosterResolver {
         resolve(title, url);
     }
 
-    public static void forget(String title, String url) {
+    public static synchronized void forget(String title, String url) {
         String key = key(title);
         String candidate = clean(url);
         if (key.isEmpty() || candidate.isEmpty()) return;
@@ -48,12 +58,13 @@ public final class PosterResolver {
         if (candidates.isEmpty()) POSTERS.remove(key, candidates);
     }
 
-    static void clearForTest() {
+    static synchronized void clearForTest() {
         POSTERS.clear();
+        KEYS.clear();
     }
 
     private static String key(String title) {
-        return SearchTitleNormalizer.normalize(title == null ? "" : title);
+        return KEYS.computeIfAbsent(title == null ? "" : title, SearchTitleNormalizer::normalize);
     }
 
     private static void rememberCandidate(String key, String url) {

@@ -88,9 +88,20 @@ public final class SearchSourceFamilyAdapter extends RecyclerView.Adapter<Search
         holder.binding.status.setText(item.status());
         holder.binding.getRoot().setOnClickListener(view -> listener.onSelect(item));
         holder.binding.getRoot().setOnFocusChangeListener((view, focused) -> {
+            holder.binding.name.setSelected(focused);
             view.animate().cancel();
             view.animate().scaleX(focused ? 1.025f : 1f).scaleY(focused ? 1.025f : 1f)
                     .setDuration(focused ? 150 : 100).start();
+            if (focused) {
+                // Focus can arrive during RecyclerView layout. Apply the selection on the next
+                // main-loop turn, and ignore a row that was left or recycled in the meantime.
+                view.post(() -> {
+                    int current = holder.getBindingAdapterPosition();
+                    if (!view.hasFocus() || current == RecyclerView.NO_POSITION) return;
+                    Item selected = items.get(current);
+                    if (selected.id().equals(item.id()) && !selected.active()) listener.onSelect(selected);
+                });
+            }
         });
         holder.binding.getRoot().setContentDescription(item.name() + " " + item.status());
     }

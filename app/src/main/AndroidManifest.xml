@@ -102,6 +102,9 @@
             </intent-filter>
         </receiver>
 
+        <service android:name=".search.SpiderSearchService" android:exported="false" android:process=":source_search1" />
+        <service android:name=".search.SpiderSearchService$Second" android:exported="false" android:process=":source_search2" />
+
         <service
             android:name=".service.PlaybackService"
             android:exported="true"

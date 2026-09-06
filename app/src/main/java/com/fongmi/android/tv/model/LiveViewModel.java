@@ -31,6 +31,8 @@ public class LiveViewModel extends ViewModel {
     private final ViewModelTaskRunner<TaskType> tasks;
     private final LivePlaybackState playbackState;
     private volatile ZoneId zoneId;
+    private final java.util.concurrent.atomic.AtomicInteger urlGeneration = new java.util.concurrent.atomic.AtomicInteger();
+    private Runnable pendingUrl;
 
     public LiveViewModel() {
         this.epg = new MutableLiveData<>();
@@ -101,12 +103,19 @@ public class LiveViewModel extends ViewModel {
     }
 
     private void requestUrl(Callable<Result> callable, long startPositionMs) {
-        execute(TaskType.URL, callable, result -> postUrl(result, startPositionMs), error -> handleUrlError(error, startPositionMs));
+        int generation = urlGeneration.incrementAndGet();
+        tasks.cancel(TaskType.URL);
+        if (pendingUrl != null) com.fongmi.android.tv.App.removeCallbacks(pendingUrl);
+        pendingUrl = () -> execute(TaskType.URL, callable,
+                result -> com.fongmi.android.tv.App.post(() -> { if (generation == urlGeneration.get()) postUrl(result, startPositionMs); }),
+                error -> com.fongmi.android.tv.App.post(() -> { if (generation == urlGeneration.get()) handleUrlError(error, startPositionMs); }));
+        com.fongmi.android.tv.App.post(pendingUrl, 120);
     }
 
     private void postUrl(Result result, long startPositionMs) {
         if (startPositionMs != C.TIME_UNSET) result.setPosition(startPositionMs);
-        url.postValue(result);
+        if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) url.setValue(result);
+        else url.postValue(result);
     }
 
     private void handleParseError(Throwable t) {
@@ -124,11 +133,15 @@ public class LiveViewModel extends ViewModel {
     }
 
     private <T> void execute(TaskType type, Callable<T> callable, Consumer<T> onSuccess, Consumer<Throwable> onError) {
-        tasks.execute(type, type.timeout, callable, onSuccess, onError);
+        tasks.execute(type, type.timeout, type == TaskType.URL
+                ? com.fongmi.android.tv.utils.Task.interactiveExecutor()
+                : com.fongmi.android.tv.utils.Task.executor(), callable, onSuccess, onError);
     }
 
     @Override
     protected void onCleared() {
+        urlGeneration.incrementAndGet();
+        if (pendingUrl != null) com.fongmi.android.tv.App.removeCallbacks(pendingUrl);
         tasks.cancelAll();
         playbackState.reset();
     }

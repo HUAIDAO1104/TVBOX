@@ -26,6 +26,9 @@ public class KeepActivity extends BaseActivity implements KeepAdapter.OnClickLis
 
     private ActivityKeepBinding mBinding;
     private KeepAdapter mAdapter;
+    private int loadGeneration;
+    private boolean opening;
+    private int openGeneration;
 
     public static void start(Activity activity) {
         activity.startActivity(new Intent(activity, KeepActivity.class));
@@ -39,6 +42,11 @@ public class KeepActivity extends BaseActivity implements KeepAdapter.OnClickLis
     @Override
     protected void initView(Bundle savedInstanceState) {
         setRecyclerView();
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        opening = false;
         getKeep();
     }
 
@@ -51,18 +59,32 @@ public class KeepActivity extends BaseActivity implements KeepAdapter.OnClickLis
     }
 
     private void getKeep() {
-        mAdapter.setItems(Keep.getVod(), () -> mBinding.progressLayout.showContent(true, mAdapter.getItemCount()));
+        int generation = ++loadGeneration;
+        com.fongmi.android.tv.utils.Task.execute(() -> {
+            java.util.List<Keep> items = Keep.getVod();
+            com.fongmi.android.tv.App.post(() -> {
+                if (generation != loadGeneration || isFinishing() || isDestroyed()) return;
+                mAdapter.setItems(items, () -> mBinding.progressLayout.showContent(true, mAdapter.getItemCount()));
+            });
+        });
     }
 
     private void loadConfig(Config config, Keep item) {
+        int generation = openGeneration;
+        Notify.show("正在切换收藏所属配置…");
         VodConfig.load(config, new Callback() {
             @Override
             public void success() {
+                if (generation != openGeneration || !opening || isFinishing() || isDestroyed()) return;
+                opening = false;
                 VideoActivity.start(getActivity(), item.getSiteKey(), item.getVodId(), item.getVodName(), item.getVodPic());
             }
 
             @Override
             public void error(String msg) {
+                if (generation != openGeneration) return;
+                opening = false;
+                if (isFinishing() || isDestroyed()) return;
                 Notify.show(msg);
             }
         });
@@ -75,10 +97,18 @@ public class KeepActivity extends BaseActivity implements KeepAdapter.OnClickLis
 
     @Override
     public void onItemClick(Keep item) {
-        Config config = Config.find(item.getCid());
-        if (config == null) CollectActivity.start(this, item.getVodName());
-        else if (item.getCid() != VodConfig.getCid()) loadConfig(config, item);
-        else VideoActivity.start(this, item.getSiteKey(), item.getVodId(), item.getVodName(), item.getVodPic());
+        if (opening) return;
+        opening = true;
+        int generation = ++openGeneration;
+        com.fongmi.android.tv.utils.Task.execute(() -> {
+            Config config = Config.find(item.getCid());
+            com.fongmi.android.tv.App.post(() -> {
+                if (generation != openGeneration || !opening || isFinishing() || isDestroyed()) return;
+                if (config == null) CollectActivity.start(this, item.getVodName());
+                else if (item.getCid() != VodConfig.getCid()) loadConfig(config, item);
+                else VideoActivity.start(this, item.getSiteKey(), item.getVodId(), item.getVodName(), item.getVodPic());
+            });
+        });
     }
 
     @Override
@@ -96,7 +126,8 @@ public class KeepActivity extends BaseActivity implements KeepAdapter.OnClickLis
 
     @Override
     protected void onBackInvoked() {
-        if (mAdapter.isDelete()) mAdapter.setDelete(false);
+        if (opening) { openGeneration++; opening = false; Notify.show("已取消打开收藏"); }
+        else if (mAdapter.isDelete()) mAdapter.setDelete(false);
         else super.onBackInvoked();
     }
 }

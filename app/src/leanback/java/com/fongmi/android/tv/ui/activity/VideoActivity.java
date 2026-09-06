@@ -1042,6 +1042,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     @Override
     public void onSearchEmpty() {
         App.removeCallbacks(mR4);
+        App.removeCallbacks(fallbackDeadline);
         mFallbackActive = false;
         showError(getString(R.string.player_v2_error_source));
     }
@@ -1084,6 +1085,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     @Override
     public void finishVod() {
         if (isFromCollect()) {
+            App.removeCallbacks(fallbackDeadline);
             mFallbackActive = false;
             showError(getString(R.string.player_v2_error_source));
             return;
@@ -1552,6 +1554,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     private void retryPlayback() {
         stopBufferingUi();
+        App.removeCallbacks(fallbackDeadline);
         mFallbackActive = false;
         mFallbackAttempt = 0;
         hideError();
@@ -1569,7 +1572,9 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     private void returnToDetail() {
         mVod.cancelFallback();
+        mViewModel.cancelPendingPlayback();
         mViewModel.stopSearch();
+        App.removeCallbacks(fallbackDeadline);
         mFallbackActive = false;
         hideError();
         hideProgress();
@@ -1577,8 +1582,15 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         else focusDetailDefault();
     }
 
+    private final Runnable fallbackDeadline = () -> {
+        if (!mFallbackActive || isFinishing() || isDestroyed()) return;
+        cancelFallback(false);
+        showError("自动换源已等待 45 秒，请手动选择其他来源或重试");
+    };
+
     private void showFallbackProgress(String source, boolean increment) {
         if (!isFullscreen()) enterFullscreen();
+        if (!mFallbackActive) App.post(fallbackDeadline, 45000);
         mFallbackActive = true;
         if (increment) mFallbackAttempt++;
         int attempt = Math.max(1, mFallbackAttempt + (increment ? 0 : 1));
@@ -1590,7 +1602,9 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     private void cancelFallback(boolean backToDetail) {
         mVod.cancelFallback();
+        mViewModel.cancelPendingPlayback();
         mViewModel.stopSearch();
+        App.removeCallbacks(fallbackDeadline);
         mFallbackActive = false;
         hideProgress();
         if (backToDetail) returnToDetail();
@@ -2308,6 +2322,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
                 mClock.setCallback(null);
                 break;
             case Player.STATE_READY:
+                App.removeCallbacks(fallbackDeadline);
                 mFallbackActive = false;
                 mFallbackAttempt = 0;
                 hideProgress();
@@ -2627,6 +2642,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         if (isVisible(mBinding.progress.getRoot())) {
             mVod.cancelFallback();
             mViewModel.stopSearch();
+            App.removeCallbacks(fallbackDeadline);
             mFallbackActive = false;
             hideProgress();
             if (isFullscreen()) exitFullscreen();
@@ -2648,6 +2664,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     @Override
     protected void onDestroy() {
+        App.removeCallbacks(fallbackDeadline);
         cancelRepositorySiteResolve();
         if (mVod != null) mVod.cancelFallback();
         if (mViewModel != null) mViewModel.stopSearch();

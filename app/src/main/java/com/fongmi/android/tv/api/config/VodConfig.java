@@ -82,6 +82,14 @@ public class VodConfig extends BaseConfig {
         get().clear().config(config).load(callback);
     }
 
+    /** In-memory context for the private search process; never changes the user's home/config. */
+    public void installSearchContext(Site site) {
+        if (!com.fongmi.android.tv.App.isSearchProcess()) throw new IllegalStateException("Search worker only");
+        config(Config.vod());
+        home = site;
+        sites = new ArrayList<>(List.of(site));
+    }
+
     public VodConfig init() {
         return config(Config.vod());
     }

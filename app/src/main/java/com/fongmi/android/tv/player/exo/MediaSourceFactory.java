@@ -37,6 +37,19 @@ public class MediaSourceFactory implements MediaSource.Factory {
 
     private static StandaloneDatabaseProvider databaseProvider;
     private static Cache cache;
+    private static final java.util.concurrent.ExecutorService cacheWorker = java.util.concurrent.Executors.newSingleThreadExecutor(r -> new Thread(r, "playback-cache"));
+
+    public static void prepareCache(Runnable ready) {
+        cacheWorker.execute(() -> {
+            try { getCache(); if (ready != null) App.post(ready); }
+            catch (Exception error) { com.github.catvod.crawler.SpiderDebug.log(error); }
+        });
+    }
+
+    public static void clearStoredResources() throws java.io.IOException {
+        Cache current = getCache();
+        for (String key : new java.util.ArrayList<>(current.getKeys())) current.removeResource(key);
+    }
 
     private final DefaultMediaSourceFactory defaultMediaSourceFactory;
     private HttpDataSource.Factory httpDataSourceFactory;

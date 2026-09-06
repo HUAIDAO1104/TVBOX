@@ -95,6 +95,38 @@ public class ViewModelSearchRunnerTest {
     }
 
     @Test
+    public void prioritizingQueuedSourcesKeepsActiveNativeCallAndRunsEverySourceOnce() throws Exception {
+        ViewModelSearchRunner runner = new ViewModelSearchRunner(5_000);
+        List<Site> sites = List.of(new Site(), new Site(), new Site(), new Site());
+        List<Integer> order = java.util.Collections.synchronizedList(new ArrayList<>());
+        CountDownLatch firstStarted = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        CountDownLatch finished = new CountDownLatch(sites.size());
+        try {
+            runner.start(sites, site -> () -> {
+                int index = -1;
+                for (int i = 0; i < sites.size(); i++) if (site == sites.get(i)) index = i;
+                order.add(index);
+                if (index == 0) {
+                    firstStarted.countDown();
+                    assertTrue(release.await(3, TimeUnit.SECONDS));
+                }
+                return Result.empty();
+            }, (site, result) -> finished.countDown(), (site, error) -> finished.countDown());
+            assertTrue(firstStarted.await(2, TimeUnit.SECONDS));
+            runner.prioritize(site -> site == sites.get(2));
+            runner.prioritize(site -> site == sites.get(3));
+            assertEquals(List.of(0), order);
+            release.countDown();
+            assertTrue(finished.await(3, TimeUnit.SECONDS));
+            assertEquals(List.of(0, 3, 2, 1), order);
+        } finally {
+            release.countDown();
+            runner.close();
+        }
+    }
+
+    @Test
     public void explicitNetworkPoolRunsSafeRequestsInParallelWithinItsLimit() throws Exception {
         int limit = 3;
         ViewModelSearchRunner runner = new ViewModelSearchRunner(2_000, limit);

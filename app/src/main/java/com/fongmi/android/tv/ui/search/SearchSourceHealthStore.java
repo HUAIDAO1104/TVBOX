@@ -84,6 +84,11 @@ public final class SearchSourceHealthStore {
         }
     }
 
+    /** Empty responses do not promote a provider over sources returning useful matches. */
+    public void empty(String scopedSiteKey) {
+        starts.remove(scopedSiteKey);
+    }
+
     public void failure(String scopedSiteKey) {
         if (scopedSiteKey == null || scopedSiteKey.isBlank()) return;
         starts.remove(scopedSiteKey);

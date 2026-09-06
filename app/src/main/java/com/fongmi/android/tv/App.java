@@ -79,18 +79,44 @@ public class App extends Application implements Application.ActivityLifecycleCal
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
-        Init.set(base);
+        // Both contexts have a process lifetime; avoid wrapping a weakly retained context.
+        Init.set(isSearchProcess() ? this : base);
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
+        if (isSearchProcess()) {
+            com.orhanobut.logger.Logger.addLogAdapter(new com.orhanobut.logger.AndroidLogAdapter());
+            com.github.catvod.net.OkHttp.dns().setDoh(com.github.catvod.bean.Doh.objectFrom(com.fongmi.android.tv.setting.Setting.getDoh()));
+            return;
+        }
         Notify.createChannel();
         registerActivityLifecycleCallbacks(this);
         // Keystore access, Room creation/migrations and repository bootstrap all touch disk.
         // None of them is required to draw the first frame, so keep them off the main thread.
         Task.execute(CloudAccountManager::migrateLegacyCredentials);
         RepositoryManager.get().initialize();
+        com.fongmi.android.tv.player.exo.MediaSourceFactory.prepareCache(null);
+    }
+
+    private static String processName() {
+        if (android.os.Build.VERSION.SDK_INT >= 28) return Application.getProcessName();
+        try (java.io.InputStream input = new java.io.FileInputStream("/proc/self/cmdline")) {
+            byte[] buffer = new byte[256];
+            int count = input.read(buffer);
+            return count < 0 ? "" : new String(buffer, 0, count, java.nio.charset.StandardCharsets.UTF_8).trim();
+        } catch (java.io.IOException ignored) { return ""; }
+    }
+
+    public static boolean isSearchProcess() { return processName().contains(":source_search"); }
+
+    @Override public java.io.File getCacheDir() {
+        java.io.File base = super.getCacheDir();
+        if (!isSearchProcess()) return base;
+        java.io.File isolated = new java.io.File(base, processName().endsWith("2") ? "search-worker-2" : "search-worker-1");
+        isolated.mkdirs();
+        return isolated;
     }
 
     @Override

@@ -107,6 +107,22 @@
                 tools:text="搜索源 5" />
 
             <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/more"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/selector_search_v2_action"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:text="搜索操作"
+                android:textColor="@color/search_v2_action_text"
+                android:textSize="12sp" />
+
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/stop"
                 android:layout_width="wrap_content"
                 android:layout_height="32dp"

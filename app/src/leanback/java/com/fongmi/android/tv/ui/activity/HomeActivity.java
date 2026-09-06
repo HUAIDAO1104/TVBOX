@@ -117,6 +117,8 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     private boolean homeUiRestored;
     private boolean cachedHistoryShown;
     private List<History> cachedHistories = new ArrayList<>();
+    private static boolean brandShown;
+    private boolean skipBrandMinimum;
     private long brandSplashStartedAt;
     private boolean brandSplashDismissed;
     private boolean brandSplashMotionStarted;
@@ -187,7 +189,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         // fall back to the explicit skeleton after a bounded interval instead of looking frozen.
         binding.brandSplash.postDelayed(this::dismissBrandSplashToLoading, 3500L);
         // Notification/service/update initialization must not compete with the first TV frame.
-        binding.getRoot().postDelayed(deferredStartup, 1400L);
+        binding.getRoot().post(deferredStartup);
     }
 
     @Override
@@ -458,13 +460,18 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     }
 
     private void prepareBrandSplash() {
+        skipBrandMinimum = brandShown;
+        brandShown = true;
         brandSplashDismissed = false;
         brandSplashMotionStarted = false;
         brandSplashDismissRequested = false;
         binding.brandSplash.setVisibility(View.VISIBLE);
         binding.brandSplash.setFocusable(true);
         binding.brandSplash.setFocusableInTouchMode(true);
-        binding.brandSplash.setOnKeyListener((view, keyCode, event) -> true);
+        binding.brandSplash.setOnKeyListener((view, keyCode, event) -> {
+            if (event.getAction() == KeyEvent.ACTION_DOWN && (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER)) dismissBrandSplashToLoading();
+            return true;
+        });
         binding.brandSplash.requestFocus();
         binding.brandSplash.setAlpha(1f);
         binding.brandSplashBackdrop.animate().cancel();
@@ -538,7 +545,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         brandSplashDismissRequested = true;
         if (!brandSplashMotionStarted) return;
         long elapsed = SystemClock.uptimeMillis() - brandSplashStartedAt;
-        binding.brandSplash.postDelayed(this::dismissBrandSplash, Math.max(0L, 1400L - elapsed));
+        binding.brandSplash.postDelayed(this::dismissBrandSplash, Math.max(0L, (skipBrandMinimum ? 0L : 1400L) - elapsed));
     }
 
     private void dismissBrandSplashToLoading() {
@@ -1005,12 +1012,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
 
     @Override
     public boolean onHistoryLongClick() {
-        if (historyAdapter.isDeleteMode()) {
-            History.delete(VodConfig.getCid());
-            loadHistory();
-        } else {
-            historyAdapter.setDeleteMode(true);
-        }
+        historyAdapter.setDeleteMode(!historyAdapter.isDeleteMode());
         return true;
     }
 
@@ -1177,6 +1179,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
 
     @Override
     protected void onPause() {
+        if (detailViewModel != null) detailViewModel.cancel();
         if (featuredController != null) featuredController.stopAuto();
         super.onPause();
     }

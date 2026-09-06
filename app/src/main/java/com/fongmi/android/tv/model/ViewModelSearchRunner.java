@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 final class ViewModelSearchRunner {
 
@@ -92,6 +93,22 @@ final class ViewModelSearchRunner {
             launches = takeNextBatchLocked();
         }
         launch(launches);
+    }
+
+    /** Moves requested sources ahead of other queued work without interrupting native calls. */
+    void prioritize(Predicate<Site> preferred) {
+        if (preferred == null) return;
+        synchronized (lock) {
+            if (closed || queue.isEmpty()) return;
+            List<Request> first = new ArrayList<>();
+            List<Request> remaining = new ArrayList<>();
+            for (Request request : queue) {
+                (preferred.test(request.site) ? first : remaining).add(request);
+            }
+            queue.clear();
+            queue.addAll(first);
+            queue.addAll(remaining);
+        }
     }
 
     void stop() {

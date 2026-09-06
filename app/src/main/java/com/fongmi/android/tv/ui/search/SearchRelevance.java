@@ -68,8 +68,15 @@ public final class SearchRelevance {
     }
 
     public int score(String keyword, SearchSource source) {
+        return score(SearchTitleNormalizer.parse(keyword), source);
+    }
+
+    public boolean isRelevant(NormalizedTitle query, SearchSource source) {
+        return score(query, source) >= threshold;
+    }
+
+    private int score(NormalizedTitle query, SearchSource source) {
         if (source == null) return 0;
-        NormalizedTitle query = SearchTitleNormalizer.parse(keyword);
         if (isUnrequestedAudioSource(query.displayTitle(), source)) return 0;
         return score(query, source.normalizedTitle(), source.mediaVariant());
     }

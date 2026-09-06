@@ -38,6 +38,7 @@ public class RepositoryDetailActivity extends BaseActivity implements Repository
     private ActivityRepositoryDetailBinding binding;
     private RepositoryManageAdapter adapter;
     private Repository repository;
+    private int renderGeneration;
 
     public static void start(Activity activity, long repositoryId) {
         activity.startActivity(new Intent(activity, RepositoryDetailActivity.class).putExtra(EXTRA_ID, repositoryId));
@@ -70,12 +71,29 @@ public class RepositoryDetailActivity extends BaseActivity implements Repository
     @Override
     protected void initEvent() {
         binding.refresh.setOnClickListener(v -> manager.sync(repository, new com.fongmi.android.tv.repository.RepositorySyncManager.Listener() {
+            @Override public void onStart(Repository item) { repository = item; render(); }
             @Override public void onSuccess(Repository item, boolean cached) { repository = item; render(); }
             @Override public void onError(Repository item, String message, boolean hasCache) { repository = item; render(); }
         }));
     }
 
     private void render() {
+        if (repository == null || isFinishing() || isDestroyed()) return;
+        int generation = ++renderGeneration;
+        binding.refresh.setEnabled(repository.getStatus() != RepositoryStatus.SYNCING);
+        binding.status.setText(repository.getStatus() == RepositoryStatus.SYNCING ? R.string.repository_status_syncing : R.string.repository_status_idle);
+        com.fongmi.android.tv.utils.Task.execute(() -> {
+            int count = manager.getItemCount(repository.getId());
+            int mappings = manager.getMappingCount(repository.getId());
+            java.util.List<RepositoryItem> items = manager.getAllItems(repository.getId());
+            com.fongmi.android.tv.App.post(() -> {
+                if (generation != renderGeneration || isFinishing() || isDestroyed()) return;
+                renderLoaded(count, mappings, items);
+            });
+        });
+    }
+
+    private void renderLoaded(int count, int mappings, java.util.List<RepositoryItem> items) {
         binding.title.setText(SearchDisplayName.removeEmoji(repository.getName()));
         binding.url.setText(SecretRedactor.redact(repository.getUrl()));
         binding.type.setText(repository.getUrl().startsWith("http") ? (repository.getUrl().startsWith("https") ? "HTTPS" : "HTTP · " + getString(R.string.repository_insecure)) : getString(R.string.repository_local));
@@ -87,13 +105,13 @@ public class RepositoryDetailActivity extends BaseActivity implements Repository
             default -> R.string.repository_status_idle;
         });
         binding.meta.setText(getString(R.string.repository_detail_meta,
-                manager.getItemCount(repository.getId()),
+                count,
                 repository.getLastSuccessAt() == 0 ? getString(R.string.repository_never) : formatter.format(Instant.ofEpochMilli(repository.getLastSuccessAt())),
                 repository.isBuiltIn() ? getString(R.string.repository_read_only) : getString(R.string.repository_user_owned)));
         binding.flags.setText(getString(R.string.repository_detail_flags,
                 repository.isEnabled() ? getString(R.string.repository_flag_enabled) : getString(R.string.repository_flag_disabled),
                 repository.isAutoSync() ? getString(R.string.repository_flag_auto) : getString(R.string.repository_flag_manual),
-                manager.getMappingCount(repository.getId())));
+                mappings));
         binding.syncInfo.setText(getString(R.string.repository_detail_sync,
                 repository.getEtag().isEmpty() ? "—" : repository.getEtag(),
                 repository.getLastModified().isEmpty() ? "—" : repository.getLastModified(),
@@ -102,7 +120,7 @@ public class RepositoryDetailActivity extends BaseActivity implements Repository
         binding.cache.setText(repository.getLastSuccessAt() == 0 ? R.string.repository_no_cache : R.string.repository_cache_available);
         binding.error.setText(repository.getErrorMessage());
         binding.error.setVisibility(repository.getErrorMessage().isEmpty() ? View.GONE : View.VISIBLE);
-        adapter.submit(manager.getAllItems(repository.getId()), repository.isBuiltIn());
+        adapter.submit(items, repository.isBuiltIn());
         binding.empty.setVisibility(adapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
     }
 

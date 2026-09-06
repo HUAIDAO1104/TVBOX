@@ -17,6 +17,9 @@ import java.util.Map;
 
 public final class CloudCredentialBridge {
 
+    private static final java.util.concurrent.atomic.AtomicInteger generation = new java.util.concurrent.atomic.AtomicInteger();
+    public static int generation() { return generation.get(); }
+
     private static final String CLOUD_DRIVE = "Cloud-drive";
     private static final Map<String, String> PLACEHOLDERS = placeholders();
     private static final Map<String, String> ALIASES = aliases();
@@ -47,6 +50,7 @@ public final class CloudCredentialBridge {
     }
 
     public static void clear() {
+        generation.incrementAndGet();
         CloudMemoryStore.clear();
         Path.clear(new File(com.fongmi.android.tv.App.get().getNoBackupFilesDir(), "runtime_cloud_overlay"));
     }

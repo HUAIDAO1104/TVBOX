@@ -42,6 +42,23 @@ public class CloudAccountActivity extends BaseActivity implements CloudAccountAd
     private CloudAccountAdapter adapter;
     private Future<?> discoveryTask;
     private Future<?> loginTask;
+    private int operationGeneration;
+    private Runnable operationTimeout;
+
+    private int beginOperation() {
+        int generation = ++operationGeneration;
+        if (operationTimeout != null) com.fongmi.android.tv.App.removeCallbacks(operationTimeout);
+        operationTimeout = () -> {
+            if (generation != operationGeneration || isFinishing() || isDestroyed()) return;
+            operationGeneration++;
+            if (discoveryTask != null) discoveryTask.cancel(true);
+            if (loginTask != null) loginTask.cancel(true);
+            binding.refresh.setEnabled(true);
+            binding.scanStatus.setText("请求超时，可重新扫描或手动配置账号");
+        };
+        com.fongmi.android.tv.App.post(operationTimeout, 30000);
+        return generation;
+    }
 
     public static void start(Activity activity) {
         activity.startActivity(new Intent(activity, CloudAccountActivity.class));
@@ -78,12 +95,14 @@ public class CloudAccountActivity extends BaseActivity implements CloudAccountAd
     }
 
     private void loadRepositoryLoginRoutes() {
-        if (isRunning(discoveryTask)) return;
+        if (isRunning(discoveryTask) || isRunning(loginTask)) return;
+        int generation = beginOperation();
         binding.refresh.setEnabled(false);
         binding.scanStatus.setText(R.string.cloud_scan_loading);
         discoveryTask = Task.submit(() -> {
             List<CloudLoginRoute> routes = new ArrayList<>();
             for (Site site : loginSites()) {
+                if (Thread.currentThread().isInterrupted()) return;
                 try {
                     Result result = SiteApi.homeContent(site);
                     routes = CloudLoginRouteResolver.routes(site.getKey(), result.getTypes().stream()
@@ -98,7 +117,7 @@ public class CloudAccountActivity extends BaseActivity implements CloudAccountAd
                 }
             }
             List<CloudLoginRoute> resolved = routes;
-            postUi(() -> {
+            postUi(generation, () -> {
                 adapter.submitRoutes(resolved);
                 // Focus restoration is for DPAD only. On a phone, an async route discovery can
                 // finish while the user is scrolling and must not reset the viewport.
@@ -128,7 +147,8 @@ public class CloudAccountActivity extends BaseActivity implements CloudAccountAd
 
     @Override
     public void onRepositoryLogin(CloudLoginRoute route) {
-        if (isRunning(loginTask)) return;
+        if (isRunning(loginTask) || isRunning(discoveryTask)) return;
+        int generation = beginOperation();
         binding.refresh.setEnabled(false);
         binding.scanStatus.setText(getString(R.string.cloud_scan_opening, route.title()));
         loginTask = Task.submit(() -> {
@@ -138,7 +158,7 @@ public class CloudAccountActivity extends BaseActivity implements CloudAccountAd
                         .map(this::actionDescriptor)
                         .toList());
                 if (login == null) {
-                    postUi(() -> {
+                    postUi(generation, () -> {
                         binding.refresh.setEnabled(true);
                         binding.scanStatus.setText(getString(R.string.cloud_scan_action_missing, route.title()));
                     });
@@ -148,12 +168,12 @@ public class CloudAccountActivity extends BaseActivity implements CloudAccountAd
                 // its detail action here opens that verified dialog on this Activity, without
                 // switching VodConfig.home or routing a settings action through VideoActivity.
                 SiteApi.detailContent(route.siteKey(), login.id());
-                postUi(() -> {
+                postUi(generation, () -> {
                     binding.refresh.setEnabled(true);
                     binding.scanStatus.setText(getString(R.string.cloud_scan_started, route.title()));
                 });
             } catch (Throwable ignored) {
-                postUi(() -> {
+                postUi(generation, () -> {
                     binding.refresh.setEnabled(true);
                     binding.scanStatus.setText(getString(R.string.cloud_scan_failed, route.title()));
                 });
@@ -169,9 +189,11 @@ public class CloudAccountActivity extends BaseActivity implements CloudAccountAd
         return task != null && !task.isDone() && !task.isCancelled();
     }
 
-    private void postUi(Runnable action) {
+    private void postUi(int generation, Runnable action) {
         runOnUiThread(() -> {
-            if (!isFinishing() && !isDestroyed()) action.run();
+            if (generation != operationGeneration || isFinishing() || isDestroyed()) return;
+            if (operationTimeout != null) com.fongmi.android.tv.App.removeCallbacks(operationTimeout);
+            action.run();
         });
     }
 
@@ -210,6 +232,8 @@ public class CloudAccountActivity extends BaseActivity implements CloudAccountAd
 
     @Override
     protected void onDestroy() {
+        operationGeneration++;
+        if (operationTimeout != null) com.fongmi.android.tv.App.removeCallbacks(operationTimeout);
         if (discoveryTask != null) discoveryTask.cancel(true);
         if (loginTask != null) loginTask.cancel(true);
         super.onDestroy();

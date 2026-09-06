@@ -24,6 +24,7 @@ public final class HistoryActivity extends BaseActivity implements HistoryAdapte
     private static final int COLUMN_COUNT = 6;
     private ActivityHistoryBinding binding;
     private HistoryAdapter adapter;
+    private int loadGeneration;
 
     public static void start(Activity activity) {
         activity.startActivity(new Intent(activity, HistoryActivity.class));
@@ -41,23 +42,39 @@ public final class HistoryActivity extends BaseActivity implements HistoryAdapte
         binding.recycler.setLayoutManager(new GridLayoutManager(this, COLUMN_COUNT));
         binding.recycler.addItemDecoration(new SpaceItemDecoration(COLUMN_COUNT, 16));
         binding.recycler.setAdapter(adapter = new HistoryAdapter(this));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
         loadHistory();
     }
 
     @Override
     protected void initEvent() {
-        binding.clear.setOnClickListener(view -> {
-            History.delete(VodConfig.getCid());
-            adapter.setDeleteMode(false);
-            loadHistory();
-        });
+        binding.clear.setOnClickListener(view -> new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("清空观看历史？").setMessage("将删除当前配置的全部观看记录，此操作无法撤销。")
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                    int configId = VodConfig.getCid();
+                    binding.clear.setEnabled(false);
+                    Task.execute(() -> {
+                        History.delete(configId);
+                        App.post(() -> {
+                            if (isFinishing() || isDestroyed()) return;
+                            adapter.setDeleteMode(false);
+                            loadHistory();
+                        });
+                    });
+                }).show());
     }
 
     private void loadHistory() {
+        int generation = ++loadGeneration;
         Task.execute(() -> {
             List<History> items = History.get();
             App.post(() -> {
-                if (isFinishing() || isDestroyed()) return;
+                if (generation != loadGeneration || isFinishing() || isDestroyed()) return;
                 adapter.submit(items);
                 binding.clear.setEnabled(!items.isEmpty());
                 binding.progressLayout.showContent(true, items.size());
@@ -75,8 +92,7 @@ public final class HistoryActivity extends BaseActivity implements HistoryAdapte
 
     @Override
     public void onDelete(History item) {
-        item.delete();
-        loadHistory();
+        Task.execute(() -> { item.delete(); App.post(() -> { if (!isFinishing() && !isDestroyed()) loadHistory(); }); });
     }
 
     @Override

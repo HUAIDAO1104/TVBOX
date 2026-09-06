@@ -40,8 +40,14 @@ public class SiteApi {
     public static String call(@NonNull Site site, @NonNull ArrayMap<String, String> params) throws IOException {
         if (!site.getExt().isEmpty()) params.put("extend", site.getExt());
         Call call = site.getExt().length() <= 1000 ? OkHttp.newCall(site.getApi(), site.getHeader(), params) : OkHttp.newCall(site.getApi(), site.getHeader(), OkHttp.toBody(params));
+        Thread owner = Thread.currentThread();
+        call.timeout().timeout(com.fongmi.android.tv.Constant.TIMEOUT_SEARCH, java.util.concurrent.TimeUnit.MILLISECONDS);
+        java.util.concurrent.ScheduledFuture<?> cancellation = com.fongmi.android.tv.utils.Task.scheduler()
+                .scheduleAtFixedRate(() -> { if (owner.isInterrupted()) call.cancel(); }, 100, 100, java.util.concurrent.TimeUnit.MILLISECONDS);
         try (Response response = call.execute()) {
             return response.body().string();
+        } finally {
+            cancellation.cancel(false);
         }
     }
 
@@ -210,7 +216,9 @@ public class SiteApi {
             params.put("extend", "");
             if (hasPage) params.put("pg", page);
             String searchContent = call(site, params);
-            Result result = fetchPic(site, Result.fromType(site.getType(), searchContent));
+            Result result = Result.fromType(site.getType(), searchContent);
+            if (!site.getCategories().isEmpty()) result.setList(result.getList().stream()
+                    .filter(vod -> site.getCategories().contains(vod.getTypeName())).toList());
             for (Vod vod : result.getList()) vod.setSite(site);
             SpiderDebug.log("search", "site=%s,resultCount=%s", site.getName(), result.getList().size());
             return result;

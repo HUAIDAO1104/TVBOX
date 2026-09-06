@@ -49,7 +49,9 @@ public class HomeFeaturedController {
         void onFeaturedDetailRequest(Vod item);
     }
 
-    private final Map<String, Vod> detailCache = new HashMap<>();
+    private final Map<String, Vod> detailCache = new java.util.LinkedHashMap<>(32, 0.75f, true) {
+        @Override protected boolean removeEldestEntry(Map.Entry<String, Vod> entry) { return size() > 80; }
+    };
     private final HomeAtmosphereController atmosphere;
     private final ActivityHomeBinding binding;
     private final Listener listener;
@@ -172,6 +174,9 @@ public class HomeFeaturedController {
     }
 
     public void stopAuto() {
+        if (pendingFocus != null) App.removeCallbacks(pendingFocus);
+        pendingDetailKey = "";
+        pendingDetailItem = null;
         autoEnabled = false;
         cancelAuto();
     }

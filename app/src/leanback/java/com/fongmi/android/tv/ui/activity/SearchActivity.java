@@ -59,6 +59,17 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
     private boolean mStartVoiceRequested;
     private boolean mSearchLaunching;
     private String mDefaultKeyword = "";
+    private Call suggestionCall;
+    private Runnable suggestionDebounce;
+    private int suggestionGeneration;
+    private final android.util.LruCache<String, String> suggestions = new android.util.LruCache<>(24);
+
+    private void cancelSuggestions() {
+        suggestionGeneration++;
+        if (suggestionDebounce != null) App.removeCallbacks(suggestionDebounce);
+        if (suggestionCall != null) suggestionCall.cancel();
+        suggestionCall = null;
+    }
 
     public static void start(Activity activity) {
         activity.startActivity(new Intent(activity, SearchActivity.class));
@@ -101,7 +112,7 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
         mFirstResume = true;
         mStartVoiceRequested = savedInstanceState == null && getIntent().getBooleanExtra(EXTRA_START_VOICE, false);
         CustomKeyboard.init(this, mBinding);
-        mBinding.keyword.setShowSoftInputOnFocus(false);
+        mBinding.keyword.setShowSoftInputOnFocus(Util.isMobile());
         setRecyclerView();
         checkKeyword(savedInstanceState);
         if (savedInstanceState == null && !getKeyword().isBlank()) onSearch();
@@ -110,7 +121,8 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
     @Override
     protected void initEvent() {
         mBinding.keyword.setOnEditorActionListener((textView, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_DONE) onSearch();
+            if (actionId != EditorInfo.IME_ACTION_DONE && actionId != EditorInfo.IME_ACTION_SEARCH) return false;
+            onSearch();
             return true;
         });
         mBinding.keyword.addTextChangedListener(new CustomTextListener() {
@@ -215,28 +227,43 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
     }
 
     private void getWord(String text) {
-        if (text.isEmpty()) getHot();
-        else getSuggest(text);
+        cancelSuggestions();
+        String keyword = text.trim();
+        if (keyword.isEmpty()) getHot();
+        else {
+            mBinding.word.setText(R.string.search_suggest);
+            String cached = suggestions.get(keyword);
+            if (cached != null) setAdapter(cached, false, keyword);
+            suggestionDebounce = () -> getSuggest(keyword);
+            App.post(suggestionDebounce, 250);
+        }
     }
 
     private void getHot() {
         mBinding.word.setText(R.string.search_hot);
         mWordAdapter.setItems(Word.objectFrom(Setting.getHot()).getData());
-        OkHttp.newCall("https://api.web.360kan.com/v1/rank?cat=1", Map.of(HttpHeaders.REFERER, "https://www.360kan.com/rank/general")).enqueue(getCallback(true, ""));
+        suggestionCall = OkHttp.newCall("https://api.web.360kan.com/v1/rank?cat=1", Map.of(HttpHeaders.REFERER, "https://www.360kan.com/rank/general"));
+        suggestionCall.enqueue(getCallback(true, ""));
     }
 
     private void getSuggest(String text) {
         mBinding.word.setText(R.string.search_suggest);
-        OkHttp.newCall("https://suggest.video.iqiyi.com/?if=mobile&key=" + URLEncoder.encode(ZhuToPin.get(text))).enqueue(getCallback(false, text));
+        suggestionCall = OkHttp.newCall("https://suggest.video.iqiyi.com/?if=mobile&key=" + URLEncoder.encode(ZhuToPin.get(text)));
+        suggestionCall.enqueue(getCallback(false, text));
     }
 
     private Callback getCallback(boolean hot, String requestText) {
+        int generation = suggestionGeneration;
         return new Callback() {
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 String result = response.body().string();
                 if (TextUtils.isEmpty(result)) return;
-                App.post(() -> setAdapter(result, hot, requestText));
+                App.post(() -> {
+                    if (generation != suggestionGeneration || isFinishing() || isDestroyed()) return;
+                    if (!hot) suggestions.put(requestText, result);
+                    setAdapter(result, hot, requestText);
+                });
             }
         };
     }
@@ -433,6 +460,7 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
     @Override
     protected void onPause() {
         super.onPause();
+        cancelSuggestions();
         mBinding.voiceAction.setFocusable(false);
     }
 
@@ -441,7 +469,7 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
         super.onResume();
         mSearchLaunching = false;
         mBinding.voiceAction.setFocusable(true);
-        if (!mFirstResume) return;
+        if (!mFirstResume) { getWord(mBinding.keyword.getText().toString()); return; }
         mFirstResume = false;
         mBinding.getRoot().post(this::restoreFocus);
     }
@@ -505,6 +533,7 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        cancelSuggestions();
         mBinding.mic.destroy();
     }
 }

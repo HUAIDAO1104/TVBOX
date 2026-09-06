@@ -31,6 +31,12 @@ public class HomeFeaturedViewModel extends ViewModel {
     private static final List<String> SOURCE_PRIORITY = List.of("二小", "玩偶", "NewZhiZhen", "NewGuanYing");
     private static final int SOURCE_LIMIT = 4;
 
+    private final com.google.common.util.concurrent.ListeningExecutorService editorialExecutor =
+            com.google.common.util.concurrent.MoreExecutors.listeningDecorator(java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+                Thread thread = new Thread(r, "home-editorial");
+                thread.setPriority(Thread.MIN_PRIORITY);
+                return thread;
+            }));
     private final MutableLiveData<Result> result = new MutableLiveData<>();
     private final ViewModelTaskRunner<TaskType> tasks = new ViewModelTaskRunner<>(TaskType.class);
 
@@ -40,19 +46,21 @@ public class HomeFeaturedViewModel extends ViewModel {
 
     public void resolve(Vod seed) {
         if (seed == null || seed.getName().isEmpty()) return;
-        tasks.execute(TaskType.FEATURED, Constant.TIMEOUT_VOD, () -> resolveInternal(seed), result::postValue, error -> result.postValue(Result.vod(seed)));
+        tasks.execute(TaskType.FEATURED, 12000, editorialExecutor, () -> resolveInternal(seed), result::postValue, error -> result.postValue(Result.vod(seed)));
     }
 
     private Result resolveInternal(Vod seed) {
         Vod editorial = doubanDetail(seed);
         if (hasEditorialDetail(editorial)) return Result.vod(editorial);
+        if (Thread.currentThread().isInterrupted()) return Result.vod(seed);
         Vod direct = directDetail(seed);
         if (hasEditorialDetail(direct)) return resolved(seed, direct, direct.getSite());
         for (Site site : detailSources(seed)) {
+            if (Thread.currentThread().isInterrupted()) break;
             try {
-                Vod match = bestMatch(SiteApi.searchContent(site, seed.getName(), false, "1").getList(), seed.getName());
+                Vod match = bestMatch(search(site, seed.getName()).getList(), seed.getName());
                 if (match == null || match.getId().isEmpty()) continue;
-                Vod detail = SiteApi.detailContent(site.getKey(), match.getId()).getVod();
+                Vod detail = detail(site, match.getId()).getVod();
                 if (detail.getId().isEmpty()) detail = match;
                 if (!hasEditorialDetail(detail) && !hasEditorialDetail(match)) continue;
                 return resolved(seed, detail, site);
@@ -60,6 +68,16 @@ public class HomeFeaturedViewModel extends ViewModel {
             }
         }
         return Result.vod(direct == null ? seed : direct);
+    }
+
+    private Result search(Site site, String title) throws Exception {
+        return site.getType() == 3 ? com.fongmi.android.tv.search.IsolatedSpiderSearch.search(site, title, false, "1")
+                : SiteApi.searchContent(site, title, false, "1");
+    }
+
+    private Result detail(Site site, String id) throws Exception {
+        return site.getType() == 3 ? com.fongmi.android.tv.search.IsolatedSpiderSearch.detail(site, id)
+                : SiteApi.detailContent(site.getKey(), id);
     }
 
     private Vod doubanDetail(Vod seed) {
@@ -114,7 +132,7 @@ public class HomeFeaturedViewModel extends ViewModel {
     private Vod directDetail(Vod seed) {
         if (seed.getId().isEmpty() || seed.getSiteKey().isEmpty()) return null;
         try {
-            Vod detail = SiteApi.detailContent(seed.getSiteKey(), seed.getId()).getVod();
+            Vod detail = detail(VodConfig.get().getSite(seed.getSiteKey()), seed.getId()).getVod();
             if (detail.getId().isEmpty()) return null;
             detail.setSite(seed.getSite());
             return detail;
@@ -172,9 +190,14 @@ public class HomeFeaturedViewModel extends ViewModel {
         return Result.vod(detail);
     }
 
+    public void cancel() {
+        tasks.cancelAll();
+    }
+
     @Override
     protected void onCleared() {
         tasks.cancelAll();
+        editorialExecutor.shutdownNow();
     }
 
     private enum TaskType {FEATURED}

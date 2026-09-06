@@ -56,11 +56,21 @@ public final class SearchAggregator {
         this.positionsByBaseKey = new HashMap<>();
     }
 
+    /** Detached containers; SearchWork and SearchSource values are immutable. */
+    public synchronized SearchAggregator copy() {
+        SearchAggregator copy = new SearchAggregator(keyword, relevance, ranker, nowMillis);
+        copy.works.addAll(works);
+        copy.workPositions.putAll(workPositions);
+        copy.sourceToWork.putAll(sourceToWork);
+        positionsByBaseKey.forEach((key, positions) -> copy.positionsByBaseKey.put(key, new ArrayList<>(positions)));
+        return copy;
+    }
+
     public synchronized Update add(SearchSource source) {
         if (source == null) return filtered();
         // A provider can reuse a stable id while returning a different item on a later page or
         // refresh. Never let that update bypass the same relevance gate used for new sources.
-        if (!relevance.isRelevant(keyword, source)) return filtered();
+        if (!relevance.isRelevant(normalizedKeyword, source)) return filtered();
         String existingWorkId = sourceToWork.get(source.stableId());
         if (existingWorkId != null) return updateExisting(existingWorkId, source);
 
@@ -88,7 +98,7 @@ public final class SearchAggregator {
      * the source lane without weakening the conservative title aggregation used elsewhere.
      */
     public synchronized Update addUnaggregated(SearchSource source) {
-        if (source == null || !relevance.isRelevant(keyword, source)) return filtered();
+        if (source == null || !relevance.isRelevant(normalizedKeyword, source)) return filtered();
         String existingWorkId = sourceToWork.get(source.stableId());
         if (existingWorkId != null) return updateExisting(existingWorkId, source);
         String workId = SearchStableIds.create("raw", source.stableId());

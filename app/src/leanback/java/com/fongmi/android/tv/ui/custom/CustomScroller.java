@@ -13,6 +13,8 @@ public class CustomScroller extends RecyclerView.OnScrollListener {
     private boolean loading;
     private boolean enable;
     private int page;
+    private int savedPage = 1;
+    private boolean savedEnable = true;
 
     public CustomScroller(Callback callback) {
         this.callback = callback;
@@ -44,6 +46,18 @@ public class CustomScroller extends RecyclerView.OnScrollListener {
         }
     }
 
+    public void beginRefresh() {
+        if (!loading) { savedPage = page; savedEnable = enable; }
+        reset();
+        loading = true;
+    }
+
+    public void cancelRefresh() {
+        page = savedPage;
+        enable = savedEnable;
+        loading = false;
+    }
+
     public void reset() {
         loading = false;
         enable = true;
@@ -71,8 +85,8 @@ public class CustomScroller extends RecyclerView.OnScrollListener {
     }
 
     public void endLoading(Result result) {
-        if (result.getList().isEmpty()) page--;
-        setEnable(result.getPageCount());
+        if (result.getList().isEmpty()) { page = Math.max(1, page - 1); enable = false; }
+        else setEnable(result.getPageCount());
         setLoading(false);
     }
 
