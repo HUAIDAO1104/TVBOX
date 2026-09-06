@@ -26,17 +26,25 @@ import dalvik.system.DexClassLoader;
 public class BaseLoader {
 
     private final JarLoader jarLoader;
-    private final PyLoader pyLoader;
-    private final JsLoader jsLoader;
+    private volatile PyLoader pyLoader;
+    private volatile JsLoader jsLoader;
     private final SpiderCacheEpoch cacheEpoch;
     private final Object cacheLock;
 
     private BaseLoader() {
         jarLoader = new JarLoader();
-        pyLoader = new PyLoader();
-        jsLoader = new JsLoader();
         cacheEpoch = new SpiderCacheEpoch();
         cacheLock = new Object();
+    }
+
+    private synchronized PyLoader python() {
+        if (pyLoader == null) pyLoader = new PyLoader();
+        return pyLoader;
+    }
+
+    private synchronized JsLoader javascript() {
+        if (jsLoader == null) jsLoader = new JsLoader();
+        return jsLoader;
     }
 
     public static BaseLoader get() {
@@ -62,8 +70,8 @@ public class BaseLoader {
             CloudCredentialPreferences.clearRuntime();
             CloudCredentialBridge.clear();
             detached.addAll(jarLoader.detach());
-            detached.addAll(pyLoader.detach());
-            detached.addAll(jsLoader.detach());
+            if (pyLoader != null) detached.addAll(pyLoader.detach());
+            if (jsLoader != null) detached.addAll(jsLoader.detach());
         }
         Task.execute(() -> detached.forEach(Spider::destroy));
     }
@@ -82,8 +90,8 @@ public class BaseLoader {
                 scopedCacheKey = cacheEpoch.scope(epoch, definitionKey(cacheKey, api, resolvedExt, jar));
             }
             Spider spider;
-            if (isPy(api)) spider = pyLoader.getSpider(scopedCacheKey, cacheKey, siteKey, api, resolvedExt);
-            else if (isJs(api)) spider = jsLoader.getSpider(scopedCacheKey, cacheKey, siteKey, api, resolvedExt, jar);
+            if (isPy(api)) spider = python().getSpider(scopedCacheKey, cacheKey, siteKey, api, resolvedExt);
+            else if (isJs(api)) spider = javascript().getSpider(scopedCacheKey, cacheKey, siteKey, api, resolvedExt, jar);
             else if (isCsp(api)) spider = jarLoader.getSpider(scopedCacheKey, cacheKey, siteKey, api, resolvedExt, jar);
             else return new SpiderNull();
             if (cacheEpoch.isCurrent(epoch)) return spider;
@@ -92,8 +100,8 @@ public class BaseLoader {
     }
 
     private void discard(String cacheKey, String api, String jar, Spider spider) {
-        if (isPy(api)) pyLoader.discard(cacheKey, spider);
-        else if (isJs(api)) jsLoader.discard(cacheKey, spider);
+        if (isPy(api)) python().discard(cacheKey, spider);
+        else if (isJs(api)) javascript().discard(cacheKey, spider);
         else if (isCsp(api)) jarLoader.discard(cacheKey, jar, spider);
         Task.execute(spider::destroy);
     }
@@ -114,8 +122,8 @@ public class BaseLoader {
         synchronized (cacheLock) {
             String resolvedExt = CloudCredentialBridge.resolve(ext);
             String scopedKey = cacheEpoch.scope(cacheEpoch.current(), definitionKey(key, api, resolvedExt, jar));
-            if (isJs(api)) jsLoader.setRecent(scopedKey);
-            else if (isPy(api)) pyLoader.setRecent(scopedKey);
+            if (isJs(api)) javascript().setRecent(scopedKey);
+            else if (isPy(api)) python().setRecent(scopedKey);
             else if (isCsp(api)) jarLoader.setRecent(Util.md5(jar));
         }
     }
@@ -126,8 +134,8 @@ public class BaseLoader {
 
     public Object[] proxy(Map<String, String> params) throws Exception {
         if (params.containsKey("siteKey")) return getSpider(params.get("siteKey")).proxy(params);
-        if ("js".equals(params.get("do"))) return jsLoader.proxy(params);
-        if ("py".equals(params.get("do"))) return pyLoader.proxy(params);
+        if ("js".equals(params.get("do"))) return javascript().proxy(params);
+        if ("py".equals(params.get("do"))) return python().proxy(params);
         return jarLoader.proxy(params);
     }
 

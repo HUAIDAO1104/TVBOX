@@ -51,7 +51,7 @@ public class JsLoader {
     }
 
     public Spider getSpider(String cacheKey, String proxyKey, String siteKey, String api, String ext, String jar) {
-        return spiders.computeIfAbsent(cacheKey, k -> {
+        Spider cached = spiders.computeIfAbsent(cacheKey, k -> {
             try {
                 Spider spider = loader.spider(api, BaseLoader.get().dex(jar));
                 spider.siteKey = siteKey;
@@ -60,9 +60,11 @@ public class JsLoader {
                 return spider;
             } catch (Throwable e) {
                 com.github.catvod.crawler.SpiderDebug.log(e);
-                return new SpiderNull();
+                if (com.fongmi.android.tv.App.isSearchProcess()) throw new IllegalStateException("来源初始化失败", e);
+                return null;
             }
         });
+        return cached == null ? new SpiderNull() : cached;
     }
 
     public Object[] proxy(Map<String, String> params) throws Exception {

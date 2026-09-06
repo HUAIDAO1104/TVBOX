@@ -17,22 +17,24 @@ public class SpiderSearchService extends Service {
     static final int SEARCH = 1, CANCEL = 2, RESPONSE = 3;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private boolean busy;
+    private volatile boolean busy;
     private final Runnable deadline = () -> android.os.Process.killProcess(android.os.Process.myPid());
     private final Messenger endpoint = new Messenger(new Handler(Looper.getMainLooper(), message -> {
         if (message.what == CANCEL) { deadline.run(); return true; }
-        if (message.what != SEARCH || busy) return true;
-        busy = true;
+        if (message.what != SEARCH) return true;
         ParcelFileDescriptor input = message.getData().getParcelable("input");
         Messenger reply = message.replyTo;
-        handler.postDelayed(deadline, 22000);
-        worker.execute(() -> execute(input, reply));
+        int id = message.arg1;
+        int timeout = message.arg2;
+        worker.execute(() -> execute(input, reply, id, timeout));
         return true;
     }));
 
     @Override public IBinder onBind(Intent intent) { return endpoint.getBinder(); }
 
-    private void execute(ParcelFileDescriptor descriptor, Messenger reply) {
+    private void execute(ParcelFileDescriptor descriptor, Messenger reply, int id, int timeout) {
+        busy = true;
+        handler.postDelayed(deadline, Math.max(1000, timeout));
         ParcelFileDescriptor[] output = null;
         try (InputStream stream = new ParcelFileDescriptor.AutoCloseInputStream(descriptor)) {
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -53,11 +55,12 @@ public class SpiderSearchService extends Service {
                 quick = parcel.readInt() != 0;
                 detail = parcel.readInt() != 0;
             } finally { parcel.recycle(); }
+            com.fongmi.android.tv.server.Server.get().start();
             VodConfig.get().installSearchContext(site);
             Result result = detail ? Result.fromJson(site.spider().detailContent(java.util.List.of(keyword)))
                     : SiteApi.searchContent(site, keyword, quick, page);
             output = ParcelFileDescriptor.createPipe();
-            Message response = Message.obtain(null, RESPONSE);
+            Message response = Message.obtain(null, RESPONSE, 0, id);
             response.getData().putParcelable("output", output[0]);
             reply.send(response);
             output[0].close();
@@ -65,11 +68,11 @@ public class SpiderSearchService extends Service {
                 App.gson().toJson(result, writer);
             }
         } catch (Throwable error) {
-            try { reply.send(Message.obtain(null, RESPONSE, 1, 0)); } catch (RemoteException ignored) { }
+            try { reply.send(Message.obtain(null, RESPONSE, 1, id)); } catch (RemoteException ignored) { }
         } finally {
             if (output != null) for (ParcelFileDescriptor fd : output) try { fd.close(); } catch (IOException ignored) { }
             handler.removeCallbacks(deadline);
-            handler.post(() -> busy = false);
+            busy = false;
         }
     }
 
@@ -81,4 +84,6 @@ public class SpiderSearchService extends Service {
     }
 
     public static final class Second extends SpiderSearchService { }
+    public static final class Third extends SpiderSearchService { }
+    public static final class Fourth extends SpiderSearchService { }
 }

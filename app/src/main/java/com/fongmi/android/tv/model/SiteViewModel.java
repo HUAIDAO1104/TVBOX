@@ -127,7 +127,7 @@ public class SiteViewModel extends ViewModel {
         error = new MutableLiveData<>();
         searchProgress = new MutableLiveData<>(SearchProgress.idle());
         tasks = new ViewModelTaskRunner<>(TaskType.class);
-        spiderSearches = new ViewModelSearchRunner(Constant.TIMEOUT_SEARCH, 2);
+        spiderSearches = new ViewModelSearchRunner(Constant.TIMEOUT_SEARCH, com.fongmi.android.tv.search.IsolatedSpiderSearch.parallelism());
         networkSearches = new ViewModelSearchRunner(Constant.TIMEOUT_SEARCH, 3);
         searchSession = new AtomicInteger();
         aggregateResults = new ArrayList<>();
@@ -218,7 +218,7 @@ public class SiteViewModel extends ViewModel {
         search.setValue(null);
         resetAggregateSearch(session);
         setSearchProgress(SearchProgress.started(session, safeSites.size()));
-        // Native sources run in two separate processes with globally serial slots and a hard
+        // Native sources reuse a bounded pool of separate processes with globally serial slots and a hard
         // watchdog. Plain HTTP sources use an independent, cancellable three-request pool.
         spiderEpoch = spiderSearches.start(nativeSites, site -> trackedSearchTask(site, keyword, quick),
                 (site, result) -> onSearchResult(session, site, result, keyword),

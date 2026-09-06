@@ -46,7 +46,7 @@ public class Server {
         if (nano != null) return;
         for (int i = 9978; i < 9999; i++) {
             try {
-                nano = new Nano(i);
+                nano = com.fongmi.android.tv.App.isSearchProcess() ? new Nano("127.0.0.1", i) : new Nano(i);
                 nano.start(500);
                 Proxy.set(i);
                 break;

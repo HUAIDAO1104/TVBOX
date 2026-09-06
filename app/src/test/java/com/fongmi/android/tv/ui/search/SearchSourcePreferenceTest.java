@@ -90,6 +90,27 @@ public class SearchSourcePreferenceTest {
         return SearchSourcePreference.isEnabled(name, "", "", name, selected);
     }
 
+    @Test public void bulkLabelsAndSelectionVisitCatalogLinearly() {
+        var reads = new java.util.concurrent.atomic.AtomicInteger();
+        java.util.List<Site> sites = new java.util.ArrayList<>();
+        for (int i = 0; i < 300; i++) {
+            String key = "source-" + i;
+            sites.add(new Site() {
+                @Override public String getKey() { reads.incrementAndGet(); return key; }
+                @Override public String getName() { return "同名来源"; }
+                @Override public String getConfigUrl() { return ""; }
+                @Override public boolean isSearchable() { return true; }
+            });
+        }
+        var labels = SearchSourcePreference.labels(sites);
+        assertEquals(300, labels.size());
+        assertTrue(labels.values().contains("同名来源 · source-299"));
+        assertTrue("No per-row catalog rescan", reads.get() <= 900);
+        reads.set(0);
+        assertEquals(labels.keySet(), SearchSourcePreference.resolveSelection(String.join("\n", labels.keySet()), sites, null));
+        assertTrue("Concrete selection resolution must be linear", reads.get() <= 900);
+    }
+
     private static Site namedSite(String name) {
         return new Site() {
             @Override

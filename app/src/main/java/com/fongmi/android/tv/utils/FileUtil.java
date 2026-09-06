@@ -89,7 +89,7 @@ public class FileUtil {
                 com.fongmi.android.tv.player.exo.MediaSourceFactory.clearStoredResources();
                 com.bumptech.glide.Glide.get(App.get()).clearDiskCache();
                 // Executing plugins and in-flight search processes own these directories.
-                java.util.Set<String> protectedNames = java.util.Set.of("exo", "jar", "js", "py", "search-worker-1", "search-worker-2");
+                java.util.Set<String> protectedNames = java.util.Set.of("exo", "jar", "js", "py", "search-worker-1", "search-worker-2", "search-worker-3", "search-worker-4", "source-jars");
                 for (File child : Path.list(Path.cache())) if (!protectedNames.contains(child.getName())) Path.clear(child);
                 App.post(callback::success);
             } catch (Exception error) {

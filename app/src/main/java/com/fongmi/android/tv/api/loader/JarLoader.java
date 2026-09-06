@@ -67,18 +67,32 @@ public class JarLoader {
         if (!Path.exists(file) || !file.setReadOnly()) return;
         String cachePath = Path.jar().getAbsolutePath();
         DexClassLoader loader = new DexClassLoader(file.getAbsolutePath(), cachePath, cachePath, App.get().getClassLoader());
-        invokeInit(loader);
+        try { invokeInit(loader); }
+        catch (Exception error) { throw new IllegalStateException("来源初始化失败", error); }
         invokeProxy(key, loader);
         loaders.put(key, loader);
     }
 
-    private void invokeInit(DexClassLoader loader) {
+    private void invokeInit(DexClassLoader loader) throws Exception {
+        Class<?> clz;
         try {
-            Class<?> clz = loader.loadClass("com.github.catvod.spider.Init");
-            Method method = clz.getMethod("init", Context.class);
-            method.invoke(clz, App.get());
-        } catch (Throwable e) {
-            com.github.catvod.crawler.SpiderDebug.log(e);
+            clz = loader.loadClass("com.github.catvod.spider.Init");
+        } catch (ClassNotFoundException optional) { return; }
+        Method method;
+        try { method = clz.getMethod("init", Context.class); }
+        catch (NoSuchMethodException optional) { return; }
+        method.invoke(null, App.get());
+        // Some native wrappers expose a secondary loader and otherwise pass null into JNI.
+        // Check that public readiness contract before constructing a guarded Spider.
+        Method ready;
+        try { ready = clz.getMethod("loader"); }
+        catch (NoSuchMethodException optional) { return; }
+        if (!java.lang.reflect.Modifier.isStatic(ready.getModifiers())
+                || !ClassLoader.class.isAssignableFrom(ready.getReturnType())) return;
+        for (int retry = 0; ready.invoke(null) == null; retry++) {
+            if (retry == 2) throw new IllegalStateException("来源运行环境未就绪");
+            Thread.sleep(80);
+            method.invoke(null, App.get());
         }
     }
 
@@ -105,7 +119,8 @@ public class JarLoader {
             if (!md5.isEmpty() && Util.equals(jar, md5)) {
                 load(key, Path.jar(jar));
             } else if (jar.startsWith("http")) {
-                load(key, Download.create(jar, Path.jar(jar)).get());
+                try { load(key, JarArtifactCache.get(jar, md5)); }
+                catch (Exception error) { throw new RuntimeException("来源组件加载失败", error); }
             } else if (jar.startsWith("file")) {
                 load(key, Path.local(jar));
             }
@@ -134,11 +149,11 @@ public class JarLoader {
     public Spider getSpider(String cacheKey, String proxyKey, String siteKey, String api, String ext, String jar) {
         String jaKey = Util.md5(jar);
         String spKey = jaKey + cacheKey;
-        return spiders.computeIfAbsent(spKey, k -> {
+        Spider cached = spiders.computeIfAbsent(spKey, k -> {
             try {
                 parseJar(jaKey, jar);
                 DexClassLoader loader = loaders.get(jaKey);
-                if (loader == null) return new SpiderNull();
+                if (loader == null) throw new IllegalStateException("来源组件未加载");
                 Spider spider = (Spider) loader.loadClass("com.github.catvod.spider." + api.split("csp_")[1]).newInstance();
                 spider.siteKey = siteKey;
                 spider.proxyKey = proxyKey;
@@ -146,9 +161,11 @@ public class JarLoader {
                 return spider;
             } catch (Throwable e) {
                 com.github.catvod.crawler.SpiderDebug.log(e);
-                return new SpiderNull();
+                if (com.fongmi.android.tv.App.isSearchProcess()) throw new IllegalStateException("来源初始化失败", e);
+                return null;
             }
         });
+        return cached == null ? new SpiderNull() : cached;
     }
 
     private DexClassLoader requireRecentLoader() {

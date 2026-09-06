@@ -114,7 +114,7 @@ public class App extends Application implements Application.ActivityLifecycleCal
     @Override public java.io.File getCacheDir() {
         java.io.File base = super.getCacheDir();
         if (!isSearchProcess()) return base;
-        java.io.File isolated = new java.io.File(base, processName().endsWith("2") ? "search-worker-2" : "search-worker-1");
+        java.io.File isolated = new java.io.File(base, "search-worker-" + processName().substring(processName().lastIndexOf("source_search") + "source_search".length()));
         isolated.mkdirs();
         return isolated;
     }

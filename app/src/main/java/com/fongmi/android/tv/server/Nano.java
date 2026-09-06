@@ -31,6 +31,16 @@ public class Nano extends NanoHTTPD {
         addProcess();
     }
 
+    /** Search workers expose only local plugin dependencies, never remote UI actions. */
+    public Nano(String hostname, int port) {
+        super(hostname, port);
+        process = new ArrayList<>();
+        process.add(new CredentialMemory());
+        process.add(new Cache());
+        process.add(new Local());
+        process.add(new Proxy());
+    }
+
     private void addProcess() {
         process = new ArrayList<>();
         process.add(new Action());

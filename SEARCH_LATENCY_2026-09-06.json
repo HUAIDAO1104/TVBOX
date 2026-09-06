@@ -1,0 +1,94 @@
+{
+  "environment": "Android TV API 36 arm64 emulator; same 98-source config and 5 selected sources; live network",
+  "measurementNotes": "Single live sample per keyword/version. firstMs is first valid model result, visibleMs is first grid draw containing results; enterMs includes instrumentation idle wait and is not first frame. No baseline visibleMs measurement. Source data and errors varied between runs.",
+  "measurements": [
+    {
+      "version": "5.5.65",
+      "keyword": "庆余年",
+      "enterMs": 1144,
+      "firstMs": 6314,
+      "finishMs": 12812,
+      "progress": {
+        "total": 5,
+        "completed": 5,
+        "successful": 4,
+        "empty": 0,
+        "failed": 1,
+        "timedOut": 0,
+        "resultCount": 19
+      }
+    },
+    {
+      "version": "5.5.65",
+      "keyword": "庆余年第二季",
+      "enterMs": 1149,
+      "firstMs": 7643,
+      "finishMs": 10519,
+      "progress": {
+        "total": 5,
+        "completed": 5,
+        "successful": 1,
+        "empty": 2,
+        "failed": 1,
+        "timedOut": 1,
+        "resultCount": 1
+      }
+    },
+    {
+      "version": "5.5.66-search-hotfix",
+      "keyword": "庆余年",
+      "enterMs": 464,
+      "firstMs": 2032,
+      "visibleMs": 2114,
+      "finishMs": 4379,
+      "progress": {
+        "total": 5,
+        "completed": 5,
+        "successful": 3,
+        "empty": 0,
+        "failed": 2,
+        "timedOut": 0,
+        "resultCount": 13
+      }
+    },
+    {
+      "version": "5.5.66-search-hotfix",
+      "keyword": "庆余年第二季",
+      "enterMs": 622,
+      "firstMs": 656,
+      "visibleMs": 669,
+      "finishMs": 1751,
+      "progress": {
+        "total": 5,
+        "completed": 5,
+        "successful": 2,
+        "empty": 2,
+        "failed": 1,
+        "timedOut": 0,
+        "resultCount": 3
+      }
+    }
+  ],
+  "finalResultActivityFirstFrameMs": [
+    183,
+    160
+  ],
+  "releaseSmoke": {
+    "searchActivityFirstFrameMs": 80,
+    "resultActivityFirstFrameMs": 116,
+    "totalRows": 8,
+    "sourceCount": 2,
+    "failedSources": 3,
+    "focusSwitchCounts": [
+      6,
+      2
+    ]
+  },
+  "validation": {
+    "unitTests": 249,
+    "instrumentationTests": 28,
+    "lintErrors": 0,
+    "lintWarnings": 290,
+    "releaseApkVariants": 4
+  }
+}

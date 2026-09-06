@@ -139,10 +139,11 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         setupLists();
         setupViewModel();
         saveKeyword();
-        String selection = SearchSourcePreference.serialize(resolveSelectedSourceFamilies());
-        viewModel.restoreCachedSearch(getKeyword(), resolveSelectedSourceFamilies());
+        Set<String> selected = resolveSelectedSourceFamilies();
+        String selection = SearchSourcePreference.serialize(selected);
+        viewModel.restoreCachedSearch(getKeyword(), selected);
         if (viewModel.hasSearch(getKeyword(), selection)) {
-            enabledSearchFamilies.addAll(resolveSelectedSourceFamilies());
+            enabledSearchFamilies.addAll(selected);
             ensureActiveSourceFamily();
             initializeFamilyCaches();
             binding.result.setText(getString(R.string.collect_result, getKeyword()));
@@ -175,10 +176,12 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         pendingRestoreSourceId = null;
         pendingLayoutState = null;
         activeSourceFamily = "";
-        String selection = SearchSourcePreference.serialize(resolveSelectedSourceFamilies());
-        viewModel.restoreCachedSearch(getKeyword(), resolveSelectedSourceFamilies());
+        Set<String> selected = resolveSelectedSourceFamilies();
+        String selection = SearchSourcePreference.serialize(selected);
+        viewModel.restoreCachedSearch(getKeyword(), selected);
         if (viewModel.hasSearch(getKeyword(), selection)) {
-            enabledSearchFamilies.addAll(resolveSelectedSourceFamilies());
+            enabledSearchFamilies.clear();
+            enabledSearchFamilies.addAll(selected);
             ensureActiveSourceFamily();
             initializeFamilyCaches();
             binding.result.setText(getString(R.string.collect_result, getKeyword()));
@@ -319,9 +322,8 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
 
     private void showSourceFilter() {
         List<String> choices = SearchSourcePreference.choices(VodConfig.get().getSites());
-        String[] displayChoices = choices.stream().map(source -> {
-            return SearchSourcePreference.label(source, VodConfig.get().getSites());
-        }).toArray(String[]::new);
+        Map<String, String> labels = SearchSourcePreference.labels(VodConfig.get().getSites());
+        String[] displayChoices = choices.stream().map(source -> labels.getOrDefault(source, source)).toArray(String[]::new);
         Set<String> pending = new LinkedHashSet<>(selectedSourceFamilies());
         boolean[] checked = new boolean[choices.size()];
         for (int index = 0; index < choices.size(); index++) checked[index] = pending.contains(choices.get(index));
@@ -484,10 +486,10 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         sitesByFamily.clear();
         labelsByFamily.clear();
         List<Site> configured = VodConfig.get().getSites();
+        labelsByFamily.putAll(SearchSourcePreference.labels(configured));
         for (Site site : configured) {
             String family = SearchSourcePreference.id(site);
             sitesByFamily.put(family, site);
-            labelsByFamily.put(family, SearchSourcePreference.label(family, configured));
         }
         ensureFamilyCaches(visibleSourceFamilies());
         activateFamily(activeSourceFamily);

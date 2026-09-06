@@ -49,7 +49,8 @@ public final class SearchSourcePreference {
 
     public static boolean isEnabled(Site site, Set<String> selected) {
         if (site == null) return false;
-        if (selected != null && selected.stream().anyMatch(value -> value.startsWith("site_")) && selected.contains(id(site))) return true;
+        if (selected == null || selected.isEmpty()) return false;
+        if (selected.contains(id(site))) return true;
         Set<String> legacy = new LinkedHashSet<>();
         if (selected != null) for (String item : selected) if (!item.startsWith("site_")) legacy.add(item);
         return isEnabled(site.getName(), site.getConfigName(), site.getRepositoryName(), site.getKey(), legacy);
@@ -93,13 +94,17 @@ public final class SearchSourcePreference {
         explicit.remove(ALL_SOURCES);
         explicit.remove(ALL_OTHER_SOURCES);
         LinkedHashSet<String> resolved = new LinkedHashSet<>();
+        java.util.Map<String, List<Site>> exactChoices = new java.util.HashMap<>();
+        for (Site site : searchable) {
+            exactChoices.computeIfAbsent(id(site), ignored -> new ArrayList<>()).add(site);
+            exactChoices.computeIfAbsent(SearchDisplayName.clean(site.getName()), ignored -> new ArrayList<>()).add(site);
+        }
 
         if (!explicit.isEmpty()) {
             for (String saved : explicit) {
-                List<Site> exact = searchable.stream()
-                        .filter(site -> id(site).equals(saved) || SearchDisplayName.clean(site.getName()).equals(saved)).toList();
+                List<Site> exact = exactChoices.getOrDefault(saved, List.of());
                 if (!exact.isEmpty()) exact.forEach(site -> resolved.add(id(site)));
-                else for (Site site : searchable) if (isEnabled(site, Set.of(saved))) resolved.add(id(site));
+                else if (!saved.startsWith("site_")) for (Site site : searchable) if (isEnabled(site, Set.of(saved))) resolved.add(id(site));
             }
         }
 
@@ -134,6 +139,18 @@ public final class SearchSourcePreference {
             return duplicates > 1 ? name + " · " + site.getKey() : name;
         }
         return id;
+    }
+
+    /** Build labels once; never scan and hash the whole catalog separately for every row. */
+    public static java.util.Map<String, String> labels(List<Site> sites) {
+        java.util.Map<String, Long> counts = new java.util.HashMap<>();
+        java.util.Map<String, String> labels = new java.util.LinkedHashMap<>();
+        for (Site site : sites) if (site != null) counts.merge(SearchDisplayName.clean(site.getName()), 1L, Long::sum);
+        for (Site site : sites) if (site != null) {
+            String name = SearchDisplayName.clean(site.getName());
+            labels.put(id(site), counts.get(name) > 1 ? name + " · " + site.getKey() : name);
+        }
+        return labels;
     }
 
     public static boolean isFourKDefault(String sourceName) {
