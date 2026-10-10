@@ -16,12 +16,13 @@ public class ExoPlayerEngine implements PlayerEngine {
     private final ErrorMsgProvider provider;
     private final Player.Listener listener;
     private final PreCache preCache;
+    private final PlaybackTransferProgress transferProgress = new PlaybackTransferProgress();
     private ExoPlayer player;
     private PlaySpec spec;
     private int decode;
 
     public ExoPlayerEngine(int decode, Player.Listener listener) {
-        this.player = ExoUtil.buildPlayer(decode, listener);
+        this.player = ExoUtil.buildPlayer(decode, listener, transferProgress);
         this.provider = new ErrorMsgProvider();
         this.preCache = new PreCache();
         this.listener = listener;
@@ -48,7 +49,7 @@ public class ExoPlayerEngine implements PlayerEngine {
     public Player rebuild() {
         preCache.stop();
         player.release();
-        return player = ExoUtil.buildPlayer(decode, listener);
+        return player = ExoUtil.buildPlayer(decode, listener, transferProgress);
     }
 
     @Override
@@ -62,6 +63,9 @@ public class ExoPlayerEngine implements PlayerEngine {
         this.spec = spec;
         startInternal(startPositionMs);
     }
+
+    @Override
+    public long getTransferredBytes() { return transferProgress.bytes(); }
 
     @Override
     public void stop() {

@@ -9,6 +9,7 @@ import androidx.media3.database.StandaloneDatabaseProvider;
 import androidx.media3.datasource.DataSource;
 import androidx.media3.datasource.DefaultDataSource;
 import androidx.media3.datasource.HttpDataSource;
+import androidx.media3.datasource.TransferListener;
 import androidx.media3.datasource.cache.Cache;
 import androidx.media3.datasource.cache.CacheDataSource;
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor;
@@ -52,11 +53,17 @@ public class MediaSourceFactory implements MediaSource.Factory {
     }
 
     private final DefaultMediaSourceFactory defaultMediaSourceFactory;
+    private final TransferListener transferListener;
     private HttpDataSource.Factory httpDataSourceFactory;
     private DataSource.Factory dataSourceFactory;
     private ExtractorsFactory extractorsFactory;
 
     public MediaSourceFactory() {
+        this(null);
+    }
+
+    MediaSourceFactory(TransferListener transferListener) {
+        this.transferListener = transferListener;
         defaultMediaSourceFactory = new DefaultMediaSourceFactory(getDataSourceFactory(), getExtractorsFactory());
     }
 
@@ -115,7 +122,11 @@ public class MediaSourceFactory implements MediaSource.Factory {
     }
 
     private DataSource.Factory getDataSourceFactory() {
-        if (dataSourceFactory == null) dataSourceFactory = () -> getCacheDataSource(new DefaultDataSource.Factory(App.get(), getHttpDataSourceFactory())).createDataSource();
+        if (dataSourceFactory == null) dataSourceFactory = () -> {
+            DataSource source = getCacheDataSource(new DefaultDataSource.Factory(App.get(), getHttpDataSourceFactory())).createDataSource();
+            if (transferListener != null) source.addTransferListener(transferListener);
+            return source;
+        };
         return dataSourceFactory;
     }
 

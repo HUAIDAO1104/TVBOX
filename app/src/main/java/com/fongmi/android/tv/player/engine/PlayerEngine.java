@@ -23,6 +23,9 @@ public interface PlayerEngine {
 
     void start(PlaySpec spec, long startPositionMs);
 
+    /** Monotonic count of reads belonging to active playback, excluding disk preloads. */
+    default long getTransferredBytes() { return 0; }
+
     default void stop() {
         getPlayer().stop();
     }

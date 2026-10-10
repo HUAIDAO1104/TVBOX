@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.player;
 
 import android.net.Uri;
+import android.os.SystemClock;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
@@ -43,6 +44,10 @@ import java.util.Map;
 
 public class PlayerManager implements ParseCallback {
 
+    // Match the HTTP connection/read allowance. A source's longer timeout remains respected.
+    private static final long MIN_STARTUP_IDLE_MS = 30000;
+    private static final long STARTUP_CHECK_MS = 1000;
+    private final PlaybackStartupTimeout startupTimeout = new PlaybackStartupTimeout();
     private final Runnable runnable;
     private final Callback callback;
     private PlayerEngine engine;
@@ -75,7 +80,7 @@ public class PlayerManager implements ParseCallback {
     }
 
     public void release() {
-        App.removeCallbacks(runnable);
+        cancelStartupTimeout();
         if (player != null) player.removeListener(listener);
         if (engine != null) engine.release();
         engine = null;
@@ -329,11 +334,13 @@ public class PlayerManager implements ParseCallback {
     }
 
     public void stop() {
+        cancelStartupTimeout();
         engine.stop();
         stopParse();
     }
 
     public void clearMediaItems() {
+        cancelStartupTimeout();
         player.clearMediaItems();
     }
 
@@ -375,11 +382,12 @@ public class PlayerManager implements ParseCallback {
     }
 
     public void reset() {
-        App.removeCallbacks(runnable);
+        cancelStartupTimeout();
         retry = 0;
     }
 
     public void clear() {
+        cancelStartupTimeout();
         // A parse job belongs to the current spec. Letting it survive clear() allows a late
         // callback from the previous title to overwrite the next direct media item.
         stopParse();
@@ -416,8 +424,27 @@ public class PlayerManager implements ParseCallback {
     }
 
     private void onPlayTimeout() {
+        if (!startupTimeout.isActive() || player == null || spec == null) return;
+        int state = player.getPlaybackState();
+        if (state == Player.STATE_READY || state == Player.STATE_ENDED) {
+            cancelStartupTimeout();
+            return;
+        }
+        long now = SystemClock.elapsedRealtime();
+        startupTimeout.observe(now, engine.getTransferredBytes(), player.getTotalBufferedDuration());
+        // A paused startup is intentional, not a stalled connection.
+        if (!player.getPlayWhenReady()) startupTimeout.progress(now);
+        if (!startupTimeout.expired(now)) {
+            App.post(runnable, STARTUP_CHECK_MS);
+            return;
+        }
         stop();
         callback.onError(ResUtil.getString(R.string.error_play_timeout));
+    }
+
+    private void cancelStartupTimeout() {
+        startupTimeout.cancel();
+        App.removeCallbacks(runnable);
     }
 
     private void ensureEngine(PlaySpec spec) {
@@ -455,6 +482,7 @@ public class PlayerManager implements ParseCallback {
     }
 
     public void parse(String key, Result result, boolean useParse, MediaMetadata metadata, long startPositionMs) {
+        cancelStartupTimeout();
         stopParse();
         pendingStartPositionMs = startPositionMs;
         spec = PlaySpec.fromParse(result, key, metadata);
@@ -471,13 +499,16 @@ public class PlayerManager implements ParseCallback {
     }
 
     private void setMediaItem(long timeout, long startPositionMs) {
+        cancelStartupTimeout();
         if (spec == null || spec.getUrl() == null) return;
         ensureEngine(spec.checkUa());
+        initTrack = false;
+        startupTimeout.start(SystemClock.elapsedRealtime(), timeout < 0 ? -1 : Math.max(timeout, MIN_STARTUP_IDLE_MS), engine.getTransferredBytes());
+        // Arm before start(): an engine may synchronously report READY or an error.
+        if (startupTimeout.isActive()) App.post(runnable, STARTUP_CHECK_MS);
         engine.start(spec, startPositionMs);
         setDanmakus(spec.getDanmakus());
-        App.post(runnable, timeout);
         callback.onPrepare();
-        initTrack = false;
     }
 
     private void startCurrent() {
@@ -571,7 +602,19 @@ public class PlayerManager implements ParseCallback {
 
         @Override
         public void onPlaybackStateChanged(int state) {
-            if (state == Player.STATE_READY || state == Player.STATE_ENDED) App.removeCallbacks(runnable);
+            if (state == Player.STATE_READY || state == Player.STATE_ENDED) cancelStartupTimeout();
+        }
+
+        @Override
+        public void onRenderedFirstFrame() {
+            // First frame proves decoder progress but does not prove buffering has finished.
+            // Refresh the idle allowance; a genuinely frozen frame must still expire.
+            startupTimeout.progress(SystemClock.elapsedRealtime());
+        }
+
+        @Override
+        public void onPlayWhenReadyChanged(boolean playWhenReady, int reason) {
+            startupTimeout.progress(SystemClock.elapsedRealtime());
         }
 
         @Override
@@ -599,7 +642,7 @@ public class PlayerManager implements ParseCallback {
 
         @Override
         public void onPlayerError(@NonNull PlaybackException e) {
-            App.removeCallbacks(runnable);
+            cancelStartupTimeout();
             if (spec == null) return;
             switch (engine.handleError(e)) {
                 case DECODE -> handleDecodeError(e);
