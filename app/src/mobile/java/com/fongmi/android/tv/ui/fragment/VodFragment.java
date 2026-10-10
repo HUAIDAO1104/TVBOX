@@ -33,6 +33,9 @@ import com.fongmi.android.tv.impl.FilterListener;
 import com.fongmi.android.tv.impl.SiteListener;
 import com.fongmi.android.tv.model.SiteViewModel;
 import com.fongmi.android.tv.ui.activity.HistoryActivity;
+import com.fongmi.android.tv.ui.activity.LiveActivity;
+import com.fongmi.android.tv.ui.dialog.ConfigDialog;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
 import com.fongmi.android.tv.ui.activity.KeepActivity;
 import com.fongmi.android.tv.ui.activity.SearchActivity;
 import com.fongmi.android.tv.ui.adapter.TypeAdapter;
@@ -60,6 +63,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     private SiteViewModel mViewModel;
     private TypeAdapter mAdapter;
     private Result mResult;
+    private com.fongmi.android.tv.bean.History recentHistory;
 
     public static VodFragment newInstance() {
         return new VodFragment();
@@ -91,10 +95,21 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         showProgress();
         setTitle();
         setLogo();
+        if (!getHome().getKey().isEmpty()) homeContent();
+        else showEmpty(false);
     }
 
     @Override
     protected void initEvent() {
+        mBinding.continueEntry.setOnClickListener(v -> {
+            if (recentHistory != null) com.fongmi.android.tv.ui.activity.VideoActivity.start(requireActivity(), recentHistory.getSiteKey(), recentHistory.getVodId(), recentHistory.getVodName(), recentHistory.getVodPic());
+        });
+        mBinding.searchEntry.setOnClickListener(v -> SearchActivity.start(requireActivity()));
+        mBinding.liveEntry.setOnClickListener(v -> LiveActivity.start(requireActivity()));
+        mBinding.configEntry.setOnClickListener(this::onSite);
+        mBinding.linkEntry.setOnClickListener(this::onLink);
+        mBinding.setup.setOnClickListener(v -> ConfigDialog.create().vod().show(this));
+        mBinding.retry.setOnClickListener(v -> homeContent());
         mBinding.top.setOnClickListener(this::onTop);
         mBinding.logo.setOnClickListener(this::onLogo);
         mBinding.link.setOnClickListener(this::onLink);
@@ -102,12 +117,6 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         mBinding.filter.setOnClickListener(this::onFilter);
         mBinding.filter.setOnLongClickListener(this::onLink);
         mBinding.toolbar.setOnMenuItemClickListener(this::onMenuItemClick);
-        mBinding.appBar.addOnOffsetChangedListener((appBarLayout, verticalOffset) -> {
-            float factor = Math.abs(verticalOffset * 1f / appBarLayout.getTotalScrollRange());
-            int padding = (int) (ResUtil.dp2px(12) * factor);
-            if (mBinding.type.getPaddingTop() == padding) return;
-            mBinding.type.setPadding(mBinding.type.getPaddingStart(), padding, mBinding.type.getPaddingEnd(), mBinding.type.getPaddingBottom());
-        });
         mBinding.pager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
             @Override
             public void onPageSelected(int position) {
@@ -131,17 +140,20 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     }
 
     private void setAdapter(Result result) {
+        if (result == null) return;
+        mBinding.emptyState.setVisibility(View.GONE);
         mAdapter.addAll(mResult = result);
         mBinding.pager.getAdapter().notifyDataSetChanged();
         setFabVisible(0);
         hideProgress();
         showContent();
+        if (mAdapter.getItemCount() == 0) showEmpty(result.hasMsg());
     }
 
     private void setFabVisible(int position) {
         if (mAdapter.getItemCount() == 0) {
             mBinding.top.setVisibility(View.INVISIBLE);
-            mBinding.link.setVisibility(View.VISIBLE);
+            mBinding.link.setVisibility(View.GONE);
             mBinding.filter.setVisibility(View.GONE);
         } else if (!mAdapter.get(position).getFilters().isEmpty()) {
             mBinding.top.setVisibility(View.INVISIBLE);
@@ -150,15 +162,33 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         } else if (position == 0 || mAdapter.get(position).getFilters().isEmpty()) {
             mBinding.top.setVisibility(View.INVISIBLE);
             mBinding.filter.setVisibility(View.GONE);
-            mBinding.link.show();
+            mBinding.link.hide();
         }
     }
 
     private void setTitle() {
-        List<String> items = Arrays.asList(getHome().getName(), getConfig().getName(), getString(R.string.app_name));
-        Optional<String> optional = items.stream().filter(s -> !TextUtils.isEmpty(s)).findFirst();
-        optional.ifPresent(s -> mBinding.title.setText(s));
+        mBinding.title.setText(R.string.app_name);
+        String name = SearchDisplayName.clean(getHome().getName());
+        mBinding.configEntry.setText(name.isEmpty() ? getString(R.string.mobile_source) : name);
+        mBinding.configEntry.setMaxLines(1);
+        mBinding.configEntry.setEllipsize(TextUtils.TruncateAt.END);
+        mBinding.configEntry.setContentDescription(getString(R.string.mobile_source) + "，" + name);
     }
+
+    private void loadRecentHistory() {
+        com.fongmi.android.tv.utils.Task.execute(() -> {
+            List<com.fongmi.android.tv.bean.History> items = com.fongmi.android.tv.bean.History.get();
+            com.fongmi.android.tv.App.post(() -> {
+                if (mBinding == null || !isAdded()) return;
+                recentHistory = items.isEmpty() ? null : items.get(0);
+                mBinding.continueEntry.setVisibility(recentHistory == null ? View.GONE : View.VISIBLE);
+                if (recentHistory != null) mBinding.continueEntry.setText(getString(R.string.mobile_history) + " · " + recentHistory.getVodName() + "  " + recentHistory.getVodRemarks());
+            });
+        });
+    }
+
+    @Override public void onResume() { super.onResume(); loadRecentHistory(); }
+    @Override public void onHiddenChanged(boolean hidden) { super.onHiddenChanged(hidden); if (!hidden) loadRecentHistory(); }
 
     private void onTop(View view) {
         getFragment().scrollToTop();
@@ -177,7 +207,8 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     }
 
     private void onSite(View view) {
-        SiteDialog.create().change().show(this);
+        if (VodConfig.get().getSites().isEmpty()) ConfigDialog.create().vod().show(this);
+        else SiteDialog.create().show(this);
     }
 
     private void onFilter(View view) {
@@ -192,7 +223,15 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     }
 
     private void showProgress() {
+        mBinding.emptyState.setVisibility(View.GONE);
         mBinding.progress.getRoot().setVisibility(View.VISIBLE);
+    }
+
+    private void showEmpty(boolean failed) {
+        hideProgress();
+        mBinding.emptyMessage.setText(failed ? R.string.mobile_load_failed : R.string.mobile_home_empty_hint);
+        mBinding.emptyState.setVisibility(View.VISIBLE);
+        mBinding.retry.setVisibility(getHome().getKey().isEmpty() ? View.GONE : View.VISIBLE);
     }
 
     private void hideProgress() {
@@ -248,7 +287,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     public void onStateEvent(StateEvent event) {
         switch (event.type()) {
             case EMPTY:
-                hideProgress();
+                showEmpty(false);
                 break;
             case PROGRESS:
                 showProgress();
@@ -277,6 +316,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
                 Notify.dismiss();
                 Notify.show(msg);
                 showContent();
+                showEmpty(true);
             }
         });
     }
@@ -309,12 +349,13 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     public void onDestroyView() {
         super.onDestroyView();
         EventBus.getDefault().unregister(this);
+        mBinding = null;
     }
 
     class PageAdapter extends FragmentStatePagerAdapter {
 
         public PageAdapter(@NonNull FragmentManager fm) {
-            super(fm);
+            super(fm, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);
         }
 
         @NonNull
@@ -329,8 +370,6 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
             return mAdapter.getItemCount();
         }
 
-        @Override
-        public void destroyItem(@NonNull ViewGroup container, int position, @NonNull Object object) {
-        }
+
     }
 }

@@ -1,0 +1,84 @@
+---
+version: alpha
+name: 片多多 Mobile
+description: 面向触屏的原生 Android 影视片架，独立于遥控器电视界面。
+colors:
+  primary: "#FF6575"
+  background: "#101318"
+  surface: "#1B2028"
+  outline: "#687587"
+  foreground: "#F4F5F7"
+  secondary: "#ADB7C6"
+typography:
+  sans:
+    fontFamily: "sans-serif"
+  title:
+    fontFamily: "sans-serif-medium"
+    fontSize: "22px"
+  body:
+    fontFamily: "sans-serif"
+    fontSize: "14px"
+rounded:
+  DEFAULT: "12px"
+  sm: "8px"
+spacing:
+  page: "16px"
+  gap: "12px"
+  target: "48px"
+components:
+  button: {}
+  poster:
+    textColor: "{colors.foreground}"
+  navigation: {}
+  search: {}
+  dialog: {}
+---
+
+# 片多多手机设计规范
+
+## Overview
+
+用户要在手机上快速找片、切换来源、续播和管理收藏。当前用户需求及应用内容以中文为主；不推断特定国家市场。使用 Android 系统中文字体回退。此规范只管 `src/mobile`，电视端继续使用 `src/leanback`。
+
+Creative North Star：安静的私人电影片架。海报作为视觉主体，片名、更新状态和观看进度提供实用信息；保留品牌红色，减少大面积装饰和遥控器焦点效果。
+
+运行时 Android resources 是权威来源（Model B），本文件镜像其值。`mobile_theme.xml` 的 mobile_background/surface/outline/text/muted/accent 对应以上 background/surface/outline/foreground/secondary/primary。文档 px 数值映射原生 dp，字体数值映射 sp。`scripts/check_mobile_design.py` 检查漂移。
+
+## Colors
+
+深灰底配较亮的内容表面；正文 foreground，辅助文字 secondary。primary 只用于选中、主操作与品牌标识。选择同时用下划线/文字/原生 checked 语义表达。沿用深色播放环境，避免原有白字落在浅色 Material 系统主题。
+
+## Typography
+
+标题 22sp medium，正文 14–16sp，辅助 12sp。采用系统 sans-serif 及 Android 中文回退；尊重系统字体缩放。重要操作不截断；片名两行，详情提供全文。技术地址可复制，避免大号配置文字抢占内容。
+
+## Layout
+
+默认竖屏；首页、片库、我的三个有文字标签的底部目的地。直播从首页明确入口进入。首页固定搜索入口、来源和横向分类、三列海报；窄屏/大字减少列数，平板按可用宽度增加列数。页面边距 16dp、内容间距 12dp；触摸操作最小 48dp。
+
+搜索结果使用横向来源标签和全宽结果列表，立即切换；列表自身滚动，工具栏和搜索进度可见。详情播放器保持 16:9，下面自然滚动；全屏仅在播放时进入，返回先退出全屏。BaseActivity 负责系统栏与键盘边距，播放器负责全屏时的例外。
+
+## Elevation & Depth
+
+通过 surface 和 outline 区分层次。普通片架不叠加阴影/玻璃；浮层沿用 Material dialog/bottom sheet 的平台遮罩与焦点处理。
+
+## Shapes
+
+表面与搜索框 12dp，海报 8dp。图像固定比例，加载失败保留占位；列表操作用原生 ripple。
+
+## Components
+
+默认、按下、焦点、选中、不可用和加载使用 Android Material 状态。主动作使用 MaterialButton，次要动作使用文字按钮。重要图标按钮有 contentDescription，底部导航始终展示标签。
+
+加载使用保留空间的 progress indicator；已有结果持续可用。不用假进度、不等待全部源返回、不以动画延迟导航。无配置/空片库/无结果/超时分别说明并提供配置、搜索或重试。
+
+表单、列表选择与确认框由 Material 控件及既有 DialogGlass 管理；网络建议 300ms 防抖、输入法组合态不发请求、过期回调失效。清空搜索按钮立即生效。列表删除、清空记录遵循明确范围确认。
+
+图标沿用项目 Material vector。正常导航直接显示；平台动画随系统动画倍率，业务代码不添加入场等待。短提示由 Notify 统一管理。
+
+## Do's and Don'ts
+
+- 使用中文动作标签，把常用动作放在可触达位置。
+- 搜索计数来自已去重、已展示条目，并显示搜索进度和失败状态。
+- 不把电视布局缩放成手机，不用悬停或长按作为唯一操作入口。
+- 不让 UI 更换修改搜索调度、播放器超时、数据库和云端凭据协议。

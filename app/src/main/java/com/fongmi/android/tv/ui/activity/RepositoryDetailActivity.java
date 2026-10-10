@@ -80,8 +80,8 @@ public class RepositoryDetailActivity extends BaseActivity implements Repository
     private void render() {
         if (repository == null || isFinishing() || isDestroyed()) return;
         int generation = ++renderGeneration;
-        binding.refresh.setEnabled(repository.getStatus() != RepositoryStatus.SYNCING);
-        binding.status.setText(repository.getStatus() == RepositoryStatus.SYNCING ? R.string.repository_status_syncing : R.string.repository_status_idle);
+        binding.refresh.setEnabled(!RepositoryStatus.SYNCING.equals(repository.getStatus()));
+        binding.status.setText(RepositoryStatus.SYNCING.equals(repository.getStatus()) ? R.string.repository_status_syncing : R.string.repository_status_idle);
         com.fongmi.android.tv.utils.Task.execute(() -> {
             int count = manager.getItemCount(repository.getId());
             int mappings = manager.getMappingCount(repository.getId());

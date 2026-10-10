@@ -27,7 +27,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 public class ConfigDialog extends BaseAlertDialog {
 
     private DialogConfigBinding binding;
-    private boolean append = true;
     private boolean edit;
     private String ori;
     private int type;
@@ -57,7 +56,17 @@ public class ConfigDialog extends BaseAlertDialog {
     }
 
     public void show(Fragment fragment) {
+        android.os.Bundle args = new android.os.Bundle(); args.putInt("type", type); args.putBoolean("edit", edit); setArguments(args);
         show(fragment.getChildFragmentManager(), null);
+    }
+
+    @Override public void onCreate(android.os.Bundle state) {
+        super.onCreate(state);
+        if (getArguments() != null) { type = getArguments().getInt("type"); edit = getArguments().getBoolean("edit"); }
+    }
+    @Override public void onStart() {
+        super.onStart();
+        ((androidx.appcompat.app.AlertDialog) requireDialog()).getButton(-1).setOnClickListener(v -> onPositive(null, 0));
     }
 
     @Override
@@ -81,12 +90,6 @@ public class ConfigDialog extends BaseAlertDialog {
     @Override
     protected void initEvent() {
         binding.choose.setEndIconOnClickListener(this::onChoose);
-        binding.url.addTextChangedListener(new CustomTextListener() {
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                detect(s.toString());
-            }
-        });
         binding.url.setOnEditorActionListener((textView, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) onPositive(null, 0);
             return true;
@@ -106,28 +109,12 @@ public class ConfigDialog extends BaseAlertDialog {
         FileChooser.from(launcher).show();
     }
 
-    private void detect(String s) {
-        if (append && "h".equalsIgnoreCase(s)) {
-            append = false;
-            binding.url.append("ttp://");
-        } else if (append && "f".equalsIgnoreCase(s)) {
-            append = false;
-            binding.url.append("ile://");
-        } else if (append && "a".equalsIgnoreCase(s)) {
-            append = false;
-            binding.url.append("ssets://");
-        } else if (s.length() > 1) {
-            append = false;
-        } else if (s.isEmpty()) {
-            append = true;
-        }
-    }
-
     private void onPositive(DialogInterface dialog, int which) {
         String url = binding.url.getText().toString().trim();
+        if (url.isEmpty()) { binding.choose.setError(getString(R.string.dialog_config_hint)); binding.url.requestFocus(); return; }
         String name = binding.name.getText().toString().trim();
         if (edit) Config.find(ori, type).url(url).name(name).update();
-        if (url.isEmpty()) Config.delete(ori, type);
+
         ((ConfigListener) requireParentFragment()).setConfig(Config.find(url, type));
         dismiss();
     }

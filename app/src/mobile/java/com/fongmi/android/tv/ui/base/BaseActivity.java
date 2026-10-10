@@ -33,9 +33,14 @@ public abstract class BaseActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         enableEdgeToEdge();
-        enableDynamicColor();
         super.onCreate(savedInstanceState);
         setContentView(getBinding().getRoot());
+        androidx.appcompat.widget.Toolbar toolbar = findViewById(com.fongmi.android.tv.R.id.mobileToolbar);
+        if (toolbar != null) {
+            toolbar.setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_ab_back_material);
+            toolbar.setNavigationContentDescription(com.fongmi.android.tv.R.string.mobile_back);
+            toolbar.setNavigationOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
+        }
         EventBus.getDefault().register(this);
         initView(savedInstanceState);
         setBackCallback();
@@ -45,6 +50,16 @@ public abstract class BaseActivity extends AppCompatActivity {
     @Override
     public void setContentView(View view) {
         super.setContentView(view);
+        view.setFitsSystemWindows(false);
+        int left = view.getPaddingLeft(), top = view.getPaddingTop();
+        int right = view.getPaddingRight(), bottom = view.getPaddingBottom();
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(view, (v, insets) -> {
+            androidx.core.graphics.Insets bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars() | androidx.core.view.WindowInsetsCompat.Type.displayCutout());
+            int ime = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime()).bottom;
+            v.setPadding(left + bars.left, top + bars.top, right + bars.right, bottom + Math.max(bars.bottom, ime));
+            return androidx.core.view.WindowInsetsCompat.CONSUMED;
+        });
+        androidx.core.view.ViewCompat.requestApplyInsets(view);
         if (!customWall()) return;
         ((ViewGroup) findViewById(android.R.id.content)).addView(new CustomWallView(this, null), 0, new ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT));
     }
@@ -54,7 +69,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
     protected boolean customWall() {
-        return true;
+        return false;
     }
 
     protected void initView(Bundle savedInstanceState) {
@@ -83,7 +98,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         int left = cutout.getSafeInsetLeft();
         int right = cutout.getSafeInsetRight();
         int bottom = cutout.getSafeInsetBottom();
-        int padding = left | right | top | bottom;
+        int padding = Math.max(left, right);
         layout.setPadding(padding, 0, leftOnly ? 0 : padding, 0);
     }
 

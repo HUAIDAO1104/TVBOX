@@ -74,7 +74,9 @@ public class SiteAdapter extends RecyclerView.Adapter<SiteAdapter.ViewHolder> {
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Site item = mItems.get(position);
         boolean on = !search || change;
-        holder.binding.text.setText(item.getName());
+        holder.binding.text.setText(com.fongmi.android.tv.ui.search.SearchDisplayName.clean(item.getName()));
+        holder.binding.search.setContentDescription((item.isSearchable() ? "关闭搜索：" : "开启搜索：") + item.getName());
+        holder.binding.change.setContentDescription((item.isChangeable() ? "关闭换源候选：" : "开启换源候选：") + item.getName());
         holder.binding.text.setEnabled(on);
         holder.binding.text.setFocusable(on);
         holder.binding.text.setSelected(on && item.isSelected());

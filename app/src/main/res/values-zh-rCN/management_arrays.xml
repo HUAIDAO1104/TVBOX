@@ -1,0 +1,7 @@
+<resources>
+    <string-array name="repository_delete_modes">
+        <item>仅删除仓库，保留为独立配置</item>
+        <item>删除仓库及仓库项目</item>
+        <item>删除仓库、项目及未共享配置映射</item>
+    </string-array>
+</resources>

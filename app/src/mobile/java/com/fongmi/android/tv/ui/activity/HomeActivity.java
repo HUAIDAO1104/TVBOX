@@ -42,6 +42,7 @@ import com.fongmi.android.tv.ui.fragment.SettingFragment;
 import com.fongmi.android.tv.ui.fragment.SettingPlayerFragment;
 import com.fongmi.android.tv.ui.fragment.SettingPreloadFragment;
 import com.fongmi.android.tv.ui.fragment.VodFragment;
+import com.fongmi.android.tv.ui.fragment.LibraryFragment;
 import com.fongmi.android.tv.utils.FileChooser;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.PermissionUtil;
@@ -66,6 +67,7 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        setIntent(intent);
         checkAction(intent);
     }
 
@@ -79,7 +81,6 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
     protected void initView(Bundle savedInstanceState) {
         orientation = getResources().getConfiguration().orientation;
         mBinding.navigation.setOnItemSelectedListener(this);
-        PermissionUtil.requestNotify(this);
         initFragment(savedInstanceState);
         Updater.create().start(this);
         initConfig();
@@ -87,7 +88,7 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
 
     @Override
     protected void initEvent() {
-        mBinding.navigation.findViewById(R.id.live).setOnLongClickListener(this::addShortcut);
+
     }
 
     private void checkAction(Intent intent) {
@@ -117,15 +118,23 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
             case 3 -> SettingDanmakuFragment.newInstance();
             case 4 -> SettingPreloadFragment.newInstance();
             case 5 -> SettingDecodeFragment.newInstance();
+            case 6 -> LibraryFragment.newInstance();
             default -> null;
         });
-        if (savedInstanceState == null) change(0);
+        if (savedInstanceState == null) mManager.change(0);
     }
 
     private void initConfig() {
-        VodConfig.get().init().load(getCallback());
-        LiveConfig.get().init().load();
-        WallConfig.get().init();
+        com.fongmi.android.tv.utils.Task.execute(() -> {
+            VodConfig.get().init();
+            LiveConfig.get().init();
+            WallConfig.get().init();
+            App.post(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                VodConfig.get().load(getCallback());
+                LiveConfig.get().load();
+            });
+        });
     }
 
     private Callback getCallback() {
@@ -156,7 +165,7 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
     private void setNavigation() {
         mBinding.navigation.getMenu().findItem(R.id.vod).setVisible(true);
         mBinding.navigation.getMenu().findItem(R.id.setting).setVisible(true);
-        mBinding.navigation.getMenu().findItem(R.id.live).setVisible(LiveConfig.hasUrl());
+
     }
 
     private boolean openLive() {
@@ -206,7 +215,7 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.setting) return mManager.change(1);
         if (item.getItemId() == R.id.vod) return mManager.change(0);
-        if (item.getItemId() == R.id.live) return openLive();
+        if (item.getItemId() == R.id.library) return mManager.change(6);
         return false;
     }
 
@@ -219,7 +228,7 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
     private void checkOrientation(Configuration newConfig) {
         if (orientation != newConfig.orientation) {
             orientation = newConfig.orientation;
-            RefreshEvent.home();
+            // Child grids resize in place; rotation must not re-fetch the catalogue.
         }
     }
 
@@ -231,7 +240,7 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
             change(2);
         } else if (mManager.isVisible(3) || mManager.isVisible(2)) {
             change(1);
-        } else if (mManager.isVisible(1)) {
+        } else if (mManager.isVisible(1) || mManager.isVisible(6)) {
             change(0);
         } else if (mManager.canBack(0)) {
             if (PlaybackService.isRunning()) moveTaskToBack(true);
@@ -241,12 +250,7 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
 
     @Override
     protected void onDestroy() {
-        LiveConfig.get().clear();
-        VodConfig.get().clear();
-        AppDatabase.backup();
-        OkHttp.get().clear();
-        Source.get().exit();
-        Server.get().stop();
+        if (isFinishing()) AppDatabase.backup();
         super.onDestroy();
     }
 }

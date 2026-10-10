@@ -1,50 +1,18 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
-
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        app:navigationIconTint="@android:color/white"
-        app:titleTextAppearance="@style/ToolbarTextAppearance" />
-
-    <androidx.appcompat.widget.LinearLayoutCompat
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="horizontal">
-
-        <com.fongmi.android.tv.ui.custom.CustomRecyclerView
-            android:id="@+id/collect"
-            android:layout_width="120dp"
-            android:layout_height="match_parent"
-            android:layout_marginTop="-8dp"
-            android:clipChildren="false"
-            android:clipToPadding="false"
-            android:overScrollMode="never"
-            android:paddingStart="8dp"
-            android:paddingEnd="0dp"
-            android:paddingBottom="8dp"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-            tools:listitem="@layout/adapter_collect" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginTop="-8dp"
-            android:clipChildren="false"
-            android:clipToPadding="false"
-            android:overScrollMode="never"
-            android:paddingStart="0dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="8dp"
-            app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-            tools:listitem="@layout/adapter_search" />
-
-    </androidx.appcompat.widget.LinearLayoutCompat>
-</androidx.appcompat.widget.LinearLayoutCompat>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+<com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" android:layout_width="match_parent" android:layout_height="56dp" app:titleTextAppearance="@style/ToolbarTextAppearance" app:navigationIconTint="@color/mobile_text"/>
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="16dp" android:gravity="center_vertical">
+<TextView android:id="@+id/status" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:textSize="12sp" android:textColor="@color/mobile_muted"/>
+<com.google.android.material.button.MaterialButton android:id="@+id/sources" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="48dp" android:text="@string/mobile_sources"/>
+</LinearLayout>
+<com.google.android.material.progressindicator.LinearProgressIndicator android:id="@+id/progress" android:layout_width="match_parent" android:layout_height="4dp" android:indeterminate="true"/>
+<com.google.android.material.tabs.TabLayout android:id="@+id/tabs" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@color/mobile_background" app:tabMode="scrollable" app:tabMinWidth="72dp" app:tabTextColor="@color/mobile_muted" app:tabSelectedTextColor="@color/mobile_accent"/>
+<FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+<androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler" android:layout_width="match_parent" android:layout_height="match_parent" android:paddingHorizontal="8dp" android:paddingBottom="8dp" android:clipToPadding="false"/>
+<TextView android:id="@+id/empty" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="32dp" android:gravity="center" android:textSize="16sp" android:textColor="@color/mobile_muted"/>
+</FrameLayout>
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="16dp" android:gravity="end">
+<com.google.android.material.button.MaterialButton android:id="@+id/stop" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="48dp" android:text="@string/mobile_stop"/>
+<com.google.android.material.button.MaterialButton android:id="@+id/retry" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="48dp" android:text="@string/mobile_retry_sources"/>
+<com.google.android.material.button.MaterialButton android:id="@+id/more" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="48dp" android:text="@string/mobile_more"/>
+</LinearLayout>
+</LinearLayout>

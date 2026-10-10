@@ -60,12 +60,8 @@
         android:background="@drawable/shape_vod_name"
         android:ellipsize="end"
         android:gravity="center"
-        android:maxLines="1"
-        android:textColor="@color/white"
-        app:autoSizeMaxTextSize="14sp"
-        app:autoSizeMinTextSize="12sp"
-        app:autoSizeStepGranularity="1sp"
-        app:autoSizeTextType="uniform"
+        android:maxLines="2"
+        android:textColor="@color/mobile_text" android:textSize="14sp"
         tools:text="蜘蛛人" />
 
 </RelativeLayout>

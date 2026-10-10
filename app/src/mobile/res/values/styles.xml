@@ -1,19 +1,27 @@
 <resources>
 
-    <style name="Theme.Base" parent="Theme.Material3.DynamicColors.DayNight.NoActionBar">
+    <style name="Theme.Base" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowBackground">@color/mobile_background</item>
+        <item name="android:colorBackground">@color/mobile_background</item>
+        <item name="colorSurface">@color/mobile_surface</item>
+        <item name="colorOnSurface">@color/mobile_text</item>
+        <item name="colorOnPrimary">@color/mobile_background</item>
+        <item name="colorOnSecondaryContainer">@color/mobile_text</item>
+        <item name="colorSecondaryContainer">@color/mobile_surface</item>
+        <item name="colorOutline">@color/mobile_outline</item>
         <item name="android:statusBarColor">@color/transparent</item>
         <item name="android:navigationBarColor">@color/transparent</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
-        <item name="colorPrimary">@color/brand_red</item>
-        <item name="colorSecondary">@color/brand_red_focused</item>
-        <item name="colorTertiary">@color/brand_red_dark</item>
-        <item name="colorControlActivated">@color/brand_red_focused</item>
-        <item name="android:colorAccent">@color/brand_red</item>
+        <item name="colorPrimary">@color/mobile_accent</item>
+        <item name="colorSecondary">@color/mobile_accent</item>
+        <item name="colorTertiary">@color/mobile_accent</item>
+        <item name="colorControlActivated">@color/mobile_accent</item>
+        <item name="android:colorAccent">@color/mobile_accent</item>
     </style>
 
     <style name="Theme.Splash" parent="Theme.SplashScreen">
         <item name="postSplashScreenTheme">@style/Theme.App</item>
-        <item name="windowSplashScreenBackground">@color/settings_v2_brand_background</item>
+        <item name="windowSplashScreenBackground">@color/mobile_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/brand_mark</item>
     </style>
 
@@ -28,7 +36,7 @@
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
-        <item name="android:textColor">@color/brand_red_focused</item>
+        <item name="android:textColor">@color/mobile_accent</item>
         <item name="android:textSize">14sp</item>
         <item name="android:padding">8dp</item>
     </style>

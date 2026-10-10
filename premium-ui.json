@@ -1,0 +1,17 @@
+{
+  "profile": "product-admin",
+  "sourceRoots": [
+    "app/src/mobile",
+    "app/src/main/java/com/fongmi/android/tv/ui"
+  ],
+  "canonicalMap": "UX-CONTRACT.md",
+  "requiredCapabilities": [
+    "Select/Listbox",
+    "Form",
+    "Scrollbar",
+    "Toast",
+    "CRUD",
+    "Date",
+    "Table Selection"
+  ]
+}

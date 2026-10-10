@@ -36,6 +36,7 @@ public class RepositoryEditDialog extends BaseAlertDialog {
 
     public RepositoryEditDialog repository(Repository repository) {
         this.repository = repository;
+        android.os.Bundle args = new android.os.Bundle(); args.putString("repository", com.fongmi.android.tv.App.gson().toJson(repository)); setArguments(args);
         return this;
     }
 
@@ -60,17 +61,24 @@ public class RepositoryEditDialog extends BaseAlertDialog {
 
     @Override
     protected void initView() {
+        if (repository == null && getArguments() != null) repository = com.fongmi.android.tv.App.gson().fromJson(requireArguments().getString("repository"), Repository.class);
         if (repository == null) repository = new Repository();
+        if (listener == null && getActivity() instanceof Listener host) listener = host;
         binding.name.setText(repository.getName());
         binding.url.setText(repository.getUrl());
-        Server.get().start();
-        String mobileAddress = Server.get().getAddress(4) + "&mode=repository";
-        binding.code.setImageBitmap(QRCode.getBitmap(mobileAddress, 180, 0));
+        if (!com.fongmi.android.tv.utils.Util.isMobile()) {
+            Server.get().start();
+            String mobileAddress = Server.get().getAddress(4) + "&mode=repository";
+            binding.code.setImageBitmap(QRCode.getBitmap(mobileAddress, 180, 0));
+        }
         binding.url.requestFocus();
     }
 
     @Override
     protected void initEvent() {
+        binding.url.addTextChangedListener(new com.fongmi.android.tv.ui.custom.CustomTextListener() {
+            @Override public void afterTextChanged(android.text.Editable text) { binding.url.setError(null); }
+        });
         binding.positive.setOnClickListener(v -> save());
         binding.negative.setOnClickListener(v -> dismiss());
         binding.url.setOnEditorActionListener((textView, actionId, event) -> {
@@ -90,7 +98,7 @@ public class RepositoryEditDialog extends BaseAlertDialog {
 
     private void save() {
         String url = binding.url.getText().toString().trim();
-        if (TextUtils.isEmpty(url)) return;
+        if (TextUtils.isEmpty(url)) { binding.url.setError(getString(com.fongmi.android.tv.R.string.repository_url)); binding.url.requestFocus(); return; }
         String name = binding.name.getText().toString().trim();
         repository.setUrl(url);
         repository.setName(TextUtils.isEmpty(name) ? UrlUtil.getName(url) : name);
@@ -108,7 +116,7 @@ public class RepositoryEditDialog extends BaseAlertDialog {
     @Override
     public void onStart() {
         super.onStart();
-        setWidth(0.68f);
+        setWidth(com.fongmi.android.tv.utils.Util.isMobile() ? 0.94f : 0.68f);
         EventBus.getDefault().register(this);
     }
 

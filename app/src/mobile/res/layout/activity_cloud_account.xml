@@ -1,0 +1,8 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+  <com.google.android.material.appbar.MaterialToolbar android:id="@+id/mobileToolbar" android:layout_width="match_parent" android:layout_height="56dp" app:title="@string/cloud_account_title" />
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="16dp" android:orientation="horizontal">
+    <com.google.android.material.button.MaterialButton android:id="@+id/refresh" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/cloud_scan_refresh" style="@style/Widget.Material3.Button.TextButton" />
+  </LinearLayout>
+  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/mobile_muted" android:textSize="14sp" android:layout_marginTop="6dp" android:id="@+id/scanStatus" android:text="@string/cloud_scan_loading" android:paddingHorizontal="16dp" />
+  <com.fongmi.android.tv.ui.custom.CustomRecyclerView android:id="@+id/recycler" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:padding="16dp" android:clipToPadding="false" app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+</LinearLayout>

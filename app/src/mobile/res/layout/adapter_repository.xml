@@ -1,0 +1,15 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp" android:background="@drawable/mobile_surface">
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:minHeight="48dp" android:id="@+id/info" android:background="?attr/selectableItemBackground">
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/mobile_text" android:textSize="18sp" android:layout_marginTop="6dp" android:id="@+id/name" />
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/mobile_muted" android:textSize="13sp" android:layout_marginTop="6dp" android:id="@+id/meta" />
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/mobile_muted" android:textSize="13sp" android:layout_marginTop="6dp" android:id="@+id/url" />
+  </LinearLayout>
+  <com.google.android.flexbox.FlexboxLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" app:flexWrap="wrap">
+    <com.google.android.material.button.MaterialButton android:id="@+id/enable" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:text="" style="@style/Widget.Material3.Button.TextButton" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/edit" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/repository_edit" style="@style/Widget.Material3.Button.TextButton" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/refresh" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/repository_refresh" style="@style/Widget.Material3.Button.TextButton" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/up" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/repository_move_up" style="@style/Widget.Material3.Button.TextButton" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/down" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/repository_move_down" style="@style/Widget.Material3.Button.TextButton" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/delete" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/repository_delete" style="@style/Widget.Material3.Button.TextButton" />
+  </com.google.android.flexbox.FlexboxLayout>
+</LinearLayout>

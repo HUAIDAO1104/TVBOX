@@ -1,0 +1,7 @@
+<resources>
+    <string-array name="repository_delete_modes">
+        <item>Delete repository; keep configurations</item>
+        <item>Delete repository and items</item>
+        <item>Delete repository, items and unshared configuration mappings</item>
+    </string-array>
+</resources>

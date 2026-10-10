@@ -176,6 +176,18 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     }
 
     @Override
+    public void onConfigurationChanged(@NonNull android.content.res.Configuration config) {
+        super.onConfigurationChanged(config);
+        if (mBinding == null || mAdapter == null) return;
+        android.os.Parcelable position = mBinding.recycler.getLayoutManager().onSaveInstanceState();
+        java.util.List<Vod> items = new java.util.ArrayList<>(mAdapter.getItems());
+        setStyle(mAdapter.getStyle());
+        mAdapter.setItems(items, () -> {
+            if (mBinding != null) mBinding.recycler.getLayoutManager().onRestoreInstanceState(position);
+        });
+    }
+
+    @Override
     public void onRefresh() {
         if (isHome()) getHome();
         else getVideo();

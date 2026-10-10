@@ -15,13 +15,16 @@ public class Product {
     }
 
     public static int getColumn(Context context) {
-        int count = ResUtil.isLand(context) ? 7 : 5;
-        count = count + (ResUtil.isPad() ? 1 : 0);
-        return Math.abs(PlayerSetting.getSize() - count);
+        float widthDp = context.getResources().getConfiguration().screenWidthDp;
+        float fontScale = context.getResources().getConfiguration().fontScale;
+        int[] targets = {88, 100, 112, 144};
+        int target = targets[Math.max(0, Math.min(3, PlayerSetting.getSize()))];
+        int columns = (int) ((widthDp - 16) / (target * Math.max(1f, fontScale)));
+        return Math.max(2, Math.min(6, columns));
     }
 
     public static int getColumn(Context context, Style style) {
-        return style.isLand() ? getColumn(context) - 1 : getColumn(context);
+        return style.isLand() ? Math.max(2, getColumn(context) - 1) : getColumn(context);
     }
 
     public static int[] getSpec(Context context) {
@@ -48,6 +51,6 @@ public class Product {
         if (cutout == null) return 0;
         int left = cutout.getSafeInsetLeft();
         int right = cutout.getSafeInsetRight();
-        return left | right;
+        return left + right;
     }
 }

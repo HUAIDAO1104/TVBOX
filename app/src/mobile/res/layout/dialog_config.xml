@@ -42,7 +42,7 @@
             android:layout_height="wrap_content"
             android:imeOptions="actionDone"
             android:importantForAutofill="no"
-            android:inputType="text"
+            android:inputType="textUri"
             android:singleLine="true" />
 
     </com.google.android.material.textfield.TextInputLayout>

@@ -59,6 +59,7 @@ public final class DialogGlass {
     }
 
     public static void apply(Dialog dialog) {
+        if (com.fongmi.android.tv.utils.Util.isMobile()) return;
         applyBehind(dialog);
         if (dialog == null || dialog.getWindow() == null) return;
         // Keep a single glass layer. Stacking a window fill and a panel fill makes the intended
@@ -76,6 +77,7 @@ public final class DialogGlass {
     }
 
     public static void applySheet(Dialog dialog) {
+        if (com.fongmi.android.tv.utils.Util.isMobile()) return;
         applyBehind(dialog);
         if (dialog == null || dialog.getWindow() == null) return;
         // Material sheets paint an opaque colorSurface on their window before the actual sheet
@@ -91,6 +93,7 @@ public final class DialogGlass {
     }
 
     public static void applyBehind(Dialog dialog) {
+        if (com.fongmi.android.tv.utils.Util.isMobile()) return;
         if (dialog == null) return;
         Window window = dialog.getWindow();
         if (window == null) return;

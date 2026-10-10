@@ -45,6 +45,8 @@ public class SiteApi {
         java.util.concurrent.ScheduledFuture<?> cancellation = com.fongmi.android.tv.utils.Task.scheduler()
                 .scheduleAtFixedRate(() -> { if (owner.isInterrupted()) call.cancel(); }, 100, 100, java.util.concurrent.TimeUnit.MILLISECONDS);
         try (Response response = call.execute()) {
+            if (!response.isSuccessful()) throw new IOException("HTTP " + response.code());
+            if (response.body() == null) throw new IOException("Source returned no response body");
             return response.body().string();
         } finally {
             cancellation.cancel(false);

@@ -32,6 +32,10 @@ public class CloudAccountEditDialog extends BaseAlertDialog {
 
     public CloudAccountEditDialog provider(CloudProvider provider) {
         this.provider = provider;
+        android.os.Bundle args = new android.os.Bundle();
+        args.putString("provider_id", provider.id()); args.putString("provider_name", provider.name());
+        args.putString("provider_type", provider.credentialType()); args.putString("provider_hint", provider.hint());
+        setArguments(args);
         return this;
     }
 
@@ -56,6 +60,8 @@ public class CloudAccountEditDialog extends BaseAlertDialog {
 
     @Override
     protected void initView() {
+        if (provider == null && getArguments() != null) provider = new CloudProvider(requireArguments().getString("provider_id"), requireArguments().getString("provider_name"), requireArguments().getString("provider_type"), requireArguments().getString("provider_hint"));
+        if (listener == null && getActivity() instanceof Listener host) listener = host;
         binding.title.setText(getString(R.string.cloud_edit_title, provider.name()));
         binding.qrStatus.setText(getString(R.string.cloud_qr_unavailable_detail, provider.name(), provider.hint()));
         binding.credential.setHint(provider.hint());
@@ -101,6 +107,6 @@ public class CloudAccountEditDialog extends BaseAlertDialog {
         if (getDialog() != null && getDialog().getWindow() != null) {
             getDialog().getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
         }
-        setWidth(0.56f);
+        setWidth(com.fongmi.android.tv.utils.Util.isMobile() ? 0.94f : 0.56f);
     }
 }

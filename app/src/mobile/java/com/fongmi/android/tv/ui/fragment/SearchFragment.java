@@ -1,25 +1,18 @@
 package com.fongmi.android.tv.ui.fragment;
 
-import static androidx.fragment.app.FragmentTransaction.TRANSIT_FRAGMENT_OPEN;
 
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.MenuProvider;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
-import androidx.lifecycle.Lifecycle;
 import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.App;
@@ -32,7 +25,8 @@ import com.fongmi.android.tv.ui.adapter.RecordAdapter;
 import com.fongmi.android.tv.ui.adapter.WordAdapter;
 import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.custom.CustomTextListener;
-import com.fongmi.android.tv.ui.dialog.SiteDialog;
+import com.fongmi.android.tv.ui.dialog.MobileSearchSources;
+import android.view.inputmethod.BaseInputConnection;
 import com.fongmi.android.tv.utils.Util;
 import com.github.catvod.net.OkHttp;
 import com.google.android.flexbox.FlexDirection;
@@ -47,11 +41,34 @@ import java.util.Optional;
 import okhttp3.Call;
 import okhttp3.Response;
 
-public class SearchFragment extends BaseFragment implements MenuProvider, WordAdapter.OnClickListener, RecordAdapter.OnClickListener {
+public class SearchFragment extends BaseFragment implements  WordAdapter.OnClickListener, RecordAdapter.OnClickListener {
 
     private FragmentSearchBinding mBinding;
     private RecordAdapter mRecordAdapter;
     private WordAdapter mWordAdapter;
+    private Call suggestionCall;
+    private int suggestionGeneration;
+    private boolean submitting;
+    private boolean autoSearch = true;
+    private String draft;
+    @Override public void onCreate(@Nullable Bundle state) {
+        super.onCreate(state);
+        if (state != null) { draft = state.getString("draft"); autoSearch = false; }
+    }
+    @Override public void onSaveInstanceState(@NonNull Bundle state) {
+        super.onSaveInstanceState(state);
+        if (mBinding != null) state.putString("draft", mBinding.keyword.getText().toString());
+    }
+    private final Runnable requestSuggestions = () -> {
+        if (mBinding == null || isHidden()) return;
+        Editable text = mBinding.keyword.getText();
+        if (text != null && BaseInputConnection.getComposingSpanStart(text) >= 0) {
+            App.post(requestSuggestionsAgain(), 300);
+            return;
+        }
+        getWord(text == null ? "" : text.toString().trim());
+    };
+    private Runnable requestSuggestionsAgain() { return requestSuggestions; }
 
     public static SearchFragment newInstance(String keyword) {
         Bundle args = new Bundle();
@@ -75,20 +92,14 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
     }
 
     @Override
-    protected void initMenu() {
-        if (isHidden()) return;
-        AppCompatActivity activity = (AppCompatActivity) requireActivity();
-        activity.setSupportActionBar(mBinding.toolbar);
-        activity.getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        activity.addMenuProvider(this, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
-        activity.setTitle("");
-    }
-
-    @Override
     protected void initView() {
+        mBinding.toolbar.setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_ab_back_material);
+        mBinding.toolbar.setNavigationContentDescription(R.string.mobile_back);
+        mBinding.toolbar.setNavigationOnClickListener(v -> requireActivity().getOnBackPressedDispatcher().onBackPressed());
         setRecyclerView();
         checkKeyword();
-        search();
+        if (autoSearch) search();
+        autoSearch = false;
     }
 
     private void setRecyclerView() {
@@ -102,15 +113,24 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
 
     @Override
     protected void initEvent() {
+        mBinding.submit.setEnabled(!empty());
+        mBinding.submit.setOnClickListener(v -> search());
+        mBinding.sources.setOnClickListener(v -> {
+            Util.hideKeyboard(mBinding.keyword);
+            MobileSearchSources.show(this, this::updateSources);
+        });
+        updateSources();
         mBinding.keyword.setOnEditorActionListener((textView, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_SEARCH) search();
+            if (actionId != EditorInfo.IME_ACTION_SEARCH) return false;
+            if (BaseInputConnection.getComposingSpanStart(mBinding.keyword.getText()) < 0) search();
             return true;
         });
         mBinding.keyword.addTextChangedListener(new CustomTextListener() {
             @Override
             public void afterTextChanged(Editable s) {
-                requireActivity().invalidateOptionsMenu();
-                getWord(s.toString());
+                cancelSuggestions();
+                mBinding.submit.setEnabled(!s.toString().trim().isEmpty());
+                App.post(requestSuggestions, s.toString().trim().isEmpty() ? 0 : 300);
             }
         });
         getParentFragmentManager().setFragmentResultListener("result", getViewLifecycleOwner(), (requestKey, bundle) -> {
@@ -121,19 +141,23 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
     private void checkKeyword() {
         boolean visible = requireActivity().getSupportFragmentManager().findFragmentByTag(CollectFragment.class.getSimpleName()) != null;
         if (TextUtils.isEmpty(getKeyword()) && !visible) Util.showKeyboard(mBinding.keyword);
-        setKeyword(getKeyword());
-        getWord(getKeyword());
+        setKeyword(draft == null ? getKeyword() : draft);
+        if (!visible) getWord(mBinding.keyword.getText().toString().trim());
     }
 
     private void setKeyword(String text) {
+        text = text == null ? "" : text;
         mBinding.keyword.setText(text);
         mBinding.keyword.setSelection(text.length());
     }
 
     private void search() {
-        if (empty()) return;
+        if (empty() || submitting || getParentFragmentManager().isStateSaved()) return;
+        submitting = true;
+        cancelSuggestions();
         String keyword = mBinding.keyword.getText().toString().trim();
-        App.post(() -> mRecordAdapter.add(keyword), 250);
+        if (!Setting.isIncognito()) mRecordAdapter.add(keyword);
+        requireArguments().putString("keyword", keyword);
         Util.hideKeyboard(mBinding.keyword);
         collect(keyword);
     }
@@ -143,7 +167,7 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
         String collectTag = CollectFragment.class.getSimpleName();
         if (fm.findFragmentByTag(collectTag) != null) return;
         String searchTag = SearchFragment.class.getSimpleName();
-        FragmentTransaction ft = fm.beginTransaction().setTransition(TRANSIT_FRAGMENT_OPEN);
+        FragmentTransaction ft = fm.beginTransaction().setReorderingAllowed(true);
         ft.add(R.id.container, CollectFragment.newInstance(keyword), collectTag);
         Optional.ofNullable(fm.findFragmentByTag(searchTag)).ifPresent(ft::hide);
         ft.setReorderingAllowed(true).addToBackStack(null).commit();
@@ -157,21 +181,28 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
     private void getHot() {
         mBinding.word.setText(R.string.search_hot);
         mWordAdapter.setItems(Word.objectFrom(Setting.getHot()).getData());
-        OkHttp.newCall("https://api.web.360kan.com/v1/rank?cat=1", Map.of(HttpHeaders.REFERER, "https://www.360kan.com/rank/general")).enqueue(getCallback(true));
+        suggestionCall = OkHttp.newCall("https://api.web.360kan.com/v1/rank?cat=1", Map.of(HttpHeaders.REFERER, "https://www.360kan.com/rank/general"));
+        suggestionCall.enqueue(getCallback(true, suggestionGeneration));
     }
 
     private void getSuggest(String text) {
         mBinding.word.setText(R.string.search_suggest);
-        OkHttp.newCall("https://suggest.video.iqiyi.com/?if=mobile&key=" + URLEncoder.encode(text)).enqueue(getCallback(false));
+        suggestionCall = OkHttp.newCall("https://suggest.video.iqiyi.com/?if=mobile&key=" + URLEncoder.encode(text, java.nio.charset.StandardCharsets.UTF_8));
+        suggestionCall.enqueue(getCallback(false, suggestionGeneration));
     }
 
-    private Callback getCallback(boolean hot) {
+    private Callback getCallback(boolean hot, int generation) {
         return new Callback() {
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                String result = response.body().string();
-                if (TextUtils.isEmpty(result)) return;
-                App.post(() -> setWordAdapter(result, hot));
+                try (response) {
+                    if (!response.isSuccessful() || response.body() == null) return;
+                    String result = response.body().string();
+                    if (TextUtils.isEmpty(result)) return;
+                    App.post(() -> {
+                        if (generation == suggestionGeneration && mBinding != null && isAdded() && !isHidden()) setWordAdapter(result, hot);
+                    });
+                }
             }
         };
     }
@@ -182,14 +213,15 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
         if (save) Setting.putHot(result);
     }
 
-    private void onReset() {
-        mBinding.keyword.setText("");
-        requireActivity().invalidateOptionsMenu();
+    private void cancelSuggestions() {
+        suggestionGeneration++;
+        App.removeCallbacks(requestSuggestions);
+        if (suggestionCall != null) suggestionCall.cancel();
+        suggestionCall = null;
     }
 
-    private void onSite() {
-        Util.hideKeyboard(mBinding.keyword);
-        mBinding.keyword.post(() -> SiteDialog.create().search().show(this));
+    private void updateSources() {
+        if (mBinding != null) mBinding.sources.setText(getString(R.string.mobile_source_count, MobileSearchSources.selected().size()) + " · " + getString(R.string.mobile_sources));
     }
 
     @Override
@@ -202,36 +234,19 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
     public void onDataChanged(int size) {
         mBinding.record.setVisibility(size == 0 ? View.GONE : View.VISIBLE);
         mBinding.recordRecycler.setVisibility(size == 0 ? View.GONE : View.VISIBLE);
-        mBinding.recordRecycler.postDelayed(() -> mBinding.recordRecycler.requestLayout(), 250);
-    }
 
-    @Override
-    public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
-        menuInflater.inflate(R.menu.menu_search, menu);
-    }
-
-    @Override
-    public void onPrepareMenu(@NonNull Menu menu) {
-        menu.findItem(R.id.action_reset).setVisible(!empty());
-    }
-
-    @Override
-    public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
-        if (menuItem.getItemId() == android.R.id.home) requireActivity().getOnBackPressedDispatcher().onBackPressed();
-        if (menuItem.getItemId() == R.id.action_reset) onReset();
-        if (menuItem.getItemId() == R.id.action_site) onSite();
-        return true;
     }
 
     @Override
     public void onHiddenChanged(boolean hidden) {
-        if (hidden) requireActivity().removeMenuProvider(this);
-        else initMenu();
+        if (hidden) cancelSuggestions();
+        else { submitting = false; updateSources(); }
     }
 
     @Override
     public void onDestroyView() {
+        cancelSuggestions();
+        mBinding = null;
         super.onDestroyView();
-        requireActivity().removeMenuProvider(this);
     }
 }

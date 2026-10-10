@@ -35,6 +35,7 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
     }
 
     public void show(Fragment fragment) {
+        android.os.Bundle args = new android.os.Bundle(); args.putBoolean("search", search); args.putBoolean("change", change); setArguments(args);
         show(fragment.getChildFragmentManager(), null);
         if (fragment instanceof SiteListener) listener = (SiteListener) fragment;
     }
@@ -46,11 +47,13 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
 
     @Override
     protected MaterialAlertDialogBuilder getBuilder() {
-        return builder().setView(getBinding().getRoot());
+        return builder().setTitle(com.fongmi.android.tv.R.string.mobile_source).setView(getBinding().getRoot());
     }
 
     @Override
     protected void initView() {
+        if (getArguments() != null) { search = getArguments().getBoolean("search"); change = getArguments().getBoolean("change"); }
+        if (getParentFragment() instanceof SiteListener host) listener = host;
         adapter = new SiteAdapter(this);
         binding.recycler.setAdapter(adapter);
         adapter.search(search).change(change);

@@ -1,22 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <item
-        android:id="@+id/vod"
-        android:icon="@drawable/ic_nav_vod"
-        android:title="@string/nav_vod"
-        android:visible="false" />
-
-    <item
-        android:id="@+id/live"
-        android:icon="@drawable/ic_nav_live"
-        android:title="@string/nav_live"
-        android:visible="false" />
-
-    <item
-        android:id="@+id/setting"
-        android:icon="@drawable/ic_nav_setting"
-        android:title="@string/nav_setting"
-        android:visible="false" />
-
+<item android:id="@+id/vod" android:icon="@drawable/ic_nav_vod" android:title="@string/mobile_home"/>
+<item android:id="@+id/library" android:icon="@drawable/ic_action_keep" android:title="@string/mobile_library"/>
+<item android:id="@+id/setting" android:icon="@drawable/ic_nav_setting" android:title="@string/mobile_mine"/>
 </menu>

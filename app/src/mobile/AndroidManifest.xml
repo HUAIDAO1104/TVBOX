@@ -17,6 +17,9 @@
         android:xlargeScreens="true" />
 
     <application>
+        <activity android:name=".ui.activity.CloudAccountActivity" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.activity.RepositoryActivity" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.activity.RepositoryDetailActivity" />
 
         <activity
             android:name=".ui.activity.HomeActivity"
@@ -24,7 +27,7 @@
             android:exported="true"
             android:launchMode="singleTop"
             android:theme="@style/Theme.Splash"
-            android:windowSoftInputMode="adjustPan">
+            android:windowSoftInputMode="adjustResize">
 
             <meta-data
                 android:name="android.app.searchable"
@@ -90,7 +93,7 @@
         <activity
             android:name=".ui.activity.SearchActivity"
             android:configChanges="screenSize|smallestScreenSize|screenLayout"
-            android:windowSoftInputMode="adjustPan" />
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".ui.activity.FileActivity"

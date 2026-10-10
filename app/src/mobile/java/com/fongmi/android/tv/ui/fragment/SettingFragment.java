@@ -98,7 +98,8 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
 
     private void setOtherText() {
         mBinding.themeColorText.setText(getThemeText());
-        mBinding.dohText.setText(getDohList()[getDohIndex()]);
+        String[] dohList = getDohList();
+        mBinding.dohText.setText(dohList.length == 0 ? getString(R.string.setting_auto) : dohList[Math.min(getDohIndex(), dohList.length - 1)]);
         mBinding.incognitoText.setText(Setting.getSwitch(Setting.isIncognito()));
         mBinding.sizeText.setText((size = ResUtil.getStringArray(R.array.select_size))[PlayerSetting.getSize()]);
     }
@@ -107,13 +108,15 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
         FileUtil.getCacheSize(new Callback() {
             @Override
             public void success(String result) {
-                mBinding.cacheText.setText(result);
+                if (mBinding != null && isAdded()) mBinding.cacheText.setText(result);
             }
         });
     }
 
     @Override
     protected void initEvent() {
+        mBinding.repository.setOnClickListener(v -> com.fongmi.android.tv.ui.activity.RepositoryActivity.start(requireActivity()));
+        mBinding.cloud.setOnClickListener(v -> com.fongmi.android.tv.ui.activity.CloudAccountActivity.start(requireActivity()));
         mBinding.vod.setOnClickListener(this::onVod);
         mBinding.doh.setOnClickListener(this::setDoh);
         mBinding.live.setOnClickListener(this::onLive);
@@ -167,7 +170,7 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
         return new Callback() {
             @Override
             public void start() {
-                Notify.progress(requireActivity());
+                if (isAdded()) Notify.progress(requireActivity());
             }
 
             @Override
@@ -290,6 +293,7 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
     }
 
     private void setDoh(View view) {
+        if (getDohList().length == 0) return;
         DialogGlass.show(new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.setting_doh).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(getDohList(), getDohIndex(), (dialog, which) -> {
             setDoh(VodConfig.get().getDoh().get(which));
             dialog.dismiss();
@@ -349,7 +353,7 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onConfigEvent(ConfigEvent event) {
-        if (event.type() != ConfigEvent.Type.COMMON) return;
+        if (mBinding == null || event.type() != ConfigEvent.Type.COMMON) return;
         mBinding.vodUrl.setText(VodConfig.getDesc());
         mBinding.liveUrl.setText(LiveConfig.getDesc());
         mBinding.wallUrl.setText(WallConfig.getDesc());
@@ -365,5 +369,6 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
     public void onDestroyView() {
         super.onDestroyView();
         EventBus.getDefault().unregister(this);
+        mBinding = null;
     }
 }

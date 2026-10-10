@@ -138,6 +138,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private Runnable mR4;
     private Clock mClock;
     private PiP mPiP;
+    private boolean playbackReady;
 
     public static void push(FragmentActivity activity, String text) {
         Uri uri = UrlUtil.uri(text);
@@ -273,6 +274,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     @Override
     protected void onServiceConnected() {
+        playbackReady = true;
+        mBinding.detailFull.setEnabled(true);
         checkLand();
         checkId();
     }
@@ -304,7 +307,10 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         super.initView(savedInstanceState);
         ViewCompat.setOnApplyWindowInsetsListener(mBinding.getRoot(), (v, insets) -> setStatusBar(insets));
         mKeyDown = CustomKeyDown.create(this, mBinding.player);
+        mBinding.detailFull.setEnabled(false);
         mFrameParams = mBinding.video.getLayoutParams();
+        mFrameParams.height = Math.round(getResources().getDisplayMetrics().widthPixels * 9f / 16f);
+        mBinding.video.setLayoutParams(mFrameParams);
         mBinding.progressLayout.showProgress();
         mBinding.swipeLayout.setEnabled(false);
         mObserveDetail = this::onDetailObserved;
@@ -327,6 +333,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     @Override
     @SuppressLint("ClickableViewAccessibility")
     protected void initEvent() {
+        mBinding.detailKeep.setOnClickListener(v -> { if (mHistory != null) onKeep(); });
+        mBinding.detailSource.setOnClickListener(v -> { if (mVod != null && mHistory != null) onChange(); });
+        mBinding.detailFull.setOnClickListener(v -> { if (mVod != null && playbackReady) enterFullscreen(); });
         mBinding.name.setOnClickListener(view -> onName());
         mBinding.more.setOnClickListener(view -> onMore());
         mBinding.actor.setOnClickListener(view -> onActor());
@@ -373,11 +382,13 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private WindowInsetsCompat setStatusBar(WindowInsetsCompat insets) {
-        int top = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+        androidx.core.graphics.Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+        int top = isFullscreen() || isInPictureInPictureMode() ? 0 : bars.top;
+        mBinding.getRoot().setPadding(0, 0, 0, isFullscreen() || isInPictureInPictureMode() ? 0 : bars.bottom);
         ViewGroup.LayoutParams lp = mBinding.statusBar.getLayoutParams();
         lp.height = top;
         mBinding.statusBar.setLayoutParams(lp);
-        return insets;
+        return WindowInsetsCompat.CONSUMED;
     }
 
     private void setRecyclerView() {
@@ -1243,7 +1254,10 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void checkKeepImg() {
-        mBinding.control.keep.setImageResource(Keep.find(getHistoryKey()) == null ? R.drawable.ic_control_keep_off : R.drawable.ic_control_keep_on);
+        boolean kept = Keep.find(getHistoryKey()) != null;
+        mBinding.control.keep.setImageResource(kept ? R.drawable.ic_control_keep_on : R.drawable.ic_control_keep_off);
+        mBinding.detailKeep.setText(kept ? "已收藏" : "收藏");
+        mBinding.detailKeep.setSelected(kept);
     }
 
     private void checkLockImg() {
@@ -1441,20 +1455,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void changeHeight() {
-        if (isLand() || isFullscreen() || isInPictureInPictureMode()) return;
-        int videoWidth = player().getVideoWidth();
-        int videoHeight = player().getVideoHeight();
-        if (videoWidth == 0 || videoHeight == 0) return;
-        int viewWidth = ResUtil.getScreenWidth();
-        int minHeight = ResUtil.dp2px(150);
-        int maxHeight = ResUtil.getScreenHeight() / 2;
-        int calculated = (int) (viewWidth * ((float) videoHeight / videoWidth));
-        int finalHeight = Math.clamp(calculated, minHeight, Math.max(minHeight, maxHeight));
-        if (finalHeight == mBinding.video.getHeight()) return;
-        if (mAnimator.isRunning()) mAnimator.cancel();
-        mAnimator.setIntValues(mBinding.video.getHeight(), finalHeight);
-        mAnimator.setDuration(300);
-        mAnimator.start();
+        if (isFullscreen() || isInPictureInPictureMode()) return;
+        mFrameParams.height = Math.round(mBinding.getRoot().getWidth() * 9f / 16f);
+        mBinding.video.setLayoutParams(mFrameParams);
     }
 
     private void setTrackVisible() {
@@ -1489,6 +1492,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void setFullscreen(boolean fullscreen) {
         Util.toggleFullscreen(this, this.fullscreen = fullscreen);
+        mBinding.detailActions.setVisibility(fullscreen ? View.GONE : View.VISIBLE);
+        mBinding.swipeLayout.setVisibility(fullscreen ? View.GONE : View.VISIBLE);
+        ViewCompat.requestApplyInsets(mBinding.getRoot());
     }
 
     public boolean isUseParse() {
@@ -1642,6 +1648,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode, @NonNull Configuration newConfig) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig);
         if (!isFullscreen()) setVideoView(isInPictureInPictureMode);
+        mBinding.detailActions.setVisibility(isInPictureInPictureMode || isFullscreen() ? View.GONE : View.VISIBLE);
+        mBinding.swipeLayout.setVisibility(isInPictureInPictureMode || isFullscreen() ? View.GONE : View.VISIBLE);
+        ViewCompat.requestApplyInsets(mBinding.getRoot());
         if (isInPictureInPictureMode) {
             hideControl();
             hideDanmaku();
@@ -1683,9 +1692,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     @Override
     protected void onBackInvoked() {
-        if (isVisible(mBinding.control.getRoot())) {
-            hideControl();
-        } else if (isFullscreen() && !isLock()) {
+        if (isFullscreen() && !isLock()) {
             exitFullscreen();
         } else if (!isLock()) {
             mViewModel.stopSearch();
@@ -1696,7 +1703,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     @Override
     protected void onDestroy() {
-        mClock.release();
+        if (mClock != null) mClock.release();
         saveHistory(true);
         Timer.get().reset();
         DanmakuApi.cancel();

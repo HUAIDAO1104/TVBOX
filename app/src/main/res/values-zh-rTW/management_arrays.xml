@@ -1,0 +1,7 @@
+<resources>
+    <string-array name="repository_delete_modes">
+        <item>僅刪除倉庫，保留為獨立設定</item>
+        <item>刪除倉庫及倉庫項目</item>
+        <item>刪除倉庫、項目及未共用設定映射</item>
+    </string-array>
+</resources>

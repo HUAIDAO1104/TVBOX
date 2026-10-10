@@ -1,195 +1,158 @@
 package com.fongmi.android.tv.ui.fragment;
 
 import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
-import android.view.ViewGroup;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.MenuProvider;
-import androidx.lifecycle.Lifecycle;
+import android.os.Parcelable;
+import android.view.*;
+import androidx.annotation.*;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.viewbinding.ViewBinding;
-
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.VodConfig;
-import com.fongmi.android.tv.bean.Collect;
-import com.fongmi.android.tv.bean.Result;
-import com.fongmi.android.tv.bean.Site;
-import com.fongmi.android.tv.bean.Vod;
+import com.fongmi.android.tv.bean.*;
 import com.fongmi.android.tv.databinding.FragmentCollectBinding;
-import com.fongmi.android.tv.model.SiteViewModel;
-import com.fongmi.android.tv.ui.activity.FolderActivity;
-import com.fongmi.android.tv.ui.activity.VideoActivity;
-import com.fongmi.android.tv.ui.adapter.CollectAdapter;
+import com.fongmi.android.tv.model.*;
+import com.fongmi.android.tv.ui.activity.*;
 import com.fongmi.android.tv.ui.adapter.SearchAdapter;
 import com.fongmi.android.tv.ui.base.BaseFragment;
-import com.fongmi.android.tv.ui.custom.CustomScroller;
-import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.ui.dialog.MobileSearchSources;
+import com.fongmi.android.tv.ui.search.SearchSourcePreference;
+import com.fongmi.android.tv.ui.search.SearchDisplayName;
+import com.google.android.material.tabs.TabLayout;
+import java.util.*;
 
-import java.util.List;
-
-public class CollectFragment extends BaseFragment implements MenuProvider, CollectAdapter.OnClickListener, SearchAdapter.OnClickListener, CustomScroller.Callback {
-
-    private FragmentCollectBinding mBinding;
-    private CollectAdapter mCollectAdapter;
-    private SearchAdapter mSearchAdapter;
-    private CustomScroller mScroller;
-    private SiteViewModel mViewModel;
-    private List<Site> mSites;
-
+public class CollectFragment extends BaseFragment implements SearchAdapter.OnClickListener {
+    private FragmentCollectBinding binding;
+    private SiteViewModel model;
+    private SearchAdapter adapter;
+    private List<Site> sites = List.of();
+    private final Map<String, List<Vod>> rows = new LinkedHashMap<>();
+    private final Map<String, Parcelable> positions = new HashMap<>();
+    private String active = "";
+    private boolean updatingTabs;
+    private SearchProgress progress = SearchProgress.idle();
+    private int renderGeneration;
     public static CollectFragment newInstance(String keyword) {
-        Bundle args = new Bundle();
-        args.putString("keyword", keyword);
-        CollectFragment fragment = new CollectFragment();
-        fragment.setArguments(args);
-        return fragment;
+        CollectFragment f = new CollectFragment(); Bundle b = new Bundle(); b.putString("keyword", keyword); f.setArguments(b); return f;
     }
-
-    private String getKeyword() {
-        return getArguments().getString("keyword");
+    private String keyword() { return requireArguments().getString("keyword", ""); }
+    @Override public void onCreate(@Nullable Bundle state) {
+        super.onCreate(state); if (state != null) active = state.getString("active", "");
     }
-
-    @Override
-    protected ViewBinding getBinding(@NonNull LayoutInflater inflater, @Nullable ViewGroup container) {
-        return mBinding = FragmentCollectBinding.inflate(getLayoutInflater());
-    }
-
-    @Override
-    protected void initMenu() {
-        if (isHidden()) return;
-        AppCompatActivity activity = (AppCompatActivity) requireActivity();
-        activity.setSupportActionBar(mBinding.toolbar);
-        activity.getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        activity.addMenuProvider(this, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
-        activity.setTitle(getKeyword());
-    }
-
-    @Override
-    protected void initView() {
-        mScroller = new CustomScroller(this);
-        setRecyclerView();
-        setViewModel();
-        setSites();
-        setWidth();
-        search();
-    }
-
-    @Override
-    protected void initEvent() {
-        mBinding.toolbar.setOnClickListener(v -> {
-            Bundle result = new Bundle();
-            result.putBoolean("edit", true);
-            getParentFragmentManager().setFragmentResult("result", result);
+    @Override public void onSaveInstanceState(@NonNull Bundle state) { super.onSaveInstanceState(state); state.putString("active", active); }
+    @Override protected ViewBinding getBinding(@NonNull LayoutInflater inflater, @Nullable ViewGroup container) { return binding = FragmentCollectBinding.inflate(inflater, container, false); }
+    @Override protected void initView() {
+        binding.toolbar.setTitle(keyword());
+        binding.toolbar.setSubtitle(R.string.mobile_search);
+        binding.toolbar.setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_ab_back_material);
+        binding.toolbar.setNavigationContentDescription(R.string.mobile_back);
+        binding.toolbar.setNavigationOnClickListener(v -> requireActivity().getOnBackPressedDispatcher().onBackPressed());
+        binding.toolbar.setOnClickListener(v -> {
+            Bundle result = new Bundle(); result.putBoolean("edit", true); getParentFragmentManager().setFragmentResult("result", result);
             getParentFragmentManager().popBackStack();
         });
+        adapter = new SearchAdapter(this);
+        adapter.setStateRestorationPolicy(androidx.recyclerview.widget.RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY);
+        binding.recycler.setLayoutManager(new GridLayoutManager(requireContext(), getResources().getConfiguration().screenWidthDp >= 600 ? 2 : 1));
+        binding.recycler.setAdapter(adapter);
+        binding.recycler.setItemAnimator(null);
+        binding.tabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            public void onTabSelected(TabLayout.Tab tab) {
+                if (updatingTabs) return;
+                positions.put(active, binding.recycler.getLayoutManager().onSaveInstanceState());
+                active = Objects.toString(tab.getTag(), "");
+                model.prioritizeSearch(site -> site.getKey().equals(active));
+                renderRows(true);
+            }
+            public void onTabUnselected(TabLayout.Tab tab) { }
+            public void onTabReselected(TabLayout.Tab tab) { }
+        });
+        model = new ViewModelProvider(this).get(SiteViewModel.class);
+        binding.sources.setOnClickListener(v -> MobileSearchSources.show(this, () -> startSearch(true)));
+        binding.stop.setOnClickListener(v -> model.stopSearch());
+        binding.retry.setOnClickListener(v -> model.requestMore(site -> (active.isEmpty() || active.equals(site.getKey())) && model.sourceState(site) != null && model.sourceState(site).failed(), false));
+        binding.more.setOnClickListener(v -> model.requestMore(site -> site.getKey().equals(active), true));
+        startSearch(false);
+        model.getAggregateSearch().observe(getViewLifecycleOwner(), this::acceptSnapshot);
+        model.getSearchProgress().observe(getViewLifecycleOwner(), value -> { if (value.session() != model.currentSearchSession()) return; progress = value; renderStatus(); });
+        model.getSourceProgress().observe(getViewLifecycleOwner(), value -> { updateTabs(); renderStatus(); });
     }
-
-    private void setRecyclerView() {
-        mBinding.collect.setItemAnimator(null);
-        mBinding.collect.setHasFixedSize(true);
-        mBinding.collect.setAdapter(mCollectAdapter = new CollectAdapter(this));
-        mBinding.recycler.setHasFixedSize(true);
-        mBinding.recycler.addOnScrollListener(mScroller);
-        mBinding.recycler.setAdapter(mSearchAdapter = new SearchAdapter(this));
-        ((GridLayoutManager) (mBinding.recycler.getLayoutManager())).setSpanCount(getCount());
+    private void startSearch(boolean force) {
+        Set<String> selected = MobileSearchSources.selected();
+        String selection = SearchSourcePreference.serialize(selected);
+        sites = VodConfig.get().getSites().stream().filter(Site::isSearchable).filter(site -> SearchSourcePreference.isEnabled(site, selected)).toList();
+        if (force) { active = ""; positions.clear(); }
+        if (!active.isEmpty() && sites.stream().noneMatch(s -> s.getKey().equals(active))) active = "";
+        updatingTabs = true;
+        binding.tabs.removeAllTabs();
+        binding.tabs.addTab(binding.tabs.newTab().setTag("").setText("全部"), active.isEmpty());
+        for (Site site : sites) binding.tabs.addTab(binding.tabs.newTab().setTag(site.getKey()).setText(SearchDisplayName.clean(site.getName())), active.equals(site.getKey()));
+        updatingTabs = false;
+        if (force || !model.hasSearch(keyword(), selection)) {
+            if (!force && model.restoreCachedSearch(keyword(), selected)) { model.rememberSelection(selection); }
+            else { model.searchCurrentContent(keyword(), false, s -> SearchSourcePreference.isEnabled(s, selected)); model.rememberSelection(selection); }
+        }
+        renderStatus();
     }
-
-    private void setViewModel() {
-        mViewModel = new ViewModelProvider(this).get(SiteViewModel.class).init();
-        mViewModel.getSearch().observe(this, this::setCollect);
-        mViewModel.getResult().observe(this, this::setSearch);
+    private void acceptSnapshot(SearchSnapshot value) {
+        if (value == null || value.session() != model.currentSearchSession()) return;
+        rows.clear();
+        Map<String, LinkedHashMap<String, Vod>> unique = new LinkedHashMap<>();
+        for (Result result : value.results()) for (Vod vod : result.getList()) {
+            unique.computeIfAbsent(vod.getSiteKey(), key -> new LinkedHashMap<>()).put(vod.getId().isEmpty() ? "name:" + vod.getName() : "id:" + vod.getId(), vod);
+        }
+        List<Vod> all = new ArrayList<>();
+        unique.forEach((key, items) -> { List<Vod> list = new ArrayList<>(items.values()); rows.put(key, list); all.addAll(list); });
+        rows.put("", all);
+        updateTabs(); renderRows(false);
     }
-
-    private void setSites() {
-        mSites = VodConfig.get().getSites().stream().filter(Site::isSearchable).toList();
+    private void updateTabs() {
+        if (binding == null) return;
+        for (int i = 0; i < binding.tabs.getTabCount(); i++) {
+            TabLayout.Tab tab = binding.tabs.getTabAt(i);
+            String key = Objects.toString(tab.getTag(), "");
+            int count = rows.getOrDefault(key, List.of()).size();
+            String label = i == 0 ? "全部" : SearchDisplayName.clean(sites.get(i - 1).getName());
+            SiteViewModel.SourceState state = i == 0 ? null : model.sourceState(sites.get(i - 1));
+            String suffix = state != null && state.busy() ? " · 搜索中" : state != null && state.failed() ? " · 待重试" : "";
+            tab.setText(label + " " + count + suffix);
+        }
     }
-
-    private void setWidth() {
-        int width = 0;
-        int space = ResUtil.dp2px(48);
-        int maxWidth = ResUtil.getScreenWidth() / (getCount() + 1) - ResUtil.dp2px(40);
-        for (Site site : mSites) width = Math.max(width, ResUtil.getTextWidth(site.getName(), 14));
-        int contentWidth = width + space;
-        int minWidth = ResUtil.dp2px(120);
-        int finalWidth = Math.clamp(contentWidth, minWidth, Math.max(minWidth, maxWidth));
-        ViewGroup.LayoutParams params = mBinding.collect.getLayoutParams();
-        params.width = finalWidth;
-        mBinding.collect.setLayoutParams(params);
+    private void renderRows(boolean restore) {
+        if (binding == null) return;
+        String key = active; int generation = ++renderGeneration;
+        adapter.setItems(new ArrayList<>(rows.getOrDefault(key, List.of())), () -> {
+            if (binding == null || generation != renderGeneration || !active.equals(key)) return;
+            if (restore) {
+                Parcelable position = positions.get(key);
+                if (position != null) binding.recycler.getLayoutManager().onRestoreInstanceState(position);
+                else binding.recycler.scrollToPosition(0);
+            }
+            renderStatus();
+        });
     }
-
-    private void search() {
-        if (mSites.isEmpty()) return;
-        mCollectAdapter.setItems(List.of(Collect.all()), () -> mViewModel.searchContent(mSites, getKeyword(), false));
+    private void renderStatus() {
+        if (binding == null || model == null) return;
+        int count = rows.getOrDefault("", List.of()).size();
+        binding.status.setText(getString(R.string.mobile_results_progress, progress.completed(), progress.total(), count));
+        binding.progress.setVisibility(progress.running() ? View.VISIBLE : View.INVISIBLE);
+        binding.stop.setVisibility(progress.running() ? View.VISIBLE : View.GONE);
+        boolean failed = sites.stream().anyMatch(s -> (active.isEmpty() || active.equals(s.getKey())) && model.sourceState(s) != null && model.sourceState(s).failed());
+        boolean busy = sites.stream().anyMatch(s -> (active.isEmpty() || active.equals(s.getKey())) && model.sourceState(s) != null && model.sourceState(s).busy());
+        boolean more = !active.isEmpty() && sites.stream().anyMatch(s -> active.equals(s.getKey()) && model.sourceState(s) != null && model.sourceState(s).hasMore() && !model.sourceState(s).busy() && !model.sourceState(s).failed());
+        binding.retry.setVisibility(failed ? View.VISIBLE : View.GONE);
+        binding.more.setVisibility(more ? View.VISIBLE : View.GONE);
+        binding.empty.setVisibility(rows.getOrDefault(active, List.of()).isEmpty() ? View.VISIBLE : View.GONE);
+        binding.empty.setText(sites.isEmpty() ? R.string.mobile_no_sources : busy ? R.string.mobile_searching : progress.cancelled() ? R.string.mobile_search_cancelled : failed ? R.string.mobile_results_failed : R.string.mobile_results_empty);
     }
-
-    private int getCount() {
-        int count = ResUtil.isLand(requireActivity()) ? 2 : 1;
-        if (ResUtil.isPad()) count++;
-        return count;
-    }
-
-    private void setCollect(Result result) {
-        if (result == null || result.getList().isEmpty()) return;
-        if (mCollectAdapter.getPosition() == 0) mSearchAdapter.addAll(result.getList());
-        mCollectAdapter.add(Collect.create(result.getList()));
-        mCollectAdapter.add(result.getList());
-    }
-
-    private void setSearch(Result result) {
-        if (result == null) return;
-        mScroller.endLoading(result);
-        boolean same = !result.getList().isEmpty() && mCollectAdapter.getActivated().getSite().equals(result.getVod().getSite());
-        if (same) mCollectAdapter.getActivated().getList().addAll(result.getList());
-        if (same) mSearchAdapter.addAll(result.getList());
-    }
-
-    @Override
-    public void onItemClick(int position, Collect item) {
-        mSearchAdapter.setItems(item.getList(), () -> mBinding.recycler.scrollToPosition(0));
-        mCollectAdapter.setSelected(position);
-        mScroller.setPage(item.getPage());
-    }
-
-    @Override
-    public void onItemClick(Vod item) {
+    @Override public void onItemClick(Vod item) {
         if (item.isFolder()) FolderActivity.start(requireActivity(), item.getSiteKey(), Result.folder(item));
         else VideoActivity.collect(requireActivity(), item.getSiteKey(), item.getId(), item.getName(), item.getPic());
     }
-
-    @Override
-    public boolean onLoadMore(String page) {
-        Collect activated = mCollectAdapter.getActivated();
-        if ("all".equals(activated.getSite().getKey())) return false;
-        mViewModel.searchContent(activated.getSite(), getKeyword(), false, page);
-        activated.setPage(Integer.parseInt(page));
-        return true;
-    }
-
-    @Override
-    public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
-    }
-
-    @Override
-    public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
-        if (menuItem.getItemId() == android.R.id.home) requireActivity().getOnBackPressedDispatcher().onBackPressed();
-        return true;
-    }
-
-    @Override
-    public void onHiddenChanged(boolean hidden) {
-        if (hidden) requireActivity().removeMenuProvider(this);
-        else initMenu();
-    }
-
-    @Override
-    public void onDestroyView() {
+    @Override public void onDestroyView() {
         super.onDestroyView();
-        mViewModel.stopSearch();
-        requireActivity().removeMenuProvider(this);
+        // Rotation retains the ViewModel/session. Leaving the result route cancels its work.
+        if (!requireActivity().isChangingConfigurations()) model.stopSearch();
+        binding = null;
     }
 }

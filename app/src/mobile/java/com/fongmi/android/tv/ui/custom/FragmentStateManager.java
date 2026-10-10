@@ -28,11 +28,12 @@ public class FragmentStateManager {
         String tag = getTag(position);
         Fragment fragment = fm.findFragmentByTag(tag);
         fragment = (fragment == null) ? factory.apply(position) : fragment;
-        FragmentTransaction ft = fm.beginTransaction().setTransition(TRANSIT_FRAGMENT_OPEN);
+        if (fm.isStateSaved()) return false;
+        FragmentTransaction ft = fm.beginTransaction();
         if (fm.findFragmentByTag(tag) == null) ft.add(container.getId(), fragment, tag);
         Fragment current = fm.getPrimaryNavigationFragment();
         if (current != null && current != fragment) ft.hide(current);
-        ft.show(fragment).setPrimaryNavigationFragment(fragment).setReorderingAllowed(true).commitNowAllowingStateLoss();
+        ft.show(fragment).setPrimaryNavigationFragment(fragment).setReorderingAllowed(true).commitNow();
         return true;
     }
 
