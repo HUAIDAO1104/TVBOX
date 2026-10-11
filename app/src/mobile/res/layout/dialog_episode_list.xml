@@ -1,19 +1,25 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:paddingHorizontal="16dp" android:paddingTop="8dp" android:paddingBottom="16dp">
-<View android:layout_width="32dp" android:layout_height="4dp" android:layout_gravity="center_horizontal" android:layout_marginBottom="8dp" android:background="@color/mobile_outline"/>
+
 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
 <TextView android:id="@+id/title" style="@style/Mobile.Section" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:maxLines="2" android:ellipsize="end"/>
 <androidx.appcompat.widget.AppCompatImageButton android:id="@+id/close" style="@style/Mobile.Icon" android:src="@drawable/ic_mobile_close" android:contentDescription="关闭选集"/>
 </LinearLayout>
+<LinearLayout android:id="@+id/body" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical">
+<LinearLayout android:id="@+id/options" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
 <TextView android:id="@+id/current" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp" android:maxLines="2" android:ellipsize="end" android:textColor="@color/mobile_muted" android:textSize="12sp"/>
 <LinearLayout android:id="@+id/sourceSection" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
-<androidx.recyclerview.widget.RecyclerView android:id="@+id/flag" android:layout_width="match_parent" android:layout_height="wrap_content" android:clipToPadding="false"/>
+<androidx.recyclerview.widget.RecyclerView android:id="@+id/flag" android:nestedScrollingEnabled="false" android:layout_width="match_parent" android:layout_height="wrap_content" android:clipToPadding="false"/>
 </LinearLayout>
 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
-<TextView android:id="@+id/count" style="@style/Mobile.Section" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="选集"/>
+<TextView android:id="@+id/count" android:textSize="12sp" android:textColor="@color/mobile_muted" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="选集"/>
 <com.google.android.material.button.MaterialButton android:id="@+id/locate" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:text="当前集"/>
 <com.google.android.material.button.MaterialButton android:id="@+id/reverse" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:text="正序" app:icon="@drawable/ic_mobile_sort"/>
 </LinearLayout>
+</LinearLayout>
+<LinearLayout android:id="@+id/episodePane" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical">
 <com.google.android.material.tabs.TabLayout android:id="@+id/ranges" style="@style/Mobile.Tabs" android:layout_width="match_parent" android:layout_height="48dp" app:tabMode="scrollable" android:background="@android:color/transparent"/>
-<androidx.recyclerview.widget.RecyclerView android:id="@+id/episode" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:paddingTop="8dp" android:paddingBottom="16dp" android:clipToPadding="false"/>
+<androidx.recyclerview.widget.RecyclerView android:id="@+id/episode" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:paddingTop="8dp" android:paddingBottom="16dp" android:clipToPadding="false" android:scrollbars="vertical"/>
 <TextView android:id="@+id/empty" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:padding="24dp" android:text="这条线路暂无剧集，请切换线路" android:textColor="@color/mobile_muted" android:visibility="gone"/>
+</LinearLayout>
+</LinearLayout>
 </LinearLayout>

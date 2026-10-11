@@ -1,0 +1,13 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="16dp" android:orientation="vertical">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
+        <TextView style="@style/Mobile.Section" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="投屏到电视" />
+        <androidx.appcompat.widget.AppCompatImageButton android:id="@+id/close" style="@style/Mobile.Icon" android:src="@drawable/ic_mobile_close" android:contentDescription="关闭投屏" />
+    </LinearLayout>
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="手机与电视需连接同一 Wi-Fi，并在电视上打开投屏功能。" android:textColor="@color/mobile_muted" android:textSize="13sp" android:layout_marginBottom="8dp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+        <com.google.android.material.button.MaterialButton android:id="@+id/refresh" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="重新搜索" app:icon="@drawable/ic_mobile_search" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/scan" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="扫码连接" app:icon="@drawable/ic_action_scan" />
+    </LinearLayout>
+    <TextView android:id="@+id/status" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginVertical="12dp" android:text="正在查找附近的设备…" android:textColor="@color/mobile_muted" android:textSize="13sp" android:accessibilityLiveRegion="polite" />
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:clipToPadding="false" android:paddingBottom="16dp" app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+</LinearLayout>

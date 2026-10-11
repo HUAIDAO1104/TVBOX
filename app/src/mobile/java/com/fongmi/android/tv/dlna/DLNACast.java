@@ -23,7 +23,8 @@ import org.jupnp.support.model.item.VideoItem;
 
 import java.util.Locale;
 
-public record DLNACast(CastVideo video, Runnable runnable) {
+public record DLNACast(CastVideo video, Runnable runnable, java.util.function.Consumer<String> failure) {
+    public DLNACast(CastVideo video, Runnable runnable) { this(video, runnable, Notify::show); }
 
     public void cast(Device item) {
         DLNACastManager mgr = DLNACastManager.get();
@@ -32,7 +33,7 @@ public record DLNACast(CastVideo video, Runnable runnable) {
         if (service != null && control != null) {
             control.execute(uriAction(control, service));
         } else {
-            App.post(() -> Notify.show(R.string.device_offline));
+            App.post(() -> failure.accept(com.fongmi.android.tv.utils.ResUtil.getString(R.string.device_offline)));
         }
     }
 
@@ -57,7 +58,7 @@ public record DLNACast(CastVideo video, Runnable runnable) {
 
             @Override
             public void failure(ActionInvocation i, UpnpResponse r, String msg) {
-                App.post(() -> Notify.show(msg));
+                App.post(() -> failure.accept(msg));
             }
         };
     }
@@ -72,7 +73,7 @@ public record DLNACast(CastVideo video, Runnable runnable) {
 
             @Override
             public void failure(ActionInvocation i, UpnpResponse r, String msg) {
-                App.post(() -> Notify.show(msg));
+                App.post(() -> failure.accept(msg));
             }
         };
     }

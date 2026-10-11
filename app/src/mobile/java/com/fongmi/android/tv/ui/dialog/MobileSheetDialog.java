@@ -13,6 +13,8 @@ public abstract class MobileSheetDialog extends BaseBottomSheetDialog {
         });
     }
 
+    protected float heightFraction() { return getResources().getConfiguration().screenHeightDp < 480 ? 0.96f : 0.86f; }
+
     @Override protected void setBehavior(BottomSheetDialog dialog) {
         super.setBehavior(dialog);
         FrameLayout sheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
@@ -21,7 +23,7 @@ public abstract class MobileSheetDialog extends BaseBottomSheetDialog {
         android.graphics.Rect visible = new android.graphics.Rect();
         requireActivity().getWindow().getDecorView().getWindowVisibleDisplayFrame(visible);
         if (visible.height() > 0) available = visible.height();
-        sheet.getLayoutParams().height = Math.round(available * 0.86f);
+        sheet.getLayoutParams().height = Math.round(available * heightFraction());
         sheet.requestLayout();
         BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(sheet);
         behavior.setSkipCollapsed(true);

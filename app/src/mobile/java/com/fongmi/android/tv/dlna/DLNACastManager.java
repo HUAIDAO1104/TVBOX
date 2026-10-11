@@ -62,11 +62,13 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
     }
 
     private void notifyAdded(Device bean) {
-        if (deviceListener != null) App.post(() -> deviceListener.onDeviceAdded(bean));
+        DeviceListener listener = deviceListener;
+        if (listener != null) App.post(() -> { if (deviceListener == listener) listener.onDeviceAdded(bean); });
     }
 
     private void notifyRemoved(Device bean) {
-        if (deviceListener != null) App.post(() -> deviceListener.onDeviceRemoved(bean));
+        DeviceListener listener = deviceListener;
+        if (listener != null) App.post(() -> { if (deviceListener == listener) listener.onDeviceRemoved(bean); });
     }
 
     public void init(Context context) {

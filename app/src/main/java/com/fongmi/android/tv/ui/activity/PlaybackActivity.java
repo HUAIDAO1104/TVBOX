@@ -646,8 +646,12 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         else if (status.stage() == DanmakuStatus.Stage.FAILED) App.post(hideDanmakuStatus, 8000);
     }
 
+    protected TextView playbackStatusView() { return null; }
+
     private TextView ensureDanmakuStatusView() {
         if (danmakuStatusView != null) return danmakuStatusView;
+        TextView inline = playbackStatusView();
+        if (inline != null) return danmakuStatusView = inline;
         FrameLayout root = findViewById(android.R.id.content);
         boolean mobile = com.fongmi.android.tv.utils.Util.isMobile();
         View video = findViewById(com.fongmi.android.tv.R.id.video);

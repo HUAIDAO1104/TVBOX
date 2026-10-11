@@ -50,6 +50,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     @Override
     public void setContentView(View view) {
         super.setContentView(view);
+        com.fongmi.android.tv.ui.custom.InlineProgressHost.install(this, view);
         view.setFitsSystemWindows(false);
         int left = view.getPaddingLeft(), top = view.getPaddingTop();
         int right = view.getPaddingRight(), bottom = view.getPaddingBottom();

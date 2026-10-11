@@ -43,8 +43,10 @@ public class MobileExperienceInstrumentedTest {
     private volatile int slowSeconds;
     private volatile boolean failFast;
     private int episodeCount = 1;
+    private boolean multipleFlags;
     private final java.util.concurrent.CountDownLatch slowGate = new java.util.concurrent.CountDownLatch(1);
     private final AtomicInteger searchRequests = new AtomicInteger();
+    private final java.util.concurrent.atomic.AtomicBoolean castHasHistory = new java.util.concurrent.atomic.AtomicBoolean();
     private final AtomicInteger pageRequests = new AtomicInteger();
 
     @Before public void setup() throws Exception {
@@ -54,6 +56,7 @@ public class MobileExperienceInstrumentedTest {
             @Override public MockResponse dispatch(RecordedRequest request) {
                 String path = request.getRequestUrl().encodedPath();
                 if (path.equals("/config")) return json("{\"sites\":" + App.gson().toJson(sites) + "}");
+                if (path.equals("/action")) { castHasHistory.set(request.getBody().readUtf8().contains("history=")); return new MockResponse().setResponseCode(503).setBody("offline"); }
                 if (path.equals("/poster")) return new MockResponse().setResponseCode(404);
                 if (request.getRequestUrl().queryParameter("play") != null) return json("{\"parse\":0,\"url\":\"" + server.url("/video.mp4") + "\"}");
                 if (path.equals("/video.mp4")) {
@@ -91,7 +94,9 @@ public class MobileExperienceInstrumentedTest {
             if (i > 1) episodes.append("#");
             episodes.append("第").append(i).append("集$").append(server.url("/video.mp4?episode=" + i));
         }
-        String vod = "{\"vod_id\":\"" + id + "\",\"vod_name\":\"测试电影" + id + "\",\"vod_pic\":\"" + server.url("/poster") + "\",\"vod_remarks\":\"1080P\",\"vod_content\":\"这是一部用于验证手机版搜索、选集、播放和返回行为的测试影片。\",\"vod_play_from\":\"测试线路\",\"vod_play_url\":\"" + episodes + "\"}";
+        String from = multipleFlags ? "测试线路$$$备用线路" : "测试线路";
+        if (multipleFlags) episodes.append("$$$").append(episodes.toString());
+        String vod = "{\"vod_id\":\"" + id + "\",\"vod_name\":\"测试电影" + id + "\",\"vod_pic\":\"" + server.url("/poster") + "\",\"vod_remarks\":\"1080P\",\"vod_content\":\"这是一部用于验证手机版搜索、选集、播放和返回行为的测试影片。\",\"vod_play_from\":\"" + from + "\",\"vod_play_url\":\"" + episodes + "\"}";
         return "{\"page\":1,\"pagecount\":2,\"class\":[{\"type_id\":\"1\",\"type_name\":\"电影\"}],\"list\":[" + vod + (duplicate ? "," + vod : "") + "]}";
     }
     @After public void cleanup() throws Exception {
@@ -276,6 +281,180 @@ public class MobileExperienceInstrumentedTest {
             assertEquals(0, ranges.getSelectedTabPosition());
         });
         screenshot("episodes-current-reversed");
+    }
+
+    @Test public void episodeListAcceptsRealVerticalSwipesAndLastEpisodeTap() {
+        episodeCount = 120; multipleFlags = true;
+        var value = ActivityScenario.<VideoActivity>launch(new Intent(App.get(), VideoActivity.class).putExtra("key", "fast").putExtra("id", "1").putExtra("name", "真实触摸选集")); scenario = value;
+        await(() -> { boolean[] ready = {false}; onActivity(value, a -> ready[0] = ((TextView) a.findViewById(R.id.more)).getText().toString().contains("120")); return ready[0]; });
+        if ("true".equals(InstrumentationRegistry.getArguments().getString("qaFullscreen"))) {
+            onActivity(value, a -> a.findViewById(R.id.detailFull).performClick());
+            SystemClock.sleep(2500);
+            onActivity(value, a -> assertEquals("Explicit fullscreen must stay landscape", android.content.res.Configuration.ORIENTATION_LANDSCAPE, a.getResources().getConfiguration().orientation));
+        }
+        onActivity(value, a -> a.findViewById(R.id.more).performClick());
+        SystemClock.sleep(500);
+        int[] bounds = new int[4];
+        onActivity(value, a -> {
+            View sheet = a.getSupportFragmentManager().findFragmentByTag("episode_picker").requireView();
+            assertTrue(sheet.findViewById(R.id.sourceSection).isShown());
+            RecyclerView list = sheet.findViewById(R.id.episode);
+            int[] xy = new int[2]; list.getLocationOnScreen(xy);
+            bounds[0] = xy[0]; bounds[1] = xy[1]; bounds[2] = list.getWidth(); bounds[3] = list.getHeight();
+            assertTrue("Episode viewport must remain usable", list.getHeight() > 48 * a.getResources().getDisplayMetrics().density);
+        });
+        scrollEpisodesToEnd(value, bounds);
+        screenshot("episodes-page-one-end");
+        onActivity(value, a -> {
+            RecyclerView list = a.getSupportFragmentManager().findFragmentByTag("episode_picker").requireView().findViewById(R.id.episode);
+            assertNotNull("Real swipes must reach episode 50", list.getLayoutManager().findViewByPosition(49));
+            TabLayout tabs = a.getSupportFragmentManager().findFragmentByTag("episode_picker").requireView().findViewById(R.id.ranges);
+            tabs.selectTab(tabs.getTabAt(2));
+        });
+        SystemClock.sleep(250);
+        scrollEpisodesToEnd(value, bounds);
+        float[] point = new float[2];
+        onActivity(value, a -> {
+            RecyclerView list = a.getSupportFragmentManager().findFragmentByTag("episode_picker").requireView().findViewById(R.id.episode);
+            View last = list.getLayoutManager().findViewByPosition(19);
+            assertNotNull("Last episode is reachable", last);
+            android.graphics.Rect visible = new android.graphics.Rect(); assertTrue(last.getGlobalVisibleRect(visible));
+            assertEquals("Last episode is fully visible", last.getHeight(), visible.height());
+            point[0] = visible.exactCenterX(); point[1] = visible.exactCenterY();
+        });
+        screenshot("episodes-touch-last");
+        touch(point[0], point[1], point[1], 0);
+        await(() -> { boolean[] selected = {false}; onActivity(value, a -> selected[0] = a.getEpisodePickerFlags().get(0).getEpisodes().stream().anyMatch(e -> e.isSelected() && e.getName().contains("120"))); return selected[0]; });
+    }
+
+    @Test public void castEntryAndSynopsisAreVisibleWithoutCoveringVideo() {
+        var value = ActivityScenario.<VideoActivity>launch(new Intent(App.get(), VideoActivity.class).putExtra("key", "fast").putExtra("id", "1").putExtra("name", "投屏与详情")); scenario = value;
+        await(() -> { boolean[] ready = {false}; onActivity(value, a -> ready[0] = a.playbackHistory() != null && !a.playbackPlayer().isEmpty()); return ready[0]; });
+        onActivity(value, a -> {
+            int[] film = new int[2], toolbar = new int[2];
+            a.findViewById(R.id.video).getLocationOnScreen(film);
+            a.findViewById(R.id.detailCast).getLocationOnScreen(toolbar);
+            assertTrue(a.findViewById(R.id.detailCast).isShown());
+            assertTrue(toolbar[1] >= film[1] + a.findViewById(R.id.video).getHeight());
+            a.findViewById(R.id.contentToggle).performClick();
+            assertEquals(Integer.MAX_VALUE, ((TextView)a.findViewById(R.id.content)).getMaxLines());
+            assertEquals(View.GONE, a.findViewById(R.id.actor).getVisibility());
+            assertEquals(View.GONE, a.findViewById(R.id.director).getVisibility());
+            a.findViewById(R.id.contentToggle).performClick();
+            assertEquals(2, ((TextView)a.findViewById(R.id.content)).getMaxLines());
+        });
+        screenshot("playback-hierarchy");
+        onActivity(value, a -> a.findViewById(R.id.detailCast).performClick());
+        await(() -> { boolean[] open = {false}; onActivity(value, a -> open[0] = a.getSupportFragmentManager().getFragments().stream().anyMatch(f -> f instanceof com.fongmi.android.tv.ui.dialog.CastDialog && f.getView() != null)); return open[0]; });
+        value.recreate();
+        await(() -> { boolean[] ready = {false}; onActivity(value, a -> ready[0] = a.playbackHistory() != null && !a.playbackPlayer().isEmpty() && a.getSupportFragmentManager().getFragments().stream().anyMatch(f -> f instanceof com.fongmi.android.tv.ui.dialog.CastDialog && f.getView() != null)); return ready[0]; });
+        onActivity(value, a -> {
+            var cast = (com.fongmi.android.tv.ui.dialog.CastDialog)a.getSupportFragmentManager().getFragments().stream().filter(f -> f instanceof com.fongmi.android.tv.ui.dialog.CastDialog).findFirst().orElseThrow();
+            Device device = new Device(); device.setUuid("local-test-tv"); device.setName("客厅电视（测试）"); device.setType(0); device.setIp(server.url("/").toString().replaceAll("/$", ""));
+            cast.onFind(device);
+        });
+        await(() -> { boolean[] ready = {false}; onActivity(value, a -> {
+            var f = a.getSupportFragmentManager().getFragments().stream().filter(v -> v instanceof com.fongmi.android.tv.ui.dialog.CastDialog).findFirst().orElseThrow();
+            RecyclerView list = f.requireView().findViewById(R.id.recycler);
+            assertTrue("Device list must have a visible viewport", list.getHeight() > 48 * a.getResources().getDisplayMetrics().density);
+            var adapter = (com.fongmi.android.tv.ui.adapter.DeviceAdapter) list.getAdapter();
+            int index = java.util.stream.IntStream.range(0, adapter.getItemCount()).filter(n -> adapter.getItem(n).getUuid().equals("local-test-tv")).findFirst().orElse(-1);
+            ready[0] = index >= 0 && list.getLayoutManager().findViewByPosition(index) != null;
+            assertFalse("Do not list this phone as a cast target", adapter.getItems().stream().anyMatch(d -> d.getUuid().equals(Device.get().getUuid())));
+        }); return ready[0]; });
+        screenshot("cast-discovery");
+        float[] devicePoint = new float[2];
+        onActivity(value, a -> {
+            Fragment f = a.getSupportFragmentManager().getFragments().stream().filter(v -> v instanceof com.fongmi.android.tv.ui.dialog.CastDialog).findFirst().orElseThrow();
+            RecyclerView list = f.requireView().findViewById(R.id.recycler);
+            var adapter = (com.fongmi.android.tv.ui.adapter.DeviceAdapter)list.getAdapter();
+            int index = java.util.stream.IntStream.range(0,adapter.getItemCount()).filter(n -> adapter.getItem(n).getUuid().equals("local-test-tv")).findFirst().orElseThrow();
+            android.graphics.Rect bounds = new android.graphics.Rect(); list.getLayoutManager().findViewByPosition(index).getGlobalVisibleRect(bounds);
+            devicePoint[0] = bounds.exactCenterX(); devicePoint[1] = bounds.exactCenterY();
+        });
+        touch(devicePoint[0], devicePoint[1], devicePoint[1], 0);
+        await(() -> { boolean[] failed = {false}; onActivity(value, a -> {
+            Fragment f = a.getSupportFragmentManager().getFragments().stream().filter(v -> v instanceof com.fongmi.android.tv.ui.dialog.CastDialog).findFirst().orElseThrow();
+            failed[0] = ((TextView)f.requireView().findViewById(R.id.status)).getText().toString().contains("设备未响应");
+        }); return failed[0]; });
+        onActivity(value, a -> {
+            var f = (com.fongmi.android.tv.ui.dialog.CastDialog)a.getSupportFragmentManager().getFragments().stream().filter(v -> v instanceof com.fongmi.android.tv.ui.dialog.CastDialog).findFirst().orElseThrow();
+            f.onFind(Device.get());
+        });
+        SystemClock.sleep(150);
+        assertTrue("Restored cast request must include current playback history", castHasHistory.get());
+        onActivity(value, a -> {
+            Fragment f = a.getSupportFragmentManager().getFragments().stream().filter(v -> v instanceof com.fongmi.android.tv.ui.dialog.CastDialog).findFirst().orElseThrow();
+            assertTrue("Discovery callbacks must not erase a connection error", ((TextView)f.requireView().findViewById(R.id.status)).getText().toString().contains("设备未响应"));
+            assertTrue(f.requireView().findViewById(R.id.refresh).isShown());
+            assertTrue(f.requireView().findViewById(R.id.close).isShown());
+            f.requireView().findViewById(R.id.close).performClick();
+        });
+    }
+
+    @Test public void providerProgressReservesSpaceAndReleasesItAfterRemoval() {
+        var value = ActivityScenario.<VideoActivity>launch(new Intent(App.get(), VideoActivity.class).putExtra("key", "fast").putExtra("id", "1")); scenario = value;
+        await(() -> { boolean[] ready = {false}; onActivity(value, a -> ready[0] = a.playbackHistory() != null); return ready[0]; });
+        android.widget.LinearLayout[] panel = new android.widget.LinearLayout[1];
+        int[] original = new int[1];
+        onActivity(value, a -> {
+            android.widget.FrameLayout content = a.findViewById(android.R.id.content);
+            View page = a.findViewById(R.id.video).getRootView().findViewWithTag("port");
+            original[0] = ((android.widget.FrameLayout.LayoutParams) page.getLayoutParams()).bottomMargin;
+            panel[0] = new android.widget.LinearLayout(a); panel[0].setOrientation(1);
+            TextView label = new TextView(a); label.setText("来源组件加载中"); panel[0].addView(label);
+            panel[0].addView(new android.widget.ProgressBar(a, null, android.R.attr.progressBarStyleHorizontal));
+            android.widget.FrameLayout.LayoutParams params = new android.widget.FrameLayout.LayoutParams(-1, -2); params.gravity = android.view.Gravity.TOP;
+            content.addView(panel[0], params);
+        });
+        SystemClock.sleep(300);
+        onActivity(value, a -> {
+            View page = a.findViewById(R.id.video).getRootView().findViewWithTag("port");
+            android.widget.FrameLayout content = a.findViewById(android.R.id.content);
+            assertSame(content, panel[0].getParent());
+            int[] xy = new int[2]; page.getLocationOnScreen(xy);
+            assertTrue("Provider progress has its own reserved space", panel[0].getTop() >= xy[1] + page.getHeight() - page.getPaddingBottom());
+            a.findViewById(R.id.detailFull).performClick();
+        });
+        SystemClock.sleep(700);
+        onActivity(value, a -> {
+            assertEquals("Fullscreen picture is never covered by provider progress", 0f, panel[0].getAlpha(), .01f);
+            a.getOnBackPressedDispatcher().onBackPressed();
+        });
+        SystemClock.sleep(500);
+        onActivity(value, a -> ((android.widget.FrameLayout)a.findViewById(android.R.id.content)).removeView(panel[0]));
+        SystemClock.sleep(200);
+        onActivity(value, a -> {
+            View page = a.findViewById(R.id.video).getRootView().findViewWithTag("port");
+            assertEquals(original[0], ((android.widget.FrameLayout.LayoutParams)page.getLayoutParams()).bottomMargin);
+        });
+    }
+
+    private void scrollEpisodesToEnd(ActivityScenario<VideoActivity> value, int[] bounds) {
+        for (int i = 0; i < 40; i++) {
+            boolean[] more = {false};
+            onActivity(value, a -> {
+                RecyclerView list = a.getSupportFragmentManager().findFragmentByTag("episode_picker").requireView().findViewById(R.id.episode);
+                more[0] = list.canScrollVertically(1);
+            });
+            if (!more[0]) return;
+            touchSwipe(bounds[0] + bounds[2] / 2f, bounds[1] + bounds[3] * .85f, bounds[1] + bounds[3] * .15f);
+        }
+        fail("List must reach its end with real gestures");
+    }
+    private void touchSwipe(float x, float from, float to) { touch(x, from, to, 400); SystemClock.sleep(250); }
+    private void touch(float x, float from, float to, int duration) {
+        var automation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        long down = SystemClock.uptimeMillis();
+        int steps = Math.max(1, duration / 20);
+        for (int i = 0; i <= steps + 1; i++) {
+            int action = i == 0 ? android.view.MotionEvent.ACTION_DOWN : i == steps + 1 ? android.view.MotionEvent.ACTION_UP : android.view.MotionEvent.ACTION_MOVE;
+            float y = from + (to - from) * Math.min(1, i / (float) steps);
+            var event = android.view.MotionEvent.obtain(down, SystemClock.uptimeMillis(), action, x, y, 0);
+            event.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+            assertTrue(automation.injectInputEvent(event, true)); event.recycle();
+            if (duration > 0) SystemClock.sleep(20);
+        }
     }
 
     @Test public void playbackSettingsExposeSpeedAndAdvancedOptionsWithoutLeavingVideo() {

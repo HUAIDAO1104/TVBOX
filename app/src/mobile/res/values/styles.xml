@@ -55,6 +55,7 @@
         <item name="android:minHeight">48dp</item><item name="android:textSize">14sp</item><item name="android:textAllCaps">false</item><item name="cornerRadius">12dp</item><item name="android:fontFamily">sans-serif-medium</item>
     </style>
     <style name="Mobile.Action" parent="Widget.Material3.Button.TextButton">
+        <item name="iconGravity">textStart</item>
         <item name="android:minHeight">48dp</item><item name="android:textSize">13sp</item><item name="android:textColor">@color/mobile_text</item><item name="iconTint">@color/mobile_muted</item><item name="iconSize">20dp</item><item name="iconPadding">8dp</item><item name="android:paddingHorizontal">10dp</item><item name="android:insetLeft">0dp</item><item name="android:insetRight">0dp</item><item name="cornerRadius">10dp</item>
     </style>
     <style name="Mobile.Icon" parent="">

@@ -51,4 +51,6 @@ Route error / 403 page behavior：无远端网页路由。来源失败在内容�
 
 2026-10-11 第二轮整体优化：移除残存的 TV glass surface/card 覆盖；首页/片库/搜索/播放/设置共享图标、控件、选择态与排版。全部选集及全屏选集使用 EpisodeListDialog 单一所有者；旧 EpisodeGridDialog 不再从播放流程调用。搜索结果的来源总览只改变 active source，不发起新搜索。来源多选应用仍代表更改搜索范围，触发新会话。播放设置的次级动作均保留，按钮代理仍调用现有控制器与持久化逻辑。
 
-验证 Android 窄屏竖屏、键盘、横屏播放器、平板、大字、无配置/空/失败、返回状态与连续点击。运行 JVM 回归、手机仪器测试、四种发布构建和签名/版本/OTA 校验。本轮证据记录在 MOBILE_EXPERIENCE_REVIEW.md（上一轮记录见 MOBILE_REDESIGN_REPORT.md）；未执行项目必须如实标记。
+第三轮播放页返修：投屏/全屏/设置固定在视频下方；标题/简要信息、线路/选集、展开简介三层。选集网格接管纵向手势、横屏两栏，真实触摸到末集作为验收条件。投屏发现和失败反馈属于 CastDialog，销毁后停止扫描与回调。InlineProgressHost 保留插件进度的原始 View/parent 生命周期，仅调整位置并预留布局空间，避免干扰初始化。
+
+验证 Android 窄屏竖屏、键盘、横屏播放器、平板、大字、无配置/空/失败、返回状态与连续点击。运行 JVM 回归、手机仪器测试、四种发布构建和签名/版本/OTA 校验。最新播放页返修证据记录在 MOBILE_PLAYBACK_REVIEW.md；前两轮见 MOBILE_EXPERIENCE_REVIEW.md、MOBILE_REDESIGN_REPORT.md。未执行项目必须如实标记。
