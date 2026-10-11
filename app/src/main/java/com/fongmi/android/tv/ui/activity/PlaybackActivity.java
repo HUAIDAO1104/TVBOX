@@ -649,12 +649,17 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     private TextView ensureDanmakuStatusView() {
         if (danmakuStatusView != null) return danmakuStatusView;
         FrameLayout root = findViewById(android.R.id.content);
+        boolean mobile = com.fongmi.android.tv.utils.Util.isMobile();
+        View video = findViewById(com.fongmi.android.tv.R.id.video);
+        boolean inPlayer = mobile && video instanceof FrameLayout;
+        if (inPlayer) root = (FrameLayout) video;
         TextView view = new TextView(this);
         int horizontal = ResUtil.dp2px(18);
         int vertical = ResUtil.dp2px(9);
         view.setPadding(horizontal, vertical, horizontal, vertical);
         view.setTextColor(Color.WHITE);
-        view.setTextSize(com.fongmi.android.tv.utils.Util.isLeanback() ? 18 : 14);
+        view.setTextSize(com.fongmi.android.tv.utils.Util.isLeanback() ? 18 : 12);
+        if (mobile) { view.setMaxLines(2); view.setMaxWidth(ResUtil.getScreenWidth() - ResUtil.dp2px(32)); }
         view.setFocusable(false);
         view.setClickable(false);
         view.setElevation(ResUtil.dp2px(10));
@@ -665,8 +670,9 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         view.setBackground(background);
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        params.gravity = android.view.Gravity.TOP | android.view.Gravity.CENTER_HORIZONTAL;
+        params.gravity = (inPlayer ? android.view.Gravity.BOTTOM : android.view.Gravity.TOP) | android.view.Gravity.CENTER_HORIZONTAL;
         params.topMargin = ResUtil.dp2px(com.fongmi.android.tv.utils.Util.isLeanback() ? 28 : 16);
+        if (inPlayer) params.bottomMargin = ResUtil.dp2px(48);
         root.addView(view, params);
         danmakuStatusView = view;
         return view;

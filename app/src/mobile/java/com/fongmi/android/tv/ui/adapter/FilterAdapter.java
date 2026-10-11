@@ -36,7 +36,9 @@ public class FilterAdapter extends RecyclerView.Adapter<FilterAdapter.ViewHolder
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Filter item = mItems.get(position);
-        holder.binding.recycler.setHasFixedSize(true);
+        holder.binding.name.setText(item.getName());
+        holder.binding.recycler.setLayoutManager(new com.google.android.flexbox.FlexboxLayoutManager(holder.itemView.getContext()));
+        holder.binding.recycler.setHasFixedSize(false);
         holder.binding.recycler.setItemAnimator(null);
         holder.binding.recycler.setAdapter(new ValueAdapter(listener, item));
     }

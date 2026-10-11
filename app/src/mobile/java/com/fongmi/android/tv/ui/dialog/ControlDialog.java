@@ -27,7 +27,7 @@ import com.google.android.material.slider.Slider;
 import java.util.Arrays;
 import java.util.List;
 
-public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter.OnClickListener {
+public class ControlDialog extends MobileSheetDialog implements ParseAdapter.OnClickListener {
 
     private final String[] scale;
     private DialogControlBinding binding;
@@ -37,6 +37,7 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
     private History history;
     private String siteKey = "";
     private boolean parse;
+    private int restoreAttempts;
 
     public ControlDialog() {
         this.scale = ResUtil.getStringArray(R.array.select_scale);
@@ -84,11 +85,44 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
         return binding;
     }
 
+    public interface Host {
+        ActivityVideoBinding playbackBinding();
+        History playbackHistory();
+        PlayerManager playbackPlayer();
+        String playbackSiteKey();
+        boolean playbackUsesParse();
+    }
+
     @Override
     protected void initView() {
+        // DialogFragment can be restored without builder fields after Activity recreation.
+        if (requireActivity() instanceof Host host) {
+            parent = host.playbackBinding(); history = host.playbackHistory(); player = host.playbackPlayer();
+            siteKey = host.playbackSiteKey(); parse = host.playbackUsesParse();
+        }
+        if (player == null || history == null) {
+            if (++restoreAttempts > 40) { dismissAllowingStateLoss(); return; }
+            binding.close.setOnClickListener(v -> dismiss());
+            binding.getRoot().postDelayed(() -> { if (binding != null && isAdded()) { initView(); if (player != null && history != null) initEvent(); } }, 150);
+            return;
+        }
+        binding.speedPresets.removeAllViews();
+        for (float speed : new float[]{0.75f, 1f, 1.25f, 1.5f, 2f}) {
+            com.google.android.material.button.MaterialButton preset = new com.google.android.material.button.MaterialButton(requireContext(), null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
+            preset.setText(formatSpeed(speed)); preset.setTag(speed); preset.setMinHeight(com.fongmi.android.tv.utils.ResUtil.dp2px(48));
+            preset.setMinWidth(0); preset.setMinimumWidth(0); preset.setTextSize(14);
+            preset.setPadding(8, 0, 8, 0); preset.setCornerRadius(com.fongmi.android.tv.utils.ResUtil.dp2px(10));
+            float fontScale = getResources().getConfiguration().fontScale;
+            int width = Math.round(Math.max(64 * fontScale, (getResources().getConfiguration().screenWidthDp - 40) / 5f - 8));
+            com.google.android.flexbox.FlexboxLayout.LayoutParams params = new com.google.android.flexbox.FlexboxLayout.LayoutParams(com.fongmi.android.tv.utils.ResUtil.dp2px(width), com.fongmi.android.tv.utils.ResUtil.dp2px(52));
+            params.setMargins(0, 0, com.fongmi.android.tv.utils.ResUtil.dp2px(8), 0); preset.setLayoutParams(params);
+            preset.setOnClickListener(v -> binding.speed.setValue(speed));
+            binding.speedPresets.addView(preset);
+        }
+
         binding.decode.setText(parent.control.action.decode.getText());
-        binding.ending.setText(parent.control.action.ending.getText());
-        binding.opening.setText(parent.control.action.opening.getText());
+        binding.ending.setText("片尾 · " + parent.control.action.ending.getText());
+        binding.opening.setText("片头 · " + parent.control.action.opening.getText());
         binding.repeat.setSelected(parent.control.action.repeat.isSelected());
         binding.timer.setSelected(Timer.get().isRunning());
         setMediaOptionVisible();
@@ -100,6 +134,19 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
 
     @Override
     protected void initEvent() {
+        if (player == null || history == null) return;
+        binding.close.setOnClickListener(v -> dismiss());
+        binding.advancedToggle.setOnClickListener(v -> {
+            boolean expanded = binding.advanced.getVisibility() != View.VISIBLE;
+            binding.advanced.setVisibility(expanded ? View.VISIBLE : View.GONE);
+            binding.advancedToggle.setText(expanded ? "收起高级选项" : "高级播放选项");
+        });
+        binding.resetSkip.setOnClickListener(v -> {
+            parent.control.action.opening.performLongClick(); parent.control.action.ending.performLongClick();
+            binding.opening.setText("片头 · " + parent.control.action.opening.getText()); binding.ending.setText("片尾 · " + parent.control.action.ending.getText());
+        });
+        binding.resetPlayback.setOnClickListener(v -> dismiss(parent.control.action.reset));
+        binding.replay.setOnClickListener(v -> dismiss(parent.control.action.replay));
         binding.timer.setOnClickListener(this::onTimer);
         binding.speed.addOnChangeListener(this::setSpeed);
         for (TextView view : scales) view.setOnClickListener(this::setScale);
@@ -127,6 +174,20 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
     private void setSpeed(@NonNull Slider slider, float value, boolean fromUser) {
         parent.control.action.speed.setText(player.setSpeed(value));
         if (history != null) history.setSpeed(player.getSpeed());
+        updateSpeed(value);
+    }
+
+    private String formatSpeed(float value) { return new java.text.DecimalFormat("0.##").format(value) + "×"; }
+
+    private void updateSpeed(float value) {
+        binding.speedLabel.setText("播放速度 · " + formatSpeed(value));
+        for (int i = 0; i < binding.speedPresets.getChildCount(); i++) {
+            com.google.android.material.button.MaterialButton button = (com.google.android.material.button.MaterialButton) binding.speedPresets.getChildAt(i);
+            boolean selected = Math.abs((float) button.getTag() - value) < 0.01f;
+            button.setSelected(selected);
+            button.setTextColor(com.fongmi.android.tv.utils.ResUtil.getColor(selected ? R.color.mobile_accent : R.color.mobile_text));
+            button.setStrokeColor(android.content.res.ColorStateList.valueOf(com.fongmi.android.tv.utils.ResUtil.getColor(selected ? R.color.mobile_accent : R.color.mobile_outline)));
+        }
     }
 
     private void setScaleText() {
@@ -157,22 +218,23 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
 
     private void click(TextView view, TextView target) {
         target.performClick();
-        view.setText(target.getText());
+        view.setText((view == binding.opening ? "片头 · " : view == binding.ending ? "片尾 · " : "") + target.getText());
     }
 
     private boolean longClick(TextView view, TextView target) {
         target.performLongClick();
-        view.setText(target.getText());
+        view.setText((view == binding.opening ? "片头 · " : view == binding.ending ? "片尾 · " : "") + target.getText());
         return true;
     }
 
     private void dismiss(View view) {
-        App.post(view::performClick, 200);
+        view.post(view::performClick);
         dismiss();
     }
 
     public void setPlayer() {
-        binding.speed.setValue(Math.max(player.getSpeed(), 0.5f));
+        binding.speed.setValue(Math.max(0.5f, Math.min(5f, Math.round(player.getSpeed() * 4) / 4f)));
+        updateSpeed(player.getSpeed());
         binding.player.setText(parent.control.action.player.getText());
         binding.decode.setVisibility(parent.control.action.decode.getVisibility());
         binding.danmaku.setVisibility(parent.control.action.danmaku.getVisibility());
@@ -200,6 +262,8 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
         ((Listener) requireActivity()).onParse(item);
         binding.parse.getAdapter().notifyItemRangeChanged(0, binding.parse.getAdapter().getItemCount());
     }
+
+    @Override public void onDestroyView() { super.onDestroyView(); binding = null; parent = null; player = null; }
 
     public interface Listener {
 

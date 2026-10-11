@@ -1,113 +1,29 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
-
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/transparent"
-        android:elevation="0dp"
-        app:elevation="0dp"
-        app:liftOnScrollColor="@color/transparent">
-
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-
-            >
-
-            <androidx.appcompat.widget.AppCompatImageView android:id="@+id/logo" android:layout_width="48dp" android:layout_height="48dp" android:padding="10dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="@string/mobile_config" android:src="@drawable/brand_mark"/>
-            <com.google.android.material.textview.MaterialTextView android:id="@+id/title" android:layout_width="wrap_content" android:layout_height="48dp" android:maxWidth="200dp" android:paddingHorizontal="8dp" android:gravity="center_vertical" android:ellipsize="end" android:singleLine="true" android:text="@string/app_name" android:contentDescription="@string/mobile_source" android:textColor="@color/mobile_text" android:textSize="18sp"/>
+<?xml version='1.0' encoding='UTF-8'?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent">
+    <com.google.android.material.appbar.AppBarLayout android:id="@+id/appBar" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@color/transparent" android:elevation="0dp" app:elevation="0dp" app:liftOnScrollColor="@color/transparent">
+        <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" android:layout_width="match_parent" android:layout_height="56dp">
+            <androidx.appcompat.widget.AppCompatImageView android:id="@+id/logo" android:layout_width="48dp" android:layout_height="48dp" android:padding="10dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="@string/mobile_config" android:src="@drawable/brand_mark" />
+            <com.google.android.material.textview.MaterialTextView android:id="@+id/title" android:layout_width="wrap_content" android:layout_height="48dp" android:maxWidth="200dp" android:paddingHorizontal="8dp" android:gravity="center_vertical" android:ellipsize="end" android:singleLine="true" android:text="@string/app_name" android:contentDescription="@string/mobile_source" android:textColor="@color/mobile_text" android:textSize="22sp" android:fontFamily="sans-serif-medium" />
+            <TextView android:id="@+id/sourceStatus" android:layout_width="wrap_content" android:layout_height="48dp" android:layout_gravity="end" android:maxWidth="112dp" android:maxLines="1" android:ellipsize="end" android:textSize="12sp" android:textColor="@color/mobile_muted" android:gravity="center_vertical" android:paddingEnd="12dp" />
         </com.google.android.material.appbar.MaterialToolbar>
-
-        <com.google.android.material.button.MaterialButton android:id="@+id/searchEntry" style="@style/Widget.Material3.Button.TonalButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:layout_marginHorizontal="16dp" android:layout_marginBottom="8dp" android:gravity="start|center_vertical" android:text="@string/mobile_search_hint" android:textColor="@color/mobile_muted" app:icon="@drawable/ic_action_search" app:iconTint="@color/mobile_muted" app:cornerRadius="12dp"/>
-        <com.google.android.material.button.MaterialButton android:id="@+id/continueEntry" style="@style/Widget.Material3.Button.TonalButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:layout_marginHorizontal="16dp" android:gravity="start|center_vertical" android:maxLines="2" android:ellipsize="end" android:visibility="gone" android:textSize="13sp"/>
+        <com.google.android.material.button.MaterialButton android:id="@+id/searchEntry" style="@style/Widget.Material3.Button.TonalButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:layout_marginHorizontal="16dp" android:layout_marginBottom="4dp" android:gravity="start|center_vertical" android:text="@string/mobile_search_hint" android:textColor="@color/mobile_muted" app:icon="@drawable/ic_mobile_search" app:iconTint="@color/mobile_muted" app:cornerRadius="12dp" android:textSize="14sp" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/continueEntry" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:layout_marginHorizontal="16dp" android:gravity="start|center_vertical" android:maxLines="2" android:ellipsize="end" android:visibility="gone" android:textSize="13sp" app:icon="@drawable/ic_mobile_history" />
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="12dp" android:orientation="horizontal">
-            <com.google.android.material.button.MaterialButton android:id="@+id/liveEntry" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="48dp" android:layout_weight="1" android:text="@string/nav_live"/>
-            <com.google.android.material.button.MaterialButton android:id="@+id/configEntry" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="48dp" android:layout_weight="1" android:text="@string/mobile_source"/>
-            <com.google.android.material.button.MaterialButton android:id="@+id/linkEntry" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="48dp" android:layout_weight="1" android:text="@string/mobile_link"/>
+            <com.google.android.material.button.MaterialButton android:id="@+id/liveEntry" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="48dp" android:layout_weight="1" android:text="直播" app:icon="@drawable/ic_mobile_live" android:maxLines="1" android:ellipsize="end" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/configEntry" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="48dp" android:layout_weight="1" android:text="换源" app:icon="@drawable/ic_mobile_source" android:maxLines="1" android:ellipsize="end" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/linkEntry" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="48dp" android:layout_weight="1" android:text="链接" app:icon="@drawable/ic_mobile_link" android:maxLines="1" android:ellipsize="end" />
         </LinearLayout>
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/type"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:clipChildren="false"
-            android:clipToPadding="false"
-            android:orientation="horizontal"
-            android:paddingStart="8dp"
-            android:paddingTop="0dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="12dp"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-            tools:listitem="@layout/adapter_type" />
-
+        <androidx.recyclerview.widget.RecyclerView android:id="@+id/type" android:layout_width="match_parent" android:layout_height="wrap_content" android:clipChildren="false" android:clipToPadding="false" android:orientation="horizontal" android:paddingStart="8dp" android:paddingTop="0dp" android:paddingEnd="8dp" android:paddingBottom="8dp" app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" tools:listitem="@layout/adapter_type" />
     </com.google.android.material.appbar.AppBarLayout>
-
-    <com.fongmi.android.tv.ui.custom.CustomViewPager
-        android:id="@+id/pager"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
-
+    <com.fongmi.android.tv.ui.custom.CustomViewPager android:id="@+id/pager" android:layout_width="match_parent" android:layout_height="match_parent" app:layout_behavior="@string/appbar_scrolling_view_behavior" />
     <LinearLayout android:id="@+id/emptyState" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:padding="32dp" android:visibility="gone" app:layout_behavior="@string/appbar_scrolling_view_behavior">
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="@string/mobile_home_empty" android:textColor="@color/mobile_text" android:textSize="20sp"/>
-        <TextView android:id="@+id/emptyMessage" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:gravity="center" android:text="@string/mobile_home_empty_hint" android:textColor="@color/mobile_muted" android:textSize="14sp"/>
-        <com.google.android.material.button.MaterialButton android:id="@+id/retry" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:layout_marginTop="20dp" android:text="@string/mobile_retry"/>
-        <com.google.android.material.button.MaterialButton android:id="@+id/setup" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/mobile_config"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="@string/mobile_home_empty" android:textColor="@color/mobile_text" android:textSize="20sp" />
+        <TextView android:id="@+id/emptyMessage" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:gravity="center" android:text="@string/mobile_home_empty_hint" android:textColor="@color/mobile_muted" android:textSize="14sp" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/retry" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:layout_marginTop="20dp" android:text="@string/mobile_retry" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/setup" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/mobile_config" />
     </LinearLayout>
-    <include
-        android:id="@+id/progress"
-        layout="@layout/view_progress"
-        android:visibility="gone" />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/filter"
-        android:contentDescription="@string/mobile_filter"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:visibility="gone"
-        app:backgroundTint="?attr/colorSecondaryContainer"
-        app:layout_anchor="@id/pager"
-        app:layout_anchorGravity="end|bottom"
-        app:layout_behavior="com.fongmi.android.tv.ui.custom.CustomFabBehavior"
-        app:srcCompat="@drawable/ic_fab_filter"
-        app:tint="?attr/colorOnSecondaryContainer"
-        tools:visibility="visible" />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/link"
-        android:contentDescription="@string/mobile_link"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        app:backgroundTint="?attr/colorSecondaryContainer"
-        app:layout_anchor="@id/pager"
-        app:layout_anchorGravity="end|bottom"
-        app:layout_behavior="com.fongmi.android.tv.ui.custom.CustomFabBehavior"
-        app:srcCompat="@drawable/ic_fab_link"
-        app:tint="?attr/colorOnSecondaryContainer"
-        tools:visibility="visible" />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/top"
-        android:contentDescription="@string/mobile_top"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:tag="top"
-        android:visibility="invisible"
-        app:backgroundTint="?attr/colorSecondaryContainer"
-        app:layout_anchor="@id/pager"
-        app:layout_anchorGravity="end|bottom"
-        app:layout_behavior="com.fongmi.android.tv.ui.custom.CustomFabBehavior"
-        app:srcCompat="@drawable/ic_fab_top"
-        app:tint="?attr/colorOnSecondaryContainer"
-        tools:visibility="visible" />
-
+    <include android:id="@+id/progress" layout="@layout/view_progress" android:visibility="gone" />
+    <com.google.android.material.floatingactionbutton.FloatingActionButton android:id="@+id/filter" android:contentDescription="@string/mobile_filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_margin="16dp" android:visibility="gone" app:backgroundTint="?attr/colorSecondaryContainer" app:layout_anchor="@id/pager" app:layout_anchorGravity="end|bottom" app:layout_behavior="com.fongmi.android.tv.ui.custom.CustomFabBehavior" app:srcCompat="@drawable/ic_fab_filter" app:tint="?attr/colorOnSecondaryContainer" tools:visibility="visible" />
+    <com.google.android.material.floatingactionbutton.FloatingActionButton android:id="@+id/link" android:contentDescription="@string/mobile_link" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_margin="16dp" app:backgroundTint="?attr/colorSecondaryContainer" app:layout_anchor="@id/pager" app:layout_anchorGravity="end|bottom" app:layout_behavior="com.fongmi.android.tv.ui.custom.CustomFabBehavior" app:srcCompat="@drawable/ic_fab_link" app:tint="?attr/colorOnSecondaryContainer" tools:visibility="visible" />
+    <com.google.android.material.floatingactionbutton.FloatingActionButton android:id="@+id/top" android:contentDescription="@string/mobile_top" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_margin="16dp" android:tag="top" android:visibility="invisible" app:backgroundTint="?attr/colorSecondaryContainer" app:layout_anchor="@id/pager" app:layout_anchorGravity="end|bottom" app:layout_behavior="com.fongmi.android.tv.ui.custom.CustomFabBehavior" app:srcCompat="@drawable/ic_fab_top" app:tint="?attr/colorOnSecondaryContainer" tools:visibility="visible" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

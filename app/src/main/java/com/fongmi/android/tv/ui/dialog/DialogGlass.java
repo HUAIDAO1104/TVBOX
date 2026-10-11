@@ -140,7 +140,7 @@ public final class DialogGlass {
 
     public static void setSurface(Dialog dialog, View target, int radiusDp, int alpha,
                                   int legacySnapshotAlpha) {
-        if (dialog == null || target == null) return;
+        if (com.fongmi.android.tv.utils.Util.isMobile() || dialog == null || target == null) return;
         // Material3 SideSheet/BottomSheet applies an opaque backgroundTint after inflation. Merely
         // replacing the Drawable leaves that tint active and turns a translucent surface black on
         // Android 9. Clear both framework and compat tint before installing the glass surface.
@@ -308,7 +308,7 @@ public final class DialogGlass {
      * styled from a single XML theme on older TV firmware.
      */
     public static void applyCards(View root) {
-        if (root == null) return;
+        if (com.fongmi.android.tv.utils.Util.isMobile() || root == null) return;
         // MaterialButton owns a ShapeAppearanceModel that MaterialButtonToggleGroup reads again
         // during layout. Replacing that background makes getShapeAppearanceModel() throw and
         // crashes the danmaku settings sheet as soon as its tab group is measured.

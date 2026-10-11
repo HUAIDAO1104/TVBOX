@@ -114,6 +114,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         mBinding.logo.setOnClickListener(this::onLogo);
         mBinding.link.setOnClickListener(this::onLink);
         mBinding.title.setOnClickListener(this::onSite);
+        mBinding.sourceStatus.setOnClickListener(this::onSite);
         mBinding.filter.setOnClickListener(this::onFilter);
         mBinding.filter.setOnLongClickListener(this::onLink);
         mBinding.toolbar.setOnMenuItemClickListener(this::onMenuItemClick);
@@ -169,7 +170,9 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     private void setTitle() {
         mBinding.title.setText(R.string.app_name);
         String name = SearchDisplayName.clean(getHome().getName());
-        mBinding.configEntry.setText(name.isEmpty() ? getString(R.string.mobile_source) : name);
+        mBinding.configEntry.setText("换源");
+        mBinding.sourceStatus.setText(name);
+        mBinding.title.setContentDescription(getString(R.string.app_name) + "，当前来源：" + name);
         mBinding.configEntry.setMaxLines(1);
         mBinding.configEntry.setEllipsize(TextUtils.TruncateAt.END);
         mBinding.configEntry.setContentDescription(getString(R.string.mobile_source) + "，" + name);

@@ -1,5 +1,5 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-<item android:id="@+id/vod" android:icon="@drawable/ic_nav_vod" android:title="@string/mobile_home"/>
-<item android:id="@+id/library" android:icon="@drawable/ic_action_keep" android:title="@string/mobile_library"/>
-<item android:id="@+id/setting" android:icon="@drawable/ic_nav_setting" android:title="@string/mobile_mine"/>
+<item android:id="@+id/vod" android:icon="@drawable/ic_mobile_home" android:title="@string/mobile_home"/>
+<item android:id="@+id/library" android:icon="@drawable/ic_mobile_library" android:title="@string/mobile_library"/>
+<item android:id="@+id/setting" android:icon="@drawable/ic_mobile_user" android:title="@string/mobile_mine"/>
 </menu>

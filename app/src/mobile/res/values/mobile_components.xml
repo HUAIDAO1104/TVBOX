@@ -1,0 +1,5 @@
+<resources>
+    <item name="shape_item" type="drawable">@drawable/mobile_chip</item>
+    <item name="shape_item_round" type="drawable">@drawable/mobile_chip</item>
+    <item name="shape_accent" type="drawable">@drawable/mobile_chip</item>
+</resources>

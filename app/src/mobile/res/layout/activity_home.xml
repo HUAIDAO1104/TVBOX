@@ -18,7 +18,7 @@
         android:minHeight="64dp"
         android:layout_alignParentBottom="true"
         android:background="@color/mobile_surface"
-        app:elevation="0dp"
+        app:elevation="0dp" app:itemActiveIndicatorStyle="@style/Mobile.NavIndicator"
         app:itemIconTint="@color/selector_nav"
         app:labelVisibilityMode="labeled"
         app:itemTextColor="@color/selector_nav"

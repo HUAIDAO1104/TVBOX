@@ -42,6 +42,7 @@ public class MobileExperienceInstrumentedTest {
     private List<Site> sites;
     private volatile int slowSeconds;
     private volatile boolean failFast;
+    private int episodeCount = 1;
     private final java.util.concurrent.CountDownLatch slowGate = new java.util.concurrent.CountDownLatch(1);
     private final AtomicInteger searchRequests = new AtomicInteger();
     private final AtomicInteger pageRequests = new AtomicInteger();
@@ -85,7 +86,12 @@ public class MobileExperienceInstrumentedTest {
     }
     private MockResponse json(String value) { return new MockResponse().setHeader("Content-Type", "application/json").setBody(value); }
     private String results(String id, boolean duplicate) {
-        String vod = "{\"vod_id\":\"" + id + "\",\"vod_name\":\"测试电影" + id + "\",\"vod_pic\":\"" + server.url("/poster") + "\",\"vod_remarks\":\"1080P\",\"vod_content\":\"这是一部用于验证手机版搜索、选集、播放和返回行为的测试影片。\",\"vod_play_from\":\"测试线路\",\"vod_play_url\":\"第1集$" + server.url("/video.mp4") + "\"}";
+        StringBuilder episodes = new StringBuilder();
+        for (int i = 1; i <= episodeCount; i++) {
+            if (i > 1) episodes.append("#");
+            episodes.append("第").append(i).append("集$").append(server.url("/video.mp4?episode=" + i));
+        }
+        String vod = "{\"vod_id\":\"" + id + "\",\"vod_name\":\"测试电影" + id + "\",\"vod_pic\":\"" + server.url("/poster") + "\",\"vod_remarks\":\"1080P\",\"vod_content\":\"这是一部用于验证手机版搜索、选集、播放和返回行为的测试影片。\",\"vod_play_from\":\"测试线路\",\"vod_play_url\":\"" + episodes + "\"}";
         return "{\"page\":1,\"pagecount\":2,\"class\":[{\"type_id\":\"1\",\"type_name\":\"电影\"}],\"list\":[" + vod + (duplicate ? "," + vod : "") + "]}";
     }
     @After public void cleanup() throws Exception {
@@ -235,6 +241,94 @@ public class MobileExperienceInstrumentedTest {
         }); screenshot("repository-editor");
     }
     private static void setField(Object object, String name, Object value) throws Exception { Field f = object.getClass().getDeclaredField(name); f.setAccessible(true); f.set(object, value); }
+    @Test public void episodeSheetGroupsLongSeriesAndLocatesCurrentEpisode() {
+        episodeCount = 120;
+        var value = ActivityScenario.<VideoActivity>launch(new Intent(App.get(), VideoActivity.class).putExtra("key", "fast").putExtra("id", "1").putExtra("name", "长剧选集体验")); scenario = value;
+        await(() -> { boolean[] ready = {false}; onActivity(value, a -> ready[0] = ((TextView) a.findViewById(R.id.more)).getText().toString().contains("120")); return ready[0]; });
+        onActivity(value, a -> a.findViewById(R.id.more).performClick());
+        await(() -> { boolean[] open = {false}; onActivity(value, a -> open[0] = a.getSupportFragmentManager().findFragmentByTag("episode_picker") != null); return open[0]; });
+        onActivity(value, a -> {
+            View sheet = a.getSupportFragmentManager().findFragmentByTag("episode_picker").requireView();
+            TabLayout ranges = sheet.findViewById(R.id.ranges);
+            assertEquals(3, ranges.getTabCount());
+            ranges.selectTab(ranges.getTabAt(2));
+            RecyclerView episodes = sheet.findViewById(R.id.episode);
+            assertEquals(20, episodes.getAdapter().getItemCount());
+        });
+        screenshot("episodes-last-group");
+        onActivity(value, a -> {
+            var picker = (com.fongmi.android.tv.ui.dialog.EpisodeListDialog) a.getSupportFragmentManager().findFragmentByTag("episode_picker");
+            RecyclerView list = picker.requireView().findViewById(R.id.episode);
+            var adapter = (com.fongmi.android.tv.ui.adapter.EpisodeAdapter) list.getAdapter();
+            picker.onItemClick(adapter.getItems().get(10));
+        });
+        await(() -> { boolean[] selected = {false}; onActivity(value, a -> selected[0] = a.getEpisodePickerFlags().get(0).getEpisodes().stream().anyMatch(e -> e.isSelected() && e.getName().contains("111"))); return selected[0]; });
+        onActivity(value, a -> { assertTrue(a.findViewById(R.id.detailActions).isShown()); a.findViewById(R.id.more).performClick(); });
+        SystemClock.sleep(250);
+        onActivity(value, a -> {
+            View sheet = a.getSupportFragmentManager().findFragmentByTag("episode_picker").requireView();
+            TabLayout ranges = sheet.findViewById(R.id.ranges);
+            assertEquals(2, ranges.getSelectedTabPosition());
+            ranges.selectTab(ranges.getTabAt(0)); sheet.findViewById(R.id.locate).performClick();
+            assertEquals(2, ranges.getSelectedTabPosition());
+            sheet.findViewById(R.id.reverse).performClick();
+            assertEquals("120–71", ranges.getTabAt(0).getText().toString());
+            assertEquals(0, ranges.getSelectedTabPosition());
+        });
+        screenshot("episodes-current-reversed");
+    }
+
+    @Test public void playbackSettingsExposeSpeedAndAdvancedOptionsWithoutLeavingVideo() {
+        var value = ActivityScenario.<VideoActivity>launch(new Intent(App.get(), VideoActivity.class).putExtra("key", "fast").putExtra("id", "1").putExtra("name", "播放设置体验")); scenario = value;
+        await(() -> { boolean[] ready = {false}; onActivity(value, a -> ready[0] = a.playbackHistory() != null && a.findViewById(R.id.detailFull).isEnabled()); return ready[0]; });
+        onActivity(value, a -> a.findViewById(R.id.detailSettings).performClick());
+        SystemClock.sleep(250);
+        onActivity(value, a -> {
+            Fragment dialog = a.getSupportFragmentManager().getFragments().stream().filter(f -> f instanceof com.fongmi.android.tv.ui.dialog.ControlDialog).findFirst().orElseThrow();
+            View sheet = dialog.requireView();
+            assertEquals(View.GONE, sheet.findViewById(R.id.advanced).getVisibility());
+            android.view.ViewGroup presets = sheet.findViewById(R.id.speedPresets);
+            presets.getChildAt(4).performClick(); assertEquals(2f, a.playbackPlayer().getSpeed(), 0.01f);
+            assertTrue(presets.getChildAt(4).isSelected());
+        });
+        screenshot("playback-settings");
+        onActivity(value, a -> {
+            Fragment dialog = a.getSupportFragmentManager().getFragments().stream().filter(f -> f instanceof com.fongmi.android.tv.ui.dialog.ControlDialog).findFirst().orElseThrow();
+            View sheet = dialog.requireView(); sheet.findViewById(R.id.advancedToggle).performClick();
+            assertEquals(View.VISIBLE, sheet.findViewById(R.id.advanced).getVisibility());
+            sheet.findViewById(R.id.resetSkip).performClick();
+            assertEquals(0, a.playbackHistory().getOpening()); assertEquals(0, a.playbackHistory().getEnding());
+            sheet.findViewById(R.id.close).performClick();
+        });
+        assertEquals(androidx.lifecycle.Lifecycle.State.RESUMED, value.getState());
+    }
+
+    @Test public void filterSheetRetainsChoicesWhenActivityIsRecreated() {
+        var value = ActivityScenario.launch(HomeActivity.class); scenario = value;
+        await(() -> { boolean[] ready = {false}; onActivity(value, a -> { RecyclerView types = a.findViewById(R.id.type); ready[0] = types != null && types.getAdapter() != null && types.getAdapter().getItemCount() > 1; }); return ready[0]; });
+        onActivity(value, a -> {
+            Fragment home = a.getSupportFragmentManager().getFragments().stream().filter(f -> f instanceof VodFragment).findFirst().orElseThrow();
+            var filters = Filter.arrayFrom("[{\"key\":\"class\",\"name\":\"类型\",\"value\":[{\"n\":\"全部\",\"v\":\"\"},{\"n\":\"剧情\",\"v\":\"drama\"}]}]");
+            filters.get(0).setSelected("drama");
+            com.fongmi.android.tv.ui.dialog.FilterDialog.create().filter(filters).show(home);
+        });
+        SystemClock.sleep(250); screenshot("filter-sheet");
+        value.recreate();
+        await(() -> { boolean[] restored = {false}; onActivity(value, a -> {
+            Fragment home = a.getSupportFragmentManager().getFragments().stream().filter(f -> f instanceof VodFragment).findFirst().orElse(null);
+            if (home == null) return;
+            Fragment sheet = home.getChildFragmentManager().getFragments().stream().filter(f -> f instanceof com.fongmi.android.tv.ui.dialog.FilterDialog).findFirst().orElse(null);
+            if (sheet == null || sheet.getView() == null) return;
+            RecyclerView filters = sheet.requireView().findViewById(R.id.recycler);
+            restored[0] = filters.getAdapter().getItemCount() == 1;
+            if (restored[0]) {
+                java.util.ArrayList<Filter> saved = sheet.requireArguments().getParcelableArrayList("filters");
+                assertTrue(saved.get(0).getValue().get(1).isSelected());
+                sheet.requireView().findViewById(R.id.close).performClick();
+            }
+        }); return restored[0]; });
+    }
+
     private void screenshot(String name) {
         SystemClock.sleep(500); // Capture the committed frame, not the preceding tab.
         var bitmap = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();

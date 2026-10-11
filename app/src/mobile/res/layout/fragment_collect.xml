@@ -1,18 +1,24 @@
+<?xml version='1.0' encoding='UTF-8'?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
-<com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" android:layout_width="match_parent" android:layout_height="56dp" app:titleTextAppearance="@style/ToolbarTextAppearance" app:navigationIconTint="@color/mobile_text"/>
-<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="16dp" android:gravity="center_vertical">
-<TextView android:id="@+id/status" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:textSize="12sp" android:textColor="@color/mobile_muted"/>
-<com.google.android.material.button.MaterialButton android:id="@+id/sources" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="48dp" android:text="@string/mobile_sources"/>
-</LinearLayout>
-<com.google.android.material.progressindicator.LinearProgressIndicator android:id="@+id/progress" android:layout_width="match_parent" android:layout_height="4dp" android:indeterminate="true"/>
-<com.google.android.material.tabs.TabLayout android:id="@+id/tabs" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@color/mobile_background" app:tabMode="scrollable" app:tabMinWidth="72dp" app:tabTextColor="@color/mobile_muted" app:tabSelectedTextColor="@color/mobile_accent"/>
-<FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
-<androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler" android:layout_width="match_parent" android:layout_height="match_parent" android:paddingHorizontal="8dp" android:paddingBottom="8dp" android:clipToPadding="false"/>
-<TextView android:id="@+id/empty" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="32dp" android:gravity="center" android:textSize="16sp" android:textColor="@color/mobile_muted"/>
-</FrameLayout>
-<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="16dp" android:gravity="end">
-<com.google.android.material.button.MaterialButton android:id="@+id/stop" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="48dp" android:text="@string/mobile_stop"/>
-<com.google.android.material.button.MaterialButton android:id="@+id/retry" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="48dp" android:text="@string/mobile_retry_sources"/>
-<com.google.android.material.button.MaterialButton android:id="@+id/more" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="48dp" android:text="@string/mobile_more"/>
-</LinearLayout>
+    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" android:layout_width="match_parent" android:layout_height="64dp" app:contentInsetStartWithNavigation="0dp" app:contentInsetEnd="16dp">
+        <com.google.android.material.button.MaterialButton android:id="@+id/editQuery" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="48dp" android:gravity="start|center_vertical" android:ellipsize="end" android:maxLines="1" android:textSize="15sp" app:backgroundTint="@color/mobile_surface" app:icon="@drawable/ic_mobile_search" />
+    </com.google.android.material.appbar.MaterialToolbar>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="20dp" android:paddingEnd="8dp" android:gravity="center_vertical">
+        <TextView android:id="@+id/status" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:textSize="12sp" android:textColor="@color/mobile_muted" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/sources" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:text="范围" app:icon="@drawable/ic_mobile_settings" android:contentDescription="选择搜索范围" />
+    </LinearLayout>
+    <com.google.android.material.progressindicator.LinearProgressIndicator android:id="@+id/progress" android:layout_width="match_parent" android:layout_height="2dp" android:indeterminate="true" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
+        <com.google.android.material.tabs.TabLayout android:id="@+id/tabs" style="@style/Mobile.Tabs" android:layout_width="0dp" android:layout_height="48dp" android:background="@color/mobile_background" app:tabMode="scrollable" app:tabContentStart="8dp" android:layout_weight="1" />
+        <androidx.appcompat.widget.AppCompatImageButton style="@style/Mobile.Icon" android:id="@+id/chooseSource" android:src="@drawable/ic_mobile_source" android:contentDescription="切换结果来源" />
+    </LinearLayout>
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler" android:layout_width="match_parent" android:layout_height="match_parent" android:paddingHorizontal="16dp" android:paddingTop="8dp" android:paddingBottom="16dp" android:clipToPadding="false" />
+        <TextView android:id="@+id/empty" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="32dp" android:gravity="center" android:lineSpacingExtra="6dp" android:textSize="15sp" android:textColor="@color/mobile_muted" />
+    </FrameLayout>
+    <com.google.android.flexbox.FlexboxLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="12dp" app:justifyContent="flex_end" app:flexWrap="wrap">
+        <com.google.android.material.button.MaterialButton android:id="@+id/stop" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:text="停止搜索" app:icon="@drawable/ic_mobile_close" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/retry" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:text="@string/mobile_retry_sources" app:icon="@drawable/ic_mobile_update" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/more" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:text="@string/mobile_more" app:icon="@drawable/ic_mobile_down" />
+    </com.google.android.flexbox.FlexboxLayout>
 </LinearLayout>

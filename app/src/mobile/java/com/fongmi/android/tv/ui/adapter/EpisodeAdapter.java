@@ -19,6 +19,14 @@ import java.util.List;
 
 public class EpisodeAdapter extends RecyclerView.Adapter<BaseEpisodeHolder> {
 
+    private static final java.util.regex.Pattern NUMBERED_EPISODE = java.util.regex.Pattern.compile("第\\s*(\\d+)\\s*集");
+
+    public static String displayName(Episode item) {
+        String label = item.getDesc().concat(item.getName());
+        java.util.regex.Matcher match = NUMBERED_EPISODE.matcher(label);
+        return match.matches() ? match.group(1) : label;
+    }
+
     private final OnClickListener listener;
     private final List<Episode> mItems;
     private final int viewType;

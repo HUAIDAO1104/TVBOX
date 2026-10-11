@@ -12,7 +12,7 @@
 | Form / Search | mobile SearchFragment | 显式搜索立即执行；建议 300ms 防抖、组合态保护、取消过期响应、可清空 |
 | Async resilience | main SiteViewModel + mobile CollectFragment | 共享并发搜索及会话标识；局部结果即时出现，来源切换不重搜；取消/重试/分页 |
 | Result count | SiteViewModel.SearchSnapshot + CollectFragment | 数字与该来源可显示去重条目一致；失败不伪装成零匹配 |
-| Dialog / Sheet | Material dialogs + mobile ui/dialog | 原生返回关闭、焦点恢复、表单键盘不遮挡 |
+| Dialog / Sheet | Material dialogs + mobile ui/dialog | 原生返回关闭、焦点恢复、表单键盘不遮挡；MobileSheetDialog 统一播放弹层 |
 | Toast | main Notify | 短反馈统一；错误恢复保留在所属页面 |
 | CRUD / Library | mobile LibraryFragment、HistoryActivity、KeepActivity | 本地记录/收藏；删除确认，不改存储或同步策略 |
 | Player | mobile VideoActivity + main PlaybackActivity/PlayerManager | 竖屏小窗、点击全屏、返回先退全屏；保持现有超时修复 |
@@ -49,4 +49,6 @@ Route error / 403 page behavior：无远端网页路由。来源失败在内容�
 
 恢复 `src/mobile` 为独立构建入口，搜索消费最新共享搜索模型，播放器继续使用共享超时逻辑。旧手机 XML/Java 只作为原生能力基础，首页/搜索/片库/导航完成整体迁移，不将 TV 布局包装后继续使用。
 
-验证 Android 窄屏竖屏、键盘、横屏播放器、平板、大字、无配置/空/失败、返回状态与连续点击。运行 JVM 回归、手机仪器测试、四种发布构建和签名/版本/OTA 校验。证据记录在 MOBILE_REDESIGN_REPORT.md；未执行项目必须如实标记。
+2026-10-11 第二轮整体优化：移除残存的 TV glass surface/card 覆盖；首页/片库/搜索/播放/设置共享图标、控件、选择态与排版。全部选集及全屏选集使用 EpisodeListDialog 单一所有者；旧 EpisodeGridDialog 不再从播放流程调用。搜索结果的来源总览只改变 active source，不发起新搜索。来源多选应用仍代表更改搜索范围，触发新会话。播放设置的次级动作均保留，按钮代理仍调用现有控制器与持久化逻辑。
+
+验证 Android 窄屏竖屏、键盘、横屏播放器、平板、大字、无配置/空/失败、返回状态与连续点击。运行 JVM 回归、手机仪器测试、四种发布构建和签名/版本/OTA 校验。本轮证据记录在 MOBILE_EXPERIENCE_REVIEW.md（上一轮记录见 MOBILE_REDESIGN_REPORT.md）；未执行项目必须如实标记。

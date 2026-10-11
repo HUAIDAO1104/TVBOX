@@ -59,7 +59,7 @@ public abstract class BaseBottomSheetDialog extends BottomSheetDialogFragment {
     @Override
     public void onStart() {
         super.onStart();
-        if (getDialog() != null) TouchClickWindowCallback.install(getDialog().getWindow());
+        // Native phone controls dispatch their own touch events.
     }
 
     protected boolean transparent() {

@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.ui.adapter;
 
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -34,7 +35,11 @@ public class SearchAdapter extends BaseDiffAdapter<Vod, SearchAdapter.ViewHolder
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Vod item = getItem(position);
         holder.binding.name.setText(item.getName());
-        holder.binding.site.setText(item.getSiteName());
+        holder.binding.site.setText(com.fongmi.android.tv.ui.search.SearchDisplayName.clean(item.getSiteName()));
+        String metadata = java.util.stream.Stream.of(item.getYear(), item.getArea(), item.getTypeName()).filter(v -> v != null && !v.isEmpty()).collect(java.util.stream.Collectors.joining(" · "));
+        holder.binding.metadata.setText(metadata);
+        holder.binding.metadata.setVisibility(metadata.isEmpty() ? View.GONE : View.VISIBLE);
+        holder.binding.watch.setText(item.isFolder() ? "打开" : "播放");
         holder.binding.remark.setText(item.getRemarks());
         holder.binding.site.setVisibility(item.getSiteVisible());
         holder.binding.remark.setVisibility(item.getRemarkVisible());

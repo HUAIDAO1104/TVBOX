@@ -51,6 +51,13 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.ViewHolder
         Setting.putKeyword(App.gson().toJson(mItems));
     }
 
+    public void clear() {
+        mItems.clear();
+        notifyDataSetChanged();
+        Setting.putKeyword("[]");
+        listener.onDataChanged(0);
+    }
+
     @Override
     public int getItemCount() {
         return mItems.size();
@@ -81,8 +88,10 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.ViewHolder
 
         @Override
         public boolean onLongClick(View v) {
-            mItems.remove(getLayoutPosition());
-            notifyItemRemoved(getLayoutPosition());
+            int position = getBindingAdapterPosition();
+            if (position == RecyclerView.NO_POSITION) return false;
+            mItems.remove(position);
+            notifyItemRemoved(position);
             listener.onDataChanged(getItemCount());
             Setting.putKeyword(App.gson().toJson(mItems));
             return true;

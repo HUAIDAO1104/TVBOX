@@ -1,0 +1,4 @@
+<resources>
+    <string name="danmaku_status_matching">正在匹配弹幕…</string>
+    <string name="danmaku_status_restoring">正在恢复弹幕…</string>
+</resources>

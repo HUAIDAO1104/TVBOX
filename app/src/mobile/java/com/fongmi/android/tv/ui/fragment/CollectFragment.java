@@ -30,6 +30,7 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
     private final Map<String, Parcelable> positions = new HashMap<>();
     private String active = "";
     private boolean updatingTabs;
+    private boolean opening;
     private SearchProgress progress = SearchProgress.idle();
     private int renderGeneration;
     public static CollectFragment newInstance(String keyword) {
@@ -42,12 +43,12 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
     @Override public void onSaveInstanceState(@NonNull Bundle state) { super.onSaveInstanceState(state); state.putString("active", active); }
     @Override protected ViewBinding getBinding(@NonNull LayoutInflater inflater, @Nullable ViewGroup container) { return binding = FragmentCollectBinding.inflate(inflater, container, false); }
     @Override protected void initView() {
-        binding.toolbar.setTitle(keyword());
-        binding.toolbar.setSubtitle(R.string.mobile_search);
+        binding.editQuery.setText(keyword());
+        binding.editQuery.setContentDescription("修改搜索词：" + keyword());
         binding.toolbar.setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_ab_back_material);
         binding.toolbar.setNavigationContentDescription(R.string.mobile_back);
         binding.toolbar.setNavigationOnClickListener(v -> requireActivity().getOnBackPressedDispatcher().onBackPressed());
-        binding.toolbar.setOnClickListener(v -> {
+        binding.editQuery.setOnClickListener(v -> {
             Bundle result = new Bundle(); result.putBoolean("edit", true); getParentFragmentManager().setFragmentResult("result", result);
             getParentFragmentManager().popBackStack();
         });
@@ -68,6 +69,7 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
             public void onTabReselected(TabLayout.Tab tab) { }
         });
         model = new ViewModelProvider(this).get(SiteViewModel.class);
+        binding.chooseSource.setOnClickListener(v -> showResultSources());
         binding.sources.setOnClickListener(v -> MobileSearchSources.show(this, () -> startSearch(true)));
         binding.stop.setOnClickListener(v -> model.stopSearch());
         binding.retry.setOnClickListener(v -> model.requestMore(site -> (active.isEmpty() || active.equals(site.getKey())) && model.sourceState(site) != null && model.sourceState(site).failed(), false));
@@ -76,6 +78,22 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
         model.getAggregateSearch().observe(getViewLifecycleOwner(), this::acceptSnapshot);
         model.getSearchProgress().observe(getViewLifecycleOwner(), value -> { if (value.session() != model.currentSearchSession()) return; progress = value; renderStatus(); });
         model.getSourceProgress().observe(getViewLifecycleOwner(), value -> { updateTabs(); renderStatus(); });
+    }
+    private void showResultSources() {
+        String[] names = new String[sites.size() + 1];
+        names[0] = "全部来源 · " + rows.getOrDefault("", List.of()).size() + " 条";
+        for (int i = 0; i < sites.size(); i++) {
+            Site site = sites.get(i);
+            SiteViewModel.SourceState state = model.sourceState(site);
+            names[i + 1] = SearchDisplayName.clean(site.getName()) + " · " + rows.getOrDefault(site.getKey(), List.of()).size() + " 条"
+                    + (state != null && state.busy() ? " · 搜索中" : state != null && state.failed() ? " · 待重试" : "");
+        }
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle("切换结果来源")
+                .setSingleChoiceItems(names, binding.tabs.getSelectedTabPosition(), (dialog, which) -> {
+                    if (binding != null) binding.tabs.selectTab(binding.tabs.getTabAt(which));
+                    dialog.dismiss();
+                }).setNegativeButton("关闭", null).show();
     }
     private void startSearch(boolean force) {
         Set<String> selected = MobileSearchSources.selected();
@@ -115,7 +133,8 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
             String label = i == 0 ? "全部" : SearchDisplayName.clean(sites.get(i - 1).getName());
             SiteViewModel.SourceState state = i == 0 ? null : model.sourceState(sites.get(i - 1));
             String suffix = state != null && state.busy() ? " · 搜索中" : state != null && state.failed() ? " · 待重试" : "";
-            tab.setText(label + " " + count + suffix);
+            tab.setText(label + " " + count);
+            tab.setContentDescription(label + "，" + count + " 条结果" + suffix);
         }
     }
     private void renderRows(boolean restore) {
@@ -146,9 +165,12 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
         binding.empty.setText(sites.isEmpty() ? R.string.mobile_no_sources : busy ? R.string.mobile_searching : progress.cancelled() ? R.string.mobile_search_cancelled : failed ? R.string.mobile_results_failed : R.string.mobile_results_empty);
     }
     @Override public void onItemClick(Vod item) {
+        if (opening) return;
+        opening = true;
         if (item.isFolder()) FolderActivity.start(requireActivity(), item.getSiteKey(), Result.folder(item));
         else VideoActivity.collect(requireActivity(), item.getSiteKey(), item.getId(), item.getName(), item.getPic());
     }
+    @Override public void onResume() { super.onResume(); opening = false; }
     @Override public void onDestroyView() {
         super.onDestroyView();
         // Rotation retains the ViewModel/session. Leaving the result route cancels its work.

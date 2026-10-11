@@ -12,7 +12,7 @@
     <string name="mobile_home">首页</string>
     <string name="mobile_library">片库</string>
     <string name="mobile_mine">我的</string>
-    <string name="mobile_search_hint">搜索电影、电视剧、动漫</string>
+    <string name="mobile_search_hint">搜索电影、剧集</string>
     <string name="mobile_sources">搜索范围</string>
     <string name="mobile_search">搜索</string>
     <string name="mobile_clear">清空搜索词</string>
@@ -35,7 +35,7 @@
     <string name="mobile_more">加载更多</string>
     <string name="mobile_stop">停止</string>
     <string name="mobile_retry_sources">重试失败源</string>
-    <string name="mobile_results_progress">已完成 %1$d/%2$d 个源 · %3$d 条结果</string>
+    <string name="mobile_results_progress">已完成 %1$d/%2$d 源 · %3$d 条</string>
     <string name="mobile_results_empty">暂未找到匹配的影片</string>
     <string name="mobile_results_failed">部分来源未能返回结果，可重试或更换搜索范围。</string>
     <string name="mobile_searching">正在搜索，结果会陆续显示…</string>

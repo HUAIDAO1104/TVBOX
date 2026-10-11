@@ -15,7 +15,7 @@ import com.fongmi.android.tv.ui.adapter.FilterAdapter;
 
 import java.util.List;
 
-public class FilterDialog extends BaseBottomSheetDialog {
+public class FilterDialog extends MobileSheetDialog {
 
     private DialogFilterBinding binding;
     private FilterListener listener;
@@ -27,6 +27,9 @@ public class FilterDialog extends BaseBottomSheetDialog {
 
     public FilterDialog filter(List<Filter> filter) {
         this.filter = filter;
+        android.os.Bundle args = new android.os.Bundle();
+        args.putParcelableArrayList("filters", new java.util.ArrayList<>(filter));
+        setArguments(args);
         return this;
     }
 
@@ -43,6 +46,10 @@ public class FilterDialog extends BaseBottomSheetDialog {
 
     @Override
     protected void initView() {
+        if (filter == null) filter = getArguments() == null ? java.util.List.of() : getArguments().getParcelableArrayList("filters");
+        if (filter == null) filter = java.util.List.of();
+        if (getParentFragment() instanceof FilterListener host) listener = host;
+        binding.close.setOnClickListener(v -> dismiss());
         binding.recycler.setHasFixedSize(true);
         binding.recycler.setAdapter(new FilterAdapter(listener, filter));
     }

@@ -113,6 +113,7 @@ public class SearchFragment extends BaseFragment implements  WordAdapter.OnClick
 
     @Override
     protected void initEvent() {
+        mBinding.clearHistory.setOnClickListener(v -> new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext()).setTitle("清空搜索记录？").setMessage("仅清除最近搜索，不影响观看记录和收藏。").setNegativeButton("取消", null).setPositiveButton("清空", (d, w) -> mRecordAdapter.clear()).show());
         mBinding.submit.setEnabled(!empty());
         mBinding.submit.setOnClickListener(v -> search());
         mBinding.sources.setOnClickListener(v -> {
@@ -221,7 +222,7 @@ public class SearchFragment extends BaseFragment implements  WordAdapter.OnClick
     }
 
     private void updateSources() {
-        if (mBinding != null) mBinding.sources.setText(getString(R.string.mobile_source_count, MobileSearchSources.selected().size()) + " · " + getString(R.string.mobile_sources));
+        if (mBinding != null) mBinding.sources.setText("搜索范围 · " + MobileSearchSources.selected().size() + " 个源");
     }
 
     @Override
@@ -232,7 +233,7 @@ public class SearchFragment extends BaseFragment implements  WordAdapter.OnClick
 
     @Override
     public void onDataChanged(int size) {
-        mBinding.record.setVisibility(size == 0 ? View.GONE : View.VISIBLE);
+        mBinding.recordHeader.setVisibility(size == 0 ? View.GONE : View.VISIBLE);
         mBinding.recordRecycler.setVisibility(size == 0 ? View.GONE : View.VISIBLE);
 
     }
