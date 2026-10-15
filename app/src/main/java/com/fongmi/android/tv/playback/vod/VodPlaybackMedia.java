@@ -19,6 +19,8 @@ public final class VodPlaybackMedia {
     private static final Map<PlayerManager, String> REQUEST_IDENTITIES = new WeakHashMap<>();
     private static final Map<PlayerManager, DanmakuMatchContext> MATCH_CONTEXTS = new WeakHashMap<>();
     private static final Map<PlayerManager, Integer> MANUAL_REQUESTS = new WeakHashMap<>();
+    private static final Map<PlayerManager, DanmakuDocumentCache.Ticket> MANUAL_DOWNLOADS = new WeakHashMap<>();
+    private static final java.util.concurrent.atomic.AtomicInteger MANUAL_SEQUENCE = new java.util.concurrent.atomic.AtomicInteger();
 
     public static MediaMetadata metadata(History history, Episode episode) {
         String title = history.getVodName();
@@ -171,6 +173,8 @@ public final class VodPlaybackMedia {
         }
         synchronized (MANUAL_REQUESTS) {
             MANUAL_REQUESTS.remove(player);
+            DanmakuDocumentCache.Ticket ticket = MANUAL_DOWNLOADS.remove(player);
+            if (ticket != null) ticket.cancel();
         }
         player.setDanmaku(Danmaku.empty());
         player.notifyDanmakuStatus(DanmakuStatus.hidden());
@@ -222,6 +226,7 @@ public final class VodPlaybackMedia {
                 ? java.util.Collections.emptyList() : catalogue;
         java.util.function.BiConsumer<Danmaku, java.util.List<Danmaku>> commit = (item, items) -> {
             if (!isCurrentManualRequest(player, request)) return;
+            finishManualDownload(player, request);
             java.util.List<Danmaku> resolved = items == null || items.isEmpty()
                     ? initialCatalogue : items;
             DanmakuManualMatchStore.get().remember(context, finalQuery, item, resolved);
@@ -230,10 +235,11 @@ public final class VodPlaybackMedia {
         };
         Runnable failed = () -> {
             if (!isCurrentManualRequest(player, request)) return;
+            finishManualDownload(player, request);
             player.notifyDanmakuStatus(DanmakuStatus.failed(DanmakuStatus.Failure.DOWNLOAD));
             if (onFailure != null) onFailure.run();
         };
-        DanmakuDocumentCache.load(selected.getUri(), new DanmakuDocumentCache.Listener() {
+        DanmakuDocumentCache.Ticket ticket = DanmakuDocumentCache.load(selected.getUri(), new DanmakuDocumentCache.Listener() {
             @Override
             public void onProgress(android.net.Uri source, int percent) {
                 if (isCurrentManualRequest(player, request)) {
@@ -249,10 +255,15 @@ public final class VodPlaybackMedia {
             @Override
             public void onFailure(android.net.Uri source, java.io.IOException error) {
                 if (!isCurrentManualRequest(player, request)) return;
+                finishManualDownload(player, request);
                 DanmakuDocumentCache.invalidate(source);
+                if (com.fongmi.android.tv.api.IqiyiDanmakuCodec.supports(selected.getUrl())) {
+                    failed.run();
+                    return;
+                }
                 player.notifyDanmakuStatus(DanmakuStatus.matching());
                 DanmakuApi.searchPreferredDetailed(finalQuery, context.getYear(), context.getType(),
-                        context.getEpisode(), selected.getName(), selected.getSourceKey(),
+                        DanmakuEpisode.label(selected.getName()), selected.getName(), selected.getSourceKey(),
                         new DanmakuApi.SearchCallback() {
                             @Override
                             public void onProgress(int percent) {
@@ -273,11 +284,23 @@ public final class VodPlaybackMedia {
                         });
             }
         });
+        synchronized (MANUAL_REQUESTS) {
+            if (isCurrentManualRequest(player, request)) MANUAL_DOWNLOADS.put(player, ticket);
+            else ticket.cancel();
+        }
+    }
+
+    private static void finishManualDownload(PlayerManager player, int request) {
+        synchronized (MANUAL_REQUESTS) {
+            if (isCurrentManualRequest(player, request)) MANUAL_DOWNLOADS.remove(player);
+        }
     }
 
     private static int beginManualRequest(PlayerManager player) {
         synchronized (MANUAL_REQUESTS) {
-            int next = MANUAL_REQUESTS.getOrDefault(player, 0) + 1;
+            DanmakuDocumentCache.Ticket previous = MANUAL_DOWNLOADS.remove(player);
+            if (previous != null) previous.cancel();
+            int next = MANUAL_SEQUENCE.incrementAndGet();
             MANUAL_REQUESTS.put(player, next);
             return next;
         }

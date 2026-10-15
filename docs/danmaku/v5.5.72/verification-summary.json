@@ -1,0 +1,110 @@
+{
+  "versionCode": 623,
+  "versionName": "5.5.72-danmaku-direct",
+  "date": "2026-10-15",
+  "unit": {
+    "mobile": {
+      "tests": 277,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "leanback": {
+      "tests": 277,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "device": {
+    "os": "Android 16 / API 36 ARM64 emulator",
+    "mobile": "320dp portrait; font scale 1.3; touch/swipe",
+    "television": "1280×720dp; font scale 1; DPAD arrows/center/back"
+  },
+  "instrumentation": {
+    "mobile": {
+      "tests": 8,
+      "failures": 0,
+      "seconds": 68.554,
+      "log": "mobile-instrumentation.txt"
+    },
+    "leanback": {
+      "tests": 8,
+      "failures": 0,
+      "seconds": 52.216,
+      "log": "tv-instrumentation.txt"
+    },
+    "tvFinalFocusRegression": {
+      "tests": 1,
+      "failures": 0,
+      "seconds": 11.408,
+      "log": "tv-focus-regression.txt"
+    },
+    "coverage": [
+      "native document completeness/404 empty minute",
+      "503 rejects partial document",
+      "cancellation suppresses late callbacks",
+      "Android XML compatibility",
+      "positive catalogue cache and defensive copies",
+      "manual work → all episodes",
+      "access denied and retry",
+      "live drama episode 14 and selection through episode 24"
+    ]
+  },
+  "liveDrama14": {
+    "title": "喜剧之王",
+    "year": "2026",
+    "type": "电视剧",
+    "episode": 14,
+    "tvid": "2586684050154100",
+    "mobile": {
+      "comments": 2433,
+      "coldSearchAndDownloadMs": 4071,
+      "manualSearchResultsMs": 5855
+    },
+    "leanback": {
+      "comments": 2433,
+      "coldSearchAndDownloadMs": 2722,
+      "manualSearchResultsMs": 1215
+    },
+    "measurementNote": "Android emulator instrumentation. Mobile final run overlapped four-variant Release compilation; timings are individual observations, not a benchmark or latency guarantee. Manual query reused the positive catalogue cache. Tests assert parser and DanmakuController load completion, not timeline alignment for an unavailable user playback URL."
+  },
+  "otherLiveTitles": {
+    "televisionLog": "tv-live-examples.txt",
+    "mobileAndTvPassed": [
+      "流浪地球2（2023）正片",
+      "现在就出发 第一季 20230813上",
+      "现在就出发 第三季 第1期上",
+      "披荆斩棘2026 20260816",
+      "喜剧之王单口季 第1期上(一)"
+    ],
+    "scopeNote": "These live cases passed in earlier broader runs whose UI failures were subsequently corrected and re-tested. Do not describe the earlier entire suites as passing. Seasons 2 and 4 are not claimed as live-verified in this release."
+  },
+  "releaseBuild": {
+    "variants": [
+      "mobile arm64-v8a",
+      "mobile armeabi-v7a",
+      "leanback arm64-v8a",
+      "leanback armeabi-v7a"
+    ],
+    "result": "BUILD SUCCESSFUL",
+    "versionCode": 623,
+    "versionName": "5.5.72-danmaku-direct",
+    "signatureSchemes": [
+      "v1",
+      "v2",
+      "v3"
+    ],
+    "certificateSha256": "b8ed9c579e8671d24f6d4d18b296528ca655c627fa437f57a217450c0b548aa7",
+    "sameCertificateAsPreviousRelease": true
+  },
+  "static": {
+    "gitDiffCheck": "passed",
+    "mobileDesignCheck": "passed",
+    "premiumStrictAudit": {
+      "errors": 0,
+      "warnings": 0,
+      "findings": 0
+    }
+  }
+}

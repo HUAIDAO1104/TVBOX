@@ -30,7 +30,7 @@ final class DanmakuEpisode {
     static String label(String value) {
         String text = Normalizer.normalize(Objects.toString(value, ""), Normalizer.Form.NFKC).trim();
         // A provider's work title/year must not be parsed as an episode or release date.
-        return text.replaceFirst("(?i)^.*?\\s+from\\s+[^\\s]+\\s*(?:-\\s*)?(?:【[^】]*】\\s*)?", "");
+        return text.replaceFirst("(?i)^.*?\\s*from\\s+[^\\s]+\\s*(?:-\\s*)?(?:【[^】]*】\\s*)?", "");
     }
 
     static DanmakuEpisode from(String value) {

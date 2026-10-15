@@ -1,0 +1,57 @@
+{
+  "date": "2026-10-15",
+  "target": {
+    "title": "喜剧之王",
+    "year": 2026,
+    "type": "电视剧",
+    "officialAlbum": "https://www.iqiyi.com/a_havb95ut2l.html",
+    "officialEpisode1": "https://www.iqiyi.com/v_vulfwoue24.html",
+    "episode": 14,
+    "officialEpisode14": "https://www.iqiyi.com/v_pp7j21xlp4.html",
+    "tvId": "2586684050154100"
+  },
+  "builtInProvider": {
+    "titleSearchHttp": 200,
+    "returnedRows": 87,
+    "works": [
+      "喜剧之王单口季(2024)【综艺】",
+      "新喜剧之王(2019)【电影】",
+      "新喜剧之王 粤语(2019)【电影】",
+      "喜剧之王(2012)【综艺】",
+      "喜剧之王（1982）(1982)【电影】",
+      "喜剧之王（1982）（普通话）(1982)【电影】",
+      "蹩脚喜剧之王(1964)【电影】"
+    ],
+    "drama2026Rows": 0,
+    "dramaSuffixSearchRows": 0,
+    "officialEpisodeUrlResponse": "HTTP 200, empty XML, 0 comments"
+  },
+  "officialPlatform": {
+    "search": "HTTP 200, 2026 TV series found",
+    "episode1": {
+      "displayBarrage": true,
+      "durationSec": 2647
+    },
+    "firstMinute": {
+      "title": "喜剧之王第1集",
+      "year": 2026,
+      "timeRangeSeconds": [
+        0,
+        60
+      ],
+      "format": "protobuf",
+      "decodedBytes": 76113,
+      "comments": 162
+    }
+  },
+  "clientFindings": [
+    "Manual search hard-filters by current episode before showing results.",
+    "剧版 suffix is not normalized as an edition label.",
+    "Empty state does not distinguish provider catalogue omission from locally filtered results."
+  ],
+  "limits": [
+    "No logs from the user device or playback URL were provided. Exact title, year, medium and episode 14 were confirmed by the user.",
+    "The hosted provider implementation/logs are unavailable; its missing catalogue and empty direct-URL response are observed facts, not a claim about its internal failure."
+  ],
+  "stage": "Read-only evidence collected before implementing v5.5.72"
+}

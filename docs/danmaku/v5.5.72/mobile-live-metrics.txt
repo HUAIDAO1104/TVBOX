@@ -1,0 +1,4 @@
+--------- beginning of main
+10-15 22:03:11.667  7006  7039 I System.out: DANMAKU_DRAMA14 comments=2433 coldSearchAndDownloadMs=4071
+10-15 22:03:21.534  7006  7039 I System.out: DANMAKU_DRAMA14 manualOpenAndSearchMs=9867
+10-15 22:03:21.535  7006  7039 I System.out: DANMAKU_DRAMA14 manualSearchResultsMs=5855

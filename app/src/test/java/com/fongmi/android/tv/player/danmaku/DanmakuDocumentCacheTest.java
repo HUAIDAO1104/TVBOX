@@ -21,6 +21,8 @@ public class DanmakuDocumentCacheTest {
     public void onlyMaterialisesImmutableCommentDocuments() {
         assertTrue(DanmakuDocumentCache.isCacheable(
                 "https://example.com/api/v2/comment/123?format=xml"));
+        assertTrue(DanmakuDocumentCache.isCacheable("iqiyi-danmaku://video/2586684050154100"));
+        assertFalse(DanmakuDocumentCache.isCacheable("iqiyi-danmaku://video/not-an-id"));
         assertTrue(DanmakuDocumentCache.isCacheable(
                 "https://example.com/api/v1/comment/123.xml"));
         assertFalse(DanmakuDocumentCache.isCacheable(

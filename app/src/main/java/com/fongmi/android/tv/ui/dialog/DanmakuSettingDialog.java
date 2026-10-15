@@ -124,7 +124,7 @@ public final class DanmakuSettingDialog {
         private void bindBackNavigation() {
             requireDialog().setOnKeyListener((dialog, keyCode, event) -> {
                 if (!searchVisible || !KeyUtil.isBackKey(event)) return false;
-                if (event.getAction() == KeyEvent.ACTION_UP) showSettings();
+                if (event.getAction() == KeyEvent.ACTION_UP && !searchPanel.onBack()) showSettings();
                 return true;
             });
         }
@@ -212,7 +212,7 @@ public final class DanmakuSettingDialog {
         private void bindBackNavigation() {
             requireDialog().setOnKeyListener((dialog, keyCode, event) -> {
                 if (!searchVisible || !KeyUtil.isBackKey(event)) return false;
-                if (event.getAction() == KeyEvent.ACTION_UP) showSettings();
+                if (event.getAction() == KeyEvent.ACTION_UP && !searchPanel.onBack()) showSettings();
                 return true;
             });
         }

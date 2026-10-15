@@ -41,8 +41,13 @@ public class DanmakuSearchInstrumentedTest {
     private DanmakuSearchPanel panel;
     private ViewDanmakuSearchEmbeddedBinding binding;
     private PlayerManager player;
+    private long lastSubmittedAt;
 
     @Before public void setup() throws Exception {
+        if (com.fongmi.android.tv.utils.Util.isLeanback()) {
+            InstrumentationRegistry.getInstrumentation().setInTouchMode(false);
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+        }
         previousApi = DanmakuSetting.getApiUrl();
         server = new MockWebServer();
         server.setDispatcher(new Dispatcher() {
@@ -77,6 +82,11 @@ public class DanmakuSearchInstrumentedTest {
 
     @After public void cleanup() throws Exception {
         DanmakuApi.cancel();
+        if (scenario != null) scenario.onActivity(activity -> {
+            for (var fragment : activity.getSupportFragmentManager().getFragments()) {
+                if (fragment instanceof androidx.fragment.app.DialogFragment dialog) dialog.dismissNow();
+            }
+        });
         main(() -> { if (panel != null) panel.destroy(); if (player != null) player.release(); });
         if (scenario != null) scenario.close();
         DanmakuSetting.putApiUrl(previousApi);
@@ -115,15 +125,21 @@ public class DanmakuSearchInstrumentedTest {
         assertEquals(2, parse(found));
     }
 
-    @Test public void manualSearchShowsCurrentHalfAndKeepsSearchAvailable() throws Exception {
+    @Test public void manualSearchGroupsWorksAndKeepsAllEpisodesSelectable() throws Exception {
         openPanel("20260816下");
         await(() -> binding.recycler.getAdapter().getItemCount() > 0, 15_000);
         main(() -> {
-            assertEquals(1, binding.recycler.getAdapter().getItemCount());
+            assertEquals(2, binding.recycler.getAdapter().getItemCount());
             assertEquals(View.VISIBLE, binding.recycler.getVisibility());
             assertTrue(binding.submit.isEnabled());
         });
+        screenshot("works");
+        var adapter = (com.fongmi.android.tv.ui.adapter.DanmakuAdapter) binding.recycler.getAdapter();
+        int variety = adapter.getItem(0).getName().contains("综艺") ? 0 : 1;
+        clickRow(variety);
+        await(() -> adapter.getItemCount() == 3, 5_000);
         screenshot("results");
+        main(() -> { assertTrue(panel.onBack()); assertEquals(2, adapter.getItemCount()); });
     }
 
     @Test public void accessDeniedIsVisibleAndRetryRecovers() throws Exception {
@@ -154,6 +170,108 @@ public class DanmakuSearchInstrumentedTest {
                     + " comments=" + count + " elapsedMs=" + (SystemClock.elapsedRealtime() - started)
                     + " matched=" + found.getName());
         }
+    }
+
+    @Test public void liveDramaEpisode14AutomaticAndManualWorkEpisodeFlow() throws Exception {
+        Assume.assumeTrue("true".equals(InstrumentationRegistry.getArguments().getString("danmakuLive")));
+        DanmakuSetting.putApiUrl("");
+        String expected = "iqiyi-danmaku://video/2586684050154100";
+        DanmakuDocumentCache.invalidate(Uri.parse(expected));
+        long started = SystemClock.elapsedRealtime();
+        Danmaku found = search("喜剧之王", "2026", "电视剧", "14");
+        long elapsed = SystemClock.elapsedRealtime() - started;
+        assertEquals(expected, found.getUrl());
+        int count = parse(found);
+        assertTrue("Episode 14 must have real comments", count > 100);
+        System.out.println("DANMAKU_DRAMA14 comments=" + count + " coldSearchAndDownloadMs=" + elapsed);
+        long manualStarted = SystemClock.elapsedRealtime();
+        openPanel("喜剧之王", "14");
+        var adapter = (com.fongmi.android.tv.ui.adapter.DanmakuAdapter) binding.recycler.getAdapter();
+        await(() -> indexOf(adapter, "喜剧之王(2026)【电视剧】") >= 0, 20_000);
+        System.out.println("DANMAKU_DRAMA14 manualOpenAndSearchMs=" + (SystemClock.elapsedRealtime() - manualStarted));
+        System.out.println("DANMAKU_DRAMA14 manualSearchResultsMs=" + (SystemClock.elapsedRealtime() - lastSubmittedAt));
+        screenshot("drama-works");
+        clickRow(indexOf(adapter, "喜剧之王(2026)【电视剧】"));
+        await(() -> adapter.getItemCount() == 24, 5_000);
+        assertEquals(expected, adapter.getItem(13).getUrl());
+        screenshot("drama-episodes");
+        clickRow(13);
+        await(() -> player.getSelectedDanmaku() != null
+                && expected.equals(player.getSelectedDanmaku().getUrl()), 10_000);
+        assertEquals(count, parse(player.getSelectedDanmaku()));
+        scrollToLastEpisode();
+        clickRow(23);
+        await(() -> player.getSelectedDanmaku() != null
+                && player.getSelectedDanmaku().getName().contains("第24集"), 50_000);
+        main(() -> {
+            var rect = new android.graphics.Rect();
+            assertTrue(binding.keyword.getGlobalVisibleRect(rect));
+            assertEquals("Search stays fully visible after scrolling", binding.keyword.getHeight(), rect.height());
+        });
+        screenshot("drama-last-episode");
+        main(() -> { assertTrue(panel.onBack()); assertEquals("喜剧之王", binding.keyword.getText().toString()); });
+    }
+
+    private void scrollToLastEpisode() throws Exception {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        if (com.fongmi.android.tv.utils.Util.isLeanback()) {
+            for (int i = 0; i < 10; i++) {
+                instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_DPAD_DOWN);
+                instrumentation.waitForIdleSync();
+            }
+            main(() -> {
+                View child = binding.recycler.getFocusedChild();
+                assertNotNull(child);
+                assertEquals(23, binding.recycler.getChildAdapterPosition(child));
+            });
+        } else {
+            for (int swipe = 0; swipe < 8; swipe++) {
+                boolean[] more = {false};
+                android.graphics.Rect rect = new android.graphics.Rect();
+                main(() -> { more[0] = binding.recycler.canScrollVertically(1); binding.recycler.getGlobalVisibleRect(rect); });
+                if (!more[0]) break;
+                long now = SystemClock.uptimeMillis();
+                for (int step = 0; step <= 12; step++) {
+                    int action = step == 0 ? 0 : step == 12 ? 1 : 2;
+                    float y = rect.bottom - 25 - (rect.height() - 50) * step / 12f;
+                    var event = android.view.MotionEvent.obtain(now, now + step * 25L, action, rect.centerX(), y, 0);
+                    instrumentation.getUiAutomation().injectInputEvent(event, true);
+                    event.recycle();
+                }
+                instrumentation.waitForIdleSync();
+                SystemClock.sleep(350);
+            }
+            main(() -> assertFalse("Last episode must be reachable by swiping", binding.recycler.canScrollVertically(1)));
+        }
+    }
+
+    private int indexOf(com.fongmi.android.tv.ui.adapter.DanmakuAdapter adapter, String prefix) {
+        for (int i = 0; i < adapter.getItemCount(); i++) if (adapter.getItem(i).getName().startsWith(prefix)) return i;
+        return -1;
+    }
+
+    private void clickRow(int position) throws Exception {
+        main(() -> binding.recycler.scrollToPosition(position));
+        await(() -> binding.recycler.findViewHolderForAdapterPosition(position) != null, 5_000);
+        View[] row = new View[1];
+        main(() -> row[0] = binding.recycler.findViewHolderForAdapterPosition(position).itemView);
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        if (com.fongmi.android.tv.utils.Util.isLeanback()) {
+            instrumentation.setInTouchMode(false);
+            main(() -> assertTrue(row[0].requestFocus()));
+            instrumentation.waitForIdleSync();
+            instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_DPAD_CENTER);
+        } else {
+            int[] location = new int[2];
+            main(() -> { row[0].getLocationOnScreen(location); location[0] += row[0].getWidth() / 2; location[1] += row[0].getHeight() / 2; });
+            long now = SystemClock.uptimeMillis();
+            var down = android.view.MotionEvent.obtain(now, now, 0, location[0], location[1], 0);
+            var up = android.view.MotionEvent.obtain(now, now + 80, 1, location[0], location[1], 0);
+            instrumentation.getUiAutomation().injectInputEvent(down, true);
+            instrumentation.getUiAutomation().injectInputEvent(up, true);
+            down.recycle(); up.recycle();
+        }
+        instrumentation.waitForIdleSync();
     }
 
     private Danmaku search(String title, String year, String type, String episode) throws Exception {
@@ -198,14 +316,18 @@ public class DanmakuSearchInstrumentedTest {
         }
     }
 
-    private void openPanel(String episode) throws Exception {
+    private void openPanel(String episode) throws Exception { openPanel("弹幕验收虚构片", episode); }
+
+    private void openPanel(String title, String episode) throws Exception {
         scenario = ActivityScenario.launch(HomeActivity.class);
         scenario.onActivity(activity -> {
-            player = new PlayerManager(null);
+            player = new PlayerManager((PlayerManager.Callback) java.lang.reflect.Proxy.newProxyInstance(
+                    PlayerManager.Callback.class.getClassLoader(), new Class[]{PlayerManager.Callback.class},
+                    (proxy, method, args) -> null));
             try {
                 Field spec = PlayerManager.class.getDeclaredField("spec"); spec.setAccessible(true);
                 spec.set(player, PlaySpec.from("fixture", server.url("/video").toString(), null,
-                        new MediaMetadata.Builder().setTitle("弹幕验收虚构片").setArtist(episode).build()));
+                        new MediaMetadata.Builder().setTitle(title).setArtist(episode).build()));
             } catch (Exception e) { throw new AssertionError(e); }
             DanmakuSettingDialog.create().player(player).search(true).show(activity);
             activity.getSupportFragmentManager().executePendingTransactions();
@@ -221,13 +343,19 @@ public class DanmakuSearchInstrumentedTest {
         });
         await(() -> binding.submit.isShown() && binding.submit.hasWindowFocus()
                 && binding.submit.getWidth() > 0, 10_000);
+        // Wait for the keyboard/sheet entrance animation before targeting screen coordinates.
+        SystemClock.sleep(600);
         submitSearch();
     }
 
     private void submitSearch() throws Exception {
-        int before = server.getRequestCount();
+        Field field = DanmakuSearchPanel.class.getDeclaredField("requestId"); field.setAccessible(true);
+        var requests = (java.util.concurrent.atomic.AtomicInteger) field.get(panel);
+        int before = requests.get();
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         instrumentation.waitForIdleSync();
+        SystemClock.sleep(350);
+        lastSubmittedAt = SystemClock.elapsedRealtime();
         if (com.fongmi.android.tv.utils.Util.isLeanback()) {
             instrumentation.setInTouchMode(false);
             main(() -> assertTrue("Search button must accept remote focus", binding.submit.requestFocus()));
@@ -250,7 +378,7 @@ public class DanmakuSearchInstrumentedTest {
         }
         // Injected input is asynchronous. Await an actual outgoing request before inspecting
         // the empty view; the initial ready prompt is visible before the key-up is processed.
-        await(() -> server.getRequestCount() > before, 5_000);
+        await(() -> requests.get() > before, 5_000);
     }
 
     private void screenshot(String name) throws Exception {

@@ -44,6 +44,7 @@ public class DanmakuApi {
     }
 
     private static final String TAG = DanmakuApi.class.getSimpleName();
+    private static final Set<IqiyiDanmaku.Job> NATIVE_SEARCHES = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private static final AtomicInteger REQUEST_GENERATION = new AtomicInteger();
     private static final Set<DanmakuDocumentCache.Ticket> ACTIVE_VALIDATIONS =
             java.util.concurrent.ConcurrentHashMap.newKeySet();
@@ -130,6 +131,7 @@ public class DanmakuApi {
 
     private static List<String> orderedEndpoints(String preferredSourceKey) {
         LinkedHashSet<String> ordered = new LinkedHashSet<>();
+        ordered.add(IqiyiDanmakuCodec.SOURCE);
         for (String apiUrl : DanmakuSetting.getSearchApiUrls()) {
             if (!preferredSourceKey.isEmpty()
                     && DanmakuManualMatchStore.sourceKey(apiUrl).equals(preferredSourceKey)) ordered.add(apiUrl);
@@ -164,11 +166,29 @@ public class DanmakuApi {
         List<Call> calls = new ArrayList<>();
         List<DanmakuDocumentCache.Ticket> validations =
                 Collections.synchronizedList(new ArrayList<>());
-        for (String url : apiUrls) calls.add(createCall(candidateTitle, episode, url));
+        for (String url : apiUrls) calls.add(IqiyiDanmakuCodec.SOURCE.equals(url) ? null : createCall(candidateTitle, episode, url));
         for (int i = 0; i < calls.size(); i++) {
             Call current = calls.get(i);
             String apiUrl = apiUrls.get(i);
-            current.enqueue(new Callback() {
+            class ProviderCallback extends Callback implements IqiyiDanmaku.Callback<List<Danmaku>> {
+                @Override public void onSuccess(List<Danmaku> items) {
+                    if (generation != REQUEST_GENERATION.get() || finished.get()) return;
+                    accept(items);
+                }
+
+                @Override public void onFailure(IOException error) { onFailure(current, error); }
+
+                private void accept(List<Danmaku> items) {
+                    String sourceKey = IqiyiDanmakuCodec.SOURCE.equals(apiUrl) ? apiUrl : DanmakuManualMatchStore.sourceKey(apiUrl);
+                    for (Danmaku item : items) item.setSourceKey(sourceKey);
+                    List<Danmaku> candidates = preferredName.isEmpty()
+                            ? DanmakuMatch.ranked(candidateTitle, TextUtils.isEmpty(year) ? query.year() : year.trim(),
+                                    type, episode, items, Danmaku::getName)
+                            : DanmakuMatch.rankedPreferred(preferredName, year, type, episode, items, Danmaku::getName);
+                    if (candidates.isEmpty()) { completeOne(); return; }
+                    verifyCandidates(generation, candidates, items, 0, finished, calls,
+                            validations, stats, refreshSource, this::completeOne, callback);
+                }
                 @Override
                 public void onResponse(@NonNull Call call, @NonNull Response response) {
                     try (Response closeable = response) {
@@ -181,20 +201,7 @@ public class DanmakuApi {
                             return;
                         }
                         List<Danmaku> items = Danmaku.arrayFrom(closeable.body().string());
-                        String sourceKey = DanmakuManualMatchStore.sourceKey(apiUrl);
-                        for (Danmaku item : items) item.setSourceKey(sourceKey);
-                        List<Danmaku> candidates = preferredName.isEmpty()
-                                ? DanmakuMatch.ranked(candidateTitle,
-                                        TextUtils.isEmpty(year) ? query.year() : year.trim(), type,
-                                        episode, items, Danmaku::getName)
-                                : DanmakuMatch.rankedPreferred(preferredName, year, type,
-                                        episode, items, Danmaku::getName);
-                        if (candidates.isEmpty()) {
-                            completeOne();
-                            return;
-                        }
-                        verifyCandidates(generation, candidates, items, 0, finished, calls,
-                                validations, stats, refreshSource, this::completeOne, callback);
+                        accept(items);
                     } catch (Exception error) {
                         stats.invalid.incrementAndGet();
                         completeOne();
@@ -228,7 +235,14 @@ public class DanmakuApi {
                         }
                     }
                 }
-            });
+            }
+            ProviderCallback provider = new ProviderCallback();
+            if (current != null) current.enqueue(provider);
+            else {
+                IqiyiDanmaku.Job job = IqiyiDanmaku.search(candidateTitle, provider);
+                NATIVE_SEARCHES.add(job);
+                if (generation != REQUEST_GENERATION.get() || stats.delivered.get()) job.cancel();
+            }
         }
     }
 
@@ -276,7 +290,8 @@ public class DanmakuApi {
                     public void onReady(android.net.Uri source, android.net.Uri local) {
                         if (generation != REQUEST_GENERATION.get() || finished.get()) return;
                         if (!finished.compareAndSet(false, true) || !stats.finish()) return;
-                        for (Call pending : calls) pending.cancel();
+                        for (Call pending : calls) if (pending != null) pending.cancel();
+                        cancelNativeSearches();
                         synchronized (validations) {
                             for (DanmakuDocumentCache.Ticket validation : validations) {
                                 validation.cancel();
@@ -335,7 +350,13 @@ public class DanmakuApi {
         int generation = REQUEST_GENERATION.incrementAndGet();
         OkHttp.cancel(SearchClient.INSTANCE, TAG);
         cancelValidations();
+        cancelNativeSearches();
         return generation;
+    }
+
+    private static void cancelNativeSearches() {
+        for (IqiyiDanmaku.Job job : NATIVE_SEARCHES) job.cancel();
+        NATIVE_SEARCHES.clear();
     }
 
     private static void cancelValidations() {

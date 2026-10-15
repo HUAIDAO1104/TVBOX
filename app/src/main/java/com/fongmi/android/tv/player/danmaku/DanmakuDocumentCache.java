@@ -5,6 +5,8 @@ import android.net.Uri;
 import androidx.annotation.NonNull;
 
 import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.api.IqiyiDanmaku;
+import com.fongmi.android.tv.api.IqiyiDanmakuCodec;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -70,9 +72,9 @@ public final class DanmakuDocumentCache {
             };
         }
         File target = fileFor(source);
-        if (isUsable(target)) {
+        if (isFresh(source, target)) {
             // Keep recently replayed episodes during LRU pruning.
-            target.setLastModified(System.currentTimeMillis());
+            if (!IqiyiDanmakuCodec.supports(source.toString())) target.setLastModified(System.currentTimeMillis());
             App.post(() -> listener.onReady(source, Uri.fromFile(target)));
             return () -> {
             };
@@ -89,7 +91,7 @@ public final class DanmakuDocumentCache {
         }
         Request request;
         try {
-            request = new Request.Builder().url(source.toString()).get().build();
+            request = IqiyiDanmakuCodec.supports(key) ? null : new Request.Builder().url(key).get().build();
         } catch (RuntimeException error) {
             App.post(() -> listener.onFailure(source, new IOException(error)));
             return () -> {
@@ -113,6 +115,10 @@ public final class DanmakuDocumentCache {
         synchronized (DOWNLOADS) {
             if (DOWNLOADS.get(download.key) != download || download.cancelled) return;
             download.retryRunnable = null;
+        }
+        if (IqiyiDanmakuCodec.supports(download.key)) {
+            enqueueNative(download);
+            return;
         }
         Call call;
         try {
@@ -157,6 +163,35 @@ public final class DanmakuDocumentCache {
         });
     }
 
+    private static void enqueueNative(PendingDownload download) {
+        Uri source = Uri.parse(download.key);
+        File target = fileFor(source);
+        IqiyiDanmaku.Job job = IqiyiDanmaku.document(download.key, download::progress,
+                new IqiyiDanmaku.Callback<byte[]>() {
+                    @Override public void onSuccess(byte[] bytes) {
+                        try {
+                            // Each writer uses its own temporary file; a cancelled job cannot corrupt a replacement.
+                            synchronized (download) {
+                                if (download.cancelled) return;
+                                writeAtomically(target, new java.io.ByteArrayInputStream(bytes), bytes.length,
+                                        percent -> download.progress(95 + percent / 20));
+                            }
+                            if (!isUsable(target)) throw new IOException("Empty iQiyi document");
+                            prune(target);
+                            complete(download, Uri.fromFile(target), null);
+                        } catch (IOException error) { complete(download, null, error); }
+                    }
+                    @Override public void onFailure(IOException error) { complete(download, null, error); }
+                });
+        download.nativeJob = job;
+        if (download.cancelled) job.cancel();
+    }
+
+    private static boolean isFresh(Uri source, File target) {
+        return isUsable(target) && (!IqiyiDanmakuCodec.supports(source.toString())
+                || System.currentTimeMillis() - target.lastModified() < TimeUnit.HOURS.toMillis(6));
+    }
+
     private static boolean scheduleRetry(PendingDownload download, IOException error) {
         long delay = DanmakuLoadPolicy.sameSourceRetryDelayMillis(error, download.retryCount);
         if (delay < 0) return false;
@@ -184,7 +219,7 @@ public final class DanmakuDocumentCache {
 
     /** Warms one confirmed neighbouring episode without touching the renderer. */
     public static void prefetch(Uri source) {
-        if (!isCacheable(source) || isUsable(fileFor(source))) return;
+        if (!isCacheable(source) || isFresh(source, fileFor(source))) return;
         load(source, new Listener() {
             @Override
             public void onReady(Uri source, Uri local) {
@@ -215,7 +250,7 @@ public final class DanmakuDocumentCache {
     }
 
     static boolean isCacheable(String source) {
-        return DanmakuHttp.isImmutableCommentUrl(source);
+        return IqiyiDanmakuCodec.supports(source) || DanmakuHttp.isImmutableCommentUrl(source);
     }
 
     static String cacheKey(String source) {
@@ -283,8 +318,7 @@ public final class DanmakuDocumentCache {
         if (parent != null && !parent.exists() && !parent.mkdirs()) {
             throw new IOException("Unable to create danmaku cache directory");
         }
-        File partial = new File(target.getAbsolutePath() + ".part");
-        if (partial.exists()) partial.delete();
+        File partial = File.createTempFile(target.getName(), ".part", parent);
         byte[] buffer = new byte[16 * 1024];
         long total = 0;
         int lastPercent = -1;
@@ -320,6 +354,11 @@ public final class DanmakuDocumentCache {
 
     private static void prune(File protectedFile) {
         File directory = protectedFile.getParentFile();
+        if (directory != null) {
+            File[] abandoned = directory.listFiles(file -> file.isFile() && file.getName().endsWith(".part")
+                    && System.currentTimeMillis() - file.lastModified() > TimeUnit.HOURS.toMillis(1));
+            if (abandoned != null) for (File file : abandoned) file.delete();
+        }
         File[] files = directory == null ? null : directory.listFiles(
                 file -> file.isFile() && file.getName().endsWith(".xml"));
         if (files == null || files.length == 0) return;
@@ -370,6 +409,7 @@ public final class DanmakuDocumentCache {
         private final Request request;
         private final List<Subscription> subscribers = new ArrayList<>();
         private volatile Call call;
+        private volatile IqiyiDanmaku.Job nativeJob;
         private volatile boolean cancelled;
         private Runnable retryRunnable;
         private int retryCount;
@@ -395,14 +435,14 @@ public final class DanmakuDocumentCache {
         private void progress(int percent) {
             List<Subscription> snapshot;
             synchronized (DOWNLOADS) {
-                if (percent <= lastProgress) return;
+                if (cancelled || DOWNLOADS.get(key) != this || percent <= lastProgress) return;
                 lastProgress = percent;
                 snapshot = new ArrayList<>(subscribers);
             }
             for (Subscription subscription : snapshot) {
                 if (subscription.cancelled) continue;
                 App.post(() -> {
-                    if (!subscription.cancelled) subscription.listener.onProgress(subscription.source, percent);
+                    if (!subscription.cancelled && subscription.download == this) subscription.listener.onProgress(subscription.source, percent);
                 });
             }
         }
@@ -413,7 +453,7 @@ public final class DanmakuDocumentCache {
         private final Uri source;
         private final Listener listener;
         private volatile boolean cancelled;
-        private PendingDownload download;
+        private volatile PendingDownload download;
 
         private Subscription(Uri source, Listener listener) {
             this.source = source;
@@ -434,6 +474,7 @@ public final class DanmakuDocumentCache {
                     if (owner.retryRunnable != null) App.removeCallbacks(owner.retryRunnable);
                     owner.retryRunnable = null;
                     if (owner.call != null) owner.call.cancel();
+                    if (owner.nativeJob != null) owner.nativeJob.cancel();
                 }
             }
         }

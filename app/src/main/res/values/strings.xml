@@ -82,7 +82,7 @@
     <string name="danmaku_setting">Danmaku setting</string>
     <string name="danmaku_manual_search">Search danmaku</string>
     <string name="danmaku_manual_match_title">Manual danmaku matching</string>
-    <string name="danmaku_manual_match_hint">Searches every available configured, repository, and built-in provider</string>
+    <string name="danmaku_manual_match_hint">Search platform and configured providers, then choose a work and episode</string>
     <string name="danmaku_search_ready">Enter a title to find matching danmaku sources</string>
     <string name="danmaku_search_action">Search</string>
     <string name="danmaku_search_running">Searching <xliff:g name="count">%d</xliff:g> providers…</string>
@@ -332,6 +332,14 @@
     <string name="danmaku_failure_download">the comment file could not be downloaded</string>
     <string name="danmaku_failure_empty">the comment file is empty or cannot be parsed</string>
     <string name="danmaku_failure_denied">A danmaku service denied access (401/403). Check its URL or try another service.</string>
-    <string name="danmaku_search_empty">No matching episode found. Try the full title, season or another keyword.</string>
-    <string name="danmaku_search_partial">%1$d sources found; %2$d services failed. Search again to retry.</string>
+    <string name="danmaku_search_empty">No works found in the available catalogues. Try another title or retry later.</string>
+    <string name="danmaku_search_partial">%1$d works found; %2$d providers unavailable. Search again to retry.</string>
+    <string name="danmaku_work_options">%d options</string>
+    <string name="danmaku_search_works">%d works found · Select a work, then an episode</string>
+    <string name="danmaku_back_to_works">Back to works</string>
+    <string name="danmaku_clear_keyword">Clear search</string>
+    <string name="danmaku_iqiyi_direct">iQiyi · Direct</string>
+    <string name="danmaku_selection_loading">Loading the selected episode…</string>
+    <string name="danmaku_selection_loaded">Danmaku loaded</string>
+    <string name="danmaku_selection_failed">Could not load this episode. Select it to retry or choose another source.</string>
 </resources>

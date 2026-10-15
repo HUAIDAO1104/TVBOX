@@ -82,7 +82,7 @@
     <string name="danmaku_setting">弹幕设置</string>
     <string name="danmaku_manual_search">搜索弹幕</string>
     <string name="danmaku_manual_match_title">手动匹配弹幕</string>
-    <string name="danmaku_manual_match_hint">同时搜索已配置、当前仓库和内置的可用线路</string>
+    <string name="danmaku_manual_match_hint">同时搜索平台和已配置线路，先选作品，再选集</string>
     <string name="danmaku_search_ready">输入影片名称，查找可用弹幕源</string>
     <string name="danmaku_search_action">搜索</string>
     <string name="danmaku_search_running">正在搜索 <xliff:g name="count">%d</xliff:g> 条线路…</string>
@@ -321,6 +321,14 @@
     <string name="danmaku_failure_download">弹幕文件下载失败</string>
     <string name="danmaku_failure_empty">弹幕文件为空或无法解析</string>
     <string name="danmaku_failure_denied">弹幕服务拒绝访问（401/403），请检查接口地址或更换服务后重试</string>
-    <string name="danmaku_search_empty">没有找到当前集的弹幕，请补全片名、季数或修改关键词重试</string>
-    <string name="danmaku_search_partial">找到 %1$d 个弹幕源，%2$d 条线路失败；可再次搜索重试</string>
+    <string name="danmaku_search_empty">可用目录中暂未找到作品，可换关键词或稍后重试</string>
+    <string name="danmaku_search_partial">找到 %1$d 部作品，%2$d 条线路暂不可用；可再次搜索重试</string>
+    <string name="danmaku_work_options">%d 个选集</string>
+    <string name="danmaku_search_works">找到 %d 部作品 · 请选择作品后选集</string>
+    <string name="danmaku_back_to_works">返回作品列表</string>
+    <string name="danmaku_clear_keyword">清空关键词</string>
+    <string name="danmaku_iqiyi_direct">爱奇艺 · 直连</string>
+    <string name="danmaku_selection_loading">正在加载所选集的弹幕…</string>
+    <string name="danmaku_selection_loaded">弹幕已加载</string>
+    <string name="danmaku_selection_failed">当前弹幕加载失败，点击选集重试或选择其他来源</string>
 </resources>

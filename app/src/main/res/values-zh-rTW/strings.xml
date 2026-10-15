@@ -82,7 +82,7 @@
     <string name="danmaku_setting">彈幕設定</string>
     <string name="danmaku_manual_search">搜尋彈幕</string>
     <string name="danmaku_manual_match_title">手動匹配彈幕</string>
-    <string name="danmaku_manual_match_hint">同時搜尋已配置、當前倉庫和內建的可用線路</string>
+    <string name="danmaku_manual_match_hint">同時搜尋平台和已配置線路，先選作品，再選集</string>
     <string name="danmaku_search_ready">輸入影片名稱，查找可用彈幕源</string>
     <string name="danmaku_search_action">搜尋</string>
     <string name="danmaku_search_running">正在搜尋 <xliff:g name="count">%d</xliff:g> 條線路…</string>
@@ -309,6 +309,14 @@
     </string-array>
 
     <string name="danmaku_failure_denied">彈幕服務拒絕存取（401/403），請檢查介面位址或更換服務後重試</string>
-    <string name="danmaku_search_empty">沒有找到目前集數的彈幕，請補全片名、季數或修改關鍵字重試</string>
-    <string name="danmaku_search_partial">找到 %1$d 個彈幕源，%2$d 條線路失敗；可再次搜尋重試</string>
+    <string name="danmaku_search_empty">可用目錄中暫未找到作品，可換關鍵字或稍後重試</string>
+    <string name="danmaku_search_partial">找到 %1$d 部作品，%2$d 條線路暫不可用；可再次搜尋重試</string>
+    <string name="danmaku_work_options">%d 個選集</string>
+    <string name="danmaku_search_works">找到 %d 部作品 · 請選擇作品後選集</string>
+    <string name="danmaku_back_to_works">返回作品列表</string>
+    <string name="danmaku_clear_keyword">清空關鍵字</string>
+    <string name="danmaku_iqiyi_direct">愛奇藝 · 直連</string>
+    <string name="danmaku_selection_loading">正在載入所選集的彈幕…</string>
+    <string name="danmaku_selection_loaded">彈幕已載入</string>
+    <string name="danmaku_selection_failed">目前彈幕載入失敗，點擊選集重試或選擇其他來源</string>
 </resources>

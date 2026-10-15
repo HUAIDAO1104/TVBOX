@@ -151,9 +151,28 @@ public class DanmakuAdapter extends RecyclerView.Adapter<DanmakuAdapter.ViewHold
         boolean selected = Objects.equals(selectedUrl, item.getUrl());
         holder.binding.group.setVisibility(row.showGroup ? View.VISIBLE : View.GONE);
         if (row.showGroup) holder.binding.group.setText(groupLabel(resources, item));
-        holder.binding.text.setText(selected
-                ? resources.getString(R.string.danmaku_result_selected, item.getName())
-                : item.getName());
+        String label = item.getName();
+        if (grouped) {
+            if (item.getUrl().startsWith("danmaku-work://")) {
+                label = item.getName().split("(?i)\\s*from\\s+", 2)[0] + " · "
+                        + item.getName().substring(item.getName().lastIndexOf("】") + 1).trim();
+            } else label = item.getName().replaceFirst("(?i)^.*?\\s*from\\s+[^\\s]+\\s*(?:-\\s*)?(?:【[^】]*】\\s*)?", "");
+        }
+        holder.binding.text.setText(selected && !grouped
+                ? resources.getString(R.string.danmaku_result_selected, label) : label);
+        if (grouped) {
+            // Reserve the same icon width for every row so selecting a long final episode
+            // cannot grow its height and push the label underneath the navigation inset.
+            android.graphics.drawable.Drawable mark = selected
+                    ? androidx.appcompat.content.res.AppCompatResources.getDrawable(holder.itemView.getContext(), R.drawable.ic_danmaku_selected)
+                    : new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT);
+            int size = Math.round(20 * resources.getDisplayMetrics().density);
+            if (mark != null) mark.setBounds(0, 0, size, size);
+            holder.binding.text.setCompoundDrawablesRelative(null, null, mark, null);
+            holder.binding.text.setCompoundDrawablePadding(Math.round(8 * resources.getDisplayMetrics().density));
+            holder.binding.text.setContentDescription(selected
+                    ? resources.getString(R.string.danmaku_result_selected, label) : label);
+        }
         holder.binding.text.setSelected(selected);
         if (!holder.itemView.hasFocus()) {
             holder.itemView.setScaleX(1.0f);
@@ -209,6 +228,7 @@ public class DanmakuAdapter extends RecyclerView.Adapter<DanmakuAdapter.ViewHold
     }
 
     private static String groupLabel(Resources resources, Danmaku item) {
+        if (item != null && "iqiyi-direct".equals(item.getSourceKey())) return resources.getString(R.string.danmaku_iqiyi_direct);
         String name = item == null ? "" : item.getName();
         String provider = DanmakuMatch.resultProvider(name);
         String platform = DanmakuMatch.resultPlatform(name);
