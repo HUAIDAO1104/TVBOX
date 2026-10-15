@@ -3,7 +3,6 @@ package com.fongmi.android.tv.api;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
-import androidx.collection.ArrayMap;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.bean.Danmaku;
@@ -35,7 +34,7 @@ import okhttp3.Response;
 
 public class DanmakuApi {
 
-    public enum SearchFailure { NO_MATCH, NETWORK, INVALID_RESPONSE, DOWNLOAD }
+    public enum SearchFailure { NO_MATCH, NETWORK, ACCESS_DENIED, INVALID_RESPONSE, DOWNLOAD }
 
     public interface SearchCallback {
         void onFound(Danmaku item, List<Danmaku> catalogue);
@@ -46,6 +45,18 @@ public class DanmakuApi {
 
     private static final String TAG = DanmakuApi.class.getSimpleName();
     private static final AtomicInteger REQUEST_GENERATION = new AtomicInteger();
+    private static final Set<DanmakuDocumentCache.Ticket> ACTIVE_VALIDATIONS =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    private static final class SearchClient {
+        // Search must not queue behind catalogue scraping, video requests or large XML files.
+        static final okhttp3.OkHttpClient INSTANCE = OkHttp.client().newBuilder()
+                .dispatcher(new okhttp3.Dispatcher())
+                .connectTimeout(8, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(35, java.util.concurrent.TimeUnit.SECONDS)
+                .callTimeout(40, java.util.concurrent.TimeUnit.SECONDS)
+                .retryOnConnectionFailure(false).build();
+    }
 
     public static boolean canSearch() {
         return DanmakuSetting.isLoad() && DanmakuSetting.isAuto()
@@ -57,8 +68,7 @@ public class DanmakuApi {
     }
 
     public static List<Call> newCalls(String name, String episode) {
-        REQUEST_GENERATION.incrementAndGet();
-        OkHttp.cancel(TAG);
+        beginSearch();
         String query = DanmakuQuery.from(name).searchTitle();
         List<Call> calls = new ArrayList<>();
         for (String url : DanmakuSetting.getSearchApiUrls()) calls.add(createCall(query, episode, url));
@@ -68,14 +78,7 @@ public class DanmakuApi {
     private static Call createCall(String name, String episode, String url) {
         name = Trans.t2s(Objects.toString(name, ""));
         episode = Trans.t2s(Objects.toString(episode, ""));
-        url = Objects.toString(url, "");
-        if (url.contains("{name}") || url.contains("{episode}")) {
-            return OkHttp.newCall(url.replace("{name}", name).replace("{episode}", episode), TAG);
-        }
-        ArrayMap<String, String> params = new ArrayMap<>();
-        params.put("name", name);
-        params.put("episode", episode);
-        return OkHttp.newCall(url, OkHttp.toBody(params), TAG);
+        return SearchClient.INSTANCE.newCall(DanmakuSearchRequest.build(url, name, episode, TAG));
     }
 
     public static void search(String name, String episode, Consumer<Danmaku> found) {
@@ -89,11 +92,10 @@ public class DanmakuApi {
 
     public static void searchDetailed(String name, String year, String type, String episode,
                                       SearchCallback callback) {
-        int generation = REQUEST_GENERATION.incrementAndGet();
-        OkHttp.cancel(TAG);
+        int generation = beginSearch();
         searchCandidateParallel(generation, DanmakuQuery.from(name), Objects.toString(year, ""),
                 Objects.toString(type, ""), episode, "", orderedEndpoints(""), callback, 0,
-                0, new SearchStats());
+                0, new SearchStats(generation, callback));
     }
 
     public static void searchPreferred(String name, String year, String type, String episode,
@@ -112,11 +114,10 @@ public class DanmakuApi {
     public static void searchPreferredDetailed(String name, String year, String type, String episode,
                                                String selectedName, String selectedSourceKey,
                                                SearchCallback callback) {
-        int generation = REQUEST_GENERATION.incrementAndGet();
-        OkHttp.cancel(TAG);
+        int generation = beginSearch();
         searchCandidateParallel(generation, DanmakuQuery.from(name), Objects.toString(year, ""),
                 Objects.toString(type, ""), episode, Objects.toString(selectedName, ""),
-                orderedEndpoints(selectedSourceKey), callback, 0, 0, new SearchStats());
+                orderedEndpoints(selectedSourceKey), callback, 0, 0, new SearchStats(generation, callback));
     }
 
     private static SearchCallback callback(Consumer<Danmaku> found) {
@@ -148,10 +149,11 @@ public class DanmakuApi {
         if (generation != REQUEST_GENERATION.get()) return;
         if (candidateIndex >= query.candidates().size() || apiUrls.isEmpty()) {
             SearchFailure failure = stats.download.get() > 0 ? SearchFailure.DOWNLOAD
-                    : stats.valid.get() > 0 ? SearchFailure.NO_MATCH
-                    : stats.invalid.get() > 0 ? SearchFailure.INVALID_RESPONSE : SearchFailure.NETWORK;
+                    : stats.denied.get() > 0 ? SearchFailure.ACCESS_DENIED
+                    : stats.network.get() > 0 ? SearchFailure.NETWORK
+                    : stats.invalid.get() > 0 ? SearchFailure.INVALID_RESPONSE : SearchFailure.NO_MATCH;
             App.post(() -> {
-                if (generation == REQUEST_GENERATION.get()) callback.onFailure(failure);
+                if (generation == REQUEST_GENERATION.get() && stats.finish()) callback.onFailure(failure);
             });
             return;
         }
@@ -172,12 +174,13 @@ public class DanmakuApi {
                     try (Response closeable = response) {
                         if (generation != REQUEST_GENERATION.get() || finished.get()) return;
                         if (!closeable.isSuccessful() || closeable.body() == null) {
-                            stats.network.incrementAndGet();
+                            if (closeable.code() == 401 || closeable.code() == 403) stats.denied.incrementAndGet();
+                            else stats.network.incrementAndGet();
+                            stats.failedEndpoints.add(apiUrl);
                             completeOne();
                             return;
                         }
                         List<Danmaku> items = Danmaku.arrayFrom(closeable.body().string());
-                        stats.valid.incrementAndGet();
                         String sourceKey = DanmakuManualMatchStore.sourceKey(apiUrl);
                         for (Danmaku item : items) item.setSourceKey(sourceKey);
                         List<Danmaku> candidates = preferredName.isEmpty()
@@ -202,23 +205,26 @@ public class DanmakuApi {
                 public void onFailure(@NonNull Call call, @NonNull IOException error) {
                     if (generation != REQUEST_GENERATION.get() || finished.get()) return;
                     stats.network.incrementAndGet();
+                    stats.failedEndpoints.add(apiUrl);
                     completeOne();
                 }
 
                 private void completeOne() {
                     if (generation != REQUEST_GENERATION.get() || finished.get()) return;
                     if (remaining.decrementAndGet() == 0 && finished.compareAndSet(false, true)) {
+                        List<String> usable = new ArrayList<>(apiUrls);
+                        usable.removeAll(stats.failedEndpoints);
                         if (refreshSource.get() && refreshCount < 1) {
                             // The service creates short-lived comment ids. A freshly returned id
                             // can still answer 404/5xx while its backing document is being
                             // prepared. Re-run the same strict title/season/episode query once to
                             // obtain a new id instead of accepting a wrong season or failing fast.
                             App.post(() -> searchCandidateParallel(generation, query, year, type,
-                                    episode, preferredName, apiUrls, callback, candidateIndex,
+                                    episode, preferredName, usable, callback, candidateIndex,
                                     refreshCount + 1, stats), 1_200L);
                         } else {
                             searchCandidateParallel(generation, query, year, type, episode,
-                                    preferredName, apiUrls, callback, candidateIndex + 1, 0, stats);
+                                    preferredName, usable, callback, candidateIndex + 1, 0, stats);
                         }
                     }
                 }
@@ -269,7 +275,7 @@ public class DanmakuApi {
                     @Override
                     public void onReady(android.net.Uri source, android.net.Uri local) {
                         if (generation != REQUEST_GENERATION.get() || finished.get()) return;
-                        if (!finished.compareAndSet(false, true)) return;
+                        if (!finished.compareAndSet(false, true) || !stats.finish()) return;
                         for (Call pending : calls) pending.cancel();
                         synchronized (validations) {
                             for (DanmakuDocumentCache.Ticket validation : validations) {
@@ -277,6 +283,7 @@ public class DanmakuApi {
                             }
                             validations.clear();
                         }
+                        cancelValidations();
                         callback.onFound(item, catalogue);
                     }
 
@@ -294,6 +301,10 @@ public class DanmakuApi {
                     }
                 });
         validations.add(ticket);
+        ACTIVE_VALIDATIONS.add(ticket);
+        if (generation != REQUEST_GENERATION.get() || stats.delivered.get()) {
+            ticket.cancel(); ACTIVE_VALIDATIONS.remove(ticket);
+        }
     }
 
     static Danmaku bestMatch(String name, String episode, List<Danmaku> items) {
@@ -317,15 +328,47 @@ public class DanmakuApi {
     }
 
     public static void cancel() {
-        REQUEST_GENERATION.incrementAndGet();
-        OkHttp.cancel(TAG);
+        beginSearch();
+    }
+
+    private static int beginSearch() {
+        int generation = REQUEST_GENERATION.incrementAndGet();
+        OkHttp.cancel(SearchClient.INSTANCE, TAG);
+        cancelValidations();
+        return generation;
+    }
+
+    private static void cancelValidations() {
+        for (DanmakuDocumentCache.Ticket ticket : ACTIVE_VALIDATIONS) ticket.cancel();
+        ACTIVE_VALIDATIONS.clear();
     }
 
     private static final class SearchStats {
-        private final AtomicInteger valid = new AtomicInteger();
+        private final AtomicBoolean delivered = new AtomicBoolean();
+        private final Runnable deadline;
+
+        SearchStats(int generation, SearchCallback callback) {
+            deadline = () -> {
+                if (generation != REQUEST_GENERATION.get() || !delivered.compareAndSet(false, true)) return;
+                beginSearch();
+                callback.onFailure(download.get() > 0 ? SearchFailure.DOWNLOAD : SearchFailure.NETWORK);
+            };
+            // Includes title fallbacks and comment validation; no sequence of stale IDs can
+            // leave automatic matching spinning for minutes.
+            App.post(deadline, 90_000L);
+        }
+
+        boolean finish() {
+            if (!delivered.compareAndSet(false, true)) return false;
+            App.removeCallbacks(deadline);
+            return true;
+        }
+
         private final AtomicInteger invalid = new AtomicInteger();
         private final AtomicInteger network = new AtomicInteger();
         private final AtomicInteger download = new AtomicInteger();
+        private final AtomicInteger denied = new AtomicInteger();
+        private final Set<String> failedEndpoints = Collections.synchronizedSet(new HashSet<>());
         private final Set<String> rejectedUrls = Collections.synchronizedSet(new HashSet<>());
     }
 }

@@ -333,7 +333,8 @@ public class DanmakuSetting {
     }
 
     private static void addUrl(LinkedHashSet<String> urls, String value) {
-        if (!isBlank(value) && !isRetiredApiUrl(value)) urls.add(value.trim());
+        if (!isBlank(value) && !isRetiredApiUrl(value)
+                && okhttp3.HttpUrl.parse(value.trim()) != null) urls.add(value.trim());
     }
 
     static String resolveApiUrl(String userUrl, String repositoryUrl) {

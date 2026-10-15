@@ -41,7 +41,7 @@ public final class VodPlaybackMedia {
         invalidate(player);
         String title = history.getVodName();
         String episodeName = episode.getName();
-        String episodeQuery = resolveEpisodeQuery(episodeName, stableEpisodeIndex);
+        String episodeQuery = resolveEpisodeQuery(episodeName, stableEpisodeIndex, type);
         DanmakuMatchContext matchContext = new DanmakuMatchContext(title, year, type, episodeQuery);
         synchronized (MATCH_CONTEXTS) {
             MATCH_CONTEXTS.put(player, matchContext);
@@ -89,6 +89,7 @@ public final class VodPlaybackMedia {
                 DanmakuStatus.Failure reason = switch (failure) {
                     case NO_MATCH -> DanmakuStatus.Failure.NO_MATCH;
                     case NETWORK -> DanmakuStatus.Failure.NETWORK;
+                    case ACCESS_DENIED -> DanmakuStatus.Failure.ACCESS_DENIED;
                     case INVALID_RESPONSE -> DanmakuStatus.Failure.INVALID_RESPONSE;
                     case DOWNLOAD -> DanmakuStatus.Failure.DOWNLOAD;
                 };
@@ -312,26 +313,10 @@ public final class VodPlaybackMedia {
             @Override
             public void onFailure(android.net.Uri source, java.io.IOException error) {
                 DanmakuDocumentCache.invalidate(source);
-                // Full-season catalogues contain short-lived generated URLs. If the neighbour is
-                // already stale, refresh that exact confirmed work/provider in the background so
-                // pressing "next" reuses a verified local document instead of paying the repair
-                // cost after playback has switched.
-                DanmakuApi.searchPreferredDetailed(selection.query(), context.getYear(),
-                        context.getType(), nextEpisode, selection.selectedName(),
-                        selection.sourceKey(), new DanmakuApi.SearchCallback() {
-                            @Override
-                            public void onFound(Danmaku item, java.util.List<Danmaku> catalogue) {
-                                DanmakuMatchContext nextContext = new DanmakuMatchContext(
-                                        context.getTitle(), context.getYear(), context.getType(),
-                                        nextEpisode);
-                                DanmakuManualMatchStore.get().remember(nextContext,
-                                        selection.query(), item, catalogue);
-                            }
+                // A background prefetch must never start a foreground search: the shared
+                // generation would cancel a user's new search or next episode in flight.
+                // Resolve expired IDs when that episode is actually requested.
 
-                            @Override
-                            public void onFailure(DanmakuApi.SearchFailure failure) {
-                            }
-                        });
             }
         });
     }
@@ -357,12 +342,20 @@ public final class VodPlaybackMedia {
     }
 
     static String resolveEpisodeQuery(String episodeName, int stableEpisodeIndex) {
-        Integer explicit = DanmakuMatch.episodeNumber(episodeName);
-        if (explicit != null && explicit > 0) return String.valueOf(explicit);
-        // Generic digit extraction also mistakes sizes, dates and resolutions for episode
-        // numbers. Only explicit episode syntax or the stable pre-reversal order is safe.
+        return resolveEpisodeQuery(episodeName, stableEpisodeIndex, "");
+    }
+
+    static String resolveEpisodeQuery(String episodeName, int stableEpisodeIndex, String type) {
+        String label = Objects.toString(episodeName, "").trim();
+        DanmakuEpisode identity = DanmakuEpisode.from(label);
+        if (!identity.date.isEmpty() || !identity.part.isEmpty() || !identity.extra.isEmpty()) return label;
+        if (identity.number != null && identity.number > 0) return String.valueOf(identity.number);
+        if ("movie".equals(DanmakuMatch.normalizeMediaType(type)) || DanmakuEpisode.isMovieLabel(label)) return "正片";
+        // Variety playlist positions include trailers, extras and split episodes. An ordinal
+        // index is not a broadcast period; keep the label for exact date/edition matching.
+        if ("variety".equals(DanmakuMatch.normalizeMediaType(type))) return label;
         if (stableEpisodeIndex > 0) return String.valueOf(stableEpisodeIndex);
-        return Objects.toString(episodeName, "").trim();
+        return label;
     }
 
     static boolean matchesMetadata(String expectedTitle, String expectedEpisode, CharSequence currentTitle, CharSequence currentEpisode) {

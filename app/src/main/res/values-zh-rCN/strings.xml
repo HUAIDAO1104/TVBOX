@@ -316,8 +316,11 @@
     <string name="danmaku_status_failed">弹幕加载失败：%1$s</string>
     <string name="danmaku_failure_disabled">自动加载已关闭</string>
     <string name="danmaku_failure_no_match">没有找到与当前作品和集数完全匹配的弹幕</string>
-    <string name="danmaku_failure_network">所有弹幕服务均超时或无法连接</string>
+    <string name="danmaku_failure_network">弹幕服务超时或无法连接，请再次搜索或更换服务</string>
     <string name="danmaku_failure_invalid">弹幕服务返回的数据格式无效</string>
     <string name="danmaku_failure_download">弹幕文件下载失败</string>
     <string name="danmaku_failure_empty">弹幕文件为空或无法解析</string>
+    <string name="danmaku_failure_denied">弹幕服务拒绝访问（401/403），请检查接口地址或更换服务后重试</string>
+    <string name="danmaku_search_empty">没有找到当前集的弹幕，请补全片名、季数或修改关键词重试</string>
+    <string name="danmaku_search_partial">找到 %1$d 个弹幕源，%2$d 条线路失败；可再次搜索重试</string>
 </resources>

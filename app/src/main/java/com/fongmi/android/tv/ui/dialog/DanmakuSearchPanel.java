@@ -57,6 +57,9 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
     private boolean resultFocusInitialized;
     private boolean automaticRestoreStarted;
     private int pending;
+    private int failed;
+    private int denied;
+    private int invalid;
     private int renderVersion;
     private final java.util.concurrent.ExecutorService sorter = java.util.concurrent.Executors.newSingleThreadExecutor(r -> new Thread(r, "danmaku-results"));
 
@@ -144,6 +147,7 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         List<String> apiUrls = DanmakuSetting.getSearchApiUrls();
         calls.addAll(DanmakuApi.newCalls(keyword, searchEpisode));
         pending = calls.size();
+        failed = denied = invalid = 0;
         binding.providerStatus.setText(ResUtil.getString(R.string.danmaku_search_running, pending));
         for (int index = 0; index < calls.size(); index++) {
             String sourceKey = index < apiUrls.size()
@@ -159,36 +163,42 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) {
                 List<Danmaku> items = new ArrayList<>();
-                try {
-                    if (response.body() != null) items = Danmaku.arrayFrom(response.body().string());
+                int failure = 0;
+                try (Response closeable = response) {
+                    if (!closeable.isSuccessful()) failure = closeable.code() == 401 || closeable.code() == 403 ? 2 : 1;
+                    else if (closeable.body() == null) failure = 3;
+                    else items = Danmaku.arrayFrom(closeable.body().string());
                     for (Danmaku item : items) item.setSourceKey(sourceKey);
                 } catch (Exception ignored) {
+                    failure = 3;
                 }
+                int outcome = failure;
                 // A provider may return hundreds of entries covering every episode and season.
                 // Filter and sort that payload on OkHttp's worker thread so TV navigation never
                 // competes with response parsing on the main thread.
                 List<Danmaku> value = DanmakuResultGrouper.prepare(
                         title, year, type, episode, items);
                 List<Danmaku> catalogue = items;
-                App.post(() -> merge(id, value, sourceKey, catalogue));
+                App.post(() -> merge(id, value, sourceKey, catalogue, outcome));
             }
 
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 App.post(() -> merge(id, Collections.emptyList(), sourceKey,
-                        Collections.emptyList()));
+                        Collections.emptyList(), 1));
             }
         };
     }
 
     private void merge(int id, List<Danmaku> items, String sourceKey,
-                       List<Danmaku> catalogue) {
+                       List<Danmaku> catalogue, int failure) {
         if (id != requestId.get()) return;
+        if (failure != 0) failed++;
+        if (failure == 2) denied++;
+        if (failure == 3) invalid++;
         if (!sourceKey.isEmpty() && catalogue != null && !catalogue.isEmpty()) {
             sourceCatalogues.put(sourceKey, catalogue);
         }
-        String focusedUrl = focusedUrl();
-        boolean hadResultFocus = binding.recycler.hasFocus();
         for (Danmaku item : items) {
             if (item == null || item.isEmpty() || results.containsKey(item.getUrl())) continue;
             results.put(item.getUrl(), item);
@@ -214,10 +224,14 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         binding.recycler.setVisibility(ranked.isEmpty() ? GONE : VISIBLE);
         binding.progress.setVisibility(pending == 0 ? GONE : VISIBLE);
         binding.empty.setVisibility(pending == 0 && ranked.isEmpty() ? VISIBLE : GONE);
-        binding.empty.setText(R.string.error_empty);
-        binding.providerStatus.setText(pending == 0
-                ? ResUtil.getString(R.string.danmaku_search_result, ranked.size())
-                : ResUtil.getString(R.string.danmaku_search_running, pending));
+        int emptyMessage = denied > 0 ? R.string.danmaku_failure_denied
+                : invalid > 0 ? R.string.danmaku_failure_invalid
+                : failed > 0 ? R.string.danmaku_failure_network : R.string.danmaku_search_empty;
+        binding.empty.setText(emptyMessage);
+        binding.providerStatus.setText(pending > 0
+                ? ResUtil.getString(R.string.danmaku_search_running, pending)
+                : failed > 0 ? ResUtil.getString(R.string.danmaku_search_partial, ranked.size(), failed)
+                : ResUtil.getString(R.string.danmaku_search_result, ranked.size()));
         if (ranked.isEmpty() || !Util.isLeanback()) return;
         if (hadResultFocus && adapter.indexOfUrl(focusedUrl) < 0) {
             // DiffUtil normally keeps the focused holder. Only recover when the focused source

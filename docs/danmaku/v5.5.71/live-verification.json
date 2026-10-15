@@ -1,0 +1,79 @@
+{
+  "date": "2026-10-15",
+  "device": "Android API 36 ARM64 emulator",
+  "mobile": [
+    {
+      "title": "流浪地球2",
+      "episode": "正片",
+      "comments": "11242",
+      "elapsedMs": "33159",
+      "matched": "流浪地球2(2023)【电影】from 360 - 【imgo】 流浪地球2(2023)"
+    },
+    {
+      "title": "现在就出发 第一季",
+      "episode": "20230813上",
+      "comments": "59158",
+      "elapsedMs": "44499",
+      "matched": "现在就出发(2023)【综艺】from 360 - 【qq】 第1期上：沈腾携显眼包野游，叠罗汉睡吊床 2023-08-13期"
+    },
+    {
+      "title": "现在就出发 第三季",
+      "episode": "第1期上",
+      "comments": "48214",
+      "elapsedMs": "37296",
+      "matched": "现在就出发 第3季(2025)【综艺】from 360 - 【qq】 第1期上：原班人马回归开启粤语猜词2.0 2025-10-25期"
+    },
+    {
+      "title": "披荆斩棘2026",
+      "episode": "20260816",
+      "comments": "15866",
+      "elapsedMs": "23164",
+      "matched": "披荆斩棘2026(2026)【综艺】from 360 - 【imgo】 第1期：初舞台（下） 2026-08-16期"
+    },
+    {
+      "title": "喜剧之王单口季",
+      "episode": "第1期上(一)",
+      "comments": "10595",
+      "elapsedMs": "23706",
+      "matched": "喜剧之王单口季(2024)【综艺】from 360 - 【qiyi】 第1期上(一) 郭麒麟玩梗喊话郭德纲 吴镇宇脱衣飙戏硬控刘波 2024-08-16期"
+    }
+  ],
+  "leanback": [
+    {
+      "title": "流浪地球2",
+      "episode": "正片",
+      "comments": "11242",
+      "elapsedMs": "24102",
+      "matched": "流浪地球2(2023)【电影】from 360 - 【imgo】 流浪地球2(2023)"
+    },
+    {
+      "title": "现在就出发 第一季",
+      "episode": "20230813上",
+      "comments": "59158",
+      "elapsedMs": "58834",
+      "matched": "现在就出发(2023)【综艺】from 360 - 【qq】 第1期上：沈腾携显眼包野游，叠罗汉睡吊床 2023-08-13期"
+    },
+    {
+      "title": "现在就出发 第三季",
+      "episode": "第1期上",
+      "comments": "48214",
+      "elapsedMs": "29667",
+      "matched": "现在就出发 第3季(2025)【综艺】from 360 - 【qq】 第1期上：原班人马回归开启粤语猜词2.0 2025-10-25期"
+    },
+    {
+      "title": "披荆斩棘2026",
+      "episode": "20260816",
+      "comments": "15866",
+      "elapsedMs": "21157",
+      "matched": "披荆斩棘2026(2026)【综艺】from 360 - 【imgo】 第1期：初舞台（下） 2026-08-16期"
+    },
+    {
+      "title": "喜剧之王单口季",
+      "episode": "第1期上(一)",
+      "comments": "10595",
+      "elapsedMs": "18851",
+      "matched": "喜剧之王单口季(2024)【综艺】from 360 - 【qiyi】 第1期上(一) 郭麒麟玩梗喊话郭德纲 吴镇宇脱衣飙戏硬控刘波 2024-08-16期"
+    }
+  ],
+  "notes": "Counts are checked with FilteringBiliParser and DanmakuController. Timing includes both passes; not a playback latency benchmark."
+}

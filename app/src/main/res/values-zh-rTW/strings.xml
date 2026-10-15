@@ -308,4 +308,7 @@
         <item>選擇字幕</item>
     </string-array>
 
+    <string name="danmaku_failure_denied">彈幕服務拒絕存取（401/403），請檢查介面位址或更換服務後重試</string>
+    <string name="danmaku_search_empty">沒有找到目前集數的彈幕，請補全片名、季數或修改關鍵字重試</string>
+    <string name="danmaku_search_partial">找到 %1$d 個彈幕源，%2$d 條線路失敗；可再次搜尋重試</string>
 </resources>

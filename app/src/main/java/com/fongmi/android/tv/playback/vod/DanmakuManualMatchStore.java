@@ -110,21 +110,25 @@ public final class DanmakuManualMatchStore {
         String year = context == null ? "" : context.getYear();
         String type = context == null ? "" : context.getType();
         List<Danmaku> items = catalogue == null ? List.of() : catalogue;
+        java.util.Set<String> ambiguous = new java.util.HashSet<>();
         for (Danmaku item : items) {
             if (item == null || item.isEmpty()) continue;
             if (!DanmakuMatch.isSamePreferredCatalogue(selected.getName(), year, type,
                     item.getName())) continue;
-            Integer episode = DanmakuMatch.episodeNumber(item.getName());
-            if (episode == null || episode <= 0 || result.size() >= MAX_EPISODES_PER_ENTRY) continue;
-            result.putIfAbsent(String.valueOf(episode), CachedEpisode.from(item));
+            String key = DanmakuMatch.episodeKey(item.getName());
+            if (key.isEmpty() || result.size() >= MAX_EPISODES_PER_ENTRY || ambiguous.contains(key)) continue;
+            CachedEpisode previous = result.putIfAbsent(key, CachedEpisode.from(item));
+            if (previous != null && !previous.url().equals(item.getUrl())) {
+                // Distinct segments can share a date/period. Never cache an arbitrary timeline.
+                result.remove(key);
+                ambiguous.add(key);
+            }
         }
-        Integer selectedEpisode = DanmakuMatch.episodeNumber(selected.getName());
         String currentEpisode = context == null ? "" : context.getEpisode();
-        Integer contextEpisode = DanmakuMatch.episodeNumber(currentEpisode);
-        Integer episode = selectedEpisode == null ? contextEpisode : selectedEpisode;
-        if (episode != null && episode > 0) {
-            result.put(String.valueOf(episode), CachedEpisode.from(selected));
-        }
+        String selectedKey = DanmakuMatch.episodeKey(selected.getName());
+        String contextKey = DanmakuMatch.episodeKey(currentEpisode);
+        if (!selectedKey.isEmpty()) result.put(selectedKey, CachedEpisode.from(selected));
+        if (!contextKey.isEmpty()) result.put(contextKey, CachedEpisode.from(selected));
         return result;
     }
 
@@ -317,14 +321,15 @@ public final class DanmakuManualMatchStore {
         }
 
         public Danmaku episode(String episode) {
-            Integer number = DanmakuMatch.episodeNumber(episode);
-            if (number == null || episodes == null) return null;
-            CachedEpisode cached = episodes.get(String.valueOf(number));
+            String key = DanmakuMatch.episodeKey(episode);
+            if (key.isEmpty() || episodes == null) return null;
+            CachedEpisode cached = episodes.get(key);
             if (cached == null || cached.url().isEmpty()) return null;
             // The retired provider's comment IDs cannot be reused on another deployment. Return
             // a cache miss so playback keeps the confirmed title/season identity and resolves a
             // fresh URL from the replacement endpoint.
-            if (Danmaku.isRetiredSourceUrl(cached.url())) return null;
+            if (Danmaku.isRetiredSourceUrl(cached.url())
+                    || !DanmakuMatch.isEpisodeCompatible(episode, cached.name())) return null;
             Danmaku result = Danmaku.from(cached.url());
             result.setName(cached.name());
             result.setSourceKey(sourceKey());
@@ -353,9 +358,8 @@ public final class DanmakuManualMatchStore {
         }
 
         private boolean removeEpisode(String episode) {
-            Integer number = DanmakuMatch.episodeNumber(episode);
-            return number != null && episodes != null
-                    && episodes.remove(String.valueOf(number)) != null;
+            String key = DanmakuMatch.episodeKey(episode);
+            return !key.isEmpty() && episodes != null && episodes.remove(key) != null;
         }
     }
 

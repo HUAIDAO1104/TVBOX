@@ -1,0 +1,50 @@
+{
+  "versionCode": 622,
+  "versionName": "5.5.71-danmaku",
+  "date": "2026-10-15",
+  "jvm": {
+    "mobile": {
+      "passed": 271,
+      "failed": 0
+    },
+    "leanback": {
+      "passed": 271,
+      "failed": 0
+    }
+  },
+  "android": {
+    "device": "API 36 ARM64 emulator",
+    "mobile": {
+      "deterministicPassed": 5,
+      "liveTitlesPassed": 5,
+      "input": "Injected touch DOWN/UP",
+      "viewportDpWidth": 320,
+      "fontScale": 1.3
+    },
+    "leanback": {
+      "deterministicPassed": 5,
+      "liveTitlesPassed": 5,
+      "input": "DPAD_CENTER",
+      "note": "Two UI cases rerun after setting instrumentation touch mode false; both passed."
+    }
+  },
+  "release": {
+    "variants": [
+      "mobile-arm64_v8a",
+      "mobile-armeabi_v7a",
+      "leanback-arm64_v8a",
+      "leanback-armeabi_v7a"
+    ],
+    "signatureSchemes": [
+      "v1",
+      "v2",
+      "v3"
+    ],
+    "certificateSha256": "b8ed9c579e8671d24f6d4d18b296528ca655c627fa437f57a217450c0b548aa7"
+  },
+  "limitations": [
+    "Current provider does not return season 4 of 现在就出发.",
+    "Emulator verification, not all physical hardware.",
+    "Live timing includes two parser passes and is not a playback latency benchmark."
+  ]
+}

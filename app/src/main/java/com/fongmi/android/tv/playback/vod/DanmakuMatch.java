@@ -14,19 +14,13 @@ import java.util.regex.Pattern;
 /** Deterministic ranking for automatic danmaku selection. */
 public final class DanmakuMatch {
 
-    // Aggregate markers such as 全38集/共38集/38集全 describe the season size, never the episode.
-    // Strip the entire marker (including spaced variants) before parsing an actual episode.
-    private static final Pattern AGGREGATE_COUNT = Pattern.compile("(?:[全共]\\s*\\d{1,4}\\s*[集期话回](?:\\s*全)?|\\d{1,4}\\s*[集期话回]\\s*全)");
-    private static final Pattern NUMBER = Pattern.compile("(?<![全共0-9])(?:第\\s*)?0*(\\d{1,4})\\s*[集期话回](?!全)");
     private static final Pattern SEASON_EPISODE = Pattern.compile("(?i)S\\s*0*(\\d{1,2})\\s*E\\s*0*(\\d{1,3})");
-    private static final Pattern FILE_EPISODE = Pattern.compile("(?:^|[\\]）】}\\s._-])0*(\\d{1,3})(?=\\s*\\.(?:mkv|mp4|avi|mov|ts|m2ts|webm)(?:$|[\\s【\\[]))", Pattern.CASE_INSENSITIVE);
-    private static final Pattern SHORT_EPISODE = Pattern.compile("^\\s*0*(\\d{1,3})\\s*$");
     private static final Pattern SEASON = Pattern.compile("(?:第\\s*)?([0-9一二三四五六七八九十百壹贰叁肆伍陆柒捌玖拾]+)\\s*[季部]");
     private static final Pattern SEASON_SUFFIX = Pattern.compile("(?:第)?([0-9一二三四五六七八九十百壹贰叁肆伍陆柒捌玖拾]+)[季部]$");
     private static final Pattern TRAILING_ROMAN = Pattern.compile("([ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ])$");
     private static final Pattern TRAILING_ASCII_ROMAN = Pattern.compile("(?i)(viii|vii|vi|iv|iii|ii|ix|x|v|i)$");
-    private static final Pattern TRAILING_ARABIC = Pattern.compile("^(.{2,}?)([1-9][0-9]?)$");
-    private static final Pattern NOISE = Pattern.compile("预告|花絮|解说|reaction|片段|剪辑|专访|采访|综艺|真人秀|mv|番外|特别篇|彩蛋|幕后", Pattern.CASE_INSENSITIVE);
+    private static final Pattern TRAILING_ARABIC = Pattern.compile("^(.{1,}?[^0-9])([1-9][0-9]?)$");
+    private static final Pattern NOISE = Pattern.compile("预告|花絮|解说|reaction|片段|剪辑|专访|采访|mv|番外|特别篇|彩蛋|幕后", Pattern.CASE_INSENSITIVE);
     private static final String TITLE_TAG_VALUE = "(?:4k|8k|2160p|1080p|720p|hdr(?:10)?|sdr|uhd|web[-_. ]?dl|blu[-_. ]?ray|国语|粤语|中字|双语|全集|完结|超清|高清|官源)";
     private static final Pattern TITLE_TAG = Pattern.compile("(?i)" + TITLE_TAG_VALUE);
     private static final Pattern LEADING_TITLE_TAG = Pattern.compile("(?i)^" + TITLE_TAG_VALUE + "[\\s._·:：|/\\-]+");
@@ -80,17 +74,12 @@ public final class DanmakuMatch {
         // Automatic loading must never guess when playback metadata is missing. Previously an
         // empty title accepted any API result, which allowed a late response from another show
         // (for example "百花杀") to become the new episode's default danmaku.
-        if (cleanTitle.length() < 2) return false;
+        if (cleanTitle.isEmpty()) return false;
         if (!cleanCandidate.equals(cleanTitle)) return false;
         if (NOISE.matcher(candidate).find()
                 && !NOISE.matcher((title == null ? "" : title) + " " + (episode == null ? "" : episode)).find()) return false;
 
-        Integer expectedEpisode = episodeNumber(episode);
-        Integer candidateEpisode = episodeNumber(candidate);
-        // The bundled API returns an entire season even when an episode parameter is supplied.
-        // When the request has an exact episode, candidates without an exact parseable episode
-        // are unsafe too; accepting one is how episode 1/10/11 leaked into later episodes.
-        if (expectedEpisode != null && !expectedEpisode.equals(candidateEpisode)) return false;
+        if (!isEpisodeCompatible(episode, candidate)) return false;
 
         Integer expectedSeason = firstNonNull(seasonNumber(episode), seasonNumber(title));
         Integer candidateSeason = seasonNumber(candidate);
@@ -118,14 +107,13 @@ public final class DanmakuMatch {
         if (NOISE.matcher(candidate).find()
                 && !NOISE.matcher((title == null ? "" : title) + " " + (type == null ? "" : type)).find()) return false;
 
-        Integer expectedEpisode = episodeNumber(episode);
-        Integer candidateEpisode = episodeNumber(candidate);
-        if (expectedEpisode != null && !expectedEpisode.equals(candidateEpisode)) return false;
+        if (!isEpisodeCompatible(episode, candidate)) return false;
 
         Integer expectedSeason = expectedSeason(title, type, episode);
         Integer candidateSeason = seasonNumber(candidate);
         if (expectedSeason != null) {
-            if (candidateSeason == null || !expectedSeason.equals(candidateSeason)) return false;
+            if (!(expectedSeason.equals(candidateSeason)
+                    || expectedSeason == 1 && candidateSeason == null)) return false;
         } else {
             String expectedYear = normalizeYear(year);
             // A missing season can only cross the exact-title boundary when a matching year
@@ -153,6 +141,7 @@ public final class DanmakuMatch {
         int bestScore = Integer.MIN_VALUE;
         Set<String> years = new HashSet<>();
         Set<String> types = new HashSet<>();
+        Set<String> timelines = new HashSet<>();
         String expectedYear = normalizeYear(year);
         String expectedType = normalizeMediaType(type);
         if (items == null) return null;
@@ -161,7 +150,7 @@ public final class DanmakuMatch {
             String candidate = name.apply(item);
             if (!isReliable(title, year, type, episode, candidate)) continue;
             String candidateYear = candidateYear(candidate);
-            if (!expectedYear.isEmpty() && !expectedYear.equals(candidateYear)) continue;
+            if (!expectedYear.isEmpty() && !candidateYear.isEmpty() && !expectedYear.equals(candidateYear)) continue;
             if (expectedYear.isEmpty() && !candidateYear.isEmpty()) years.add(candidateYear);
             String candidateMediaType = candidateType(candidate);
             // A known conflict (for example an animation request versus a live-action edition)
@@ -169,6 +158,10 @@ public final class DanmakuMatch {
             // otherwise providers that omit 【类型】 would intermittently produce no danmaku.
             if (!expectedType.isEmpty() && !candidateMediaType.isEmpty() && !expectedType.equals(candidateMediaType)) continue;
             if (expectedType.isEmpty() && !candidateMediaType.isEmpty()) types.add(candidateMediaType);
+            if ("variety".equals(candidateMediaType) || "variety".equals(expectedType)
+                    || !DanmakuEpisode.from(episode).date.isEmpty()) {
+                timelines.add(DanmakuEpisode.from(candidate).key());
+            }
             int score = displayScore(title, year, type, episode, candidate);
             if (best == null || score > bestScore) {
                 best = item;
@@ -177,6 +170,9 @@ public final class DanmakuMatch {
         }
         if (expectedYear.isEmpty() && years.size() > 1) return null;
         if (expectedType.isEmpty() && types.size() > 1) return null;
+        // A date/period can contain two halves. Leave those choices visible to manual search
+        // rather than silently mounting whichever half the provider happens to return first.
+        if (timelines.size() > 1) return null;
         return best;
     }
 
@@ -215,10 +211,12 @@ public final class DanmakuMatch {
         if (items == null || canonicalTitle(selectedName).length() < 2) return null;
         T best = null;
         int bestScore = Integer.MIN_VALUE;
+        Set<String> timelines = new HashSet<>();
         for (T item : items) {
             if (item == null) continue;
             String candidate = name.apply(item);
             if (!isPreferredFamily(selectedName, year, type, episode, candidate)) continue;
+            if ("variety".equals(candidateType(candidate))) timelines.add(episodeKey(candidate));
             int score = displayScore(selectedName, preferredYear(selectedName, year),
                     preferredType(selectedName, type), episode, candidate);
             if (sameNonEmpty(resultPlatform(selectedName), resultPlatform(candidate))) score += 40;
@@ -227,7 +225,7 @@ public final class DanmakuMatch {
                 bestScore = score;
             }
         }
-        return best;
+        return timelines.size() > 1 ? null : best;
     }
 
     /** Returns the confirmed catalogue's current-episode alternatives in preference order. */
@@ -335,22 +333,32 @@ public final class DanmakuMatch {
 
     public static boolean isSameWork(String first, String second) {
         String left = canonicalTitle(first);
-        return left.length() >= 2 && left.equals(canonicalTitle(second));
+        return !left.isEmpty() && left.equals(canonicalTitle(second));
     }
 
     public static boolean isSameBaseWork(String first, String second) {
         String left = baseTitle(first);
-        return left.length() >= 2 && left.equals(baseTitle(second));
+        return !left.isEmpty() && left.equals(baseTitle(second));
     }
 
     /** Returns true when a provider result can represent the episode currently being played. */
     public static boolean isEpisodeCompatible(String episode, String candidate) {
-        Integer expected = episodeNumber(episode);
-        Integer actual = episodeNumber(candidate);
-        // The built-in endpoint returns a complete season for an episode query. Once the current
-        // episode is known, an aggregate or unnumbered result is as unsafe as an explicit mismatch.
-        return expected == null || expected.equals(actual);
+        DanmakuEpisode expected = DanmakuEpisode.from(episode);
+        DanmakuEpisode actual = DanmakuEpisode.from(candidate);
+        if (DanmakuEpisode.isMovieLabel(episode) && actual.number != null && actual.number != 1) return false;
+        return expected.matches(actual);
     }
+
+    /** Manual search can show extras when the current episode has no explicit edition label. */
+    public static boolean isManualEpisodeCompatible(String episode, String candidate) {
+        DanmakuEpisode expected = DanmakuEpisode.from(episode);
+        DanmakuEpisode actual = DanmakuEpisode.from(candidate);
+        if (!expected.date.isEmpty() && !expected.date.equals(actual.date)) return false;
+        if (expected.date.isEmpty() && expected.number != null && !expected.number.equals(actual.number)) return false;
+        return expected.part.isEmpty() || expected.part.equals(actual.part);
+    }
+
+    static String episodeKey(String episode) { return DanmakuEpisode.from(episode).key(); }
 
     public static Integer resultSeason(String value) {
         return seasonNumber(value);
@@ -367,16 +375,7 @@ public final class DanmakuMatch {
     }
 
     static Integer episodeNumber(String value) {
-        if (value == null) return null;
-        String episodeValue = AGGREGATE_COUNT.matcher(value).replaceAll(" ");
-        Matcher seasonEpisode = SEASON_EPISODE.matcher(episodeValue);
-        if (seasonEpisode.find()) return Integer.parseInt(seasonEpisode.group(2));
-        Matcher number = NUMBER.matcher(episodeValue);
-        if (number.find()) return Integer.parseInt(number.group(1));
-        Matcher fileEpisode = FILE_EPISODE.matcher(episodeValue);
-        if (fileEpisode.find()) return Integer.parseInt(fileEpisode.group(1));
-        Matcher shortEpisode = SHORT_EPISODE.matcher(episodeValue);
-        return shortEpisode.find() ? Integer.parseInt(shortEpisode.group(1)) : null;
+        return DanmakuEpisode.from(value).number;
     }
 
     static Integer seasonNumber(String value) {
@@ -385,6 +384,7 @@ public final class DanmakuMatch {
         if (seasonEpisode.find()) return Integer.parseInt(seasonEpisode.group(1));
         Matcher season = SEASON.matcher(value);
         if (season.find()) return parseNumber(season.group(1));
+        if (!PROVIDER.matcher(value).find() && DanmakuEpisode.from(value).identified()) return null;
         // Reuse title normalization for aliases such as Ⅱ, II and a trailing Arabic season.
         Matcher suffix = Pattern.compile("#(\\d+)$").matcher(canonicalTitle(value));
         return suffix.find() ? Integer.parseInt(suffix.group(1)) : null;

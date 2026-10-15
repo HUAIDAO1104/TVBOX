@@ -22,10 +22,12 @@ public final class DanmakuResultGrouper {
         if (source != null) {
             for (Danmaku item : source) {
                 if (item == null || item.isEmpty() || item.isBlockedSource()) continue;
-                if (!DanmakuMatch.isSameBaseWork(title, item.getName())) continue;
+                if (!DanmakuMatch.isSameBaseWork(title, item.getName())
+                        && !(DanmakuMatch.canonicalTitle(title).length() >= 2
+                        && DanmakuMatch.canonicalTitle(item.getName()).contains(DanmakuMatch.canonicalTitle(title)))) continue;
                 // The API returns the complete season even when an episode is supplied. Keeping
                 // explicit wrong episodes made a small source picker into a list of hundreds.
-                if (!DanmakuMatch.isEpisodeCompatible(episode, item.getName())) continue;
+                if (!DanmakuMatch.isManualEpisodeCompatible(episode, item.getName())) continue;
                 unique.putIfAbsent(item.getUrl(), item);
             }
         }
