@@ -123,6 +123,40 @@
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/danmakuAi"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/settings_v2_selector_row"
+            android:stateListAnimator="@animator/settings_v2_focus_scale"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:orientation="horizontal"
+
+            >
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:text="@string/danmaku_ai_title"
+                android:textColor="@color/tv_text_primary"
+                android:textSize="16sp" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/danmakuAiText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="middle"
+                android:gravity="end"
+                android:singleLine="true"
+                android:textColor="@color/tv_text_secondary"
+                android:textSize="16sp"
+                tools:text="https://" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/danmakuSearch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

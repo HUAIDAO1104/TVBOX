@@ -3,7 +3,7 @@ package com.fongmi.android.tv.player.danmaku;
 /** Lightweight playback-wide status for the automatic danmaku pipeline. */
 public final class DanmakuStatus {
 
-    public enum Stage { HIDDEN, MATCHING, RESTORING, DOWNLOADING, READY, FAILED }
+    public enum Stage { HIDDEN, MATCHING, AI_MATCHING, RESTORING, DOWNLOADING, READY, FAILED }
 
     public enum Failure { NONE, DISABLED, NO_MATCH, NETWORK, ACCESS_DENIED, INVALID_RESPONSE, DOWNLOAD, EMPTY_DOCUMENT }
 
@@ -21,6 +21,7 @@ public final class DanmakuStatus {
 
     public static DanmakuStatus hidden() { return new DanmakuStatus(Stage.HIDDEN, Failure.NONE, -1, 0); }
     public static DanmakuStatus matching() { return new DanmakuStatus(Stage.MATCHING, Failure.NONE, -1, 0); }
+    public static DanmakuStatus aiMatching() { return new DanmakuStatus(Stage.AI_MATCHING, Failure.NONE, -1, 0); }
     public static DanmakuStatus restoring() { return new DanmakuStatus(Stage.RESTORING, Failure.NONE, -1, 0); }
     public static DanmakuStatus downloading(int progress) { return new DanmakuStatus(Stage.DOWNLOADING, Failure.NONE, progress, 0); }
     public static DanmakuStatus ready(int itemCount) { return new DanmakuStatus(Stage.READY, Failure.NONE, 100, itemCount); }

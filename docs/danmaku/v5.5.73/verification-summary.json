@@ -1,0 +1,59 @@
+{
+  "versionCode": 624,
+  "versionName": "5.5.73-danmaku-ai",
+  "jvm": {
+    "mobile": {
+      "tests": 284,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "leanback": {
+      "tests": 284,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "android": {
+    "mobile": {
+      "ai": 6,
+      "playerOverlay": 1,
+      "searchDeterministic": 5
+    },
+    "environment": "API 36 ARM64 emulator",
+    "leanback": {
+      "ai": 6,
+      "playerManager": 3,
+      "searchDeterministic": 5
+    },
+    "releaseMobileSmoke": {
+      "nativeCommentsVisible": true,
+      "realSystemPipPreservesPreference": true,
+      "commentsVisibleAfterPipReturn": true
+    },
+    "ui": {
+      "mobileWidthDp": 320,
+      "fontScale": 1.3,
+      "softKeyboardVisibleAndSaveReachable": true,
+      "tvFocusScrollTestActionReachable": true
+    }
+  },
+  "release": {
+    "variants": 4,
+    "signatures": [
+      "V1",
+      "V2",
+      "V3"
+    ],
+    "sameCertificateAsPrevious": true
+  },
+  "aiProvider": {
+    "baseUrl": "https://llm-api.mcisaas.com/v1",
+    "model": "qwen-flash",
+    "credentialShipped": false
+  },
+  "liveCaveats": [
+    "Platform catalogue intermittently returned code=-1; individual retries passed. Counts describe verified scenarios across runs, not a claim that all live requests succeeded."
+  ]
+}

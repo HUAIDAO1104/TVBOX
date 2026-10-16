@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="danmaku_ai_title">AI 輔助配對</string>
+    <string name="danmaku_ai_note">一般配對失敗時，AI 整理片名並從真實彈幕目錄中選擇。僅傳送片名、年份、類型、集數與候選名稱；要求由裝置直連你設定的服務商，費用由該服務商計算。</string>
+    <string name="danmaku_ai_enabled">啟用 AI 輔助配對</string>
+    <string name="danmaku_ai_base">介面位址（Base URL）</string>
+    <string name="danmaku_ai_model">模型名稱</string>
+    <string name="danmaku_ai_key">API Key</string>
+    <string name="danmaku_ai_key_hint">金鑰加密儲存在本裝置，不參與備份</string>
+    <string name="danmaku_ai_key_saved">已儲存金鑰；留空保留，輸入可替換</string>
+    <string name="danmaku_ai_save">儲存</string>
+    <string name="danmaku_ai_test">測試連線</string>
+    <string name="danmaku_ai_clear">移除金鑰</string>
+    <string name="danmaku_ai_cleared">金鑰已移除，AI 輔助配對已關閉</string>
+    <string name="danmaku_ai_bad_url">請輸入 HTTPS 介面根位址，不包含查詢參數或登入資訊</string>
+    <string name="danmaku_ai_bad_model">請輸入有效的模型名稱</string>
+    <string name="danmaku_ai_bad_key">請輸入此介面的 API Key；變更位址後需重新填寫</string>
+    <string name="danmaku_ai_saving">正在儲存…</string>
+    <string name="danmaku_ai_testing">正在測試模型配對能力…</string>
+    <string name="danmaku_ai_test_ok">連線成功，模型可用；儲存後生效</string>
+    <string name="danmaku_ai_auth_error">金鑰無效或沒有權限，請檢查後重試</string>
+    <string name="danmaku_ai_rate_error">服務商限流或額度不足，請稍後重試</string>
+    <string name="danmaku_ai_response_error">模型未傳回有效配對，請檢查模型名稱或變更模型</string>
+    <string name="danmaku_ai_connection_error">連線或儲存失敗，請檢查設定後重試</string>
+    <string name="danmaku_ai_matching">AI 正在輔助配對彈幕…</string>
+    <string name="danmaku_ai_not_configured">未設定</string>
+</resources>

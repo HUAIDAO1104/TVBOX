@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="danmaku_ai_title">AI-assisted matching</string>
+    <string name="danmaku_ai_note">When regular matching fails, AI cleans the title and chooses from real catalogues. Only title, year, type, episode and candidate names are sent directly to your provider. Provider usage charges apply.</string>
+    <string name="danmaku_ai_enabled">Enable AI fallback</string>
+    <string name="danmaku_ai_base">Base URL</string>
+    <string name="danmaku_ai_model">Model</string>
+    <string name="danmaku_ai_key">API Key</string>
+    <string name="danmaku_ai_key_hint">Encrypted on this device; excluded from backups</string>
+    <string name="danmaku_ai_key_saved">Key saved. Leave blank to keep it, or enter a replacement.</string>
+    <string name="danmaku_ai_save">Save</string>
+    <string name="danmaku_ai_test">Test connection</string>
+    <string name="danmaku_ai_clear">Remove key</string>
+    <string name="danmaku_ai_cleared">Key removed. AI fallback is off.</string>
+    <string name="danmaku_ai_bad_url">Enter an HTTPS base URL without query parameters or login information.</string>
+    <string name="danmaku_ai_bad_model">Enter a valid model name.</string>
+    <string name="danmaku_ai_bad_key">Enter an API key for this endpoint. Changing the endpoint requires a new key.</string>
+    <string name="danmaku_ai_saving">Saving…</string>
+    <string name="danmaku_ai_testing">Testing model matching…</string>
+    <string name="danmaku_ai_test_ok">Connected and model verified. Save to apply.</string>
+    <string name="danmaku_ai_auth_error">The key is invalid or lacks permission. Check it and retry.</string>
+    <string name="danmaku_ai_rate_error">Provider rate or quota limit reached. Try again later.</string>
+    <string name="danmaku_ai_response_error">The model returned no valid match. Check or change the model.</string>
+    <string name="danmaku_ai_connection_error">Connection or save failed. Check the settings and retry.</string>
+    <string name="danmaku_ai_matching">AI is matching comments…</string>
+    <string name="danmaku_ai_not_configured">Not configured</string>
+</resources>

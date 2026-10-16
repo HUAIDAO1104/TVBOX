@@ -1205,10 +1205,15 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void syncDanmakuEnabled() {
         player().setDanmakuEnabled(DanmakuSetting.isShow());
+        // Leaving PiP must restore the view even when the persisted preference and the
+        // player's logical setting did not change while the overlay was temporarily hidden.
+        getPlayerView().setDanmakuEnabled(player().isDanmakuEnabled());
     }
 
     private void hideDanmaku() {
-        player().setDanmakuEnabled(false);
+        // PiP hides a presentation layer; it must not save a user preference. The old call
+        // persisted false, so every later search could load successfully while staying hidden.
+        getPlayerView().setDanmakuEnabled(false);
     }
 
     private void showControl() {

@@ -8,8 +8,8 @@ import okhttp3.FormBody;
 import okhttp3.Request;
 
 /** Encodes title/episode values without allowing '&', '#', '+' or '?' to change the URL. */
-final class DanmakuSearchRequest {
-    static Request build(String endpoint, String name, String episode, String tag) {
+public final class DanmakuSearchRequest {
+    public static Request build(String endpoint, String name, String episode, String tag) {
         name = Objects.toString(name, "");
         episode = Objects.toString(episode, "");
         Request.Builder builder = new Request.Builder().tag(tag);

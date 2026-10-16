@@ -15,8 +15,7 @@ public class DanmakuQueryTest {
         assertEquals("欢天喜地七仙女", query.searchTitle());
         assertEquals("2005", query.year());
         assertEquals("欢天喜地七仙女", query.candidates().get(0));
-        assertEquals("欢天喜地七仙女 2005", query.candidates().get(1));
-        assertEquals("【国产】2005.欢天喜地七仙女.高清修复", query.candidates().get(2));
+        assertEquals(java.util.List.of("欢天喜地七仙女"), query.candidates());
     }
 
     @Test
@@ -59,5 +58,22 @@ public class DanmakuQueryTest {
         assertEquals("请回答1988", numberedTitle.searchTitle());
         assertFalse(numberedTitle.candidates().contains("请回答"));
         assertEquals("2046", DanmakuQuery.from("2046").searchTitle());
+    }
+
+    @Test public void stripsInterleavedUpdateBadgesWithoutAddingNoiseBack() {
+        DanmakuQuery query = DanmakuQuery.from("【剧版】喜剧之王（2026）【更新至14集】4K");
+        assertEquals("喜剧之王", query.searchTitle());
+        assertEquals("2026", query.year());
+        assertEquals(java.util.List.of("喜剧之王"), query.candidates());
+        assertEquals("喜剧之王", DanmakuQuery.from("喜剧之王 更新至14集").searchTitle());
+        assertEquals("喜剧之王", DanmakuQuery.from("喜剧之王[全24集]1080P").searchTitle());
+    }
+
+    @Test public void gluedYearFallbackRequiresMatchingCatalogueMetadata() {
+        assertEquals(java.util.List.of("喜剧之王2026", "喜剧之王"),
+                DanmakuQuery.from("喜剧之王2026", "2026").candidates());
+        assertEquals(java.util.List.of("请回答1988"), DanmakuQuery.from("请回答1988", "2015").candidates());
+        assertEquals(java.util.List.of("2046"), DanmakuQuery.from("2046", "2004").candidates());
+        assertEquals("", DanmakuQuery.from("测试动画[更新至2026集]").year());
     }
 }

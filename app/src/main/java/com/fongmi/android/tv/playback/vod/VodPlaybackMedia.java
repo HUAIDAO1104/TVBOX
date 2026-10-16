@@ -95,6 +95,24 @@ public final class VodPlaybackMedia {
                     case INVALID_RESPONSE -> DanmakuStatus.Failure.INVALID_RESPONSE;
                     case DOWNLOAD -> DanmakuStatus.Failure.DOWNLOAD;
                 };
+                if (failure != DanmakuApi.SearchFailure.DOWNLOAD
+                        && failure != DanmakuApi.SearchFailure.ACCESS_DENIED
+                        && DanmakuAiMatcher.search(matchContext, new DanmakuAiMatcher.Callback() {
+                    @Override public void onFound(String query, Danmaku item, java.util.List<Danmaku> catalogue) {
+                        if (!isCurrentIdentity(player, identity)) return;
+                        DanmakuManualMatchStore.get().remember(matchContext, query, item, catalogue);
+                        apply.accept(item);
+                    }
+                    @Override public void onFailure() {
+                        if (isCurrentIdentity(player, identity)) player.notifyDanmakuStatus(DanmakuStatus.failed(reason));
+                    }
+                    @Override public void onProgress(int percent) {
+                        if (isCurrentIdentity(player, identity)) player.notifyDanmakuStatus(DanmakuStatus.downloading(percent));
+                    }
+                })) {
+                    player.notifyDanmakuStatus(DanmakuStatus.aiMatching());
+                    return;
+                }
                 player.notifyDanmakuStatus(DanmakuStatus.failed(reason));
             }
         };
@@ -230,6 +248,9 @@ public final class VodPlaybackMedia {
             java.util.List<Danmaku> resolved = items == null || items.isEmpty()
                     ? initialCatalogue : items;
             DanmakuManualMatchStore.get().remember(context, finalQuery, item, resolved);
+            // Selecting an episode is an explicit request to show its comments, including
+            // recovery from the historical PiP bug that persisted a hidden state.
+            player.setDanmakuEnabled(true);
             player.setDanmaku(item, true);
             if (onApplied != null) onApplied.accept(item);
         };

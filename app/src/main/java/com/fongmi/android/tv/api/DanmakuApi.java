@@ -94,7 +94,7 @@ public class DanmakuApi {
     public static void searchDetailed(String name, String year, String type, String episode,
                                       SearchCallback callback) {
         int generation = beginSearch();
-        searchCandidateParallel(generation, DanmakuQuery.from(name), Objects.toString(year, ""),
+        searchCandidateParallel(generation, DanmakuQuery.from(name, year), Objects.toString(year, ""),
                 Objects.toString(type, ""), episode, "", orderedEndpoints(""), callback, 0,
                 0, new SearchStats(generation, callback));
     }
@@ -116,7 +116,7 @@ public class DanmakuApi {
                                                String selectedName, String selectedSourceKey,
                                                SearchCallback callback) {
         int generation = beginSearch();
-        searchCandidateParallel(generation, DanmakuQuery.from(name), Objects.toString(year, ""),
+        searchCandidateParallel(generation, DanmakuQuery.from(name, year), Objects.toString(year, ""),
                 Objects.toString(type, ""), episode, Objects.toString(selectedName, ""),
                 orderedEndpoints(selectedSourceKey), callback, 0, 0, new SearchStats(generation, callback));
     }
@@ -347,6 +347,7 @@ public class DanmakuApi {
     }
 
     private static int beginSearch() {
+        com.fongmi.android.tv.playback.vod.DanmakuAiMatcher.cancel();
         int generation = REQUEST_GENERATION.incrementAndGet();
         OkHttp.cancel(SearchClient.INSTANCE, TAG);
         cancelValidations();

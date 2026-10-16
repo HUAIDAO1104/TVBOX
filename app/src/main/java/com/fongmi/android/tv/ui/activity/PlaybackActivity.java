@@ -685,6 +685,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     private String danmakuStatusText(DanmakuStatus status) {
         return switch (status.stage()) {
             case MATCHING -> getString(R.string.danmaku_status_matching);
+            case AI_MATCHING -> getString(R.string.danmaku_ai_matching);
             case RESTORING -> getString(R.string.danmaku_status_restoring);
             case DOWNLOADING -> status.progress() > 0
                     ? getString(R.string.danmaku_status_downloading_percent, status.progress())

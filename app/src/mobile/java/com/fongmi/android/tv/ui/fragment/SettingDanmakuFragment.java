@@ -13,6 +13,8 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.FragmentSettingDanmakuBinding;
 import com.fongmi.android.tv.impl.DanmakuListener;
 import com.fongmi.android.tv.setting.DanmakuSetting;
+import com.fongmi.android.tv.setting.DanmakuAiSetting;
+import com.fongmi.android.tv.ui.dialog.DanmakuAiDialog;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.dialog.DanmakuApiDialog;
@@ -37,6 +39,7 @@ public class SettingDanmakuFragment extends BaseFragment implements DanmakuListe
     @Override
     protected void initView() {
         mBinding.danmakuApiText.setText(getApiStatus());
+        updateAiStatus();
         mBinding.danmakuAutoText.setText(Setting.getSwitch(DanmakuSetting.isAuto()));
         mBinding.danmakuLoadText.setText(Setting.getSwitch(DanmakuSetting.isLoad()));
         mBinding.danmakuSpiderText.setText(Setting.getSwitch(DanmakuSetting.isSpiderFirst()));
@@ -46,9 +49,16 @@ public class SettingDanmakuFragment extends BaseFragment implements DanmakuListe
     @Override
     protected void initEvent() {
         mBinding.danmakuApi.setOnClickListener(this::onDanmakuApi);
+        mBinding.danmakuAi.setOnClickListener(view -> new DanmakuAiDialog().show(getChildFragmentManager(), "danmaku_ai"));
+        getChildFragmentManager().setFragmentResultListener(DanmakuAiDialog.RESULT, this, (key, result) -> updateAiStatus());
         mBinding.danmakuAuto.setOnClickListener(this::setDanmakuAuto);
         mBinding.danmakuLoad.setOnClickListener(this::setDanmakuLoad);
         mBinding.danmakuSpider.setOnClickListener(this::setDanmakuSpider);
+    }
+
+    private void updateAiStatus() {
+        mBinding.danmakuAiText.setText(DanmakuAiSetting.hasKey()
+                ? Setting.getSwitch(DanmakuAiSetting.enabled()) : getString(R.string.danmaku_ai_not_configured));
     }
 
     private void setDanmakuLoad(View view) {

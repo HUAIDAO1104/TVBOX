@@ -13,6 +13,8 @@ import com.fongmi.android.tv.databinding.ActivitySettingDanmakuBinding;
 import com.fongmi.android.tv.impl.DanmakuListener;
 import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.setting.DanmakuSetting;
+import com.fongmi.android.tv.setting.DanmakuAiSetting;
+import com.fongmi.android.tv.ui.dialog.DanmakuAiDialog;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.base.FocusSafeSettingsActivity;
 import com.fongmi.android.tv.ui.dialog.DanmakuApiDialog;
@@ -44,6 +46,7 @@ public class SettingDanmakuActivity extends FocusSafeSettingsActivity implements
     @Override
     protected void initView(Bundle savedInstanceState) {
         mBinding.danmakuApiText.setText(getApiStatus());
+        updateAiStatus();
         mBinding.danmakuAutoText.setText(Setting.getSwitch(DanmakuSetting.isAuto()));
         mBinding.danmakuLoadText.setText(Setting.getSwitch(DanmakuSetting.isLoad()));
         mBinding.danmakuSpiderText.setText(Setting.getSwitch(DanmakuSetting.isSpiderFirst()));
@@ -54,11 +57,18 @@ public class SettingDanmakuActivity extends FocusSafeSettingsActivity implements
     @Override
     protected void initEvent() {
         mBinding.danmakuApi.setOnClickListener(this::onDanmakuApi);
+        mBinding.danmakuAi.setOnClickListener(view -> new DanmakuAiDialog().show(getSupportFragmentManager(), "danmaku_ai"));
+        getSupportFragmentManager().setFragmentResultListener(DanmakuAiDialog.RESULT, this, (key, result) -> updateAiStatus());
         mBinding.danmakuDetail.setOnClickListener(view -> DanmakuSettingDialog.create().show(this));
         mBinding.danmakuSearch.setOnClickListener(this::onDanmakuSearch);
         mBinding.danmakuAuto.setOnClickListener(this::setDanmakuAuto);
         mBinding.danmakuLoad.setOnClickListener(this::setDanmakuLoad);
         mBinding.danmakuSpider.setOnClickListener(this::setDanmakuSpider);
+    }
+
+    private void updateAiStatus() {
+        mBinding.danmakuAiText.setText(DanmakuAiSetting.hasKey()
+                ? Setting.getSwitch(DanmakuAiSetting.enabled()) : getString(R.string.danmaku_ai_not_configured));
     }
 
     private void setDanmakuLoad(View view) {
