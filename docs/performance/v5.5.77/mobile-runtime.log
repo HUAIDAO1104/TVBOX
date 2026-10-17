@@ -1,0 +1,15 @@
+--------- beginning of main
+10-17 20:10:19.195  8817  8833 I Performance577QA: UPDATE_FULL_APK firstBytesMs=980 elapsedMs=60365 KiBps=818 sources=[axisnow.gh-proxy.org] progressEvents=84
+10-17 20:10:33.090  8817  8833 I Danmaku577QA: comments at 600000 composed moving pixels=111
+10-17 20:10:33.101  8817  8817 I Danmaku577QA: pixels position=601946 source=mango-danmaku://video/896231/24566777
+10-17 20:10:35.005  8817  8833 I Danmaku577QA: comments at 2400000 composed moving pixels=235
+10-17 20:10:35.016  8817  8817 I Danmaku577QA: pixels position=2401840 source=mango-danmaku://video/896231/24566777
+10-17 20:10:37.528  8817  8833 I Danmaku577QA: comments at 60000 composed moving pixels=209
+10-17 20:10:37.538  8817  8817 I Danmaku577QA: pixels position=62445 source=mango-danmaku://video/896231/24566777
+10-17 20:10:39.382  8817  8833 I Danmaku577QA: comments after pause/resume composed moving pixels=1400
+10-17 20:10:41.456  8817  8833 I Danmaku577QA: comments after fullscreen composed moving pixels=1305
+10-17 20:11:13.910  8817  8833 I Danmaku577QA: comments after background return composed moving pixels=737
+10-17 20:11:16.953  8817  8833 I Danmaku575QA: visible pixels confirmed mango-upper
+10-17 20:11:21.967  8817  8833 I Danmaku575QA: visible pixels confirmed mango-lower
+10-17 20:11:24.998  8817  8833 I Danmaku575QA: visible pixels confirmed mango-bonus
+10-17 20:11:33.192  8817  8833 I Danmaku575QA: visible pixels confirmed youku-movie

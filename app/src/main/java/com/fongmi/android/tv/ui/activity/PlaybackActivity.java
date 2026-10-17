@@ -42,6 +42,7 @@ import com.fongmi.android.tv.player.PlayerManager;
 import com.fongmi.android.tv.player.danmaku.DanmakuDocumentCache;
 import com.fongmi.android.tv.player.danmaku.DanmakuHttp;
 import com.fongmi.android.tv.player.danmaku.DanmakuLoadPolicy;
+import com.fongmi.android.tv.player.danmaku.DanmakuPlaybackSync;
 import com.fongmi.android.tv.player.danmaku.DanmakuStatus;
 import com.fongmi.android.tv.player.danmaku.FilteringBiliParser;
 import com.fongmi.android.tv.player.media.PlaySpec;
@@ -71,6 +72,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     private boolean bound;
     private boolean stop;
     private boolean lock;
+    private DanmakuPlaybackSync danmakuPlaybackSync;
     private boolean danmakuSourceApplied;
     private Uri appliedDanmakuUri;
     private Uri resolvedDanmakuUri;
@@ -374,10 +376,12 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
 
     private void attachSurface() {
         if (mService != null && getPlayerView().getPlayer() == null) getPlayerView().setPlayer(player().getPlayer());
+        if (danmakuPlaybackSync != null) danmakuPlaybackSync.bind(getPlayerView().getPlayer());
         applyDanmaku();
     }
 
     private void detachSurface() {
+        if (danmakuPlaybackSync != null) danmakuPlaybackSync.bind(null);
         getPlayerView().setPlayer(null);
     }
 
@@ -389,6 +393,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
 
     private void configurePlayerView() {
         PlayerView playerView = getPlayerView();
+        danmakuPlaybackSync = new DanmakuPlaybackSync(playerView.getDanmakuView());
         playerView.setRender(PlayerSetting.getRender());
         // Repository advertising may arrive as an actual fixed-bottom XML comment rather than a
         // media-source label. Register the filtered parser before attaching any danmaku source.
@@ -404,11 +409,12 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
                 }
                 danmakuRetryCount = 0;
                 retryDanmakuUri = null;
-                player().notifyDanmakuStatus(DanmakuStatus.ready(itemCount));
                 // Loading and selecting a source are not the same as mounting its items in the
                 // current time window. An explicit refresh here makes the first comments visible
                 // after replay, surface recreation and automatic episode transitions.
                 playerView.setDanmakuSource(uri);
+                danmakuPlaybackSync.sync();
+                player().notifyDanmakuStatus(DanmakuStatus.ready(itemCount));
                 // Manual season selections already contain neighbouring episode URLs. Warm the
                 // next document only after the current one is visible so playback traffic wins.
                 if (mService != null && isOwner()) VodPlaybackMedia.prefetchNextDanmaku(player());
@@ -617,7 +623,10 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
 
         @Override
         public void onDanmakuEnabledChanged(boolean enabled) {
-            if (isOwner()) getPlayerView().setDanmakuEnabled(enabled);
+            if (isOwner()) {
+                getPlayerView().setDanmakuEnabled(enabled);
+                danmakuPlaybackSync.sync();
+            }
         }
 
         @Override
@@ -642,7 +651,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         view.setVisibility(View.VISIBLE);
         view.setAlpha(0f);
         view.animate().alpha(1f).setDuration(160).start();
-        if (status.stage() == DanmakuStatus.Stage.READY) App.post(hideDanmakuStatus, 2400);
+        if (status.stage() == DanmakuStatus.Stage.READY) App.post(hideDanmakuStatus, player().isDanmakuEnabled() ? 2400 : 8000);
         else if (status.stage() == DanmakuStatus.Stage.FAILED) App.post(hideDanmakuStatus, 8000);
     }
 
@@ -690,7 +699,8 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
             case DOWNLOADING -> status.progress() > 0
                     ? getString(R.string.danmaku_status_downloading_percent, status.progress())
                     : getString(R.string.danmaku_status_downloading);
-            case READY -> getString(R.string.danmaku_status_ready, status.itemCount());
+            case READY -> getString(player().isDanmakuEnabled()
+                    ? R.string.danmaku_status_ready : R.string.danmaku_status_ready_hidden, status.itemCount());
             case FAILED -> getString(R.string.danmaku_status_failed, switch (status.failure()) {
                 case DISABLED -> getString(R.string.danmaku_failure_disabled);
                 case NO_MATCH -> getString(R.string.danmaku_failure_no_match);
@@ -777,6 +787,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
 
     @Override
     protected void onDestroy() {
+        if (danmakuPlaybackSync != null) danmakuPlaybackSync.bind(null);
         App.removeCallbacks(retryDanmaku);
         App.removeCallbacks(hideDanmakuStatus);
         cancelDanmakuResolution();

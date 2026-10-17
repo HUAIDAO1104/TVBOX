@@ -256,6 +256,7 @@
     <string name="update_install_preparing">下載完成，正在準備系統安裝程式…</string>
     <string name="update_install_ready">下載完成，正在開啟系統安裝程式…</string>
     <string name="update_retry">重試</string>
+    <string name="update_checking_status">正在檢查新版本…</string>
     <string name="update_select_mirror">正在選擇最快的更新鏡像…</string>
     <string name="update_verifying">下載完成，正在驗證安裝包…</string>
     <string name="update_download_status"><xliff:g name="source">%1$s</xliff:g> · <xliff:g name="speed">%2$s</xliff:g>/秒 · <xliff:g name="downloaded">%3$s</xliff:g>/<xliff:g name="total">%4$s</xliff:g></string>
@@ -327,4 +328,10 @@
     <string name="danmaku_youku_direct">優酷 · 直連</string>
     <string name="danmaku_bilibili_direct">嗶哩嗶哩 · 直連</string>
     <string name="danmaku_gamer_direct">巴哈姆特 · 直連</string>
+    <string name="danmaku_status_ready_hidden">已載入 %1$d 條彈幕，顯示已關閉；請開啟播放器的彈幕開關</string>
+    <string name="danmaku_ai_scan">手機掃碼填寫</string>
+    <string name="danmaku_ai_scan_note">手機連接同一 Wi-Fi，掃碼後在瀏覽器開啟，填寫 API Key、介面位址及模型，無需另備伺服器。二維碼 10 分鐘有效，關閉視窗後失效。</string>
+    <string name="danmaku_ai_scan_refresh">重新整理二維碼</string>
+    <string name="danmaku_ai_scan_expired">二維碼已失效，請重新整理後掃碼。</string>
+    <string name="danmaku_ai_scan_saved">手機提交的設定已儲存，可在此測試連線。</string>
 </resources>

@@ -1,0 +1,16 @@
+{
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "target": "Android emulator TV via adb local port forward",
+  "emptyKeyValidation": true,
+  "errorFocus": "API Key",
+  "maskedType": "password",
+  "showHideToggle": true,
+  "keyboardSubmit": true,
+  "savedPageText": "已保存到电视。你可以关闭此页面，在电视上测试连接。",
+  "tvParentUpdated": true,
+  "credentials": "fictional fixture only",
+  "expiredSession": "verified with native endpoint test; browser reload after instrumentation ended encountered stopped server"
+}

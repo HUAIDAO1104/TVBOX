@@ -123,10 +123,12 @@ public class UpdateDialog extends BaseAlertDialog {
     private void applyState() {
         if (binding == null) return;
         binding.confirm.setVisibility(checking ? View.GONE : View.VISIBLE);
-        binding.cancel.setVisibility(checking || mandatory ? View.GONE : View.VISIBLE);
+        binding.cancel.setVisibility(mandatory ? View.GONE : View.VISIBLE);
         binding.status.setVisibility(checking ? View.VISIBLE : View.GONE);
-        if (checking) binding.status.setText(R.string.update_select_mirror);
-        if (getDialog() != null) getDialog().setCancelable(!mandatory && !checking);
+        if (checking) binding.status.setText(R.string.update_checking_status);
+        binding.cancel.setText(checking ? R.string.dialog_negative : R.string.update_later);
+        if (checking) binding.cancel.requestFocus();
+        if (getDialog() != null) getDialog().setCancelable(!mandatory);
     }
 
     private void onConfirm(View view) {

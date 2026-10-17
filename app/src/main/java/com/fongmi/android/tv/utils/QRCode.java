@@ -31,6 +31,18 @@ public class QRCode {
         }
     }
 
+    /** Conventional black/white QR for credentials pairing, with a full quiet zone. */
+    public static Bitmap getStandardBitmap(String content, int size) {
+        try {
+            BitMatrix matrix = encode(content, size, 4);
+            int width = matrix.getWidth(), height = matrix.getHeight();
+            int[] pixels = new int[width * height];
+            for (int y = 0; y < height; y++) for (int x = 0; x < width; x++)
+                pixels[y * width + x] = matrix.get(x, y) ? Color.BLACK : Color.WHITE;
+            return Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888);
+        } catch (Exception error) { return null; }
+    }
+
     private static BitMatrix encode(String content, int size, int margin) throws Exception {
         Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
         hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");

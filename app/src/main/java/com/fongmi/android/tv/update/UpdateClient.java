@@ -1,7 +1,6 @@
 package com.fongmi.android.tv.update;
 
 import com.fongmi.android.tv.App;
-import com.github.catvod.net.OkHttp;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -55,10 +54,10 @@ public final class UpdateClient {
     }
 
     private static UpdateManifest fetch(String url) throws IOException {
-        var client = OkHttp.client(SOURCE_TIMEOUT_MS).newBuilder()
+        var client = UpdateNetwork.client().newBuilder()
                 .callTimeout(SOURCE_TIMEOUT_MS, TimeUnit.MILLISECONDS)
                 .build();
-        try (Response response = OkHttp.newCall(client, url).execute()) {
+        try (Response response = client.newCall(new okhttp3.Request.Builder().url(url).build()).execute()) {
             ResponseBody body = response.body();
             if (!response.isSuccessful() || body == null) throw new IOException("HTTP " + response.code());
             return UpdateManifest.parse(App.gson(), body.string());

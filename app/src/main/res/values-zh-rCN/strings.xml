@@ -256,6 +256,7 @@
     <string name="update_install_preparing">下载完成，正在准备系统安装程序…</string>
     <string name="update_install_ready">下载完成，正在打开系统安装程序…</string>
     <string name="update_retry">重试</string>
+    <string name="update_checking_status">正在检查新版本…</string>
     <string name="update_select_mirror">正在选择最快的更新镜像…</string>
     <string name="update_verifying">下载完成，正在校验安装包…</string>
     <string name="update_download_status"><xliff:g name="source">%1$s</xliff:g> · <xliff:g name="speed">%2$s</xliff:g>/秒 · <xliff:g name="downloaded">%3$s</xliff:g>/<xliff:g name="total">%4$s</xliff:g></string>
@@ -339,4 +340,10 @@
     <string name="danmaku_youku_direct">优酷 · 直连</string>
     <string name="danmaku_bilibili_direct">哔哩哔哩 · 直连</string>
     <string name="danmaku_gamer_direct">巴哈姆特 · 直连</string>
+    <string name="danmaku_status_ready_hidden">已加载 %1$d 条弹幕，显示已关闭；请打开播放器的弹幕开关</string>
+    <string name="danmaku_ai_scan">手机扫码填写</string>
+    <string name="danmaku_ai_scan_note">手机连接同一 Wi-Fi，扫码后在浏览器打开，填写 API Key、接口地址和模型，无需另备服务器。二维码 10 分钟有效，关闭窗口后失效。</string>
+    <string name="danmaku_ai_scan_refresh">刷新二维码</string>
+    <string name="danmaku_ai_scan_expired">二维码已失效，请刷新后重新扫码。</string>
+    <string name="danmaku_ai_scan_saved">手机提交的配置已保存，可在此测试连接。</string>
 </resources>

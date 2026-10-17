@@ -71,14 +71,14 @@ public class UpdateDialog extends BaseAlertDialog {
         return builder().setTitle(title).setView(getBinding().getRoot())
                 .setPositiveButton(R.string.update_confirm, null)
                 .setNegativeButton(R.string.update_later, null)
-                .setCancelable(!mandatory && !checking);
+                .setCancelable(!mandatory);
     }
 
     @Override
     protected void initView() {
         binding.desc.setText(desc);
         binding.status.setVisibility(checking ? View.VISIBLE : View.GONE);
-        if (checking) binding.status.setText(R.string.update_select_mirror);
+        if (checking) binding.status.setText(R.string.update_checking_status);
     }
 
     @Override
@@ -135,11 +135,12 @@ public class UpdateDialog extends BaseAlertDialog {
         AlertDialog dialog = (AlertDialog) getDialog();
         if (dialog == null) return;
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setVisibility(checking ? View.GONE : View.VISIBLE);
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setVisibility(checking || mandatory ? View.GONE : View.VISIBLE);
-        dialog.setCancelable(!mandatory && !checking);
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setVisibility(mandatory ? View.GONE : View.VISIBLE);
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setText(checking ? R.string.dialog_negative : R.string.update_later);
+        dialog.setCancelable(!mandatory);
         if (binding != null) {
             binding.status.setVisibility(checking ? View.VISIBLE : View.GONE);
-            if (checking) binding.status.setText(R.string.update_select_mirror);
+            if (checking) binding.status.setText(R.string.update_checking_status);
         }
     }
 }

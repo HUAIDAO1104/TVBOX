@@ -13,11 +13,10 @@ public class UpdateSourceTest {
     public void putsDomesticMirrorsBeforeDirectGithub() {
         List<String> candidates = UpdateSource.manifestCandidates();
 
-        assertEquals(4, candidates.size());
-        assertTrue(candidates.get(0).startsWith("https://ghfast.top/"));
-        assertTrue(candidates.get(1).startsWith("https://gh-proxy.com/"));
-        assertTrue(candidates.get(2).startsWith("https://ghproxy.net/"));
-        assertEquals("https://github.com/HUAIDAO1104/TVBOX/releases/latest/download/latest.json", candidates.get(3));
+        assertEquals(6, candidates.size());
+        assertTrue(candidates.get(0).startsWith("https://v4.gh-proxy.org/"));
+        assertTrue(candidates.get(1).startsWith("https://axisnow.gh-proxy.org/"));
+        assertEquals("https://github.com/HUAIDAO1104/TVBOX/releases/latest/download/latest.json", candidates.get(5));
     }
 
     @Test
@@ -26,7 +25,7 @@ public class UpdateSourceTest {
         List<String> candidates = UpdateSource.mirrorFirst(github, List.of("https://download.example.com/app.apk", "https://download.example.com/app.apk"));
 
         assertEquals("https://download.example.com/app.apk", candidates.get(0));
-        assertEquals(5, candidates.size());
+        assertEquals(7, candidates.size());
         assertEquals(github, candidates.get(candidates.size() - 1));
     }
 }

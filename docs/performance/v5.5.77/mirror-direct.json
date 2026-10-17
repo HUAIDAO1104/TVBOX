@@ -1,0 +1,93 @@
+[
+  {
+    "url_effective": "https://v4.gh-proxy.org/https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.76/pianduoduo-mobile-arm64_v8a.apk",
+    "http_code": 206,
+    "time_starttransfer": 1.250051,
+    "time_total": 3.651206,
+    "speed_download": 1148744,
+    "size_download": 4194304,
+    "remote_ip": "162.159.130.234",
+    "url": "https://v4.gh-proxy.org/https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.76/pianduoduo-mobile-arm64_v8a.apk",
+    "exitCode": 0,
+    "matchingPrefix": true,
+    "error": ""
+  },
+  {
+    "url_effective": "https://cdn.gh-proxy.org/https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.76/pianduoduo-mobile-arm64_v8a.apk",
+    "http_code": 0,
+    "time_starttransfer": 0.0,
+    "time_total": 5.00396,
+    "speed_download": 0,
+    "size_download": 0,
+    "remote_ip": "146.75.47.52",
+    "url": "https://cdn.gh-proxy.org/https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.76/pianduoduo-mobile-arm64_v8a.apk",
+    "exitCode": 28,
+    "matchingPrefix": false,
+    "error": "curl: (28) SSL connection timeout"
+  },
+  {
+    "url_effective": "https://axisnow.gh-proxy.org/https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.76/pianduoduo-mobile-arm64_v8a.apk",
+    "http_code": 206,
+    "time_starttransfer": 1.052221,
+    "time_total": 2.783284,
+    "speed_download": 1506962,
+    "size_download": 4194304,
+    "remote_ip": "162.159.130.234",
+    "url": "https://axisnow.gh-proxy.org/https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.76/pianduoduo-mobile-arm64_v8a.apk",
+    "exitCode": 0,
+    "matchingPrefix": true,
+    "error": ""
+  },
+  {
+    "url_effective": "https://ghfast.top/https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.76/pianduoduo-mobile-arm64_v8a.apk",
+    "http_code": 206,
+    "time_starttransfer": 3.865782,
+    "time_total": 20.004334,
+    "speed_download": 174354,
+    "size_download": 3487848,
+    "remote_ip": "107.175.190.197",
+    "url": "https://ghfast.top/https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.76/pianduoduo-mobile-arm64_v8a.apk",
+    "exitCode": 28,
+    "matchingPrefix": true,
+    "error": "curl: (28) Operation timed out after 20004 milliseconds with 3487848 out of 4194304 bytes received"
+  },
+  {
+    "url_effective": "https://gh-proxy.com/https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.76/pianduoduo-mobile-arm64_v8a.apk",
+    "http_code": 206,
+    "time_starttransfer": 1.571373,
+    "time_total": 20.005804,
+    "speed_download": 51497,
+    "size_download": 1030244,
+    "remote_ip": "172.64.147.104",
+    "url": "https://gh-proxy.com/https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.76/pianduoduo-mobile-arm64_v8a.apk",
+    "exitCode": 28,
+    "matchingPrefix": true,
+    "error": "curl: (28) Operation timed out after 20005 milliseconds with 1030244 out of 4194304 bytes received"
+  },
+  {
+    "url_effective": "https://ghproxy.net/https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.76/pianduoduo-mobile-arm64_v8a.apk",
+    "http_code": 206,
+    "time_starttransfer": 1.399808,
+    "time_total": 20.004696,
+    "speed_download": 17785,
+    "size_download": 355784,
+    "remote_ip": "5.135.5.132",
+    "url": "https://ghproxy.net/https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.76/pianduoduo-mobile-arm64_v8a.apk",
+    "exitCode": 28,
+    "matchingPrefix": true,
+    "error": "curl: (28) Operation timed out after 20004 milliseconds with 355784 out of 4194304 bytes received"
+  },
+  {
+    "url_effective": "https://release-assets.githubusercontent.com/github-production-release-asset/1301108677/2dd6decb-9fc3-4ebd-bad8-c97eccaf6f8e",
+    "http_code": 206,
+    "time_starttransfer": 2.238907,
+    "time_total": 20.006869,
+    "speed_download": 100947,
+    "size_download": 2019647,
+    "remote_ip": "185.199.109.133",
+    "url": "https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.76/pianduoduo-mobile-arm64_v8a.apk",
+    "exitCode": 28,
+    "matchingPrefix": true,
+    "error": "curl: (28) Operation timed out after 18128 milliseconds with 2019647 out of 4194304 bytes received"
+  }
+]

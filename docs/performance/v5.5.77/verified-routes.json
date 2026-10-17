@@ -1,0 +1,24 @@
+[
+  {
+    "url": "https://v4.gh-proxy.org/https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.76/pianduoduo-leanback-arm64_v8a.apk",
+    "exitCode": 0,
+    "exactSha256": true,
+    "http_code": 200,
+    "time_starttransfer": 1.085814,
+    "time_total": 12.734114,
+    "speed_download": 3975289,
+    "size_download": 50621784,
+    "error": ""
+  },
+  {
+    "url": "https://axisnow.gh-proxy.org/https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.76/pianduoduo-leanback-arm64_v8a.apk",
+    "exitCode": 0,
+    "exactSha256": true,
+    "http_code": 200,
+    "time_starttransfer": 1.079886,
+    "time_total": 19.793218,
+    "speed_download": 2557531,
+    "size_download": 50621784,
+    "error": ""
+  }
+]

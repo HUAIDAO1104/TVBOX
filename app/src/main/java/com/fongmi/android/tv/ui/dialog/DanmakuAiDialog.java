@@ -37,6 +37,7 @@ public class DanmakuAiDialog extends BaseAlertDialog {
     }
 
     @Override protected void initView() {
+        if ("leanback".equals(BuildConfig.FLAVOR_mode)) binding.scan.requestFocus();
         binding.enabled.setChecked(DanmakuAiSetting.enabled());
         binding.baseUrl.setText(DanmakuAiSetting.baseUrl());
         binding.model.setText(DanmakuAiSetting.model());
@@ -59,6 +60,10 @@ public class DanmakuAiDialog extends BaseAlertDialog {
                         binding.getRoot().post(DanmakuAiDialog.this::showFocusedField);
                     }
                 });
+        getChildFragmentManager().setFragmentResultListener(RESULT, this, (key, result) -> {
+            binding.key.setText(""); initView(); binding.status.setText(R.string.danmaku_ai_scan_saved); changed();
+        });
+        binding.scan.setOnClickListener(v -> new DanmakuAiPairingDialog().show(getChildFragmentManager(), "ai_pairing"));
         binding.test.setOnClickListener(v -> submit(false));
         binding.clear.setOnClickListener(v -> {
             DanmakuAiMatcher.cancel(); DanmakuAiSetting.clear();
@@ -155,7 +160,7 @@ public class DanmakuAiDialog extends BaseAlertDialog {
 
     private void setBusy(boolean value) {
         busy = value;
-        binding.test.setEnabled(!value); binding.clear.setEnabled(!value);
+        binding.scan.setEnabled(!value); binding.test.setEnabled(!value); binding.clear.setEnabled(!value);
         binding.baseUrl.setEnabled(!value); binding.model.setEnabled(!value);
         binding.key.setEnabled(!value); binding.enabled.setEnabled(!value);
         ((AlertDialog) requireDialog()).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(!value);

@@ -181,7 +181,10 @@ public final class DanmakuDocumentCache {
                             complete(download, Uri.fromFile(target), null);
                         } catch (IOException error) { complete(download, null, error); }
                     }
-                    @Override public void onFailure(IOException error) { complete(download, null, error); }
+                    @Override public void onFailure(IOException error) {
+                        android.util.Log.w("DanmakuLoad", "Native document failed", error);
+                        complete(download, null, error);
+                    }
                 });
         download.nativeJob = job;
         if (download.cancelled) job.cancel();

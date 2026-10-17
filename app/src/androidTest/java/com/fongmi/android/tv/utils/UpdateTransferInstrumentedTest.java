@@ -44,7 +44,7 @@ public class UpdateTransferInstrumentedTest {
                 List<String> ranges = new ArrayList<>(); RecordedRequest request;
                 while ((request = fast.takeRequest(100, TimeUnit.MILLISECONDS)) != null) ranges.add(request.getHeader("Range"));
                 assertEquals(1, ranges.stream().filter(v -> v.startsWith("bytes=0-")).count());
-                assertTrue(ranges.toString(), ranges.stream().anyMatch(v -> v.startsWith("bytes=262144-")));
+                assertTrue(ranges.toString(), ranges.stream().anyMatch(v -> v.startsWith("bytes=32768-")));
                 System.out.println("UPDATE_FAST_RACE firstBytesMs=" + first.get() + " totalMs=" + (android.os.SystemClock.elapsedRealtime() - start));
             } finally { file.delete(); }
         }
@@ -128,13 +128,13 @@ public class UpdateTransferInstrumentedTest {
     }
     @Test public void livePublishedApkDownloadsWithItsExactDigest() throws Exception {
         org.junit.Assume.assumeTrue("true".equals(androidx.test.platform.app.InstrumentationRegistry.getArguments().getString("updateLive")));
-        String github = "https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.75/pianduoduo-mobile-arm64_v8a.apk";
-        var urls = List.of("https://ghfast.top/" + github, "https://gh-proxy.com/" + github, "https://ghproxy.net/" + github, github);
+        String github = "https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.76/pianduoduo-leanback-arm64_v8a.apk";
+        var urls = List.of("https://v4.gh-proxy.org/" + github, "https://axisnow.gh-proxy.org/" + github, "https://ghfast.top/" + github, "https://gh-proxy.com/" + github, "https://ghproxy.net/" + github, github);
         File file = file(); CountDownLatch done = new CountDownLatch(1); AtomicReference<String> error = new AtomicReference<>();
         AtomicLong first = new AtomicLong(); AtomicInteger updates = new AtomicInteger(); Set<String> sources = ConcurrentHashMap.newKeySet();
         long started = android.os.SystemClock.elapsedRealtime();
-        Download job = Download.create(urls, file).size(49365309L)
-                .sha256("cc16afa4d6737c156fdc9974a47c3ee29c41598659cb9f31c999b5f95c285b15").resume().fastestFirst().readTimeout(12000);
+        Download job = Download.create(urls, file).size(50621784L)
+                .sha256("eb8e1d8d00e317d94a3d00799643870c27b3b8cf2770a0729900d1491a644d8e").resume().fastestFirst().readTimeout(12000);
         job.start(new Download.Callback() {
             public void progress(int value) { updates.incrementAndGet(); }
             public void status(String source, long speed, long downloaded, long total) {
@@ -146,10 +146,57 @@ public class UpdateTransferInstrumentedTest {
         });
         try {
             assertTrue("Published APK timed out", done.await(120, TimeUnit.SECONDS));
-            assertNull(error.get()); assertEquals(49365309L, file.length()); assertTrue(updates.get() <= 101);
+            assertNull(error.get()); assertEquals(50621784L, file.length()); assertTrue(updates.get() <= 101);
             long elapsed = android.os.SystemClock.elapsedRealtime() - started;
-            android.util.Log.i("Performance576QA", "UPDATE_FULL_APK firstBytesMs=" + first.get() + " elapsedMs=" + elapsed
+            android.util.Log.i("Performance577QA", "UPDATE_FULL_APK firstBytesMs=" + first.get() + " elapsedMs=" + elapsed
                     + " KiBps=" + file.length() * 1000L / elapsed / 1024 + " sources=" + sources + " progressEvents=" + updates.get());
         } finally { job.cancel(); file.delete(); new File(file + ".sha256").delete(); }
     }
+    @Test public void updateStartsWhileAllMaintenanceWorkersAreBlocked() throws Exception {
+        CountDownLatch release = new CountDownLatch(1), done = new CountDownLatch(1);
+        List<Future<?>> blockers = new ArrayList<>(); AtomicReference<String> error = new AtomicReference<>();
+        for (int i = 0; i < 5; i++) blockers.add(Task.submit(() -> {
+            try { release.await(20, TimeUnit.SECONDS); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        }));
+        File file = file(); Download job = null;
+        try (var server = new MockWebServer()) {
+            // Existing cold-start work may already occupy workers; queued blockers saturate the rest.
+            Future<?> probe = Task.submit(() -> {});
+            try { probe.get(500, TimeUnit.MILLISECONDS); fail("Maintenance queue must be blocked"); }
+            catch (java.util.concurrent.TimeoutException expected) { }
+            finally { probe.cancel(true); }
+            server.setDispatcher(new okhttp3.mockwebserver.Dispatcher() { public MockResponse dispatch(RecordedRequest r) { return range(r); } });
+            server.start();
+            StringBuilder sha = new StringBuilder();
+            for (byte b : java.security.MessageDigest.getInstance("SHA-256").digest(data)) sha.append(String.format(java.util.Locale.ROOT, "%02x", b & 255));
+            job = Download.create(List.of(server.url("/apk").toString()),file).size(data.length).sha256(sha.toString()).fastestFirst().resume();
+            job.start(new Download.Callback() {
+                public void progress(int p) { }
+                public void error(String message) { error.set(message); done.countDown(); }
+                public void success(File f) { done.countDown(); }
+            });
+            assertTrue("An update must not wait behind cold-start work", done.await(5, TimeUnit.SECONDS));
+            assertNull(error.get()); assertArrayEquals(data, Files.readAllBytes(file.toPath()));
+        } finally {
+            release.countDown(); blockers.forEach(f -> f.cancel(true)); if (job != null) job.cancel();
+            file.delete(); new File(file + ".sha256").delete();
+        }
+    }
+
+    @Test public void fullLengthCorruptDownloadIsRestartedInsteadOfResumedPastEnd() throws Exception {
+        try (var server = new MockWebServer()) {
+            server.setDispatcher(new okhttp3.mockwebserver.Dispatcher() { public MockResponse dispatch(RecordedRequest r) { return range(r); } });
+            server.start(); File file = file();
+            StringBuilder sha = new StringBuilder();
+            for (byte b : java.security.MessageDigest.getInstance("SHA-256").digest(data)) sha.append(String.format(java.util.Locale.ROOT, "%02x", b & 255));
+            Files.write(file.toPath(), new byte[data.length]);
+            Files.writeString(new File(file + ".sha256").toPath(), sha.toString());
+            try {
+                Download.create(List.of(server.url("/apk").toString()),file).size(data.length).sha256(sha.toString()).fastestFirst().resume().get();
+                assertArrayEquals(data, Files.readAllBytes(file.toPath()));
+                assertEquals("bytes=0-32767", server.takeRequest().getHeader("Range"));
+            } finally { file.delete(); new File(file + ".sha256").delete(); }
+        }
+    }
+
 }

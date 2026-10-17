@@ -257,6 +257,7 @@
     <string name="update_install_preparing">Download complete. Preparing the system installer…</string>
     <string name="update_install_ready">Download complete. Opening the system installer…</string>
     <string name="update_retry">Retry</string>
+    <string name="update_checking_status">Checking for updates…</string>
     <string name="update_select_mirror">Selecting the fastest update mirror…</string>
     <string name="update_verifying">Download complete. Verifying the installation package…</string>
     <string name="update_download_status"><xliff:g name="source">%1$s</xliff:g> · <xliff:g name="speed">%2$s</xliff:g>/s · <xliff:g name="downloaded">%3$s</xliff:g>/<xliff:g name="total">%4$s</xliff:g></string>
@@ -350,4 +351,10 @@
     <string name="danmaku_youku_direct">Youku · Direct</string>
     <string name="danmaku_bilibili_direct">Bilibili · Direct</string>
     <string name="danmaku_gamer_direct">Bahamut · Direct</string>
+    <string name="danmaku_status_ready_hidden">%1$d comments loaded; display is off. Turn on the player’s danmaku switch.</string>
+    <string name="danmaku_ai_scan">Set up with phone</string>
+    <string name="danmaku_ai_scan_note">Connect your phone to the same Wi-Fi, scan this code and open it in a browser. Enter your API Key, endpoint and model. No separate server is needed. This code expires after 10 minutes or when this window closes.</string>
+    <string name="danmaku_ai_scan_refresh">Refresh code</string>
+    <string name="danmaku_ai_scan_expired">Code expired. Choose Refresh code to continue.</string>
+    <string name="danmaku_ai_scan_saved">Settings saved from phone. You can test the connection here.</string>
 </resources>

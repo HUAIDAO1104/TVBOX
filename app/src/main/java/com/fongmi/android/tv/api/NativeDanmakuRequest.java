@@ -12,7 +12,8 @@ import okhttp3.*;
 final class NativeDanmakuRequest implements NativeDanmaku.Job {
     static final ExecutorService SEARCH = Executors.newFixedThreadPool(3);
     static final ExecutorService DOCUMENTS = Executors.newFixedThreadPool(2);
-    private static final ExecutorService SEGMENTS = Executors.newFixedThreadPool(4);
+    private static final int SEGMENT_CONCURRENCY = 8;
+    private static final ExecutorService SEGMENTS = Executors.newFixedThreadPool(SEGMENT_CONCURRENCY);
     private static final ScheduledExecutorService TIMER = Executors.newSingleThreadScheduledExecutor();
     static final OkHttpClient CLIENT = new OkHttpClient.Builder().connectTimeout(5, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.SECONDS).callTimeout(12, TimeUnit.SECONDS).retryOnConnectionFailure(false).build();
@@ -68,11 +69,15 @@ final class NativeDanmakuRequest implements NativeDanmaku.Job {
     byte[] segments(int count, IntConsumer progress, Segment fetch) throws Exception {
         if (count < 1 || count > 360) throw new IOException("Invalid platform timeline");
         List<List<IqiyiDanmakuCodec.Comment>> values = new ArrayList<>(Collections.nCopies(count, null));
-        AtomicInteger next = new AtomicInteger(), done = new AtomicInteger(), chars = new AtomicInteger();
-        List<Future<?>> workers = new ArrayList<>(); int limit = Math.min(2000, 150_000 / count);
-        for (int i = 0; i < Math.min(count, 4); i++) workers.add(submit(SEGMENTS, () -> {
-            try {
-                for (int index; (index = next.getAndIncrement()) < count;) {
+        AtomicInteger chars = new AtomicInteger();
+        CompletionService<Void> completed = new ExecutorCompletionService<>(SEGMENTS);
+        int limit = Math.min(2000, 150_000 / count), scheduled = 0, done = 0;
+        while (done < count) {
+            // Queue one segment per task, so another document can share the bounded pool.
+            // Long-lived workers previously monopolised all four slots for an entire film.
+            while (scheduled < count && scheduled - done < SEGMENT_CONCURRENCY) {
+                final int index = scheduled++;
+                Future<?> worker = completed.submit(() -> {
                     check(); List<IqiyiDanmakuCodec.Comment> rows;
                     try { rows = fetch.get(index); }
                     catch (IOException first) {
@@ -85,11 +90,20 @@ final class NativeDanmakuRequest implements NativeDanmaku.Job {
                     for (int j = 0; j < size; j++) sampled.add(rows.get((int) ((long) j * rows.size() / size)));
                     for (var row : sampled) if (chars.addAndGet(row.text().length()) > 8_000_000) throw new IOException("Comments exceed text limit");
                     synchronized (values) { values.set(index, sampled); }
-                    if (!finished.get()) progress.accept(done.incrementAndGet() * 95 / count);
-                }
-            } catch (IOException e) { throw new java.io.UncheckedIOException(e); }
-        }));
-        for (Future<?> worker : workers) worker.get(remaining(), TimeUnit.MILLISECONDS);
+                    return null;
+                });
+                tasks.add(worker);
+                if (finished.get()) worker.cancel(true);
+            }
+            Future<Void> worker = completed.poll(remaining(), TimeUnit.MILLISECONDS);
+            if (worker == null) throw new java.net.SocketTimeoutException("Platform segments timed out");
+            try { worker.get(); }
+            catch (ExecutionException error) {
+                if (error.getCause() instanceof IOException io) throw io;
+                throw error;
+            } finally { tasks.remove(worker); }
+            check(); progress.accept(++done * 95 / count);
+        }
         check(); List<IqiyiDanmakuCodec.Comment> all = new ArrayList<>();
         Set<String> seen = new HashSet<>();
         for (var rows : values) for (var row : rows) if (seen.add(row.seconds() + "|" + row.color() + "|" + row.text())) all.add(row);

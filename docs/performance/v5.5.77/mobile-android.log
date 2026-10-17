@@ -1,0 +1,229 @@
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest:
+INSTRUMENTATION_STATUS: test=fullLengthCorruptDownloadIsRestartedInsteadOfResumedPastEnd
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=fullLengthCorruptDownloadIsRestartedInsteadOfResumedPastEnd
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=resumedBytesAndWrongRangesNeverCreateAHole
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=resumedBytesAndWrongRangesNeverCreateAHole
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=corruptedMirrorCannotCompleteEvenWithCorrectLength
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=corruptedMirrorCannotCompleteEvenWithCorrectLength
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=updateStartsWhileAllMaintenanceWorkersAreBlocked
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=updateStartsWhileAllMaintenanceWorkersAreBlocked
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=earlyBurstThenThirtyKilobytesSwitchesMirrorAndPreservesBytes
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=earlyBurstThenThirtyKilobytesSwitchesMirrorAndPreservesBytes
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=cancellationKeepsOnlyAValidPrefixAndHasNoCompletion
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=cancellationKeepsOnlyAValidPrefixAndHasNoCompletion
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=winningBytesAreReusedWithoutWaitingForSlowMirrors
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=winningBytesAreReusedWithoutWaitingForSlowMirrors
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=livePublishedApkDownloadsWithItsExactDigest
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=livePublishedApkDownloadsWithItsExactDigest
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=noRangeServerFallsBackToVerifiedSequentialDownload
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=noRangeServerFallsBackToVerifiedSequentialDownload
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.UpdateDialogInstrumentedTest
+INSTRUMENTATION_STATUS: current=10
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.ui.dialog.UpdateDialogInstrumentedTest:
+INSTRUMENTATION_STATUS: test=speedRetryAndSystemBackRemainUsable
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.UpdateDialogInstrumentedTest
+INSTRUMENTATION_STATUS: current=10
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=speedRetryAndSystemBackRemainUsable
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.UpdateDialogInstrumentedTest
+INSTRUMENTATION_STATUS: current=11
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=checkingShowsItsOwnStageAndCanBeCancelled
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.UpdateDialogInstrumentedTest
+INSTRUMENTATION_STATUS: current=11
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=checkingShowsItsOwnStageAndCanBeCancelled
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.player.DanmakuClockInstrumentedTest
+INSTRUMENTATION_STATUS: current=12
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.player.DanmakuClockInstrumentedTest:
+INSTRUMENTATION_STATUS: test=loadedWhileSuppressedStartsOnIsPlayingChange
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.player.DanmakuClockInstrumentedTest
+INSTRUMENTATION_STATUS: current=12
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=loadedWhileSuppressedStartsOnIsPlayingChange
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest
+INSTRUMENTATION_STATUS: current=13
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest:
+INSTRUMENTATION_STATUS: test=mangoAutomaticCommentsSurviveLongTimelineAndViewLifecycle
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest
+INSTRUMENTATION_STATUS: current=13
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=mangoAutomaticCommentsSurviveLongTimelineAndViewLifecycle
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest
+INSTRUMENTATION_STATUS: current=14
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=liveCommonPlatformsRenderActualPixelsOnBothFlavors
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest
+INSTRUMENTATION_STATUS: current=14
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=14
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: 间谍过家家 from bilibili - 第13话
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertFalse(Assert.java:65)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.liveCommonPlatformsRenderActualPixelsOnBothFlavors(PlatformPlaybackInstrumentedTest.java:60)
+
+INSTRUMENTATION_STATUS: stream=
+Error in liveCommonPlatformsRenderActualPixelsOnBothFlavors(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest):
+java.lang.AssertionError: 间谍过家家 from bilibili - 第13话
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertFalse(Assert.java:65)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.liveCommonPlatformsRenderActualPixelsOnBothFlavors(PlatformPlaybackInstrumentedTest.java:60)
+
+INSTRUMENTATION_STATUS: test=liveCommonPlatformsRenderActualPixelsOnBothFlavors
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_RESULT: stream=
+
+Time: 156.017
+There was 1 failure:
+1) liveCommonPlatformsRenderActualPixelsOnBothFlavors(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+java.lang.AssertionError: 间谍过家家 from bilibili - 第13话
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertFalse(Assert.java:65)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.liveCommonPlatformsRenderActualPixelsOnBothFlavors(PlatformPlaybackInstrumentedTest.java:60)
+
+FAILURES!!!
+Tests run: 14,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1

@@ -32,6 +32,7 @@ def main() -> None:
     parser.add_argument("--tag", default="", help="Immutable release tag; defaults to version name before suffix")
     parser.add_argument("--notes", default="稳定性与设备兼容性优化")
     parser.add_argument("--mandatory", action="store_true")
+    parser.add_argument("--mirror-prefix", action="append", help="HTTPS proxy prefix; repeat for multiple routes")
     parser.add_argument("--asset", action="append", type=parse_asset, required=True)
     parser.add_argument("--output", type=Path, default=Path("latest.json"))
     args = parser.parse_args()
@@ -40,6 +41,9 @@ def main() -> None:
     if not tag or any(char not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-" for char in tag):
         parser.error("Invalid release tag")
     root = f"https://github.com/{args.repo}/releases/download/{tag}"
+    mirrors = args.mirror_prefix or ["https://v4.gh-proxy.org/", "https://axisnow.gh-proxy.org/"]
+    if any(not prefix.startswith("https://") or not prefix.endswith("/") for prefix in mirrors):
+        parser.error("Mirror prefixes must be HTTPS URLs ending in /")
     apks = {}
     for key, apk in args.asset:
         apks[key] = {
@@ -47,6 +51,7 @@ def main() -> None:
             "url": f"{root}/{apk.name}",
             "sha256": sha256(apk),
             "size": apk.stat().st_size,
+            "mirrors": [prefix + root + "/" + apk.name for prefix in dict.fromkeys(mirrors)],
         }
 
     manifest = {

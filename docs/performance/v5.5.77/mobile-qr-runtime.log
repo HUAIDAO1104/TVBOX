@@ -1,0 +1,15 @@
+--------- beginning of main
+10-17 20:19:58.271 11475 11496 I Danmaku577QA: comments at 600000 composed moving pixels=131
+10-17 20:19:58.271 11475 11475 I Danmaku577QA: pixels position=602432 source=mango-danmaku://video/896231/24719651
+10-17 20:20:09.355 11475 11496 I Danmaku577QA: comments at 2400000 composed moving pixels=231
+10-17 20:20:09.368 11475 11475 I Danmaku577QA: pixels position=2411026 source=mango-danmaku://video/896231/24719651
+10-17 20:20:11.271 11475 11496 I Danmaku577QA: comments at 60000 composed moving pixels=524
+10-17 20:20:11.282 11475 11475 I Danmaku577QA: pixels position=61865 source=mango-danmaku://video/896231/24719651
+10-17 20:20:13.164 11475 11496 I Danmaku577QA: comments after pause/resume composed moving pixels=1882
+10-17 20:20:15.549 11475 11496 I Danmaku577QA: comments after fullscreen composed moving pixels=292
+10-17 20:20:18.765 11475 11496 I Danmaku577QA: comments after background return composed moving pixels=356
+10-17 20:20:23.185 11475 11496 I Danmaku575QA: visible pixels confirmed mango-upper
+10-17 20:20:27.815 11475 11496 I Danmaku575QA: visible pixels confirmed mango-lower
+10-17 20:20:30.586 11475 11496 I Danmaku575QA: visible pixels confirmed mango-bonus
+10-17 20:20:37.709 11475 11496 I Danmaku575QA: visible pixels confirmed youku-movie
+10-17 20:20:40.467 11475 11496 I Danmaku575QA: visible pixels confirmed bili-episode

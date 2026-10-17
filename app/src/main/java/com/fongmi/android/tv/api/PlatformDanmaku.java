@@ -43,7 +43,7 @@ public final class PlatformDanmaku {
             }}
             public List<Cookie> loadForRequest(HttpUrl url) { synchronized (cookies) { return cookies.stream().filter(c -> c.matches(url)).toList(); } }
         }).build();
-        var job = new NativeDanmakuRequest(45000, referer(link), client);
+        var job = new NativeDanmakuRequest(75000, referer(link), client);
         job.start(NativeDanmakuRequest.DOCUMENTS, () -> {
             Video video = resolve(link, job);
             if (video.source().equals("bilibili")) return job.segments((video.duration() + 359) / 360, progress,

@@ -160,7 +160,9 @@ public final class MangoDanmaku {
         return document(source, progress, callback, NativeDanmakuRequest.CLIENT);
     }
     static NativeDanmaku.Job document(String source, IntConsumer progress, IqiyiDanmaku.Callback<byte[]> callback, OkHttpClient client) {
-        var job = new NativeDanmakuRequest(45000, "https://www.mgtv.com/", client);
+        // A long variety episode contains hundreds of minute requests. Keep a finite budget
+        // below automatic matching's 90-second limit, with room for slower television links.
+        var job = new NativeDanmakuRequest(75000, "https://www.mgtv.com/", client);
         job.start(NativeDanmakuRequest.DOCUMENTS, () -> {
             String[] ids = ids(source); JsonObject info = obj(response(job.text(infoUrl(ids)), "code", "200"), "info");
             if (!ids[1].equals(str(info, "videoId")) || !ids[0].equals(str(info, "clipId"))) throw new IOException("Mango video identity mismatch");

@@ -1,0 +1,168 @@
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest:
+INSTRUMENTATION_STATUS: test=resumedBytesAndWrongRangesNeverCreateAHole
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=resumedBytesAndWrongRangesNeverCreateAHole
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=corruptedMirrorCannotCompleteEvenWithCorrectLength
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=corruptedMirrorCannotCompleteEvenWithCorrectLength
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=updateStartsWhileAllMaintenanceWorkersAreBlocked
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: Could not occupy maintenance workers
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest.updateStartsWhileAllMaintenanceWorkersAreBlocked(UpdateTransferInstrumentedTest.java:163)
+
+INSTRUMENTATION_STATUS: stream=
+Error in updateStartsWhileAllMaintenanceWorkersAreBlocked(com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest):
+java.lang.AssertionError: Could not occupy maintenance workers
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest.updateStartsWhileAllMaintenanceWorkersAreBlocked(UpdateTransferInstrumentedTest.java:163)
+
+INSTRUMENTATION_STATUS: test=updateStartsWhileAllMaintenanceWorkersAreBlocked
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=earlyBurstThenThirtyKilobytesSwitchesMirrorAndPreservesBytes
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=earlyBurstThenThirtyKilobytesSwitchesMirrorAndPreservesBytes
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=cancellationKeepsOnlyAValidPrefixAndHasNoCompletion
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=cancellationKeepsOnlyAValidPrefixAndHasNoCompletion
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=winningBytesAreReusedWithoutWaitingForSlowMirrors
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=winningBytesAreReusedWithoutWaitingForSlowMirrors
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=livePublishedApkDownloadsWithItsExactDigest
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=livePublishedApkDownloadsWithItsExactDigest
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=noRangeServerFallsBackToVerifiedSequentialDownload
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=noRangeServerFallsBackToVerifiedSequentialDownload
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.UpdateDialogInstrumentedTest
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.ui.dialog.UpdateDialogInstrumentedTest:
+INSTRUMENTATION_STATUS: test=speedRetryAndSystemBackRemainUsable
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.UpdateDialogInstrumentedTest
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=speedRetryAndSystemBackRemainUsable
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.UpdateDialogInstrumentedTest
+INSTRUMENTATION_STATUS: current=10
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=checkingShowsItsOwnStageAndCanBeCancelled
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.UpdateDialogInstrumentedTest
+INSTRUMENTATION_STATUS: current=10
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=checkingShowsItsOwnStageAndCanBeCancelled
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 28.682
+There was 1 failure:
+1) updateStartsWhileAllMaintenanceWorkersAreBlocked(com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest)
+java.lang.AssertionError: Could not occupy maintenance workers
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest.updateStartsWhileAllMaintenanceWorkersAreBlocked(UpdateTransferInstrumentedTest.java:163)
+
+FAILURES!!!
+Tests run: 10,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1

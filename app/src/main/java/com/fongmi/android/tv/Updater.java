@@ -9,6 +9,7 @@ import com.fongmi.android.tv.impl.UpdateListener;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.dialog.UpdateDialog;
 import com.fongmi.android.tv.update.UpdateClient;
+import com.fongmi.android.tv.update.UpdateExecutor;
 import com.fongmi.android.tv.update.UpdateInstallerActivity;
 import com.fongmi.android.tv.update.UpdateManifest;
 import com.fongmi.android.tv.update.UpdateSource;
@@ -16,7 +17,7 @@ import com.fongmi.android.tv.update.UpdateVerifier;
 import com.fongmi.android.tv.utils.Download;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
-import com.fongmi.android.tv.utils.Task;
+import java.util.concurrent.Future;
 import com.github.catvod.utils.Path;
 
 import java.io.File;
@@ -34,6 +35,7 @@ public class Updater implements Download.Callback, UpdateListener {
     private boolean mandatory;
     private boolean forced;
     private volatile int downloadGeneration;
+    private Future<?> checkTask;
 
     private Updater() {
     }
@@ -61,42 +63,48 @@ public class Updater implements Download.Callback, UpdateListener {
         Setting.putUpdateCheckTime(now);
         activityRef = new WeakReference<>(activity);
         if (forced) showChecking(activity);
-        Task.execute(this::doInBackground);
+        int generation = ++downloadGeneration;
+        checkTask = UpdateExecutor.submit(() -> doInBackground(generation));
     }
 
-    private void doInBackground() {
+    private void doInBackground(int generation) {
         try {
             UpdateManifest manifest = UpdateClient.fetch();
             if (manifest.versionCode() <= BuildConfig.VERSION_CODE) {
-                if (forced) App.post(() -> {
+                if (forced) postIfCurrent(generation, () -> {
                     dismiss();
                     Notify.show(R.string.update_latest);
                 });
                 return;
             }
+            if (generation != downloadGeneration) return;
             asset = manifest.assetFor(BuildConfig.FLAVOR_mode, BuildConfig.FLAVOR_abi);
             if (asset == null || asset.sha256().isEmpty()) {
-                if (forced) App.post(() -> {
+                if (forced) postIfCurrent(generation, () -> {
                     dismiss();
                     Notify.show(R.string.update_unsupported);
                 });
                 return;
             }
             mandatory = manifest.mandatory();
-            App.post(() -> show(manifest.versionName(), manifest.releaseNotes()));
+            postIfCurrent(generation, () -> show(manifest.versionName(), manifest.releaseNotes()));
         } catch (Exception e) {
             com.github.catvod.crawler.SpiderDebug.log(e);
-            if (forced) App.post(() -> {
+            if (forced) postIfCurrent(generation, () -> {
                 dismiss();
                 Notify.show(R.string.update_failed);
             });
         }
     }
 
+    private void postIfCurrent(int generation, Runnable action) {
+        App.post(() -> { if (generation == downloadGeneration) action.run(); });
+    }
+
     private void showChecking(FragmentActivity activity) {
         dialog = UpdateDialog.create()
                 .title(ResUtil.getString(R.string.update_check))
-                .desc(ResUtil.getString(R.string.update_select_mirror))
+                .desc(ResUtil.getString(R.string.update_checking_status))
                 .listener(this)
                 .checking()
                 .show(activity);
@@ -133,6 +141,7 @@ public class Updater implements Download.Callback, UpdateListener {
     @Override
     public void onCancel(View view) {
         downloadGeneration++;
+        if (checkTask != null) checkTask.cancel(true);
         if (download != null) download.cancel();
         Path.clear(getFile());
         Path.clear(new File(getFile().getAbsolutePath() + ".sha256"));
@@ -172,7 +181,7 @@ public class Updater implements Download.Callback, UpdateListener {
         // Signature inspection and hashing a 50 MB APK must not freeze the update dialog.
         if (dialog != null) dialog.setStatus(ResUtil.getString(R.string.update_verifying));
         int generation = downloadGeneration;
-        Task.execute(() -> verifyAndInstall(file, generation));
+        UpdateExecutor.submit(() -> verifyAndInstall(file, generation));
     }
 
     private void verifyAndInstall(File file, int generation) {

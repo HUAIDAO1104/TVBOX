@@ -119,7 +119,7 @@ public class Download {
 
     public void start(Callback callback) {
         this.callback = callback;
-        future = Task.submit(this::doInBackground);
+        future = isUpdate() ? com.fongmi.android.tv.update.UpdateExecutor.submit(this::doInBackground) : Task.submit(this::doInBackground);
     }
 
     public Download cancel() {
@@ -128,17 +128,21 @@ public class Download {
         if (active != null) active.cancel();
         if (future != null) future.cancel(true);
         OkHttp.cancel(tag);
+        if (isUpdate()) OkHttp.cancel(com.fongmi.android.tv.update.UpdateNetwork.client(), tag);
         future = null;
         return this;
     }
 
     private void doInBackground() {
         Exception last = null;
+        List<String> sequential = null;
         prepareResumeFile();
         if (isComplete()) {
             complete();
             return;
         }
+        // A full-length file with a failed digest is not a resumable prefix.
+        if (expectedSize > 0 && file.length() >= expectedSize) Path.clear(file);
         if (fastestFirst && expectedSize > 0 && sha256 != null && !sha256.isBlank()) {
             RangedDownload transfer = new RangedDownload(client());
             ranged = transfer;
@@ -150,13 +154,16 @@ public class Download {
                     if (isComplete()) { complete(); return; }
                     Path.clear(file);
                     last = new IOException("APK checksum mismatch");
-                }
-            } catch (IOException error) { last = error; }
+                } else sequential = transfer.sequentialUrls();
+            } catch (IOException error) {
+                reportError(error);
+                return;
+            }
             finally { transfer.cancel(); ranged = null; }
             if (cancelled || Thread.currentThread().isInterrupted()) return;
         }
         // The range race already selected/transferred real bytes; do not run a second probe.
-        List<String> candidates = fastestFirst && expectedSize <= 0 ? probeAndOrder() : new ArrayList<>(urls);
+        List<String> candidates = sequential != null ? sequential : fastestFirst && expectedSize <= 0 ? probeAndOrder() : new ArrayList<>(urls);
         for (String url : candidates) {
             if (cancelled || Thread.currentThread().isInterrupted()) return;
             try {
@@ -171,8 +178,11 @@ public class Download {
                 last = e;
             }
         }
+        reportError(last == null ? new IOException("No download source") : last);
+    }
+
+    private void reportError(Exception error) {
         if (cancelled || Thread.currentThread().isInterrupted()) return;
-        Exception error = last == null ? new IOException("No download source") : last;
         if (callback != null) App.post(() -> { if (!cancelled) callback.error(error.getMessage()); });
         else throw new RuntimeException(error.getMessage(), error);
     }
@@ -180,8 +190,9 @@ public class Download {
     private void download(String url) throws IOException {
         long existing = resume && file.isFile() ? file.length() : 0L;
         OkHttpClient client = client();
-        Request.Builder request = new Request.Builder().url(url).tag(tag);
+        Request.Builder request = new Request.Builder().url(url).tag(tag).header("Accept-Encoding", "identity");
         if (existing > 0L) request.header(HttpHeaders.RANGE, "bytes=" + existing + "-");
+        notifyStatus(url, 0L, existing, expectedSize);
         try (Response response = client.newCall(request.build()).execute()) {
             if (response.code() == 416) {
                 if (isComplete()) return;
@@ -201,8 +212,10 @@ public class Download {
         }
     }
 
+    private boolean isUpdate() { return fastestFirst && sha256 != null && !sha256.isBlank(); }
+
     private OkHttpClient client() {
-        OkHttpClient.Builder builder = OkHttp.client().newBuilder();
+        OkHttpClient.Builder builder = (isUpdate() ? com.fongmi.android.tv.update.UpdateNetwork.client() : OkHttp.client()).newBuilder();
         if (connectTimeout > 0L) builder.connectTimeout(connectTimeout, TimeUnit.MILLISECONDS);
         if (readTimeout > 0L) builder.readTimeout(readTimeout, TimeUnit.MILLISECONDS);
         return builder.build();
@@ -275,7 +288,7 @@ public class Download {
     private Probe probe(String url, int order) {
         long start = System.nanoTime();
         long bytes = 0L;
-        OkHttpClient client = OkHttp.client().newBuilder()
+        OkHttpClient client = client().newBuilder()
                 .connectTimeout(3_000L, TimeUnit.MILLISECONDS)
                 .readTimeout(5_000L, TimeUnit.MILLISECONDS)
                 .callTimeout(6_000L, TimeUnit.MILLISECONDS)

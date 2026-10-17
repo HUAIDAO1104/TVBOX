@@ -1,0 +1,92 @@
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.player.DanmakuClockInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.player.DanmakuClockInstrumentedTest:
+INSTRUMENTATION_STATUS: test=loadedWhileSuppressedStartsOnIsPlayingChange
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.player.DanmakuClockInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: Loaded comments must start when audio focus / playback suppression ends
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.fongmi.android.tv.player.DanmakuClockInstrumentedTest.lambda$loadedWhileSuppressedStartsOnIsPlayingChange$0(DanmakuClockInstrumentedTest.java:28)
+	at com.fongmi.android.tv.player.DanmakuClockInstrumentedTest$$ExternalSyntheticLambda3.run(D8$$SyntheticClass:0)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:524)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at android.app.Instrumentation$SyncRunnable.run(Instrumentation.java:2616)
+	at android.os.Handler.handleCallback(Handler.java:995)
+	at android.os.Handler.dispatchMessage(Handler.java:103)
+	at android.os.Looper.loopOnce(Looper.java:248)
+	at android.os.Looper.loop(Looper.java:338)
+	at android.app.ActivityThread.main(ActivityThread.java:9067)
+	at java.lang.reflect.Method.invoke(Native Method)
+	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:593)
+	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:932)
+
+INSTRUMENTATION_STATUS: stream=
+Error in loadedWhileSuppressedStartsOnIsPlayingChange(com.fongmi.android.tv.player.DanmakuClockInstrumentedTest):
+java.lang.AssertionError: Loaded comments must start when audio focus / playback suppression ends
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.fongmi.android.tv.player.DanmakuClockInstrumentedTest.lambda$loadedWhileSuppressedStartsOnIsPlayingChange$0(DanmakuClockInstrumentedTest.java:28)
+	at com.fongmi.android.tv.player.DanmakuClockInstrumentedTest$$ExternalSyntheticLambda3.run(D8$$SyntheticClass:0)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:524)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at android.app.Instrumentation$SyncRunnable.run(Instrumentation.java:2616)
+	at android.os.Handler.handleCallback(Handler.java:995)
+	at android.os.Handler.dispatchMessage(Handler.java:103)
+	at android.os.Looper.loopOnce(Looper.java:248)
+	at android.os.Looper.loop(Looper.java:338)
+	at android.app.ActivityThread.main(ActivityThread.java:9067)
+	at java.lang.reflect.Method.invoke(Native Method)
+	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:593)
+	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:932)
+
+INSTRUMENTATION_STATUS: test=loadedWhileSuppressedStartsOnIsPlayingChange
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest:
+INSTRUMENTATION_STATUS: test=mangoAutomaticCommentsSurviveLongTimelineAndViewLifecycle
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=mangoAutomaticCommentsSurviveLongTimelineAndViewLifecycle
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 17.978
+There was 1 failure:
+1) loadedWhileSuppressedStartsOnIsPlayingChange(com.fongmi.android.tv.player.DanmakuClockInstrumentedTest)
+java.lang.AssertionError: Loaded comments must start when audio focus / playback suppression ends
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.fongmi.android.tv.player.DanmakuClockInstrumentedTest.lambda$loadedWhileSuppressedStartsOnIsPlayingChange$0(DanmakuClockInstrumentedTest.java:28)
+	at com.fongmi.android.tv.player.DanmakuClockInstrumentedTest$$ExternalSyntheticLambda3.run(D8$$SyntheticClass:0)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:524)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at android.app.Instrumentation$SyncRunnable.run(Instrumentation.java:2616)
+	at android.os.Handler.handleCallback(Handler.java:995)
+	at android.os.Handler.dispatchMessage(Handler.java:103)
+	at android.os.Looper.loopOnce(Looper.java:248)
+	at android.os.Looper.loop(Looper.java:338)
+	at android.app.ActivityThread.main(ActivityThread.java:9067)
+	at java.lang.reflect.Method.invoke(Native Method)
+	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:593)
+	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:932)
+
+FAILURES!!!
+Tests run: 2,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1

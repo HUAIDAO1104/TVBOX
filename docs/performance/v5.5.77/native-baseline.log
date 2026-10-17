@@ -1,0 +1,124 @@
+> Task :app:preBuild UP-TO-DATE
+> Task :catvod:preBuild UP-TO-DATE
+> Task :quickjs:preBuild UP-TO-DATE
+> Task :chaquo:preBuild UP-TO-DATE
+> Task :quickjs:preDebugBuild UP-TO-DATE
+> Task :catvod:preDebugBuild UP-TO-DATE
+> Task :app:preLeanbackArm64_v8aDebugBuild UP-TO-DATE
+> Task :chaquo:preArm64_v8aDebugBuild UP-TO-DATE
+> Task :catvod:generateDebugResources UP-TO-DATE
+> Task :quickjs:generateDebugResources UP-TO-DATE
+> Task :chaquo:generateArm64_v8aDebugResources UP-TO-DATE
+> Task :catvod:packageDebugResources UP-TO-DATE
+> Task :chaquo:packageArm64_v8aDebugResources UP-TO-DATE
+> Task :quickjs:packageDebugResources UP-TO-DATE
+> Task :chaquo:processArm64_v8aDebugNavigationResources UP-TO-DATE
+> Task :quickjs:processDebugNavigationResources UP-TO-DATE
+> Task :catvod:processDebugNavigationResources UP-TO-DATE
+> Task :catvod:parseDebugLocalResources UP-TO-DATE
+> Task :chaquo:parseArm64_v8aDebugLocalResources UP-TO-DATE
+> Task :quickjs:parseDebugLocalResources UP-TO-DATE
+> Task :catvod:generateDebugRFile UP-TO-DATE
+> Task :quickjs:generateDebugRFile UP-TO-DATE
+> Task :chaquo:generateArm64_v8aDebugRFile UP-TO-DATE
+> Task :quickjs:javaPreCompileDebug UP-TO-DATE
+> Task :chaquo:extractArm64_v8aDebugPythonBuildPackages UP-TO-DATE
+> Task :catvod:compileDebugKotlin NO-SOURCE
+> Task :catvod:javaPreCompileDebug UP-TO-DATE
+> Task :chaquo:installArm64_v8aDebugPythonRequirements UP-TO-DATE
+> Task :quickjs:writeDebugAarMetadata UP-TO-DATE
+> Task :chaquo:mergeArm64_v8aDebugPythonSources UP-TO-DATE
+> Task :chaquo:generateArm64_v8aDebugPythonProxies UP-TO-DATE
+> Task :quickjs:extractDeepLinksDebug UP-TO-DATE
+> Task :chaquo:javaPreCompileArm64_v8aDebug UP-TO-DATE
+> Task :quickjs:processDebugManifest UP-TO-DATE
+> Task :chaquo:writeArm64_v8aDebugAarMetadata UP-TO-DATE
+> Task :quickjs:mapDebugSourceSetPaths UP-TO-DATE
+> Task :chaquo:extractDeepLinksArm64_v8aDebug UP-TO-DATE
+> Task :chaquo:processArm64_v8aDebugManifest UP-TO-DATE
+> Task :quickjs:compileDebugLibraryResources UP-TO-DATE
+> Task :chaquo:mapArm64_v8aDebugSourceSetPaths UP-TO-DATE
+> Task :chaquo:compileArm64_v8aDebugLibraryResources UP-TO-DATE
+> Task :catvod:compileDebugJavaWithJavac UP-TO-DATE
+> Task :catvod:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :quickjs:compileDebugKotlin NO-SOURCE
+> Task :catvod:writeDebugAarMetadata UP-TO-DATE
+> Task :catvod:extractDeepLinksDebug UP-TO-DATE
+> Task :chaquo:compileArm64_v8aDebugKotlin NO-SOURCE
+> Task :catvod:processDebugManifest UP-TO-DATE
+> Task :catvod:mapDebugSourceSetPaths UP-TO-DATE
+> Task :catvod:compileDebugLibraryResources UP-TO-DATE
+> Task :quickjs:compileDebugJavaWithJavac UP-TO-DATE
+> Task :quickjs:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :catvod:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :catvod:processDebugJavaRes NO-SOURCE
+> Task :quickjs:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :quickjs:processDebugJavaRes NO-SOURCE
+> Task :chaquo:compileArm64_v8aDebugJavaWithJavac UP-TO-DATE
+> Task :chaquo:bundleLibCompileToJarArm64_v8aDebug UP-TO-DATE
+> Task :chaquo:bundleLibRuntimeToJarArm64_v8aDebug UP-TO-DATE
+> Task :chaquo:processArm64_v8aDebugJavaRes NO-SOURCE
+> Task :app:dataBindingMergeDependencyArtifactsLeanbackArm64_v8aDebug UP-TO-DATE
+> Task :app:generateLeanbackArm64_v8aDebugResources UP-TO-DATE
+> Task :app:mergeLeanbackArm64_v8aDebugResources UP-TO-DATE
+> Task :app:packageLeanbackArm64_v8aDebugResources UP-TO-DATE
+> Task :app:processLeanbackArm64_v8aDebugNavigationResources UP-TO-DATE
+> Task :app:parseLeanbackArm64_v8aDebugLocalResources UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesLeanbackArm64_v8aDebug UP-TO-DATE
+> Task :app:generateLeanbackArm64_v8aDebugBuildConfig UP-TO-DATE
+> Task :app:generateLeanbackArm64_v8aDebugRFile UP-TO-DATE
+> Task :app:compileLeanbackArm64_v8aDebugKotlin NO-SOURCE
+> Task :app:javaPreCompileLeanbackArm64_v8aDebug UP-TO-DATE
+
+> Task :app:compileLeanbackArm64_v8aDebugJavaWithJavac
+注: [1] Wrote GeneratedAppGlideModule with: [com.bumptech.glide.integration.okhttp3.OkHttpLibraryGlideModule, com.bumptech.glide.integration.avif.AvifGlideModule]
+
+> Task :app:checkLeanbackArm64_v8aDebugAarMetadata UP-TO-DATE
+> Task :app:mapLeanbackArm64_v8aDebugSourceSetPaths UP-TO-DATE
+> Task :app:compileLeanbackArm64_v8aDebugNavigationResources UP-TO-DATE
+> Task :app:createLeanbackArm64_v8aDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksLeanbackArm64_v8aDebug UP-TO-DATE
+> Task :app:processLeanbackArm64_v8aDebugMainManifest UP-TO-DATE
+> Task :app:processLeanbackArm64_v8aDebugManifest UP-TO-DATE
+> Task :app:processLeanbackArm64_v8aDebugManifestForPackage UP-TO-DATE
+> Task :app:processLeanbackArm64_v8aDebugResources UP-TO-DATE
+> Task :app:preLeanbackArm64_v8aDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileLeanbackArm64_v8aDebugUnitTest UP-TO-DATE
+> Task :app:processLeanbackArm64_v8aDebugJavaRes UP-TO-DATE
+> Task :app:bundleLeanbackArm64_v8aDebugClassesToRuntimeJar
+> Task :app:bundleLeanbackArm64_v8aDebugClassesToCompileJar
+> Task :app:compileLeanbackArm64_v8aDebugUnitTestKotlin NO-SOURCE
+> Task :app:compileLeanbackArm64_v8aDebugUnitTestJavaWithJavac UP-TO-DATE
+> Task :app:processLeanbackArm64_v8aDebugUnitTestJavaRes UP-TO-DATE
+
+> Task :app:testLeanbackArm64_v8aDebugUnitTest
+
+NativeDanmakuRequestTest > failedSegmentDoesNotWaitBehindSlowEarlierWorker FAILED
+    java.lang.AssertionError at NativeDanmakuRequestTest.java:54
+
+NativeDanmakuRequestTest > longVarietyOnHighLatencyLinkFinishesBeforeOldDeadline FAILED
+    java.lang.AssertionError at NativeDanmakuRequestTest.java:35
+
+2 tests completed, 2 failed
+
+> Task :app:testLeanbackArm64_v8aDebugUnitTest FAILED
+
+[Incubating] Problems report is available at: file:///Users/liudongji/Documents/tv%20design/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:testLeanbackArm64_v8aDebugUnitTest'.
+> There were failing tests. See the report at: file:///Users/liudongji/Documents/tv%20design/app/build/reports/tests/testLeanbackArm64_v8aDebugUnitTest/index.html
+
+* Try:
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.6.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 44s
+73 actionable tasks: 4 executed, 69 up-to-date
