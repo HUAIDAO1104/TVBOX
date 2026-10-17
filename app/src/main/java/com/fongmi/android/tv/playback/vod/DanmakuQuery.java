@@ -108,21 +108,15 @@ public final class DanmakuQuery {
         String primary = text.isEmpty() ? raw : text;
         Set<String> ordered = new LinkedHashSet<>();
         add(ordered, primary);
-        // A glued year is ambiguous for real titles such as "请回答1988". Only split it when the
-        // original provider label also carried an aggregate episode-count suffix, which is
-        // explicit metadata evidence, and retain the year as a strict edition constraint.
+        // Keep a numeric title exact first. A second lookup is exploratory only: its
+        // results must carry the suffix year before they can represent this edition.
         Matcher bareYear = TRAILING_BARE_YEAR.matcher(primary);
-        if (hadAggregateEpisodeCount && bareYear.matches()
-                && bareYear.group(1).trim().codePointCount(0, bareYear.group(1).trim().length()) >= 4) {
-            if (year.isEmpty()) year = bareYear.group(2);
-            add(ordered, bareYear.group(1).trim());
-        }
-        // A known catalogue year may disambiguate a glued suffix without treating real title
-        // numbers such as 请回答1988 as metadata. Keep the original exact title first.
-        String suppliedYear = extractYear(metadataYear);
-        if (!suppliedYear.isEmpty() && primary.endsWith(suppliedYear)
-                && primary.length() - suppliedYear.length() >= 2) {
-            add(ordered, primary.substring(0, primary.length() - suppliedYear.length()));
+        if (bareYear.matches() && bareYear.group(1).trim().length() >= 2) {
+            String suppliedYear = extractYear(metadataYear);
+            if (suppliedYear.isEmpty() || suppliedYear.equals(bareYear.group(2))) {
+                add(ordered, bareYear.group(1).trim());
+                if (hadAggregateEpisodeCount && year.isEmpty()) year = bareYear.group(2);
+            }
         }
         // Year/type are validated against result metadata. Never add them (or the original
         // noisy label) back into a cleaned query: doing so creates avoidable empty requests.

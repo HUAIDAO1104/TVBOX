@@ -39,6 +39,11 @@ public class DanmakuAiDialog extends BaseAlertDialog {
     @Override protected void initView() {
         if ("leanback".equals(BuildConfig.FLAVOR_mode)) binding.scan.requestFocus();
         binding.enabled.setChecked(DanmakuAiSetting.enabled());
+        binding.keyLayout.setPlaceholderText(DanmakuAiSetting.hasKey() ? getString(R.string.danmaku_ai_key_stored_placeholder) : null);
+        binding.keyLayout.setExpandedHintEnabled(!DanmakuAiSetting.hasKey());
+        binding.status.setText(DanmakuAiSetting.hasKey()
+                ? DanmakuAiSetting.enabled() ? R.string.danmaku_ai_saved_enabled : R.string.danmaku_ai_saved_disabled
+                : R.string.danmaku_ai_key_hint);
         binding.baseUrl.setText(DanmakuAiSetting.baseUrl());
         binding.model.setText(DanmakuAiSetting.model());
         binding.keyLayout.setHelperText(getString(DanmakuAiSetting.hasKey()

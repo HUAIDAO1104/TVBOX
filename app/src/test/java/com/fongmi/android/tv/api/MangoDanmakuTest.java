@@ -46,4 +46,26 @@ public class MangoDanmakuTest {
         for (String url : List.of("https://mgtv.com.evil.test/b/896231/24567586.html", "https://v.youku.com@evil.test/v_show/id_XNTkxNDY2Nzg2MA==.html",
                 "https://www.bilibili.com/video/../../secret", "https://localhost/b/123/45678.html")) assertFalse(url, NativeDanmaku.supports(url));
     }
+    @Test public void automaticTargetDoesNotWaitForUnneededHistoricalMonths() throws Exception {
+        var requests = new java.util.concurrent.atomic.AtomicInteger();
+        String search = fixture("mgtv-search-signed"), page = fixture("mgtv-master");
+        var client = new okhttp3.OkHttpClient.Builder().addInterceptor(chain -> {
+            int count = requests.incrementAndGet();
+            if (count > 2) throw new java.io.IOException("Historical page unavailable");
+            String data = chain.request().url().host().startsWith("mobileso") ? search : page;
+            return new okhttp3.Response.Builder().request(chain.request()).protocol(okhttp3.Protocol.HTTP_1_1)
+                    .code(200).message("OK").body(okhttp3.ResponseBody.create(data, okhttp3.MediaType.get("application/json"))).build();
+        }).build();
+        var done = new java.util.concurrent.CountDownLatch(1);
+        var result = new java.util.concurrent.atomic.AtomicReference<List<Danmaku>>();
+        var job = MangoDanmaku.search("披荆斩棘2026", "2026", "综艺", "第1期上", new IqiyiDanmaku.Callback<List<Danmaku>>() {
+            public void onSuccess(List<Danmaku> rows) { result.set(rows); done.countDown(); }
+            public void onFailure(java.io.IOException e) { done.countDown(); }
+        }, client);
+        try {
+            assertTrue(done.await(4, java.util.concurrent.TimeUnit.SECONDS)); assertNotNull(result.get());
+            assertNotNull(DanmakuMatch.best("披荆斩棘2026", "2026", "综艺", "第1期上", result.get(), Danmaku::getMatchName));
+            assertEquals(2, requests.get());
+        } finally { job.cancel(); }
+    }
 }

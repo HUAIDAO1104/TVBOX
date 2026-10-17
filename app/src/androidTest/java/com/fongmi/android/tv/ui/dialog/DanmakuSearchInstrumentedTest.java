@@ -66,6 +66,7 @@ public class DanmakuSearchInstrumentedTest {
                 }
                 if (status != 0) return new MockResponse().setResponseCode(status).setBody("denied");
                 String name = request.getRequestUrl().queryParameter("name");
+                if ("弹幕年份回归片2026".equals(name)) return new MockResponse().setBody("[]");
                 if ("弹幕备选回归片".equals(name)) return new MockResponse().setBody(App.gson().toJson(
                         java.util.stream.IntStream.range(0, 5).mapToObj(i -> item(name + "(2026)【电影】from fixture - 正片",
                                 i < 4 ? "bad" + i : "fifth")).toList()));
@@ -202,6 +203,19 @@ public class DanmakuSearchInstrumentedTest {
             assertTrue(DanmakuSetting.isShow());
             assertTrue(statusEvents.stream().noneMatch(s -> s.stage() == com.fongmi.android.tv.player.danmaku.DanmakuStatus.Stage.FAILED));
         } finally { DanmakuSetting.putAuto(auto); DanmakuSetting.putShow(show); }
+    }
+
+    @Test public void manualYearSuffixShowsAndLoadsConfirmedEdition() throws Exception {
+        openPanel("弹幕年份回归片2026", "第1期上");
+        var adapter = (com.fongmi.android.tv.ui.adapter.DanmakuAdapter) binding.recycler.getAdapter();
+        await(() -> indexOf(adapter, "弹幕年份回归片(2026)【综艺】") >= 0, 8000);
+        clickRow(indexOf(adapter, "弹幕年份回归片(2026)【综艺】"));
+        await(() -> adapter.getItemCount() == 3, 5000);
+        int lower = -1;
+        for (int i = 0; i < adapter.getItemCount(); i++) if (adapter.getItem(i).getUrl().contains("/lower?")) lower = i;
+        assertTrue(lower >= 0); clickRow(lower);
+        await(() -> player.getSelectedDanmaku() != null && player.getSelectedDanmaku().getUrl().contains("/lower?"), 5000);
+        assertEquals(2, parse(player.getSelectedDanmaku()));
     }
 
     @Test public void aiKeyAndRecommendedModelAreReachableFromPlaybackSearch() throws Exception {

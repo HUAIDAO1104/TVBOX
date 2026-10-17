@@ -250,4 +250,19 @@ public class DanmakuMatchTest {
         assertEquals(null, DanmakuMatch.bestPreferred(
                 selected, "2024", "国产动画年番", "101", response, item -> item));
     }
+    @org.junit.Test public void yearSuffixNeedsIndependentEditionEvidence() {
+        for (String title : java.util.List.of("披荆斩棘", "再见爱人", "歌手")) {
+            org.junit.Assert.assertTrue(DanmakuMatch.isReliable(title + "2026", "第10期上", title + "(2026)【综艺】from fixture - 第10期上"));
+            org.junit.Assert.assertFalse(DanmakuMatch.isReliable(title + "2026", "第10期上", title + "(2025)【综艺】from fixture - 第10期上"));
+            org.junit.Assert.assertFalse(DanmakuMatch.isReliable(title + "2026", "第10期上", title + "【综艺】from fixture - 第10期上"));
+            org.junit.Assert.assertFalse(DanmakuMatch.isReliable(title + "2026", "第10期上", title + "(2026)【综艺】from fixture - 第10期下"));
+            org.junit.Assert.assertFalse(DanmakuMatch.isReliable(title + "2026", "第10期上", title + "(2026)【综艺】from fixture - 第10期加更"));
+        }
+        org.junit.Assert.assertFalse(DanmakuMatch.isReliable("请回答1988", "第1集", "请回答(2015)【电视剧】from fixture - 第1集"));
+        org.junit.Assert.assertTrue(DanmakuMatch.isReliable("请回答1988", "第1集", "请回答1988(2015)【电视剧】from fixture - 第1集"));
+        org.junit.Assert.assertTrue(DanmakuMatch.isReliable("披荆斩棘2026", "第10期上", "披荆斩棘第六季(2026)【综艺】from fixture - 第10期上"));
+        org.junit.Assert.assertNull(DanmakuMatch.best("披荆斩棘2026", "", "综艺", "第10期上", java.util.List.of(
+                "披荆斩棘第六季(2026)【综艺】from fixture - 第10期上",
+                "披荆斩棘第七季(2026)【综艺】from fixture - 第10期上"), value -> value));
+    }
 }

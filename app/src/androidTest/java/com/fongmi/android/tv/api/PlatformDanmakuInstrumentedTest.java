@@ -92,4 +92,21 @@ public class PlatformDanmakuInstrumentedTest {
             }, client(server)); assertNotNull(server.takeRequest(3, TimeUnit.SECONDS)); job.cancel(); Thread.sleep(2200); assertEquals(0, count.get());
         }
     }
+    @Test public void automaticBareYearFindsEpisodeTen() throws Exception {
+        live();
+        var done = new java.util.concurrent.CountDownLatch(1);
+        var found = new java.util.concurrent.atomic.AtomicReference<Danmaku>();
+        var failure = new java.util.concurrent.atomic.AtomicReference<DanmakuApi.SearchFailure>();
+        long start = android.os.SystemClock.elapsedRealtime();
+        DanmakuApi.searchDetailed("披荆斩棘2026", "", "综艺", "第十期上", new DanmakuApi.SearchCallback() {
+            public void onFound(Danmaku item, List<Danmaku> rows) { found.set(item); done.countDown(); }
+            public void onFailure(DanmakuApi.SearchFailure error) { failure.set(error); done.countDown(); }
+        });
+        try {
+            assertTrue(done.await(95, java.util.concurrent.TimeUnit.SECONDS));
+            android.util.Log.i("Danmaku578QA", "automatic elapsed=" + (android.os.SystemClock.elapsedRealtime()-start) + " failure=" + failure.get());
+            assertNotNull("failure=" + failure.get(), found.get());
+            assertTrue(found.get().getUrl(), found.get().getUrl().endsWith("/24719651"));
+        } finally { DanmakuApi.cancel(); }
+    }
 }

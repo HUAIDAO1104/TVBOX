@@ -346,4 +346,7 @@
     <string name="danmaku_ai_scan_refresh">刷新二维码</string>
     <string name="danmaku_ai_scan_expired">二维码已失效，请刷新后重新扫码。</string>
     <string name="danmaku_ai_scan_saved">手机提交的配置已保存，可在此测试连接。</string>
+    <string name="danmaku_ai_key_stored_placeholder">已保存 · 留空保留</string>
+    <string name="danmaku_ai_saved_enabled">密钥已保存 · AI 辅助匹配已启用</string>
+    <string name="danmaku_ai_saved_disabled">密钥已保存 · AI 辅助匹配未启用</string>
 </resources>

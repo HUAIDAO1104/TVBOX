@@ -11,6 +11,7 @@ import androidx.annotation.NonNull;
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.DanmakuApi;
+import com.fongmi.android.tv.api.DanmakuCatalogueSearch;
 import com.fongmi.android.tv.api.IqiyiDanmaku;
 import com.fongmi.android.tv.api.NativeDanmaku;
 import com.fongmi.android.tv.bean.Danmaku;
@@ -165,54 +166,28 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         Util.hideKeyboard(binding.keyword);
         String metadataEpisode = player.getMetadata().artist == null ? "" : player.getMetadata().artist.toString().trim();
         searchEpisode = matchContext.getEpisode().isEmpty() ? metadataEpisode : matchContext.getEpisode();
-        List<String> apiUrls = DanmakuSetting.getSearchApiUrls();
-        if (!NativeDanmaku.supports(searchTitle)) calls.addAll(DanmakuApi.newCalls(keyword, searchEpisode));
-        List<String> nativeSources = NativeDanmaku.sources(searchTitle);
-        pending = calls.size() + nativeSources.size();
+        DanmakuApi.cancel();
+        DanmakuQuery query = DanmakuQuery.from(keyword, searchYear);
+        List<String> sources = new ArrayList<>(NativeDanmaku.sources(searchTitle));
+        if (!NativeDanmaku.supports(searchTitle)) sources.addAll(DanmakuSetting.getSearchApiUrls());
+        pending = sources.size();
         failed = denied = invalid = 0;
         binding.providerStatus.setText(ResUtil.getString(R.string.danmaku_search_running, pending));
-        for (String source : nativeSources) nativeSearches.add(NativeDanmaku.search(source, searchTitle, new IqiyiDanmaku.Callback<List<Danmaku>>() {
-            @Override public void onSuccess(List<Danmaku> items) {
-                App.post(() -> merge(id, items, source, items, 0));
-            }
-            @Override public void onFailure(IOException error) {
-                App.post(() -> merge(id, List.of(), source, List.of(), 1));
-            }
-        }));
-        for (int index = 0; index < calls.size(); index++) {
-            String sourceKey = index < apiUrls.size()
-                    ? DanmakuManualMatchStore.sourceKey(apiUrls.get(index)) : "";
-            calls.get(index).enqueue(callback(
-                    id, searchTitle, searchYear, searchType, searchEpisode, sourceKey));
-        }
-    }
-
-    private Callback callback(int id, String title, String year, String type, String episode,
-                              String sourceKey) {
-        return new Callback() {
-            @Override
-            public void onResponse(@NonNull Call call, @NonNull Response response) {
-                List<Danmaku> items = new ArrayList<>();
-                int failure = 0;
-                try (Response closeable = response) {
-                    if (!closeable.isSuccessful()) failure = closeable.code() == 401 || closeable.code() == 403 ? 2 : 1;
-                    else if (closeable.body() == null) failure = 3;
-                    else items = Danmaku.arrayFrom(closeable.body().string());
+        for (String source : sources) {
+            String sourceKey = NativeDanmaku.isSource(source) ? source : DanmakuManualMatchStore.sourceKey(source);
+            nativeSearches.add(DanmakuCatalogueSearch.search(source, query, searchYear, searchType, searchEpisode,
+                    false, new IqiyiDanmaku.Callback<List<Danmaku>>() {
+                @Override public void onSuccess(List<Danmaku> items) {
                     for (Danmaku item : items) item.setSourceKey(sourceKey);
-                } catch (Exception ignored) {
-                    failure = 3;
+                    App.post(() -> merge(id, items, sourceKey, items, 0));
                 }
-                int outcome = failure;
-                List<Danmaku> catalogue = items;
-                App.post(() -> merge(id, catalogue, sourceKey, catalogue, outcome));
-            }
-
-            @Override
-            public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                App.post(() -> merge(id, Collections.emptyList(), sourceKey,
-                        Collections.emptyList(), 1));
-            }
-        };
+                @Override public void onFailure(IOException error) {
+                    int failure = error instanceof DanmakuCatalogueSearch.HttpFailure http && (http.code == 401 || http.code == 403) ? 2
+                            : error instanceof DanmakuCatalogueSearch.InvalidResponse ? 3 : 1;
+                    App.post(() -> merge(id, List.of(), sourceKey, List.of(), failure));
+                }
+            }));
+        }
     }
 
     private void merge(int id, List<Danmaku> items, String sourceKey,

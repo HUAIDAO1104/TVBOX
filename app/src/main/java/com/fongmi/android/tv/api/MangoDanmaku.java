@@ -28,13 +28,16 @@ public final class MangoDanmaku {
         return search(query, callback, NativeDanmakuRequest.CLIENT);
     }
     public static NativeDanmaku.Job searchTarget(String query, String year, String type, IqiyiDanmaku.Callback<List<Danmaku>> callback) {
-        return search(query, year, type, callback, NativeDanmakuRequest.CLIENT);
+        return search(query, year, type, "", callback, NativeDanmakuRequest.CLIENT);
+    }
+    public static NativeDanmaku.Job searchTarget(String query, String year, String type, String episode, IqiyiDanmaku.Callback<List<Danmaku>> callback) {
+        return search(query, year, type, episode, callback, NativeDanmakuRequest.CLIENT);
     }
     static NativeDanmaku.Job search(String query, IqiyiDanmaku.Callback<List<Danmaku>> callback, OkHttpClient client) {
-        return search(query, "", "", callback, client);
+        return search(query, "", "", "", callback, client);
     }
-    private static NativeDanmaku.Job search(String query, String year, String type, IqiyiDanmaku.Callback<List<Danmaku>> callback, OkHttpClient client) {
-        String cacheKey = query + "|" + year + "|" + type;
+    static NativeDanmaku.Job search(String query, String year, String type, String episode, IqiyiDanmaku.Callback<List<Danmaku>> callback, OkHttpClient client) {
+        String cacheKey = query + "|" + year + "|" + type + "|" + episode;
         var job = new NativeDanmakuRequest(18000, "https://so.mgtv.com/", client);
         job.start(NativeDanmakuRequest.SEARCH, () -> {
             synchronized (CACHE) {
@@ -47,12 +50,19 @@ public final class MangoDanmaku {
                 return List.of(row(work, ids[1], str(info, "videoName").replace(work.title(), "").trim()));
             }
             Map<String, Danmaku> rows = new LinkedHashMap<>();
+            List<Work> eligible = new ArrayList<>();
             for (Work work : works(job.text(searchUrl(query)), query)) {
-                if ((!year.isEmpty() || !type.isEmpty()) && !NativeDanmaku.acceptsWork(query, year, type, work.matchTitle(), work.year(), work.type())) continue;
+                if (NativeDanmaku.acceptsWork(query, year, type, work.matchTitle(), work.year(), work.type())) eligible.add(work);
+            }
+            for (Work work : eligible) {
                 JsonObject first = response(job.text(listUrl(work.cid(), "", 1)), "code", "200");
                 Set<String> months = new LinkedHashSet<>();
                 String current = str(obj(first, "cur"), "m");
                 addPage(rows, work, first);
+                // Recent episodes are already in this authoritative page. Loading every
+                // previous month first wastes the TV's catalogue budget for no extra certainty.
+                if (eligible.size() == 1 && !episode.isEmpty() && !DanmakuMatch.ranked(query, year, type, episode,
+                        new ArrayList<>(rows.values()), Danmaku::getMatchName).isEmpty()) return List.copyOf(rows.values());
                 for (JsonElement m : array(first, "tab_m")) {
                     String month = str(m.getAsJsonObject(), "m");
                     if (month.matches("(?:19|20)\\d{4}")) months.add(month);

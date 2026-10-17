@@ -53,16 +53,16 @@ public class DanmakuQueryTest {
     }
 
     @Test
-    public void neverStripsAmbiguousYearsWithoutMetadataEvidence() {
+    public void keepsNumericTitleExactAndAllowsMetadataCheckedFallback() {
         DanmakuQuery query = DanmakuQuery.from("欢天喜地七仙女2005");
 
         assertEquals("欢天喜地七仙女2005", query.searchTitle());
         assertTrue(query.year().isEmpty());
-        assertFalse(query.candidates().contains("欢天喜地七仙女"));
+        assertTrue(query.candidates().contains("欢天喜地七仙女"));
         // Real title numbers must keep their identity as the primary term.
         DanmakuQuery numberedTitle = DanmakuQuery.from("请回答1988");
         assertEquals("请回答1988", numberedTitle.searchTitle());
-        assertFalse(numberedTitle.candidates().contains("请回答"));
+        assertTrue(numberedTitle.candidates().contains("请回答"));
         assertEquals("2046", DanmakuQuery.from("2046").searchTitle());
     }
 
@@ -81,5 +81,6 @@ public class DanmakuQueryTest {
         assertEquals(java.util.List.of("请回答1988"), DanmakuQuery.from("请回答1988", "2015").candidates());
         assertEquals(java.util.List.of("2046"), DanmakuQuery.from("2046", "2004").candidates());
         assertEquals("", DanmakuQuery.from("测试动画[更新至2026集]").year());
+        assertEquals(java.util.List.of("披荆斩棘2026", "披荆斩棘"), DanmakuQuery.from("披荆斩棘2026").candidates());
     }
 }

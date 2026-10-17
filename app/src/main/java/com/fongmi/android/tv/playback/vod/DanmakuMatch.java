@@ -75,7 +75,7 @@ public final class DanmakuMatch {
         // empty title accepted any API result, which allowed a late response from another show
         // (for example "百花杀") to become the new episode's default danmaku.
         if (cleanTitle.isEmpty()) return false;
-        if (!cleanCandidate.equals(cleanTitle)) return false;
+        if (!cleanCandidate.equals(cleanTitle) && !isSameDatedWork(title, candidate)) return false;
         if (NOISE.matcher(candidate.replaceFirst("[:：].*$", "")).find()
                 && !NOISE.matcher((title == null ? "" : title) + " " + (episode == null ? "" : episode)).find()) return false;
 
@@ -143,6 +143,7 @@ public final class DanmakuMatch {
         Set<String> years = new HashSet<>();
         Set<String> types = new HashSet<>();
         Set<String> timelines = new HashSet<>();
+        Set<Integer> seasons = new HashSet<>();
         String expectedYear = normalizeYear(year);
         String expectedType = normalizeMediaType(type);
         if (items == null) return null;
@@ -150,6 +151,8 @@ public final class DanmakuMatch {
             if (item == null) continue;
             String candidate = name.apply(item);
             if (!isReliable(title, year, type, episode, candidate)) continue;
+            Integer season = seasonNumber(candidate);
+            if (season != null && isSameDatedWork(title, candidate)) seasons.add(season);
             String candidateYear = candidateYear(candidate);
             if (!expectedYear.isEmpty() && !candidateYear.isEmpty() && !expectedYear.equals(candidateYear)) continue;
             if (expectedYear.isEmpty() && !candidateYear.isEmpty()) years.add(candidateYear);
@@ -171,6 +174,7 @@ public final class DanmakuMatch {
         }
         if (expectedYear.isEmpty() && years.size() > 1) return null;
         if (expectedType.isEmpty() && types.size() > 1) return null;
+        if (expectedSeason(title, type, episode) == null && seasons.size() > 1) return null;
         // A date/period can contain two halves. Leave those choices visible to manual search
         // rather than silently mounting whichever half the provider happens to return first.
         if (timelines.size() > 1) return null;
@@ -335,6 +339,17 @@ public final class DanmakuMatch {
     public static boolean isSameWork(String first, String second) {
         String left = canonicalTitle(first);
         return !left.isEmpty() && left.equals(canonicalTitle(second));
+    }
+
+    /** A year suffix is an edition alias only when the result independently confirms it. */
+    public static boolean isSameDatedWork(String title, String candidate) {
+        String year = candidateYear(candidate);
+        if (year.isEmpty()) return false;
+        String requested = canonicalTitle(title), actual = canonicalTitle(candidate);
+        if (!requested.endsWith(year) || requested.length() <= year.length() + 1) return false;
+        String base = canonicalTitle(requested.substring(0, requested.length() - year.length()));
+        if (actual.endsWith(year)) actual = actual.substring(0, actual.length() - year.length());
+        return base.equals(actual) || !base.matches(".*#\\d+$") && base.equals(actual.replaceFirst("#\\d+$", ""));
     }
 
     public static boolean isSameBaseWork(String first, String second) {

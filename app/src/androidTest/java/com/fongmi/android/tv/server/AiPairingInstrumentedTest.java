@@ -77,8 +77,32 @@ public class AiPairingInstrumentedTest {
                 assertTrue("browser submitted settings",DanmakuAiSetting.hasKey());
             } else try(var r=request(token.get(),"save",payload("https://example.invalid/v1","fixture-secret"),null)){assertEquals(200,r.code());}
             InstrumentationRegistry.getInstrumentation().waitForIdleSync();
-            scenario.onActivity(a->{var dialog=(DanmakuAiDialog)a.getSupportFragmentManager().findFragmentByTag("ai-pairing-test");dialog.getChildFragmentManager().executePendingTransactions();assertNull(dialog.getChildFragmentManager().findFragmentByTag("ai_pairing"));assertEquals("",((android.widget.EditText)dialog.requireDialog().findViewById(R.id.key)).getText().toString());assertTrue(((android.widget.TextView)dialog.requireDialog().findViewById(R.id.status)).getText().length()>0);dialog.dismissNow();});
+            scenario.onActivity(a->{var dialog=(DanmakuAiDialog)a.getSupportFragmentManager().findFragmentByTag("ai-pairing-test");dialog.getChildFragmentManager().executePendingTransactions();assertNull(dialog.getChildFragmentManager().findFragmentByTag("ai_pairing"));assertEquals("",((android.widget.EditText)dialog.requireDialog().findViewById(R.id.key)).getText().toString());assertTrue(((android.widget.TextView)dialog.requireDialog().findViewById(R.id.status)).getText().length()>0);
+                assertEquals(a.getString(R.string.danmaku_ai_key_stored_placeholder), ((com.google.android.material.textfield.TextInputLayout)dialog.requireDialog().findViewById(R.id.keyLayout)).getPlaceholderText().toString());
+                assertTrue(((android.widget.CompoundButton)dialog.requireDialog().findViewById(R.id.enabled)).isChecked());
+                dialog.dismissNow();
+                var reopened = new DanmakuAiDialog(); reopened.showNow(a.getSupportFragmentManager(), "ai-reopened");
+                assertEquals(a.getString(R.string.danmaku_ai_saved_enabled), ((android.widget.TextView)reopened.requireDialog().findViewById(R.id.status)).getText().toString());
+                reopened.dismissNow();});
         }
+    }
+    @Test public void slowPhoneUploadStillCommitsOnce() throws Exception {
+        var pairing = AiPairingSession.open(() -> {});
+        try (var socket = new java.net.Socket("127.0.0.1", com.github.catvod.Proxy.getPort())) {
+            socket.setSoTimeout(15000);
+            byte[] body = payload("https://example.invalid/v1", "fixture-slow-secret").getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            var out = socket.getOutputStream();
+            String host = "127.0.0.1:" + com.github.catvod.Proxy.getPort();
+            out.write(("POST /ai-setup/save HTTP/1.1\r\nHost: " + host + "\r\nOrigin: http://" + host
+                    + "\r\nX-Pairing-Token: " + pairing.token() + "\r\nContent-Type: application/json\r\nContent-Length: "
+                    + body.length + "\r\nConnection: close\r\n\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            out.write(body, 0, 12); out.flush();
+            android.os.SystemClock.sleep(900);
+            out.write(body, 12, body.length - 12); out.flush();
+            String response = new String(socket.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            assertTrue(response, response.startsWith("HTTP/1.1 200"));
+            assertEquals("fixture-slow-secret", DanmakuAiSetting.key());
+        } finally { pairing.close(); }
     }
     private String decode(androidx.fragment.app.DialogFragment dialog) {
         try {Bitmap bitmap=((BitmapDrawable)((android.widget.ImageView)dialog.requireDialog().findViewById(R.id.code)).getDrawable()).getBitmap();int[] pixels=new int[bitmap.getWidth()*bitmap.getHeight()];bitmap.getPixels(pixels,0,bitmap.getWidth(),0,0,bitmap.getWidth(),bitmap.getHeight());

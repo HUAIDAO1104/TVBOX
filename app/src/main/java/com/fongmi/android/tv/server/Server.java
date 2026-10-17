@@ -47,7 +47,9 @@ public class Server {
         for (int i = 9978; i < 9999; i++) {
             try {
                 nano = com.fongmi.android.tv.App.isSearchProcess() ? new Nano("127.0.0.1", i) : new Nano(i);
-                nano.start(500);
+                // A phone can pause between headers and body while switching Wi-Fi radios.
+                // Keep a bounded socket wait without rejecting an otherwise valid QR save.
+                nano.start(10_000);
                 Proxy.set(i);
                 break;
             } catch (Throwable e) {

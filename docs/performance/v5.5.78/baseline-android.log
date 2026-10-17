@@ -1,0 +1,86 @@
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.server.AiPairingInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.server.AiPairingInstrumentedTest:
+INSTRUMENTATION_STATUS: test=slowPhoneUploadStillCommitsOnce
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.server.AiPairingInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: HTTP/1.1 500 Internal Server Error 
+Content-Type: application/json
+Date: Sat, 17 Oct 2026 13:05:44 GMT
+Referrer-Policy: no-referrer
+X-Frame-Options: DENY
+Cache-Control: no-store
+X-Content-Type-Options: nosniff
+Connection: close
+Content-Length: 22
+
+{"code":"save_failed"}
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.fongmi.android.tv.server.AiPairingInstrumentedTest.slowPhoneUploadStillCommitsOnce(AiPairingInstrumentedTest.java:97)
+
+INSTRUMENTATION_STATUS: stream=
+Error in slowPhoneUploadStillCommitsOnce(com.fongmi.android.tv.server.AiPairingInstrumentedTest):
+java.lang.AssertionError: HTTP/1.1 500 Internal Server Error 
+Content-Type: application/json
+Date: Sat, 17 Oct 2026 13:05:44 GMT
+Referrer-Policy: no-referrer
+X-Frame-Options: DENY
+Cache-Control: no-store
+X-Content-Type-Options: nosniff
+Connection: close
+Content-Length: 22
+
+{"code":"save_failed"}
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.fongmi.android.tv.server.AiPairingInstrumentedTest.slowPhoneUploadStillCommitsOnce(AiPairingInstrumentedTest.java:97)
+
+INSTRUMENTATION_STATUS: test=slowPhoneUploadStillCommitsOnce
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest:
+INSTRUMENTATION_STATUS: test=automaticBareYearFindsEpisodeTen
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=automaticBareYearFindsEpisodeTen
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 3.598
+There was 1 failure:
+1) slowPhoneUploadStillCommitsOnce(com.fongmi.android.tv.server.AiPairingInstrumentedTest)
+java.lang.AssertionError: HTTP/1.1 500 Internal Server Error 
+Content-Type: application/json
+Date: Sat, 17 Oct 2026 13:05:44 GMT
+Referrer-Policy: no-referrer
+X-Frame-Options: DENY
+Cache-Control: no-store
+X-Content-Type-Options: nosniff
+Connection: close
+Content-Length: 22
+
+{"code":"save_failed"}
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.fongmi.android.tv.server.AiPairingInstrumentedTest.slowPhoneUploadStillCommitsOnce(AiPairingInstrumentedTest.java:97)
+
+FAILURES!!!
+Tests run: 2,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1

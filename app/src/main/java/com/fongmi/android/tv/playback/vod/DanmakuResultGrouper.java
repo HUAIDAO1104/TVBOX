@@ -28,14 +28,10 @@ public final class DanmakuResultGrouper {
     private static List<Danmaku> prepare(String title, String year, String type, String episode,
                                           Iterable<Danmaku> source, boolean filterEpisode) {
         Map<String, Danmaku> unique = new LinkedHashMap<>();
-        String expected = DanmakuMatch.canonicalTitle(title);
-        String base = expected.replaceFirst("#\\d+$", "");
         if (source != null) {
             for (Danmaku item : source) {
                 if (item == null || item.isEmpty() || item.isBlockedSource()) continue;
-                String candidate = DanmakuMatch.canonicalTitle(item.getMatchName());
-                if (!com.fongmi.android.tv.api.NativeDanmaku.supports(title) && !base.equals(candidate.replaceFirst("#\\d+$", ""))
-                        && !(expected.length() >= 2 && candidate.contains(expected))) continue;
+                if (!isWorkCandidate(title, item)) continue;
                 // The API returns the complete season even when an episode is supplied. Keeping
                 // explicit wrong episodes made a small source picker into a list of hundreds.
                 if (filterEpisode && !DanmakuMatch.isManualEpisodeCompatible(episode, item.getName())) continue;
@@ -45,6 +41,16 @@ public final class DanmakuResultGrouper {
         List<Danmaku> result = new ArrayList<>(unique.values());
         result.sort(comparator(title, year, type, episode, result));
         return result;
+    }
+
+    public static boolean isWorkCandidate(String title, Danmaku item) {
+        if (item == null || item.isEmpty() || item.isBlockedSource()) return false;
+        if (com.fongmi.android.tv.api.NativeDanmaku.supports(title)) return true;
+        String expected = DanmakuMatch.canonicalTitle(title);
+        String candidate = DanmakuMatch.canonicalTitle(item.getMatchName());
+        return expected.replaceFirst("#\\d+$", "").equals(candidate.replaceFirst("#\\d+$", ""))
+                || expected.length() >= 2 && candidate.contains(expected)
+                || DanmakuMatch.isSameDatedWork(title, item.getMatchName());
     }
 
     public record Work(String key, String name, List<Danmaku> episodes) { }

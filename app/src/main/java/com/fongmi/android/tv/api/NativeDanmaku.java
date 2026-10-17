@@ -28,6 +28,10 @@ public final class NativeDanmaku {
         if (TencentDanmakuCodec.SOURCE.equals(source)) return TencentDanmaku.searchTarget(query, year, type, callback);
         return search(source, query, callback);
     }
+    public static Job search(String source, String query, String year, String type, String episode, IqiyiDanmaku.Callback<List<Danmaku>> callback) {
+        if (MangoDanmaku.SOURCE.equals(source)) return MangoDanmaku.searchTarget(query, year, type, episode, callback);
+        return search(source, query, year, type, callback);
+    }
     static boolean acceptsWork(String query, String year, String type, String title, String workYear, String workType) {
         Integer expected = com.fongmi.android.tv.playback.vod.DanmakuMatch.resultSeason(query);
         Integer actual = com.fongmi.android.tv.playback.vod.DanmakuMatch.resultSeason(title);

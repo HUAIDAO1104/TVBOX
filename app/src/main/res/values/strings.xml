@@ -357,4 +357,7 @@
     <string name="danmaku_ai_scan_refresh">Refresh code</string>
     <string name="danmaku_ai_scan_expired">Code expired. Choose Refresh code to continue.</string>
     <string name="danmaku_ai_scan_saved">Settings saved from phone. You can test the connection here.</string>
+    <string name="danmaku_ai_key_stored_placeholder">Saved · leave blank to keep</string>
+    <string name="danmaku_ai_saved_enabled">Key saved · AI matching enabled</string>
+    <string name="danmaku_ai_saved_disabled">Key saved · AI matching disabled</string>
 </resources>
