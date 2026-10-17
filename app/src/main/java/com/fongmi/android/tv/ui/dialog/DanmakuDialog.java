@@ -87,13 +87,13 @@ public final class DanmakuDialog extends BaseBottomSheetDialog implements Danmak
 
     @Override
     public void onItemClick(Danmaku item) {
-        player.setDanmaku(item.isSelected() ? Danmaku.empty() : item);
+        com.fongmi.android.tv.playback.vod.VodPlaybackMedia.applyExternalDanmaku(player, item.isSelected() ? Danmaku.empty() : item);
         dismiss();
     }
 
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() != Activity.RESULT_OK || result.getData() == null || result.getData().getData() == null) return;
-        player.setDanmaku(Danmaku.from(FileChooser.getPathFromUri(result.getData().getData())));
+        com.fongmi.android.tv.playback.vod.VodPlaybackMedia.applyExternalDanmaku(player, Danmaku.from(FileChooser.getPathFromUri(result.getData().getData())));
         dismiss();
     });
 }

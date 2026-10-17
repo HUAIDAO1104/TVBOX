@@ -1,10 +1,4 @@
 --------- beginning of main
-10-17 18:01:07.281  6218  6235 I Danmaku574QA: automatic 现在就出发第四季第1期上 matchAndDocumentMs=521 parseAndControllerMs=396
-10-17 18:01:11.397  6218  6235 I Danmaku574QA: automatic 现在就出发第四季第1期下 matchAndDocumentMs=3660 parseAndControllerMs=457
-10-17 18:01:16.750  6218  6235 I Danmaku574QA: automatic 哪吒2正片 matchAndDocumentMs=4393 parseAndControllerMs=959
-10-17 18:02:25.411  6756  6817 I Danmaku574QA: visible pixels confirmed r4102opm7x3
-10-17 18:02:35.885  6756  6817 I Danmaku574QA: visible pixels confirmed z41023tinp7
-10-17 18:02:49.021  6756  6817 I Danmaku574QA: visible pixels confirmed y4101qnn3jo
 10-17 18:03:11.484  7390  7415 I Danmaku575QA: loading 24566777 mango-danmaku://video/896231/24566777
 10-17 18:03:14.405  7390  7415 I Danmaku575QA: 24566777 source=mango-danmaku://video/896231/24566777 comments=34428 lastMs=11891600 elapsedMs=2920
 10-17 18:03:14.480  7390  7415 I Danmaku575QA: loading 24567586 mango-danmaku://video/896231/24567586
@@ -64,3 +58,21 @@
 10-17 18:11:52.449 13260 13278 I Danmaku575QA: 歌手2026 source=mango-danmaku://video/867929/24396695 comments=24111 lastMs=10739840 elapsedMs=2713
 10-17 18:11:52.801 13260 13278 I Danmaku575QA: loading 抓娃娃 mango-danmaku://video/657840/21770678
 10-17 18:11:54.722 13260 13278 I Danmaku575QA: 抓娃娃 source=mango-danmaku://video/657840/21770678 comments=13352 lastMs=8005633 elapsedMs=1921
+10-17 18:11:59.287 13441 13496 I Danmaku575QA: loading 24566777 mango-danmaku://video/896231/24566777
+10-17 18:12:02.551 13441 13496 I Danmaku575QA: 24566777 source=mango-danmaku://video/896231/24566777 comments=34428 lastMs=11891600 elapsedMs=3264
+10-17 18:12:02.624 13441 13496 I Danmaku575QA: loading 24567586 mango-danmaku://video/896231/24567586
+10-17 18:12:05.147 13441 13496 I Danmaku575QA: 24567586 source=mango-danmaku://video/896231/24567586 comments=18697 lastMs=11438146 elapsedMs=2523
+10-17 18:12:05.212 13441 13496 I Danmaku575QA: loading 24579459 mango-danmaku://video/896231/24579459
+10-17 18:12:05.884 13441 13496 I Danmaku575QA: 24579459 source=mango-danmaku://video/896231/24579459 comments=5888 lastMs=2471173 elapsedMs=672
+10-17 18:12:05.951 13441 13496 I Danmaku575QA: loading 24578974 mango-danmaku://video/896231/24578974
+10-17 18:12:08.564 13441 13496 I Danmaku575QA: 24578974 source=mango-danmaku://video/896231/24578974 comments=20676 lastMs=11951015 elapsedMs=2613
+10-17 18:12:08.630 13441 13496 I Danmaku575QA: loading 24719651 mango-danmaku://video/896231/24719651
+10-17 18:12:11.427 13441 13496 I Danmaku575QA: 24719651 source=mango-danmaku://video/896231/24719651 comments=8105 lastMs=13569360 elapsedMs=2797
+10-17 18:12:17.571 13441 13496 I Danmaku575QA: loading 你好星期六 mango-danmaku://video/822501/24697575
+10-17 18:12:18.779 13441 13496 I Danmaku575QA: 你好星期六 source=mango-danmaku://video/822501/24697575 comments=6842 lastMs=5305000 elapsedMs=1208
+10-17 18:12:19.689 13441 13496 I Danmaku575QA: loading 乘风2026 mango-danmaku://video/859271/24288694
+10-17 18:12:22.816 13441 13496 I Danmaku575QA: 乘风2026 source=mango-danmaku://video/859271/24288694 comments=43197 lastMs=12707360 elapsedMs=3126
+10-17 18:12:23.400 13441 13496 I Danmaku575QA: loading 歌手2026 mango-danmaku://video/867929/24396695
+10-17 18:12:25.823 13441 13496 I Danmaku575QA: 歌手2026 source=mango-danmaku://video/867929/24396695 comments=24111 lastMs=10739840 elapsedMs=2423
+10-17 18:12:26.151 13441 13496 I Danmaku575QA: loading 抓娃娃 mango-danmaku://video/657840/21770678
+10-17 18:12:28.002 13441 13496 I Danmaku575QA: 抓娃娃 source=mango-danmaku://video/657840/21770678 comments=13352 lastMs=8005633 elapsedMs=1851

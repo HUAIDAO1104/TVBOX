@@ -224,6 +224,14 @@ public final class VodPlaybackMedia {
         }
     }
 
+    /** An external link or local file is an explicit selection, just like a search result. */
+    public static void applyExternalDanmaku(PlayerManager player, Danmaku item) {
+        if (player == null) return;
+        cancelSelection(player);
+        if (item != null && !item.isEmpty()) player.setDanmakuEnabled(true);
+        player.setDanmaku(item == null ? Danmaku.empty() : item, true);
+    }
+
     /** Records a user-confirmed work/provider mapping for this and subsequent episodes. */
     public static void rememberManualMatch(PlayerManager player, String query, Danmaku selected) {
         DanmakuManualMatchStore.get().remember(contextOf(player), query, selected);

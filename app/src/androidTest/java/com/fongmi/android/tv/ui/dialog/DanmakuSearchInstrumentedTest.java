@@ -43,6 +43,7 @@ public class DanmakuSearchInstrumentedTest {
     private ViewDanmakuSearchEmbeddedBinding binding;
     private PlayerManager player;
     private long lastSubmittedAt;
+    private final List<com.fongmi.android.tv.player.danmaku.DanmakuStatus> statusEvents = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     @Before public void setup() throws Exception {
         if (com.fongmi.android.tv.utils.Util.isLeanback()) {
@@ -180,6 +181,27 @@ public class DanmakuSearchInstrumentedTest {
             SystemClock.sleep(2500);
             main(() -> assertEquals(confirmed.getUrl(), player.getSelectedDanmaku().getUrl()));
         } finally { DanmakuSetting.putAuto(auto); }
+    }
+
+    @Test public void externalLinkCancelsOldRestoreFailureAndEnablesRendering() throws Exception {
+        openPanel("外部弹幕回归片", "正片");
+        var context = new com.fongmi.android.tv.playback.vod.DanmakuMatchContext("外部弹幕回归片", "2026", "电影", "正片");
+        Danmaku stale = item("外部弹幕回归片(2026)【电影】from stale - 正片", "restore-fail");
+        com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get().remember(context, "外部弹幕回归片", stale, List.of(stale));
+        var history = new com.fongmi.android.tv.bean.History(); history.setVodName("外部弹幕回归片");
+        var episode = new com.fongmi.android.tv.bean.Episode(); episode.setName("正片");
+        boolean auto = DanmakuSetting.isAuto(), show = DanmakuSetting.isShow(); DanmakuSetting.putAuto(true);
+        try {
+            main(() -> VodPlaybackMedia.searchDanmaku(new com.fongmi.android.tv.bean.Result(), history, episode, 1, "2026", "电影", player));
+            assertTrue(documentStarted.await(5, TimeUnit.SECONDS));
+            Danmaku confirmed = item("外部确认弹幕", "external-winner");
+            main(() -> { player.setDanmakuEnabled(false); VodPlaybackMedia.applyExternalDanmaku(player, confirmed); });
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync(); statusEvents.clear();
+            SystemClock.sleep(2500);
+            main(() -> assertEquals(confirmed.getUrl(), player.getSelectedDanmaku().getUrl()));
+            assertTrue(DanmakuSetting.isShow());
+            assertTrue(statusEvents.stream().noneMatch(s -> s.stage() == com.fongmi.android.tv.player.danmaku.DanmakuStatus.Stage.FAILED));
+        } finally { DanmakuSetting.putAuto(auto); DanmakuSetting.putShow(show); }
     }
 
     @Test public void aiKeyAndRecommendedModelAreReachableFromPlaybackSearch() throws Exception {
@@ -491,7 +513,10 @@ public class DanmakuSearchInstrumentedTest {
         scenario.onActivity(activity -> {
             player = new PlayerManager((PlayerManager.Callback) java.lang.reflect.Proxy.newProxyInstance(
                     PlayerManager.Callback.class.getClassLoader(), new Class[]{PlayerManager.Callback.class},
-                    (proxy, method, args) -> null));
+                    (proxy, method, args) -> {
+                        if (method.getName().equals("onDanmakuStatusChanged")) statusEvents.add((com.fongmi.android.tv.player.danmaku.DanmakuStatus) args[0]);
+                        return null;
+                    }));
             try {
                 Field spec = PlayerManager.class.getDeclaredField("spec"); spec.setAccessible(true);
                 spec.set(player, PlaySpec.from("fixture", server.url("/video").toString(), null,

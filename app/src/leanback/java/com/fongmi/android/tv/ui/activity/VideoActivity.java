@@ -2377,7 +2377,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         else if (event.getType() == RefreshEvent.Type.PLAYER) mVod.refresh();
         else if (event.getType() == RefreshEvent.Type.VOD) updateVod(event.getVod());
         else if (event.getType() == RefreshEvent.Type.SUBTITLE) player().setSub(Sub.from(event.getPath()));
-        else if (event.getType() == RefreshEvent.Type.DANMAKU) player().setDanmaku(Danmaku.from(event.getPath()));
+        else if (event.getType() == RefreshEvent.Type.DANMAKU) VodPlaybackMedia.applyExternalDanmaku(player(), Danmaku.from(event.getPath()));
     }
 
     @Override
