@@ -166,11 +166,12 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         String metadataEpisode = player.getMetadata().artist == null ? "" : player.getMetadata().artist.toString().trim();
         searchEpisode = matchContext.getEpisode().isEmpty() ? metadataEpisode : matchContext.getEpisode();
         List<String> apiUrls = DanmakuSetting.getSearchApiUrls();
-        calls.addAll(DanmakuApi.newCalls(keyword, searchEpisode));
-        pending = calls.size() + NativeDanmaku.sources().size();
+        if (!NativeDanmaku.supports(searchTitle)) calls.addAll(DanmakuApi.newCalls(keyword, searchEpisode));
+        List<String> nativeSources = NativeDanmaku.sources(searchTitle);
+        pending = calls.size() + nativeSources.size();
         failed = denied = invalid = 0;
         binding.providerStatus.setText(ResUtil.getString(R.string.danmaku_search_running, pending));
-        for (String source : NativeDanmaku.sources()) nativeSearches.add(NativeDanmaku.search(source, searchTitle, new IqiyiDanmaku.Callback<List<Danmaku>>() {
+        for (String source : nativeSources) nativeSearches.add(NativeDanmaku.search(source, searchTitle, new IqiyiDanmaku.Callback<List<Danmaku>>() {
             @Override public void onSuccess(List<Danmaku> items) {
                 App.post(() -> merge(id, items, source, items, 0));
             }

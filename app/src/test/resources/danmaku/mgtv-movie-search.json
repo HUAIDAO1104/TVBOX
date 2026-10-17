@@ -1,0 +1,45 @@
+{
+  "code": 200,
+  "data": {
+    "contents": [
+      {
+        "type": "movie",
+        "data": {
+          "title": "抓娃娃",
+          "playTime": "2024-07-18",
+          "desc": [
+            {
+              "label": "主演",
+              "text": "沈腾 马丽 史彭元 萨日娜 张子栋 李嘉琦 赵凤霞 马文波 陈冰 骆佳 魏翔 贾冰 于洋 李宗恒 刘鉴 丁柳元 王成思 张一鸣 陶亮",
+              "url": ""
+            },
+            {
+              "label": "导演",
+              "text": "闫非 彭大魔",
+              "url": ""
+            },
+            {
+              "label": "类型",
+              "text": "电影",
+              "url": "//www.mgtv.com/lib/3"
+            },
+            {
+              "label": "地区",
+              "text": "内地",
+              "url": ""
+            }
+          ],
+          "sourceList": [
+            {
+              "jumpKind": "",
+              "name": "芒果TV",
+              "source": "imgo",
+              "url": "//www.mgtv.com/b/657840/21770678.html?fpa=se",
+              "vid": "21770678"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

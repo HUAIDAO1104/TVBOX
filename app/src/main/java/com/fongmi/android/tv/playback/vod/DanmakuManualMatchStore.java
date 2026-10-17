@@ -151,6 +151,9 @@ public final class DanmakuManualMatchStore {
 
     private static boolean compatible(DanmakuMatchContext context, Selection selection) {
         if (context == null || selection == null) return false;
+        // A pasted video URL confirms this episode only; never search that URL as the
+        // next episode's work title or let it pin a different episode to the old video.
+        if (selection.isVideoLink() && selection.episode(context.getEpisode()) == null) return false;
         String expectedYear = DanmakuMatch.normalizeYear(context.getYear());
         String actualYear = DanmakuMatch.candidateYear(selection.selectedName());
         if (!expectedYear.isEmpty() && !actualYear.isEmpty() && !expectedYear.equals(actualYear)) return false;
@@ -308,6 +311,8 @@ public final class DanmakuManualMatchStore {
             return Objects.toString(query, "").trim();
         }
 
+        boolean isVideoLink() { return com.fongmi.android.tv.api.NativeDanmaku.supports(query()); }
+
         public String selectedName() {
             return Objects.toString(selectedName, "").trim();
         }
@@ -329,7 +334,7 @@ public final class DanmakuManualMatchStore {
             // a cache miss so playback keeps the confirmed title/season identity and resolves a
             // fresh URL from the replacement endpoint.
             if (Danmaku.isRetiredSourceUrl(cached.url())
-                    || !DanmakuMatch.isEpisodeCompatible(episode, cached.name())) return null;
+                    || !isVideoLink() && !DanmakuMatch.isEpisodeCompatible(episode, cached.name())) return null;
             Danmaku result = Danmaku.from(cached.url());
             result.setName(cached.name());
             result.setSourceKey(sourceKey());

@@ -1,0 +1,175 @@
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest:
+INSTRUMENTATION_STATUS: test=transientSegmentFailureRetriesOnceAndKeepsCompleteTimeline
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=transientSegmentFailureRetriesOnceAndKeepsCompleteTimeline
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=cancelledDocumentDoesNotEmitLateSuccessOrFailure
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=cancelledDocumentDoesNotEmitLateSuccessOrFailure
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=missingSegmentIsNotSilentlyTreatedAsEmpty
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=missingSegmentIsNotSilentlyTreatedAsEmpty
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=fullCatalogueEnrichesPreviewWithBroadcastDate
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=fullCatalogueEnrichesPreviewWithBroadcastDate
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=liveCurrentVarietyAndMovieProduceCompletePlayableDocuments
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=liveCurrentVarietyAndMovieProduceCompletePlayableDocuments
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=completeDocumentRequiresEverySegmentAndKeepsMilliseconds
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=completeDocumentRequiresEverySegmentAndKeepsMilliseconds
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=failedSegmentCannotCommitPartialDocument
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=failedSegmentCannotCommitPartialDocument
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest:
+INSTRUMENTATION_STATUS: test=liveCommonPlatformLinksProducePlayableComments
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=liveCommonPlatformLinksProducePlayableComments
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest:
+INSTRUMENTATION_STATUS: test=liveMangoAutomaticAndManualBonusThenDirectLink
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:552)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.submitSearch(DanmakuSearchInstrumentedTest.java:528)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:495)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveMangoAutomaticAndManualBonusThenDirectLink(DanmakuSearchInstrumentedTest.java:270)
+
+INSTRUMENTATION_STATUS: stream=
+Error in liveMangoAutomaticAndManualBonusThenDirectLink(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:552)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.submitSearch(DanmakuSearchInstrumentedTest.java:528)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:495)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveMangoAutomaticAndManualBonusThenDirectLink(DanmakuSearchInstrumentedTest.java:270)
+
+INSTRUMENTATION_STATUS: test=liveMangoAutomaticAndManualBonusThenDirectLink
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=10
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=liveSeasonFourAndMovieAutomaticThenManualSelection
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=10
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=liveSeasonFourAndMovieAutomaticThenManualSelection
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 84.457
+There was 1 failure:
+1) liveMangoAutomaticAndManualBonusThenDirectLink(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:552)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.submitSearch(DanmakuSearchInstrumentedTest.java:528)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:495)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveMangoAutomaticAndManualBonusThenDirectLink(DanmakuSearchInstrumentedTest.java:270)
+
+FAILURES!!!
+Tests run: 10,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1

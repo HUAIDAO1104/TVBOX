@@ -50,7 +50,9 @@ public class DanmakuVarietyMovieTest {
     }
 
     @Test public void firstSeasonAliasAndUpperPartMatchActualVarietyCatalogue() {
-        String best = DanmakuMatch.best("现在就出发 第一季", "2023", "大陆综艺", "20230813上", fixture("variety-seasons"), s -> s);
+        // This aggregator repeats the season premiere date on later periods. Date alone is ambiguous.
+        assertNull(DanmakuMatch.best("现在就出发 第一季", "2023", "大陆综艺", "20230813上", fixture("variety-seasons"), s -> s));
+        String best = DanmakuMatch.best("现在就出发 第一季", "2023", "大陆综艺", "20230813第1期上", fixture("variety-seasons"), s -> s);
         assertNotNull(best); assertTrue(best.contains("第1期上：")); assertTrue(best.startsWith("现在就出发(2023)"));
     }
 

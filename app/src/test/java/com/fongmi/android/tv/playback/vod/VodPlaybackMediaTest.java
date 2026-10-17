@@ -180,6 +180,18 @@ public class VodPlaybackMediaTest {
                 .equals(DanmakuManualMatchStore.legacyPreferenceKey(sparse)));
     }
 
+    @Test
+    public void explicitVideoLinkRestoresOnlyTheConfirmedEpisode() {
+        String url = "https://v.qq.com/x/cover/mzc00200tjkzeps/y4101qnn3jo.html";
+        String raw = "{\"work\":{\"query\":\"" + url + "\",\"selectedName\":\"腾讯视频 from tencent - y4101qnn3jo\","
+                + "\"sourceKey\":\"platform-link\",\"episodes\":{\"1|上\":{\"name\":\"腾讯视频 from tencent - y4101qnn3jo\",\"url\":\"" + url + "\"}}}}";
+        var selection = DanmakuManualMatchStore.decode(raw).get("work");
+        assertTrue(selection.isVideoLink());
+        assertEquals(url, selection.episode("第1期上").getUrl());
+        assertEquals(null, selection.episode("第1期下"));
+        assertEquals(null, selection.episode("第2期上"));
+    }
+
     private static Danmaku danmaku(String name, String url) {
         Danmaku item = Danmaku.from(url);
         item.setName(name);

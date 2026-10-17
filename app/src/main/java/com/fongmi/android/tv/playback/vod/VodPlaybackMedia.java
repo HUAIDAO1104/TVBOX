@@ -81,7 +81,8 @@ public final class VodPlaybackMedia {
             @Override
             public void onFound(Danmaku danmaku, java.util.List<Danmaku> catalogue) {
                 if (!isCurrentIdentity(player, identity)) return;
-                String query = preferred == null ? DanmakuQuery.from(title).searchTitle() : preferred.query();
+                String query = preferred == null || preferred.isVideoLink()
+                        ? DanmakuQuery.from(title).searchTitle() : preferred.query();
                 DanmakuManualMatchStore.get().remember(matchContext, query, danmaku, catalogue);
                 apply.accept(danmaku);
             }
@@ -144,9 +145,11 @@ public final class VodPlaybackMedia {
                     DanmakuApi.searchDetailed(title, year, type, episodeQuery, callback);
                 }
             };
-            Runnable resolveFresh = () -> DanmakuApi.searchPreferredDetailed(preferred.query(),
-                    year, type, episodeQuery, preferred.selectedName(), preferred.sourceKey(),
-                    preferredCallback);
+            Runnable resolveFresh = () -> {
+                if (preferred.isVideoLink()) DanmakuApi.searchDetailed(title, year, type, episodeQuery, callback);
+                else DanmakuApi.searchPreferredDetailed(preferred.query(), year, type, episodeQuery,
+                        preferred.selectedName(), preferred.sourceKey(), preferredCallback);
+            };
             if (cached == null) {
                 resolveFresh.run();
             } else {
@@ -293,6 +296,12 @@ public final class VodPlaybackMedia {
                 if (!isCurrentManualRequest(player, request)) return;
                 finishManualDownload(player, request);
                 DanmakuDocumentCache.invalidate(source);
+                // An explicit video link has no alternative episode to infer. Surface its
+                // download failure directly instead of spending another search timeout on it.
+                if (com.fongmi.android.tv.api.NativeDanmaku.supports(finalQuery)) {
+                    failed.run();
+                    return;
+                }
                 // A user already confirmed the exact work and episode. Resolve that identity
                 // across providers, never reapply the source site's potentially wrong season,
                 // title alias or ordinal playlist position to the manual choice.

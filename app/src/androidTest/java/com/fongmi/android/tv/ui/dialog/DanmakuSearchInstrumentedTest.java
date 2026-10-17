@@ -259,6 +259,52 @@ public class DanmakuSearchInstrumentedTest {
         screenshot("season-four-episodes");
     }
 
+    @Test public void liveMangoAutomaticAndManualBonusThenDirectLink() throws Exception {
+        Assume.assumeTrue("true".equals(InstrumentationRegistry.getArguments().getString("danmakuLive")));
+        DanmakuSetting.putApiUrl("");
+        for (String[] spec : List.of(new String[]{"第1期上", "24566777"}, new String[]{"0816下", "24567586"},
+                new String[]{"会员加更第1期", "24579459"})) {
+            Danmaku found = search("披荆斩棘2026", "2026", "综艺", spec[0]);
+            assertTrue(found.getName(), found.getUrl().endsWith(spec[1])); assertTrue(parse(found) > 100);
+        }
+        openPanel("披荆斩棘2026", "第1期上");
+        boolean auto = DanmakuSetting.isAuto(); DanmakuSetting.putAuto(false);
+        try {
+            var history = new com.fongmi.android.tv.bean.History(); history.setVodName("披荆斩棘2026");
+            var episode = new com.fongmi.android.tv.bean.Episode(); episode.setName("第1期上");
+            main(() -> VodPlaybackMedia.searchDanmaku(new com.fongmi.android.tv.bean.Result(), history, episode, 1, "", "", player));
+        } finally { DanmakuSetting.putAuto(auto); }
+        main(() -> binding.keyword.setText("披荆斩棘2026"));
+        submitSearch();
+        var adapter = (com.fongmi.android.tv.ui.adapter.DanmakuAdapter) binding.recycler.getAdapter();
+        await(() -> indexOfSource(adapter, "mango-direct") >= 0, 22000);
+        clickRow(indexOfSource(adapter, "mango-direct"));
+        await(() -> adapter.getItemCount() > 10, 5000);
+        int bonus = -1;
+        for (int i = 0; i < adapter.getItemCount(); i++) if (adapter.getItem(i).getUrl().endsWith("24579459")) { bonus = i; break; }
+        assertTrue(bonus >= 0); clickRow(bonus);
+        await(() -> player.getSelectedDanmaku() != null && player.getSelectedDanmaku().getUrl().endsWith("24579459"), 50000);
+        assertTrue(parse(player.getSelectedDanmaku()) > 100); screenshot("575-mango-manual-bonus");
+        for (String link : List.of("https://www.bilibili.com/bangumi/play/ep691614",
+                "https://v.youku.com/v_show/id_XNTkxNDY2Nzg2MA==.html",
+                "https://v.qq.com/x/cover/mzc00200tjkzeps/y4101qnn3jo.html",
+                "https://www.iqiyi.com/v_pp7j21xlp4.html",
+                "https://ani.gamer.com.tw/animeVideo.php?sn=41645")) {
+            main(() -> { panel.onBack(); binding.keyword.setText(link); });
+            submitSearch(); await(() -> indexOfSource(adapter, "platform-link") >= 0, 20000);
+            clickRow(indexOfSource(adapter, "platform-link"));
+            await(() -> adapter.getItemCount() == 1, 5000); clickRow(0);
+            await(() -> player.getSelectedDanmaku() != null && player.getSelectedDanmaku().getUrl().equals(link), 50000);
+            assertTrue(link, parse(player.getSelectedDanmaku()) > 100);
+            var context = VodPlaybackMedia.contextOf(player);
+            var saved = com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get().find(context);
+            assertNotNull(saved); assertEquals(link, saved.episode(context.getEpisode()).getUrl());
+            assertNull(com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get().find(
+                    new com.fongmi.android.tv.playback.vod.DanmakuMatchContext(context.getTitle(), context.getYear(), context.getType(), "第2期上")));
+            screenshot("575-direct-" + android.net.Uri.parse(link).getHost());
+        }
+    }
+
     @Test public void accessDeniedIsVisibleAndRetryRecovers() throws Exception {
         status = 403; openPanel("20260816上");
         await(() -> binding.empty.getVisibility() == View.VISIBLE
@@ -364,6 +410,11 @@ public class DanmakuSearchInstrumentedTest {
 
     private int indexOf(com.fongmi.android.tv.ui.adapter.DanmakuAdapter adapter, String prefix) {
         for (int i = 0; i < adapter.getItemCount(); i++) if (adapter.getItem(i).getName().startsWith(prefix)) return i;
+        return -1;
+    }
+
+    private int indexOfSource(com.fongmi.android.tv.ui.adapter.DanmakuAdapter adapter, String source) {
+        for (int i = 0; i < adapter.getItemCount(); i++) if (source.equals(adapter.getItem(i).getSourceKey())) return i;
         return -1;
     }
 

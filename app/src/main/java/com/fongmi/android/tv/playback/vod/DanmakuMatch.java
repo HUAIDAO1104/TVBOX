@@ -59,7 +59,7 @@ public final class DanmakuMatch {
         // episode mapping for the current API, so use it as a deterministic tie-breaker only
         // after title/episode reliability has been established.
         if (PREFERRED_360.matcher(candidate).find()) score += 30;
-        if (NOISE.matcher(candidate).find() && !NOISE.matcher(episode == null ? "" : episode).find()) score -= 120;
+        if (NOISE.matcher(candidate.replaceFirst("[:：].*$", "")).find() && !NOISE.matcher(episode == null ? "" : episode).find()) score -= 120;
         return score;
     }
 
@@ -76,7 +76,7 @@ public final class DanmakuMatch {
         // (for example "百花杀") to become the new episode's default danmaku.
         if (cleanTitle.isEmpty()) return false;
         if (!cleanCandidate.equals(cleanTitle)) return false;
-        if (NOISE.matcher(candidate).find()
+        if (NOISE.matcher(candidate.replaceFirst("[:：].*$", "")).find()
                 && !NOISE.matcher((title == null ? "" : title) + " " + (episode == null ? "" : episode)).find()) return false;
 
         if (!isEpisodeCompatible(episode, candidate)) return false;
@@ -104,8 +104,9 @@ public final class DanmakuMatch {
                     || expectedSeason == 1 && candidateSeason == null && isSameWork(title, candidate);
         }
         if (!isSameBaseWork(title, candidate)) return false;
-        if (NOISE.matcher(candidate).find()
-                && !NOISE.matcher((title == null ? "" : title) + " " + (type == null ? "" : type)).find()) return false;
+        if (NOISE.matcher(candidate.replaceFirst("[:：].*$", "")).find()
+                && !NOISE.matcher((title == null ? "" : title) + " " + (type == null ? "" : type)
+                + " " + (episode == null ? "" : episode)).find()) return false;
 
         if (!isEpisodeCompatible(episode, candidate)) return false;
 
@@ -160,7 +161,7 @@ public final class DanmakuMatch {
             if (expectedType.isEmpty() && !candidateMediaType.isEmpty()) types.add(candidateMediaType);
             if ("variety".equals(candidateMediaType) || "variety".equals(expectedType)
                     || !DanmakuEpisode.from(episode).date.isEmpty()) {
-                timelines.add(DanmakuEpisode.from(candidate).key());
+                timelines.add(DanmakuEpisode.from(candidate).timelineKey());
             }
             int score = displayScore(title, year, type, episode, candidate);
             if (best == null || score > bestScore) {
@@ -216,7 +217,7 @@ public final class DanmakuMatch {
             if (item == null) continue;
             String candidate = name.apply(item);
             if (!isPreferredFamily(selectedName, year, type, episode, candidate)) continue;
-            if ("variety".equals(candidateType(candidate))) timelines.add(episodeKey(candidate));
+            if ("variety".equals(candidateType(candidate))) timelines.add(DanmakuEpisode.from(candidate).timelineKey());
             int score = displayScore(selectedName, preferredYear(selectedName, year),
                     preferredType(selectedName, type), episode, candidate);
             if (sameNonEmpty(resultPlatform(selectedName), resultPlatform(candidate))) score += 40;
@@ -353,7 +354,7 @@ public final class DanmakuMatch {
     public static boolean isManualEpisodeCompatible(String episode, String candidate) {
         DanmakuEpisode expected = DanmakuEpisode.from(episode);
         DanmakuEpisode actual = DanmakuEpisode.from(candidate);
-        if (!expected.date.isEmpty() && !expected.date.equals(actual.date)) return false;
+        if (!expected.date.isEmpty() && !expected.sameDate(actual)) return false;
         if (expected.date.isEmpty() && expected.number != null && !expected.number.equals(actual.number)) return false;
         return expected.part.isEmpty() || expected.part.equals(actual.part);
     }

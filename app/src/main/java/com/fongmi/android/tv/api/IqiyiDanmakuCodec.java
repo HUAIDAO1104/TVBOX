@@ -261,7 +261,7 @@ public final class IqiyiDanmakuCodec {
     }
 
     /** Bounds-checked protobuf wire reader; unknown fields are skipped without schema guesses. */
-    private static final class Proto {
+    static final class Proto {
         final byte[] bytes;
         final int end;
         int pos, field, wire, start, length;

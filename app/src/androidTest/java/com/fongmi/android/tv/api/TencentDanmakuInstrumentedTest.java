@@ -29,6 +29,25 @@ public class TencentDanmakuInstrumentedTest {
     @Test public void completeDocumentRequiresEverySegmentAndKeepsMilliseconds() throws Exception { verify(200, 2); }
     @Test public void failedSegmentCannotCommitPartialDocument() throws Exception { verify(503, 0); }
     @Test public void missingSegmentIsNotSilentlyTreatedAsEmpty() throws Exception { verify(404, 0); }
+    @Test public void transientSegmentFailureRetriesOnceAndKeepsCompleteTimeline() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            AtomicInteger attempts = new AtomicInteger();
+            server.setDispatcher(new okhttp3.mockwebserver.Dispatcher() {
+                @Override public MockResponse dispatch(RecordedRequest request) {
+                    if (request.getPath().contains("/base/")) return new MockResponse().setBody(INDEX);
+                    if (request.getPath().endsWith("/0/30000")) return new MockResponse().setBody(segment(1));
+                    return attempts.incrementAndGet() == 1 ? new MockResponse().setResponseCode(503) : new MockResponse().setBody(segment(31));
+                }
+            }); server.start(); CountDownLatch done = new CountDownLatch(1); AtomicReference<byte[]> result = new AtomicReference<>();
+            TencentDanmaku.document(SOURCE, p -> {}, new IqiyiDanmaku.Callback<>() {
+                public void onSuccess(byte[] bytes) { result.set(bytes); done.countDown(); }
+                public void onFailure(IOException error) { done.countDown(); }
+            }, client(server));
+            assertTrue(done.await(5, TimeUnit.SECONDS)); assertNotNull(result.get()); assertEquals(2, attempts.get());
+            var comments = FilteringBiliParser.INSTANCE.parse(new ByteArrayInputStream(result.get()));
+            assertEquals(2, comments.size()); assertEquals(31000, comments.get(1).timeMs);
+        }
+    }
     private void verify(int status, int expected) throws Exception {
         try (MockWebServer server = new MockWebServer()) {
             server.setDispatcher(new okhttp3.mockwebserver.Dispatcher() {
@@ -50,6 +69,20 @@ public class TencentDanmakuInstrumentedTest {
                 var comments = FilteringBiliParser.INSTANCE.parse(new ByteArrayInputStream(result.get()));
                 assertEquals(expected, comments.size()); assertEquals(31000, comments.get(1).timeMs);
             }
+        }
+    }
+
+    @Test public void fullCatalogueEnrichesPreviewWithBroadcastDate() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().setBody("{\"ret\":0,\"data\":{\"normalList\":{\"itemList\":[{\"doc\":{\"id\":\"123456789abcdef\"},\"videoInfo\":{\"title\":\"目录回归\",\"year\":\"2026\",\"typeName\":\"综艺\",\"episodeSites\":[{\"enName\":\"qq\",\"episodeInfoList\":[{\"id\":\"abcdefghijk\",\"title\":\"第1期上\"}]}]}}]}}}"));
+            server.enqueue(new MockResponse().setBody("{\"ret\":0,\"data\":{\"module_list_datas\":[{\"module_datas\":[{\"item_data_lists\":{\"item_datas\":[{\"item_params\":{\"cid\":\"123456789abcdef\",\"vid\":\"abcdefghijk\",\"union_title\":\"第1期上\",\"tag_right_text\":\"2026-08-16\"}}]}}]}]}}")); server.start();
+            CountDownLatch done = new CountDownLatch(1); AtomicReference<List<Danmaku>> rows = new AtomicReference<>();
+            TencentDanmaku.search("目录回归", new IqiyiDanmaku.Callback<>() {
+                public void onSuccess(List<Danmaku> items) { rows.set(items); done.countDown(); }
+                public void onFailure(IOException error) { done.countDown(); }
+            }, client(server));
+            assertTrue(done.await(5, TimeUnit.SECONDS)); assertNotNull(rows.get());
+            assertNotNull(DanmakuMatch.best("目录回归", "2026", "综艺", "20260816上", rows.get(), Danmaku::getMatchName));
         }
     }
 

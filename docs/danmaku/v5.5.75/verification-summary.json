@@ -1,0 +1,636 @@
+{
+  "versionCode": 626,
+  "versionName": "5.5.75-danmaku-platforms",
+  "date": "2026-10-17",
+  "environment": "API 36 ARM64 emulator; mobile 320dp font 1.3; leanback 1920x1080 DPAD; no physical devices",
+  "android": {
+    "mobile": {
+      "passed": 27,
+      "failed": 0,
+      "finalCases": {
+        "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#mangoCancellationHasNoLateCallback": {
+          "status": 0,
+          "log": "phone-full.txt"
+        },
+        "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#mangoFailedSegmentDoesNotCommitPartialDocument": {
+          "status": 0,
+          "log": "phone-full.txt"
+        },
+        "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveMangoMainDatesHalvesAndExtrasDownloadDistinctDocuments": {
+          "status": 0,
+          "log": "mobile-movie-final.txt"
+        },
+        "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveOtherMangoVarietyDatesAndMovieCatalogue": {
+          "status": 0,
+          "log": "mobile-movie-final.txt"
+        },
+        "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveCommonPlatformLinksProducePlayableComments": {
+          "status": 0,
+          "log": "phone-retest.txt"
+        },
+        "com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest#liveCommonPlatformsRenderActualPixelsOnBothFlavors": {
+          "status": 0,
+          "log": "phone-full.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#manualSearchGroupsWorksAndKeepsAllEpisodesSelectable": {
+          "status": 0,
+          "log": "phone-full.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#accessDeniedIsVisibleAndRetryRecovers": {
+          "status": 0,
+          "log": "phone-full.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveMangoAutomaticAndManualBonusThenDirectLink": {
+          "status": 0,
+          "log": "phone-boundary-final.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveProviderSearchesAndParsesUserExamples": {
+          "status": 0,
+          "log": "phone-full.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#aiKeyAndRecommendedModelAreReachableFromPlaybackSearch": {
+          "status": 0,
+          "log": "phone-full.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#switchingSearchCancelsObsoleteDocumentValidation": {
+          "status": 0,
+          "log": "phone-full.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#savedAutomaticRestoreCannotOverwriteANewerManualChoice": {
+          "status": 0,
+          "log": "phone-boundary-final.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#manualFailureRecoversTheConfirmedMovieOrPartAcrossProviders": {
+          "status": 0,
+          "log": "phone-boundary-final.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveSeasonFourAndMovieAutomaticThenManualSelection": {
+          "status": 0,
+          "log": "phone-retest.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#automaticMovieAndDatedVarietyDownloadParseAndCache": {
+          "status": 0,
+          "log": "phone-full.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveDramaEpisode14AutomaticAndManualWorkEpisodeFlow": {
+          "status": 0,
+          "log": "phone-full.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#unavailableFirstFourDocumentsDoNotHideTheWorkingFifth": {
+          "status": 0,
+          "log": "phone-full.txt"
+        },
+        "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#transientSegmentFailureRetriesOnceAndKeepsCompleteTimeline": {
+          "status": 0,
+          "log": "phone-retest.txt"
+        },
+        "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#cancelledDocumentDoesNotEmitLateSuccessOrFailure": {
+          "status": 0,
+          "log": "phone-retest.txt"
+        },
+        "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#missingSegmentIsNotSilentlyTreatedAsEmpty": {
+          "status": 0,
+          "log": "phone-retest.txt"
+        },
+        "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#fullCatalogueEnrichesPreviewWithBroadcastDate": {
+          "status": 0,
+          "log": "phone-retest.txt"
+        },
+        "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#liveCurrentVarietyAndMovieProduceCompletePlayableDocuments": {
+          "status": 0,
+          "log": "phone-retest.txt"
+        },
+        "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#completeDocumentRequiresEverySegmentAndKeepsMilliseconds": {
+          "status": 0,
+          "log": "phone-retest.txt"
+        },
+        "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#failedSegmentCannotCommitPartialDocument": {
+          "status": 0,
+          "log": "phone-retest.txt"
+        },
+        "com.fongmi.android.tv.ui.activity.DanmakuPlaybackInstrumentedTest#manualSelectionRendersAndPipNeverPersistsTemporaryHiding": {
+          "status": 0,
+          "log": "phone-ui-final.txt"
+        },
+        "com.fongmi.android.tv.ui.activity.DanmakuPlaybackInstrumentedTest#liveVarietyUpperLowerAndMovieRenderActualCommentPixels": {
+          "status": 0,
+          "log": "phone-ui-final.txt"
+        }
+      },
+      "runs": [
+        {
+          "log": "phone-platform.txt",
+          "tests": [
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#mangoCancellationHasNoLateCallback",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#mangoFailedSegmentDoesNotCommitPartialDocument",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveMangoMainDatesHalvesAndExtrasDownloadDistinctDocuments",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveOtherMangoVarietyDatesAndMovieCatalogue",
+              "status": -2
+            },
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveCommonPlatformLinksProducePlayableComments",
+              "status": 0
+            }
+          ]
+        },
+        {
+          "log": "phone-other-retest.txt",
+          "tests": [
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveOtherMangoVarietyDatesAndMovieCatalogue",
+              "status": 0
+            }
+          ]
+        },
+        {
+          "log": "phone-full.txt",
+          "tests": [
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#mangoCancellationHasNoLateCallback",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#mangoFailedSegmentDoesNotCommitPartialDocument",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveMangoMainDatesHalvesAndExtrasDownloadDistinctDocuments",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveOtherMangoVarietyDatesAndMovieCatalogue",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveCommonPlatformLinksProducePlayableComments",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest#liveCommonPlatformsRenderActualPixelsOnBothFlavors",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#manualSearchGroupsWorksAndKeepsAllEpisodesSelectable",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#accessDeniedIsVisibleAndRetryRecovers",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveMangoAutomaticAndManualBonusThenDirectLink",
+              "status": -2
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveProviderSearchesAndParsesUserExamples",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#aiKeyAndRecommendedModelAreReachableFromPlaybackSearch",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#switchingSearchCancelsObsoleteDocumentValidation",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#savedAutomaticRestoreCannotOverwriteANewerManualChoice",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#manualFailureRecoversTheConfirmedMovieOrPartAcrossProviders",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveSeasonFourAndMovieAutomaticThenManualSelection",
+              "status": -2
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#automaticMovieAndDatedVarietyDownloadParseAndCache",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveDramaEpisode14AutomaticAndManualWorkEpisodeFlow",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#unavailableFirstFourDocumentsDoNotHideTheWorkingFifth",
+              "status": 0
+            }
+          ]
+        },
+        {
+          "log": "phone-retest.txt",
+          "tests": [
+            {
+              "test": "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#transientSegmentFailureRetriesOnceAndKeepsCompleteTimeline",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#cancelledDocumentDoesNotEmitLateSuccessOrFailure",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#missingSegmentIsNotSilentlyTreatedAsEmpty",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#fullCatalogueEnrichesPreviewWithBroadcastDate",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#liveCurrentVarietyAndMovieProduceCompletePlayableDocuments",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#completeDocumentRequiresEverySegmentAndKeepsMilliseconds",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#failedSegmentCannotCommitPartialDocument",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveCommonPlatformLinksProducePlayableComments",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveMangoAutomaticAndManualBonusThenDirectLink",
+              "status": -2
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveSeasonFourAndMovieAutomaticThenManualSelection",
+              "status": 0
+            }
+          ]
+        },
+        {
+          "log": "phone-ui-final.txt",
+          "tests": [
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveMangoAutomaticAndManualBonusThenDirectLink",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.activity.DanmakuPlaybackInstrumentedTest#manualSelectionRendersAndPipNeverPersistsTemporaryHiding",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.activity.DanmakuPlaybackInstrumentedTest#liveVarietyUpperLowerAndMovieRenderActualCommentPixels",
+              "status": 0
+            }
+          ]
+        },
+        {
+          "log": "phone-boundary-final.txt",
+          "tests": [
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveMangoAutomaticAndManualBonusThenDirectLink",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#savedAutomaticRestoreCannotOverwriteANewerManualChoice",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#manualFailureRecoversTheConfirmedMovieOrPartAcrossProviders",
+              "status": 0
+            }
+          ]
+        },
+        {
+          "log": "mobile-movie-final.txt",
+          "tests": [
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveMangoMainDatesHalvesAndExtrasDownloadDistinctDocuments",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveOtherMangoVarietyDatesAndMovieCatalogue",
+              "status": 0
+            }
+          ]
+        }
+      ]
+    },
+    "leanback": {
+      "passed": 28,
+      "failed": 0,
+      "finalCases": {
+        "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#mangoCancellationHasNoLateCallback": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#mangoFailedSegmentDoesNotCommitPartialDocument": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveMangoMainDatesHalvesAndExtrasDownloadDistinctDocuments": {
+          "status": 0,
+          "log": "leanback-movie-final.txt"
+        },
+        "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveOtherMangoVarietyDatesAndMovieCatalogue": {
+          "status": 0,
+          "log": "leanback-movie-final.txt"
+        },
+        "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveCommonPlatformLinksProducePlayableComments": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#transientSegmentFailureRetriesOnceAndKeepsCompleteTimeline": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#cancelledDocumentDoesNotEmitLateSuccessOrFailure": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#missingSegmentIsNotSilentlyTreatedAsEmpty": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#fullCatalogueEnrichesPreviewWithBroadcastDate": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#liveCurrentVarietyAndMovieProduceCompletePlayableDocuments": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#completeDocumentRequiresEverySegmentAndKeepsMilliseconds": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#failedSegmentCannotCommitPartialDocument": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest#liveCommonPlatformsRenderActualPixelsOnBothFlavors": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#manualSearchGroupsWorksAndKeepsAllEpisodesSelectable": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#accessDeniedIsVisibleAndRetryRecovers": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveMangoAutomaticAndManualBonusThenDirectLink": {
+          "status": 0,
+          "log": "tv-boundary-final.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveProviderSearchesAndParsesUserExamples": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#aiKeyAndRecommendedModelAreReachableFromPlaybackSearch": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#switchingSearchCancelsObsoleteDocumentValidation": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#savedAutomaticRestoreCannotOverwriteANewerManualChoice": {
+          "status": 0,
+          "log": "tv-boundary-final.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#manualFailureRecoversTheConfirmedMovieOrPartAcrossProviders": {
+          "status": 0,
+          "log": "tv-boundary-final.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveSeasonFourAndMovieAutomaticThenManualSelection": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#automaticMovieAndDatedVarietyDownloadParseAndCache": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveDramaEpisode14AutomaticAndManualWorkEpisodeFlow": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#unavailableFirstFourDocumentsDoNotHideTheWorkingFifth": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.player.PlayerManagerDanmakuInstrumentedTest#explicitManualSelectionDetachesThenReloadsSameSource": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.player.PlayerManagerDanmakuInstrumentedTest#compactSearchButtonFitsCompleteLabel": {
+          "status": 0,
+          "log": "tv-full.txt"
+        },
+        "com.fongmi.android.tv.player.PlayerManagerDanmakuInstrumentedTest#replayRemountsSelectedDanmakuSource": {
+          "status": 0,
+          "log": "tv-full.txt"
+        }
+      },
+      "runs": [
+        {
+          "log": "tv-full.txt",
+          "tests": [
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#mangoCancellationHasNoLateCallback",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#mangoFailedSegmentDoesNotCommitPartialDocument",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveMangoMainDatesHalvesAndExtrasDownloadDistinctDocuments",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveOtherMangoVarietyDatesAndMovieCatalogue",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveCommonPlatformLinksProducePlayableComments",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#transientSegmentFailureRetriesOnceAndKeepsCompleteTimeline",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#cancelledDocumentDoesNotEmitLateSuccessOrFailure",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#missingSegmentIsNotSilentlyTreatedAsEmpty",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#fullCatalogueEnrichesPreviewWithBroadcastDate",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#liveCurrentVarietyAndMovieProduceCompletePlayableDocuments",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#completeDocumentRequiresEverySegmentAndKeepsMilliseconds",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#failedSegmentCannotCommitPartialDocument",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest#liveCommonPlatformsRenderActualPixelsOnBothFlavors",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#manualSearchGroupsWorksAndKeepsAllEpisodesSelectable",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#accessDeniedIsVisibleAndRetryRecovers",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveMangoAutomaticAndManualBonusThenDirectLink",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveProviderSearchesAndParsesUserExamples",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#aiKeyAndRecommendedModelAreReachableFromPlaybackSearch",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#switchingSearchCancelsObsoleteDocumentValidation",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#savedAutomaticRestoreCannotOverwriteANewerManualChoice",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#manualFailureRecoversTheConfirmedMovieOrPartAcrossProviders",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveSeasonFourAndMovieAutomaticThenManualSelection",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#automaticMovieAndDatedVarietyDownloadParseAndCache",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveDramaEpisode14AutomaticAndManualWorkEpisodeFlow",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#unavailableFirstFourDocumentsDoNotHideTheWorkingFifth",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.player.PlayerManagerDanmakuInstrumentedTest#explicitManualSelectionDetachesThenReloadsSameSource",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.player.PlayerManagerDanmakuInstrumentedTest#compactSearchButtonFitsCompleteLabel",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.player.PlayerManagerDanmakuInstrumentedTest#replayRemountsSelectedDanmakuSource",
+              "status": 0
+            }
+          ]
+        },
+        {
+          "log": "tv-boundary-initial.txt",
+          "tests": [
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveMangoAutomaticAndManualBonusThenDirectLink",
+              "status": -2
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#savedAutomaticRestoreCannotOverwriteANewerManualChoice",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#manualFailureRecoversTheConfirmedMovieOrPartAcrossProviders",
+              "status": 0
+            }
+          ]
+        },
+        {
+          "log": "tv-boundary-final.txt",
+          "tests": [
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveMangoAutomaticAndManualBonusThenDirectLink",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#savedAutomaticRestoreCannotOverwriteANewerManualChoice",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#manualFailureRecoversTheConfirmedMovieOrPartAcrossProviders",
+              "status": 0
+            }
+          ]
+        },
+        {
+          "log": "leanback-movie-final.txt",
+          "tests": [
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveMangoMainDatesHalvesAndExtrasDownloadDistinctDocuments",
+              "status": 0
+            },
+            {
+              "test": "com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest#liveOtherMangoVarietyDatesAndMovieCatalogue",
+              "status": 0
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "unit": {
+    "mobile": {
+      "tests": 305,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "leanback": {
+      "tests": 305,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "staticChecks": {
+    "mobileDesign": "pass",
+    "premiumStrict": {
+      "errors": 0,
+      "total": 0,
+      "unresolved": 0,
+      "violations": 0,
+      "warnings": 0
+    },
+    "diffWhitespace": "pass"
+  }
+}

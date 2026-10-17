@@ -83,7 +83,7 @@
     <string name="danmaku_manual_search">搜尋彈幕</string>
     <string name="danmaku_manual_match_title">手動匹配彈幕</string>
     <string name="danmaku_manual_match_hint">同時搜尋平台和已配置線路，先選作品，再選集</string>
-    <string name="danmaku_search_ready">輸入影片名稱，查找可用彈幕源</string>
+    <string name="danmaku_search_ready">輸入片名，或貼上影片平台播放連結尋找彈幕</string>
     <string name="danmaku_search_action">搜尋</string>
     <string name="danmaku_search_running">正在搜尋 <xliff:g name="count">%d</xliff:g> 條線路…</string>
     <string name="danmaku_search_result">找到 <xliff:g name="count">%d</xliff:g> 個匹配彈幕源</string>
@@ -321,4 +321,9 @@
     <string name="danmaku_selection_failed">目前彈幕載入失敗，點擊選集重試或選擇其他來源</string>
     <string name="danmaku_ai_entry">AI 輔助匹配 · 金鑰與模型</string>
     <string name="danmaku_ai_model_hint">推薦 qwen3.5-flash，費用以服務商實際計費為準。</string>
+    <string name="danmaku_tencent_direct">騰訊影片 · 直連</string>
+    <string name="danmaku_mango_direct">芒果TV · 直連</string>
+    <string name="danmaku_youku_direct">優酷 · 直連</string>
+    <string name="danmaku_bilibili_direct">嗶哩嗶哩 · 直連</string>
+    <string name="danmaku_gamer_direct">巴哈姆特 · 直連</string>
 </resources>

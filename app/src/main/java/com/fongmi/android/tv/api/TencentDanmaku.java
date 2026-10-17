@@ -57,7 +57,9 @@ public final class TencentDanmaku {
                     if (!visited.add(context)) continue;
                     try {
                         var page = TencentDanmakuCodec.episodes(job.json(EPISODES_URL, episodePayload(work.id(), context), 4_000_000), work);
-                        for (Danmaku row : page.rows()) rows.putIfAbsent(row.getUrl(), row);
+                        // Full catalogue labels carry broadcast dates/edition names missing
+                        // from the search preview. Enrich the same verified video ID in place.
+                        for (Danmaku row : page.rows()) rows.put(row.getUrl(), row);
                         for (String next : page.contexts()) if (!visited.contains(next)) contexts.addLast(next);
                     } catch (IOException error) {
                         // Search already carries usable recent episodes. A supplementary page
@@ -104,7 +106,14 @@ public final class TencentDanmaku {
             for (int i = 0; i < Math.min(4, urls.size()); i++) workers.add(job.submit(SEGMENTS, () -> {
                 for (int index; (index = next.getAndIncrement()) < urls.size();) {
                     try {
-                        var comments = TencentDanmakuCodec.comments(job.json(urls.get(index), null, 2_000_000), perSegment);
+                        String data;
+                        try { data = job.json(urls.get(index), null, 2_000_000); }
+                        catch (IOException first) {
+                            // A long episode has hundreds of segments. Retry a transient transport
+                            // failure once within the same deadline, never commit a partial timeline.
+                            job.check(); data = job.json(urls.get(index), null, 2_000_000);
+                        }
+                        var comments = TencentDanmakuCodec.comments(data, perSegment);
                         int chars = 0; for (var comment : comments) chars += comment.text().length();
                         if (textSize.addAndGet(chars) > 8 * 1024 * 1024) throw new IOException("Tencent comment text exceeds limit");
                         synchronized (segments) { segments.set(index, comments); }

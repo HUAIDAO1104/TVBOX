@@ -232,6 +232,17 @@ public class DanmakuAdapter extends RecyclerView.Adapter<DanmakuAdapter.ViewHold
         String name = item == null ? "" : item.getName();
         String provider = DanmakuMatch.resultProvider(name);
         String platform = DanmakuMatch.resultPlatform(name);
+        if (item != null && (com.fongmi.android.tv.api.NativeDanmaku.isSource(item.getSourceKey()))) {
+            int label = switch (provider) {
+                case "tencent" -> R.string.danmaku_tencent_direct;
+                case "mango" -> R.string.danmaku_mango_direct;
+                case "youku" -> R.string.danmaku_youku_direct;
+                case "bilibili" -> R.string.danmaku_bilibili_direct;
+                case "gamer" -> R.string.danmaku_gamer_direct;
+                default -> 0;
+            };
+            if (label != 0) return resources.getString(label);
+        }
         String source = provider.isEmpty() ? platform : platform.isEmpty() ? provider : provider + " / " + platform;
         if (source.isEmpty()) source = resources.getString(R.string.danmaku_group_other_source);
         Integer season = DanmakuMatch.resultSeason(name);

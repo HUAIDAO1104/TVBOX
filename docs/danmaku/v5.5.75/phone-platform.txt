@@ -1,0 +1,106 @@
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest:
+INSTRUMENTATION_STATUS: test=mangoCancellationHasNoLateCallback
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=mangoCancellationHasNoLateCallback
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=mangoFailedSegmentDoesNotCommitPartialDocument
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=mangoFailedSegmentDoesNotCommitPartialDocument
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=liveMangoMainDatesHalvesAndExtrasDownloadDistinctDocuments
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=liveMangoMainDatesHalvesAndExtrasDownloadDistinctDocuments
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=liveOtherMangoVarietyDatesAndMovieCatalogue
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: java.io.IOException: Platform request failed
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest.waitFor(PlatformDanmakuInstrumentedTest.java:27)
+	at com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest.checkDocument(PlatformDanmakuInstrumentedTest.java:60)
+	at com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest.liveOtherMangoVarietyDatesAndMovieCatalogue(PlatformDanmakuInstrumentedTest.java:47)
+
+INSTRUMENTATION_STATUS: stream=
+Error in liveOtherMangoVarietyDatesAndMovieCatalogue(com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest):
+java.lang.AssertionError: java.io.IOException: Platform request failed
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest.waitFor(PlatformDanmakuInstrumentedTest.java:27)
+	at com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest.checkDocument(PlatformDanmakuInstrumentedTest.java:60)
+	at com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest.liveOtherMangoVarietyDatesAndMovieCatalogue(PlatformDanmakuInstrumentedTest.java:47)
+
+INSTRUMENTATION_STATUS: test=liveOtherMangoVarietyDatesAndMovieCatalogue
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=liveCommonPlatformLinksProducePlayableComments
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=liveCommonPlatformLinksProducePlayableComments
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 39.524
+There was 1 failure:
+1) liveOtherMangoVarietyDatesAndMovieCatalogue(com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest)
+java.lang.AssertionError: java.io.IOException: Platform request failed
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest.waitFor(PlatformDanmakuInstrumentedTest.java:27)
+	at com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest.checkDocument(PlatformDanmakuInstrumentedTest.java:60)
+	at com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest.liveOtherMangoVarietyDatesAndMovieCatalogue(PlatformDanmakuInstrumentedTest.java:47)
+
+FAILURES!!!
+Tests run: 5,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1

@@ -83,7 +83,7 @@
     <string name="danmaku_manual_search">Search danmaku</string>
     <string name="danmaku_manual_match_title">Manual danmaku matching</string>
     <string name="danmaku_manual_match_hint">Search platform and configured providers, then choose a work and episode</string>
-    <string name="danmaku_search_ready">Enter a title to find matching danmaku sources</string>
+    <string name="danmaku_search_ready">Enter a title or paste a platform video link to find danmaku</string>
     <string name="danmaku_search_action">Search</string>
     <string name="danmaku_search_running">Searching <xliff:g name="count">%d</xliff:g> providers…</string>
     <string name="danmaku_search_result"><xliff:g name="count">%d</xliff:g> matching sources found</string>
@@ -344,4 +344,9 @@
     <string name="danmaku_selection_failed">Could not load this episode. Select it to retry or choose another source.</string>
     <string name="danmaku_ai_entry">AI matching · API key &amp; model</string>
     <string name="danmaku_ai_model_hint">Recommended: qwen3.5-flash. Pricing is set by your provider.</string>
+    <string name="danmaku_tencent_direct">Tencent Video · Direct</string>
+    <string name="danmaku_mango_direct">Mango TV · Direct</string>
+    <string name="danmaku_youku_direct">Youku · Direct</string>
+    <string name="danmaku_bilibili_direct">Bilibili · Direct</string>
+    <string name="danmaku_gamer_direct">Bahamut · Direct</string>
 </resources>

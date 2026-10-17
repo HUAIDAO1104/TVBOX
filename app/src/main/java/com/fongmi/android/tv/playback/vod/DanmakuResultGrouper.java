@@ -34,7 +34,7 @@ public final class DanmakuResultGrouper {
             for (Danmaku item : source) {
                 if (item == null || item.isEmpty() || item.isBlockedSource()) continue;
                 String candidate = DanmakuMatch.canonicalTitle(item.getMatchName());
-                if (!base.equals(candidate.replaceFirst("#\\d+$", ""))
+                if (!com.fongmi.android.tv.api.NativeDanmaku.supports(title) && !base.equals(candidate.replaceFirst("#\\d+$", ""))
                         && !(expected.length() >= 2 && candidate.contains(expected))) continue;
                 // The API returns the complete season even when an episode is supplied. Keeping
                 // explicit wrong episodes made a small source picker into a list of hundreds.
