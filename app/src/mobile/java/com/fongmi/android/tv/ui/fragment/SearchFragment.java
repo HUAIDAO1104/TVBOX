@@ -93,6 +93,7 @@ public class SearchFragment extends BaseFragment implements  WordAdapter.OnClick
 
     @Override
     protected void initView() {
+        App.post(() -> com.fongmi.android.tv.utils.Task.execute(com.fongmi.android.tv.search.IsolatedSpiderSearch::prewarm));
         mBinding.toolbar.setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_ab_back_material);
         mBinding.toolbar.setNavigationContentDescription(R.string.mobile_back);
         mBinding.toolbar.setNavigationOnClickListener(v -> requireActivity().getOnBackPressedDispatcher().onBackPressed());

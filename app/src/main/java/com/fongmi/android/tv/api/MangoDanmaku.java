@@ -27,11 +27,18 @@ public final class MangoDanmaku {
     public static NativeDanmaku.Job search(String query, IqiyiDanmaku.Callback<List<Danmaku>> callback) {
         return search(query, callback, NativeDanmakuRequest.CLIENT);
     }
+    public static NativeDanmaku.Job searchTarget(String query, String year, String type, IqiyiDanmaku.Callback<List<Danmaku>> callback) {
+        return search(query, year, type, callback, NativeDanmakuRequest.CLIENT);
+    }
     static NativeDanmaku.Job search(String query, IqiyiDanmaku.Callback<List<Danmaku>> callback, OkHttpClient client) {
+        return search(query, "", "", callback, client);
+    }
+    private static NativeDanmaku.Job search(String query, String year, String type, IqiyiDanmaku.Callback<List<Danmaku>> callback, OkHttpClient client) {
+        String cacheKey = query + "|" + year + "|" + type;
         var job = new NativeDanmakuRequest(18000, "https://so.mgtv.com/", client);
         job.start(NativeDanmakuRequest.SEARCH, () -> {
             synchronized (CACHE) {
-                Cached cached = CACHE.get(query);
+                Cached cached = CACHE.get(cacheKey);
                 if (cached != null && System.nanoTime() - cached.created() < java.util.concurrent.TimeUnit.MINUTES.toNanos(5)) return copy(cached.rows());
             }
             if (supports(query)) {
@@ -41,6 +48,7 @@ public final class MangoDanmaku {
             }
             Map<String, Danmaku> rows = new LinkedHashMap<>();
             for (Work work : works(job.text(searchUrl(query)), query)) {
+                if ((!year.isEmpty() || !type.isEmpty()) && !NativeDanmaku.acceptsWork(query, year, type, work.matchTitle(), work.year(), work.type())) continue;
                 JsonObject first = response(job.text(listUrl(work.cid(), "", 1)), "code", "200");
                 Set<String> months = new LinkedHashSet<>();
                 String current = str(obj(first, "cur"), "m");
@@ -62,7 +70,7 @@ public final class MangoDanmaku {
             List<Danmaku> result = List.copyOf(rows.values());
             job.check();
             if (!result.isEmpty()) synchronized (CACHE) {
-                CACHE.put(query, new Cached(System.nanoTime(), copy(result)));
+                CACHE.put(cacheKey, new Cached(System.nanoTime(), copy(result)));
                 while (CACHE.size() > 12) CACHE.remove(CACHE.keySet().iterator().next());
             }
             return result;

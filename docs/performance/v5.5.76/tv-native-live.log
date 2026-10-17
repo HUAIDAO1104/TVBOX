@@ -1,0 +1,45 @@
+com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest:
+Error in liveMangoAutomaticAndManualBonusThenDirectLink(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:598)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveMangoAutomaticAndManualBonusThenDirectLink(DanmakuSearchInstrumentedTest.java:319)
+
+Error in liveSeasonFourAndMovieAutomaticThenManualSelection(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:598)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:537)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveSeasonFourAndMovieAutomaticThenManualSelection(DanmakuSearchInstrumentedTest.java:268)
+
+com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest:
+Error in liveCommonPlatformsRenderActualPixelsOnBothFlavors(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest):
+java.lang.AssertionError: 间谍过家家 from bilibili - 第13话
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertFalse(Assert.java:65)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.liveCommonPlatformsRenderActualPixelsOnBothFlavors(PlatformPlaybackInstrumentedTest.java:60)
+
+
+Time: 164.554
+There were 3 failures:
+1) liveMangoAutomaticAndManualBonusThenDirectLink(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:598)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveMangoAutomaticAndManualBonusThenDirectLink(DanmakuSearchInstrumentedTest.java:319)
+2) liveSeasonFourAndMovieAutomaticThenManualSelection(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:598)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:537)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveSeasonFourAndMovieAutomaticThenManualSelection(DanmakuSearchInstrumentedTest.java:268)
+3) liveCommonPlatformsRenderActualPixelsOnBothFlavors(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+java.lang.AssertionError: 间谍过家家 from bilibili - 第13话
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertFalse(Assert.java:65)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.liveCommonPlatformsRenderActualPixelsOnBothFlavors(PlatformPlaybackInstrumentedTest.java:60)
+
+FAILURES!!!
+Tests run: 3,  Failures: 3

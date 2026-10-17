@@ -1,0 +1,39 @@
+{
+  "versionCode": 627,
+  "versionName": "5.5.76-performance",
+  "environment": "API 36 ARM64 dedicated emulator; mobile 320dp and 1.3x update UI font; TV 1920x1080 with DPAD",
+  "physicalDevicesTested": false,
+  "unit": {
+    "Mobile": {
+      "tests": 307,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "Leanback": {
+      "tests": 307,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "instrumentationFinalUniqueCases": {
+    "mobile": 31,
+    "leanback": 35
+  },
+  "initialFailuresPreserved": [
+    "initial-test-compile-failure.log",
+    "tv-regression.log",
+    "tv-native-live.log"
+  ],
+  "notes": [
+    "Counts deduplicate reruns. Final retry logs supersede the initial runtime failures.",
+    "Full APK transfer uses a published v5.5.75 asset with its exact SHA-256.",
+    "Update dialog screenshots are deterministic UI state fixtures, not live speed measurements.",
+    "External platform responses and throughput are environment dependent."
+  ],
+  "instrumentationFinalFailures": {
+    "mobile": 0,
+    "leanback": 0
+  }
+}

@@ -54,14 +54,13 @@ public class DanmakuApi {
         static final okhttp3.OkHttpClient INSTANCE = OkHttp.client().newBuilder()
                 .dispatcher(new okhttp3.Dispatcher())
                 .connectTimeout(8, java.util.concurrent.TimeUnit.SECONDS)
-                .readTimeout(35, java.util.concurrent.TimeUnit.SECONDS)
-                .callTimeout(40, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(12, java.util.concurrent.TimeUnit.SECONDS)
+                .callTimeout(14, java.util.concurrent.TimeUnit.SECONDS)
                 .retryOnConnectionFailure(false).build();
     }
 
     public static boolean canSearch() {
-        return DanmakuSetting.isLoad() && DanmakuSetting.isAuto()
-                && !TextUtils.isEmpty(DanmakuSetting.getAutomaticApiUrl());
+        return DanmakuSetting.isLoad() && DanmakuSetting.isAuto();
     }
 
     public static Call newCall(String name, String episode) {
@@ -93,10 +92,7 @@ public class DanmakuApi {
 
     public static void searchDetailed(String name, String year, String type, String episode,
                                       SearchCallback callback) {
-        int generation = beginSearch();
-        searchCandidateParallel(generation, DanmakuQuery.from(name, year), Objects.toString(year, ""),
-                Objects.toString(type, ""), episode, "", orderedEndpoints(""), callback, 0,
-                0, new SearchStats(generation, callback));
+        searchStaged(name, year, type, episode, "", NativeDanmaku.sources(), orderedEndpoints(""), callback);
     }
 
     public static void searchPreferred(String name, String year, String type, String episode,
@@ -115,10 +111,18 @@ public class DanmakuApi {
     public static void searchPreferredDetailed(String name, String year, String type, String episode,
                                                String selectedName, String selectedSourceKey,
                                                SearchCallback callback) {
+        searchStaged(name, year, type, episode, Objects.toString(selectedName, ""),
+                NativeDanmaku.sources(), orderedEndpoints(selectedSourceKey), callback);
+    }
+
+    // One shared pipeline for automatic matching and recovery of a manually confirmed work.
+    // Backup services are only contacted after direct catalogues/documents are exhausted.
+    static void searchStaged(String name, String year, String type, String episode, String preferredName,
+                             List<String> direct, List<String> backup, SearchCallback callback) {
         int generation = beginSearch();
+        SearchStats stats = new SearchStats(generation, callback, backup);
         searchCandidateParallel(generation, DanmakuQuery.from(name, year), Objects.toString(year, ""),
-                Objects.toString(type, ""), episode, Objects.toString(selectedName, ""),
-                orderedEndpoints(selectedSourceKey), callback, 0, 0, new SearchStats(generation, callback));
+                Objects.toString(type, ""), episode, preferredName, direct, callback, 0, 0, stats);
     }
 
     private static SearchCallback callback(Consumer<Danmaku> found) {
@@ -131,7 +135,6 @@ public class DanmakuApi {
 
     private static List<String> orderedEndpoints(String preferredSourceKey) {
         LinkedHashSet<String> ordered = new LinkedHashSet<>();
-        ordered.addAll(NativeDanmaku.sources());
         for (String apiUrl : DanmakuSetting.getSearchApiUrls()) {
             if (!preferredSourceKey.isEmpty()
                     && DanmakuManualMatchStore.sourceKey(apiUrl).equals(preferredSourceKey)) ordered.add(apiUrl);
@@ -150,6 +153,12 @@ public class DanmakuApi {
                                                 SearchStats stats) {
         if (generation != REQUEST_GENERATION.get()) return;
         if (candidateIndex >= query.candidates().size() || apiUrls.isEmpty()) {
+            if (stats.directPhase.compareAndSet(true, false) && !stats.backup.isEmpty()) {
+                cancelNativeSearches();
+                searchCandidateParallel(generation, query, year, type, episode, preferredName,
+                        stats.backup, callback, 0, 0, stats);
+                return;
+            }
             SearchFailure failure = stats.download.get() > 0 ? SearchFailure.DOWNLOAD
                     : stats.denied.get() > 0 ? SearchFailure.ACCESS_DENIED
                     : stats.network.get() > 0 ? SearchFailure.NETWORK
@@ -171,8 +180,19 @@ public class DanmakuApi {
             Call current = calls.get(i);
             String apiUrl = apiUrls.get(i);
             class ProviderCallback extends Callback implements IqiyiDanmaku.Callback<List<Danmaku>> {
+                final AtomicBoolean completed = new AtomicBoolean();
+                final AtomicBoolean received = new AtomicBoolean();
+                volatile NativeDanmaku.Job job;
+                final Runnable searchDeadline = () -> {
+                    if (!received.compareAndSet(false, true) || completed.get()) return;
+                    if (job != null) job.cancel();
+                    stats.network.incrementAndGet();
+                    stats.failedEndpoints.add(apiUrl);
+                    completeOne();
+                };
                 @Override public void onSuccess(List<Danmaku> items) {
-                    if (generation != REQUEST_GENERATION.get() || finished.get()) return;
+                    if (generation != REQUEST_GENERATION.get() || finished.get() || !received.compareAndSet(false, true)) return;
+                    App.removeCallbacks(searchDeadline);
                     accept(items);
                 }
 
@@ -192,7 +212,8 @@ public class DanmakuApi {
                 @Override
                 public void onResponse(@NonNull Call call, @NonNull Response response) {
                     try (Response closeable = response) {
-                        if (generation != REQUEST_GENERATION.get() || finished.get()) return;
+                        if (generation != REQUEST_GENERATION.get() || finished.get() || !received.compareAndSet(false, true)) return;
+                        App.removeCallbacks(searchDeadline);
                         if (!closeable.isSuccessful() || closeable.body() == null) {
                             if (closeable.code() == 401 || closeable.code() == 403) stats.denied.incrementAndGet();
                             else stats.network.incrementAndGet();
@@ -210,14 +231,16 @@ public class DanmakuApi {
 
                 @Override
                 public void onFailure(@NonNull Call call, @NonNull IOException error) {
-                    if (generation != REQUEST_GENERATION.get() || finished.get()) return;
+                    if (generation != REQUEST_GENERATION.get() || finished.get() || !received.compareAndSet(false, true)) return;
+                    App.removeCallbacks(searchDeadline);
                     stats.network.incrementAndGet();
                     stats.failedEndpoints.add(apiUrl);
                     completeOne();
                 }
 
                 private void completeOne() {
-                    if (generation != REQUEST_GENERATION.get() || finished.get()) return;
+                    if (generation != REQUEST_GENERATION.get() || finished.get() || !completed.compareAndSet(false, true)) return;
+                    App.removeCallbacks(searchDeadline);
                     if (remaining.decrementAndGet() == 0 && finished.compareAndSet(false, true)) {
                         List<String> usable = new ArrayList<>(apiUrls);
                         usable.removeAll(stats.failedEndpoints);
@@ -239,9 +262,12 @@ public class DanmakuApi {
             ProviderCallback provider = new ProviderCallback();
             if (current != null) current.enqueue(provider);
             else {
-                NativeDanmaku.Job job = NativeDanmaku.search(apiUrl, candidateTitle, provider);
-                NATIVE_SEARCHES.add(job);
-                if (generation != REQUEST_GENERATION.get() || stats.delivered.get()) job.cancel();
+                // A stalled catalogue cannot hold the backup phase for tens of seconds.
+                // Once a candidate is found, its bounded full-document download owns the wait.
+                App.post(provider.searchDeadline, 8_000L);
+                provider.job = NativeDanmaku.search(apiUrl, candidateTitle, TextUtils.isEmpty(year) ? query.year() : year.trim(), type, provider);
+                NATIVE_SEARCHES.add(provider.job);
+                if (generation != REQUEST_GENERATION.get() || stats.delivered.get() || provider.completed.get()) provider.job.cancel();
             }
         }
     }
@@ -369,7 +395,11 @@ public class DanmakuApi {
         private final AtomicBoolean delivered = new AtomicBoolean();
         private final Runnable deadline;
 
-        SearchStats(int generation, SearchCallback callback) {
+        private final AtomicBoolean directPhase = new AtomicBoolean(true);
+        private final List<String> backup;
+
+        SearchStats(int generation, SearchCallback callback, List<String> backup) {
+            this.backup = List.copyOf(backup);
             deadline = () -> {
                 if (generation != REQUEST_GENERATION.get() || !delivered.compareAndSet(false, true)) return;
                 beginSearch();
@@ -377,6 +407,8 @@ public class DanmakuApi {
             };
             // Includes title fallbacks and comment validation; no sequence of stale IDs can
             // leave automatic matching spinning for minutes.
+            // Preserve enough time for a bounded direct document failure followed by a
+            // backup document. Faster catalogue selection must not truncate a valid timeline.
             App.post(deadline, 90_000L);
         }
 

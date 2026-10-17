@@ -17,6 +17,8 @@ public final class IsolatedSpiderSearch {
     private static final Object LOCK = new Object();
     private static final List<Slot> SLOTS = new ArrayList<>();
     private static final AtomicInteger REQUEST_IDS = new AtomicInteger();
+    private static final AtomicBoolean WARMING = new AtomicBoolean();
+    private static final ExecutorService WARMUP = Executors.newFixedThreadPool(2);
     private static final int REQUEST_TIMEOUT_MS = 22000;
     private static final long IDLE_MS = 60000;
     static {
@@ -30,6 +32,28 @@ public final class IsolatedSpiderSearch {
         for (int i = 0; i < count; i++) SLOTS.add(new Slot(services[i]));
     }
     public static int parallelism() { return SLOTS.size(); }
+
+    /** Prepare only the process/IPC layer while the user is typing; never execute source code. */
+    public static void prewarm() {
+        if (!WARMING.compareAndSet(false, true)) return;
+        WARMUP.execute(() -> {
+            try {
+                String context = VodConfig.getUrl() + '#' + com.fongmi.android.tv.cloud.CloudCredentialBridge.generation();
+                for (int i = 0; i < Math.min(2, SLOTS.size()); i++) {
+                    Slot slot = SLOTS.get(i);
+                    synchronized (LOCK) {
+                        if (slot.busy) continue;
+                        slot.busy = true; slot.lease++;
+                    }
+                    try {
+                        if (!context.equals(slot.context) || slot.client != null && slot.client.disconnected) slot.close();
+                        slot.context = context; slot.connect();
+                    } catch (Exception ignored) { slot.close(); }
+                    finally { release(slot); }
+                }
+            } finally { WARMING.set(false); }
+        });
+    }
 
     public static Result search(Site original, String keyword, boolean quick, String page) throws Exception {
         return execute(original, keyword, quick, page, false);
@@ -101,20 +125,23 @@ public final class IsolatedSpiderSearch {
         } finally {
             if (request != null) for (ParcelFileDescriptor fd : request) try { fd.close(); } catch (IOException ignored) { }
             if (!successful) slot.close();
-            synchronized (LOCK) {
-                slot.busy = false;
-                long lease = slot.lease;
-                // A bounded idle lifetime releases RAM without throwing away every successful load.
-                com.fongmi.android.tv.utils.Task.schedule(() -> com.fongmi.android.tv.utils.Task.execute(() -> {
-                    synchronized (LOCK) {
-                        if (slot.busy || slot.lease != lease) return;
-                        slot.busy = true;
-                    }
-                    try { slot.close(); }
-                    finally { synchronized (LOCK) { slot.busy = false; LOCK.notifyAll(); } }
-                }), IDLE_MS, TimeUnit.MILLISECONDS);
-                LOCK.notifyAll();
-            }
+            release(slot);
+        }
+    }
+
+    private static void release(Slot slot) {
+        synchronized (LOCK) {
+            slot.busy = false;
+            long lease = slot.lease;
+            com.fongmi.android.tv.utils.Task.schedule(() -> WARMUP.execute(() -> {
+                synchronized (LOCK) {
+                    if (slot.busy || slot.lease != lease) return;
+                    slot.busy = true;
+                }
+                try { slot.close(); }
+                finally { synchronized (LOCK) { slot.busy = false; LOCK.notifyAll(); } }
+            }), IDLE_MS, TimeUnit.MILLISECONDS);
+            LOCK.notifyAll();
         }
     }
 

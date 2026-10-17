@@ -33,6 +33,7 @@ abstract class BaseConfig {
     private final AtomicInteger taskId = new AtomicInteger(0);
 
     protected boolean sync;
+    private volatile String loadedUrl = "";
     protected volatile Config config;
     private volatile Future<?> future;
     private volatile java.util.concurrent.ScheduledFuture<?> deadline;
@@ -80,6 +81,19 @@ abstract class BaseConfig {
         OkHttp.dns().addAll(hosts);
     }
 
+    public void loadIfNeeded(Callback callback) {
+        int id = taskId.get();
+        String url = loadedUrl;
+        if ((future == null || future.isDone()) && isLoaded() && !url.isEmpty() && url.equals(getConfig().getUrl())) {
+            callback.start();
+            App.post(() -> {
+                if (taskId.get() != id || !url.equals(getConfig().getUrl())) return;
+                callback.success();
+                postEvent();
+            });
+        } else load(callback);
+    }
+
     public void load(Callback callback) {
         int id = taskId.incrementAndGet();
         if (future != null && !future.isDone()) future.cancel(true);
@@ -102,6 +116,7 @@ abstract class BaseConfig {
             OkHttp.cancel(getTag());
             load(config);
             if (taskId.get() != id) return;
+            loadedUrl = getConfig().getUrl();
             if (config.equals(this.config)) config.update();
             App.post(() -> { if (taskId.get() == id) callback.success(); });
         } catch (Throwable e) {

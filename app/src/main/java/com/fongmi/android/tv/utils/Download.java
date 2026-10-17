@@ -51,6 +51,10 @@ public class Download {
     private String tag;
     private boolean fastestFirst;
     private boolean resume;
+    private long expectedSize;
+    private volatile RangedDownload ranged;
+    private volatile boolean cancelled;
+    private int lastProgress = -1;
 
     public static Download create(String url, File file) {
         return new Download(List.of(url), file);
@@ -101,6 +105,8 @@ public class Download {
         return this;
     }
 
+    public Download size(long bytes) { expectedSize = bytes; return this; }
+
     public Download resume() {
         this.resume = true;
         return this;
@@ -117,6 +123,9 @@ public class Download {
     }
 
     public Download cancel() {
+        cancelled = true;
+        RangedDownload active = ranged;
+        if (active != null) active.cancel();
         if (future != null) future.cancel(true);
         OkHttp.cancel(tag);
         future = null;
@@ -130,9 +139,26 @@ public class Download {
             complete();
             return;
         }
-        List<String> candidates = fastestFirst ? probeAndOrder() : new ArrayList<>(urls);
+        if (fastestFirst && expectedSize > 0 && sha256 != null && !sha256.isBlank()) {
+            RangedDownload transfer = new RangedDownload(client());
+            ranged = transfer;
+            try {
+                if (transfer.transfer(urls, file, expectedSize, (url, speed, done, total) -> {
+                    notifyStatus(url, speed, done, total);
+                    notifyProgress((int) Math.min(99, done * 100 / total));
+                })) {
+                    if (isComplete()) { complete(); return; }
+                    Path.clear(file);
+                    last = new IOException("APK checksum mismatch");
+                }
+            } catch (IOException error) { last = error; }
+            finally { transfer.cancel(); ranged = null; }
+            if (cancelled || Thread.currentThread().isInterrupted()) return;
+        }
+        // The range race already selected/transferred real bytes; do not run a second probe.
+        List<String> candidates = fastestFirst && expectedSize <= 0 ? probeAndOrder() : new ArrayList<>(urls);
         for (String url : candidates) {
-            if (Thread.currentThread().isInterrupted()) return;
+            if (cancelled || Thread.currentThread().isInterrupted()) return;
             try {
                 download(url);
                 if (sha256 != null && !sha256.isBlank() && !com.fongmi.android.tv.update.UpdateVerifier.checksumMatches(file, sha256)) {
@@ -145,9 +171,9 @@ public class Download {
                 last = e;
             }
         }
-        if (Thread.currentThread().isInterrupted()) return;
+        if (cancelled || Thread.currentThread().isInterrupted()) return;
         Exception error = last == null ? new IOException("No download source") : last;
-        if (callback != null) App.post(() -> callback.error(error.getMessage()));
+        if (callback != null) App.post(() -> { if (!cancelled) callback.error(error.getMessage()); });
         else throw new RuntimeException(error.getMessage(), error);
     }
 
@@ -164,11 +190,14 @@ public class Download {
             }
             ResponseBody body = response.body();
             if (!response.isSuccessful() || body == null) throw new IOException("HTTP " + response.code());
+            if (response.code() == 206 && !DownloadRange.startsAt(response.header(HttpHeaders.CONTENT_RANGE), existing))
+                throw new IOException("Mirror returned a different update range");
             boolean append = existing > 0L && response.code() == 206;
             if (!append) existing = 0L;
             long total = getTotalLength(response, existing);
             notifyStatus(url, 0L, existing, total);
             download(body.byteStream(), total, existing, append, url);
+            if (expectedSize > 0 && file.length() != expectedSize) throw new IOException("Incomplete update download");
         }
     }
 
@@ -187,7 +216,7 @@ public class Download {
             long sampleBytes = existing;
             long sampleAt = System.currentTimeMillis();
             while ((readBytes = input.read(buffer)) != -1) {
-                if (Thread.currentThread().isInterrupted()) throw new InterruptedIOException("Download cancelled");
+                if (cancelled || Thread.currentThread().isInterrupted()) throw new InterruptedIOException("Download cancelled");
                 totalBytes += readBytes;
                 os.write(buffer, 0, readBytes);
                 long now = System.currentTimeMillis();
@@ -285,7 +314,8 @@ public class Download {
 
     private void complete() {
         if (resume) marker().delete();
-        if (callback != null) App.post(() -> callback.success(file));
+        notifyProgress(100);
+        if (callback != null) App.post(() -> { if (!cancelled) callback.success(file); });
     }
 
     private File marker() {
@@ -309,11 +339,13 @@ public class Download {
     }
 
     private void notifyProgress(int value) {
-        if (callback != null) App.post(() -> callback.progress(value));
+        if (value == lastProgress || cancelled) return;
+        lastProgress = value;
+        if (callback != null) App.post(() -> { if (!cancelled) callback.progress(value); });
     }
 
     private void notifyStatus(String source, long bytesPerSecond, long downloaded, long total) {
-        if (callback != null) App.post(() -> callback.status(source, bytesPerSecond, downloaded, total));
+        if (callback != null) App.post(() -> { if (!cancelled) callback.status(source, bytesPerSecond, downloaded, total); });
     }
 
     private static final class Probe {

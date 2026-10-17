@@ -1,0 +1,28 @@
+com.fongmi.android.tv.utils.UpdateTransferInstrumentedTest:.......
+com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest:...
+com.fongmi.android.tv.search.SearchPipelineInstrumentedTest:.....
+com.fongmi.android.tv.search.WarmSearchWorkerInstrumentedTest:.....
+com.fongmi.android.tv.api.config.ConfigReuseInstrumentedTest:..
+com.fongmi.android.tv.ui.dialog.UpdateDialogInstrumentedTest:
+Error in speedRetryAndSystemBackRemainUsable(com.fongmi.android.tv.ui.dialog.UpdateDialogInstrumentedTest):
+java.lang.AssertionError: expected:<1> but was:<0>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:647)
+	at org.junit.Assert.assertEquals(Assert.java:633)
+	at com.fongmi.android.tv.ui.dialog.UpdateDialogInstrumentedTest.speedRetryAndSystemBackRemainUsable(UpdateDialogInstrumentedTest.java:43)
+
+com.fongmi.android.tv.ui.SearchResultInteractionInstrumentedTest:.......
+
+Time: 76.991
+There was 1 failure:
+1) speedRetryAndSystemBackRemainUsable(com.fongmi.android.tv.ui.dialog.UpdateDialogInstrumentedTest)
+java.lang.AssertionError: expected:<1> but was:<0>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:647)
+	at org.junit.Assert.assertEquals(Assert.java:633)
+	at com.fongmi.android.tv.ui.dialog.UpdateDialogInstrumentedTest.speedRetryAndSystemBackRemainUsable(UpdateDialogInstrumentedTest.java:43)
+
+FAILURES!!!
+Tests run: 30,  Failures: 1

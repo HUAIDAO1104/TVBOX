@@ -108,6 +108,7 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
 
     @Override
     protected void initView(Bundle savedInstanceState) {
+        App.post(() -> com.fongmi.android.tv.utils.Task.execute(com.fongmi.android.tv.search.IsolatedSpiderSearch::prewarm));
         mSavedState = savedInstanceState;
         mFirstResume = true;
         mStartVoiceRequested = savedInstanceState == null && getIntent().getBooleanExtra(EXTRA_START_VOICE, false);

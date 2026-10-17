@@ -29,13 +29,17 @@ def main() -> None:
     parser.add_argument("--repo", required=True, help="GitHub repository in OWNER/REPO form")
     parser.add_argument("--version-code", required=True, type=int)
     parser.add_argument("--version-name", required=True)
+    parser.add_argument("--tag", default="", help="Immutable release tag; defaults to version name before suffix")
     parser.add_argument("--notes", default="稳定性与设备兼容性优化")
     parser.add_argument("--mandatory", action="store_true")
     parser.add_argument("--asset", action="append", type=parse_asset, required=True)
     parser.add_argument("--output", type=Path, default=Path("latest.json"))
     args = parser.parse_args()
 
-    root = f"https://github.com/{args.repo}/releases/latest/download"
+    tag = args.tag or "v" + args.version_name.split("-", 1)[0]
+    if not tag or any(char not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-" for char in tag):
+        parser.error("Invalid release tag")
+    root = f"https://github.com/{args.repo}/releases/download/{tag}"
     apks = {}
     for key, apk in args.asset:
         apks[key] = {

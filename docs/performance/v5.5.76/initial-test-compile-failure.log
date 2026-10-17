@@ -1,0 +1,543 @@
+> Task :catvod:preBuild UP-TO-DATE
+> Task :quickjs:preBuild UP-TO-DATE
+> Task :chaquo:preBuild UP-TO-DATE
+> Task :catvod:preDebugBuild UP-TO-DATE
+> Task :quickjs:preDebugBuild UP-TO-DATE
+> Task :chaquo:preArm64_v8aDebugBuild UP-TO-DATE
+> Task :catvod:generateDebugResources UP-TO-DATE
+> Task :quickjs:generateDebugResources UP-TO-DATE
+> Task :chaquo:generateArm64_v8aDebugResources UP-TO-DATE
+> Task :quickjs:packageDebugResources UP-TO-DATE
+> Task :catvod:packageDebugResources UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preMobileArm64_v8aDebugBuild UP-TO-DATE
+> Task :chaquo:packageArm64_v8aDebugResources UP-TO-DATE
+> Task :quickjs:processDebugNavigationResources UP-TO-DATE
+> Task :app:mergeMobileArm64_v8aDebugNativeDebugMetadata NO-SOURCE
+> Task :catvod:processDebugNavigationResources UP-TO-DATE
+> Task :chaquo:processArm64_v8aDebugNavigationResources UP-TO-DATE
+> Task :quickjs:parseDebugLocalResources UP-TO-DATE
+> Task :chaquo:parseArm64_v8aDebugLocalResources UP-TO-DATE
+> Task :catvod:parseDebugLocalResources UP-TO-DATE
+> Task :quickjs:generateDebugRFile UP-TO-DATE
+> Task :catvod:generateDebugRFile UP-TO-DATE
+> Task :chaquo:generateArm64_v8aDebugRFile UP-TO-DATE
+> Task :quickjs:javaPreCompileDebug UP-TO-DATE
+> Task :chaquo:extractArm64_v8aDebugPythonBuildPackages UP-TO-DATE
+> Task :chaquo:installArm64_v8aDebugPythonRequirements UP-TO-DATE
+> Task :chaquo:mergeArm64_v8aDebugPythonSources UP-TO-DATE
+> Task :chaquo:generateArm64_v8aDebugPythonProxies UP-TO-DATE
+> Task :catvod:compileDebugKotlin NO-SOURCE
+> Task :quickjs:generateDebugAssets UP-TO-DATE
+> Task :catvod:javaPreCompileDebug UP-TO-DATE
+> Task :chaquo:javaPreCompileArm64_v8aDebug UP-TO-DATE
+> Task :chaquo:generateArm64_v8aDebugAssets UP-TO-DATE
+> Task :quickjs:mergeDebugAssets UP-TO-DATE
+> Task :quickjs:writeDebugAarMetadata UP-TO-DATE
+> Task :quickjs:extractDeepLinksDebug UP-TO-DATE
+> Task :quickjs:processDebugManifest UP-TO-DATE
+> Task :quickjs:mapDebugSourceSetPaths UP-TO-DATE
+> Task :quickjs:compileDebugLibraryResources UP-TO-DATE
+> Task :quickjs:mergeDebugJniLibFolders UP-TO-DATE
+> Task :quickjs:mergeDebugNativeLibs NO-SOURCE
+> Task :quickjs:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :chaquo:generateArm64_v8aDebugPythonMiscAssets UP-TO-DATE
+> Task :chaquo:generateArm64_v8aDebugPythonRequirementsAssets UP-TO-DATE
+> Task :chaquo:generateArm64_v8aDebugPythonSourceAssets UP-TO-DATE
+> Task :chaquo:generateArm64_v8aDebugPythonBuildAssets UP-TO-DATE
+> Task :chaquo:mergeArm64_v8aDebugAssets UP-TO-DATE
+> Task :chaquo:writeArm64_v8aDebugAarMetadata UP-TO-DATE
+> Task :chaquo:extractDeepLinksArm64_v8aDebug UP-TO-DATE
+> Task :chaquo:processArm64_v8aDebugManifest UP-TO-DATE
+> Task :chaquo:mapArm64_v8aDebugSourceSetPaths UP-TO-DATE
+> Task :chaquo:compileArm64_v8aDebugLibraryResources UP-TO-DATE
+> Task :chaquo:generateArm64_v8aDebugPythonJniLibs UP-TO-DATE
+> Task :chaquo:mergeArm64_v8aDebugJniLibFolders UP-TO-DATE
+> Task :chaquo:mergeArm64_v8aDebugNativeLibs UP-TO-DATE
+> Task :chaquo:copyArm64_v8aDebugJniLibsProjectOnly UP-TO-DATE
+> Task :catvod:compileDebugJavaWithJavac UP-TO-DATE
+> Task :catvod:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :catvod:generateDebugAssets UP-TO-DATE
+> Task :catvod:mergeDebugAssets UP-TO-DATE
+> Task :catvod:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :catvod:processDebugJavaRes NO-SOURCE
+> Task :chaquo:compileArm64_v8aDebugKotlin NO-SOURCE
+> Task :catvod:writeDebugAarMetadata UP-TO-DATE
+> Task :catvod:extractDeepLinksDebug UP-TO-DATE
+> Task :quickjs:compileDebugKotlin NO-SOURCE
+> Task :catvod:processDebugManifest UP-TO-DATE
+> Task :catvod:mapDebugSourceSetPaths UP-TO-DATE
+> Task :catvod:compileDebugLibraryResources UP-TO-DATE
+> Task :catvod:mergeDebugJniLibFolders UP-TO-DATE
+> Task :catvod:mergeDebugNativeLibs NO-SOURCE
+> Task :catvod:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :catvod:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :chaquo:compileArm64_v8aDebugJavaWithJavac UP-TO-DATE
+> Task :quickjs:compileDebugJavaWithJavac UP-TO-DATE
+> Task :chaquo:bundleLibCompileToJarArm64_v8aDebug UP-TO-DATE
+> Task :quickjs:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :quickjs:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :chaquo:bundleLibRuntimeToDirArm64_v8aDebug UP-TO-DATE
+> Task :quickjs:processDebugJavaRes NO-SOURCE
+> Task :quickjs:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :chaquo:processArm64_v8aDebugJavaRes NO-SOURCE
+> Task :chaquo:bundleLibRuntimeToJarArm64_v8aDebug UP-TO-DATE
+> Task :app:dataBindingMergeDependencyArtifactsMobileArm64_v8aDebug UP-TO-DATE
+> Task :app:generateMobileArm64_v8aDebugResources
+> Task :app:packageMobileArm64_v8aDebugResources
+> Task :app:processMobileArm64_v8aDebugNavigationResources
+> Task :app:generateMobileArm64_v8aDebugBuildConfig UP-TO-DATE
+> Task :app:javaPreCompileMobileArm64_v8aDebug UP-TO-DATE
+> Task :app:generateMobileArm64_v8aDebugAssets UP-TO-DATE
+> Task :app:mergeMobileArm64_v8aDebugAssets UP-TO-DATE
+> Task :app:compressMobileArm64_v8aDebugAssets UP-TO-DATE
+> Task :app:generateMobileArm64_v8aDebugGlobalSynthetics UP-TO-DATE
+> Task :app:l8DexDesugarLibMobileArm64_v8aDebug UP-TO-DATE
+> Task :app:checkMobileArm64_v8aDebugDuplicateClasses UP-TO-DATE
+> Task :app:desugarMobileArm64_v8aDebugFileDependencies UP-TO-DATE
+> Task :app:mergeExtDexMobileArm64_v8aDebug UP-TO-DATE
+> Task :app:mergeLibDexMobileArm64_v8aDebug UP-TO-DATE
+> Task :app:checkMobileArm64_v8aDebugAarMetadata UP-TO-DATE
+> Task :app:mapMobileArm64_v8aDebugSourceSetPaths
+> Task :app:compileMobileArm64_v8aDebugNavigationResources UP-TO-DATE
+> Task :app:createMobileArm64_v8aDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksMobileArm64_v8aDebug UP-TO-DATE
+> Task :app:processMobileArm64_v8aDebugMainManifest UP-TO-DATE
+> Task :app:processMobileArm64_v8aDebugManifest UP-TO-DATE
+> Task :app:processMobileArm64_v8aDebugManifestForPackage UP-TO-DATE
+> Task :app:mergeMobileArm64_v8aDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeMobileArm64_v8aDebugNativeLibs UP-TO-DATE
+> Task :app:stripMobileArm64_v8aDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningMobileArm64_v8aDebug UP-TO-DATE
+> Task :app:writeMobileArm64_v8aDebugAppMetadata UP-TO-DATE
+> Task :app:writeMobileArm64_v8aDebugSigningConfigVersions UP-TO-DATE
+> Task :app:preMobileArm64_v8aDebugAndroidTestBuild SKIPPED
+> Task :app:dataBindingMergeDependencyArtifactsMobileArm64_v8aDebugAndroidTest UP-TO-DATE
+> Task :app:generateMobileArm64_v8aDebugAndroidTestResources UP-TO-DATE
+> Task :app:mergeMobileArm64_v8aDebugAndroidTestResources UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesMobileArm64_v8aDebugAndroidTest UP-TO-DATE
+> Task :app:processMobileArm64_v8aDebugAndroidTestManifest UP-TO-DATE
+> Task :app:generateMobileArm64_v8aDebugAndroidTestBuildConfig UP-TO-DATE
+> Task :app:packageMobileArm64_v8aDebugAndroidTestResources UP-TO-DATE
+> Task :app:processMobileArm64_v8aDebugAndroidTestNavigationResources UP-TO-DATE
+> Task :app:parseMobileArm64_v8aDebugAndroidTestLocalResources UP-TO-DATE
+> Task :app:generateMobileArm64_v8aDebugAndroidTestRFile UP-TO-DATE
+> Task :app:javaPreCompileMobileArm64_v8aDebugAndroidTest UP-TO-DATE
+> Task :app:generateMobileArm64_v8aDebugAndroidTestAssets UP-TO-DATE
+> Task :app:mergeMobileArm64_v8aDebugAndroidTestAssets UP-TO-DATE
+> Task :app:compressMobileArm64_v8aDebugAndroidTestAssets UP-TO-DATE
+> Task :app:generateMobileArm64_v8aDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :app:checkMobileArm64_v8aDebugAndroidTestDuplicateClasses UP-TO-DATE
+> Task :app:desugarMobileArm64_v8aDebugAndroidTestFileDependencies UP-TO-DATE
+> Task :app:parseMobileArm64_v8aDebugLocalResources
+> Task :app:mergeExtDexMobileArm64_v8aDebugAndroidTest UP-TO-DATE
+> Task :app:mergeLibDexMobileArm64_v8aDebugAndroidTest UP-TO-DATE
+> Task :app:checkMobileArm64_v8aDebugAndroidTestAarMetadata UP-TO-DATE
+> Task :app:mapMobileArm64_v8aDebugAndroidTestSourceSetPaths UP-TO-DATE
+> Task :app:compileMobileArm64_v8aDebugAndroidTestNavigationResources UP-TO-DATE
+> Task :app:processMobileArm64_v8aDebugAndroidTestResources UP-TO-DATE
+> Task :app:mergeMobileArm64_v8aDebugAndroidTestJniLibFolders UP-TO-DATE
+> Task :app:mergeMobileArm64_v8aDebugAndroidTestNativeLibs NO-SOURCE
+> Task :app:stripMobileArm64_v8aDebugAndroidTestDebugSymbols NO-SOURCE
+> Task :app:validateSigningMobileArm64_v8aDebugAndroidTest UP-TO-DATE
+> Task :app:writeMobileArm64_v8aDebugAndroidTestSigningConfigVersions UP-TO-DATE
+> Task :app:preLeanbackArm64_v8aDebugBuild UP-TO-DATE
+> Task :app:mergeLeanbackArm64_v8aDebugNativeDebugMetadata NO-SOURCE
+> Task :app:generateMobileArm64_v8aDebugRFile
+> Task :app:dataBindingMergeDependencyArtifactsLeanbackArm64_v8aDebug UP-TO-DATE
+> Task :app:generateLeanbackArm64_v8aDebugResources
+
+> Task :app:mergeMobileArm64_v8aDebugResources
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/mobile/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/mobile/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/mobile/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/mobile/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Multiple substitutions specified in non-positional format of string resource string/detail_title. Did you mean to add the formatted="false" attribute?
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Multiple substitutions specified in non-positional format of string resource string/detail_title. Did you mean to add the formatted="false" attribute?
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/mobile/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/mobile/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/.gradle/caches/9.6.1/transforms/958589b155a7e8b1b7c5fb8e1b471035/transformed/preference-1.2.1/res/values-zh-rTW/values-zh-rTW.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/.gradle/caches/9.6.1/transforms/958589b155a7e8b1b7c5fb8e1b471035/transformed/preference-1.2.1/res/values-zh-rCN/values-zh-rCN.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/mobile/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/mobile/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Multiple substitutions specified in non-positional format of string resource string/detail_title. Did you mean to add the formatted="false" attribute?
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/mobile/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/.gradle/caches/9.6.1/transforms/958589b155a7e8b1b7c5fb8e1b471035/transformed/preference-1.2.1/res/values/values.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+
+> Task :app:dataBindingGenBaseClassesMobileArm64_v8aDebug
+> Task :app:compileMobileArm64_v8aDebugKotlin NO-SOURCE
+
+> Task :app:mergeLeanbackArm64_v8aDebugResources
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/detail_v2_strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/detail_v2_strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Multiple substitutions specified in non-positional format of string resource string/detail_title. Did you mean to add the formatted="false" attribute?
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/detail_v2_strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Multiple substitutions specified in non-positional format of string resource string/detail_title. Did you mean to add the formatted="false" attribute?
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/detail_v2_strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/management_strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/management_strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rCN/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values-zh-rTW/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/.gradle/caches/9.6.1/transforms/958589b155a7e8b1b7c5fb8e1b471035/transformed/preference-1.2.1/res/values-zh-rCN/values-zh-rCN.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/.gradle/caches/9.6.1/transforms/958589b155a7e8b1b7c5fb8e1b471035/transformed/preference-1.2.1/res/values-zh-rTW/values-zh-rTW.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/detail_v2_strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Multiple substitutions specified in non-positional format of string resource string/detail_title. Did you mean to add the formatted="false" attribute?
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/detail_v2_strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/.gradle/caches/9.6.1/transforms/4d299b1b1e416ab1dea55997dcf8b903/transformed/materialdesigncolors-1.0.0/res/values/values.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/leanback/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/Documents/tv design/app/src/main/res/values/strings.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+/Users/liudongji/.gradle/caches/9.6.1/transforms/958589b155a7e8b1b7c5fb8e1b471035/transformed/preference-1.2.1/res/values/values.xml: Ignoring element '{http://schemas.android.com/apk/res-auto}g' with unknown namespace 'http://schemas.android.com/apk/res-auto'.
+
+> Task :app:compileMobileArm64_v8aDebugJavaWithJavac
+注: [1] Wrote GeneratedAppGlideModule with: [com.bumptech.glide.integration.okhttp3.OkHttpLibraryGlideModule, com.bumptech.glide.integration.avif.AvifGlideModule]
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+注: /Users/liudongji/Documents/tv design/app/src/mobile/java/com/fongmi/android/tv/ui/fragment/LibraryFragment.java使用了未经检查或不安全的操作。
+注: 有关详细信息, 请使用 -Xlint:unchecked 重新编译。
+
+> Task :app:processMobileArm64_v8aDebugJavaRes UP-TO-DATE
+> Task :app:mergeMobileArm64_v8aDebugJavaResource UP-TO-DATE
+> Task :app:packageLeanbackArm64_v8aDebugResources
+> Task :app:processLeanbackArm64_v8aDebugNavigationResources
+> Task :app:generateLeanbackArm64_v8aDebugBuildConfig UP-TO-DATE
+> Task :app:javaPreCompileLeanbackArm64_v8aDebug UP-TO-DATE
+> Task :app:generateLeanbackArm64_v8aDebugAssets UP-TO-DATE
+> Task :app:mergeLeanbackArm64_v8aDebugAssets UP-TO-DATE
+> Task :app:compressLeanbackArm64_v8aDebugAssets UP-TO-DATE
+> Task :app:generateLeanbackArm64_v8aDebugGlobalSynthetics UP-TO-DATE
+> Task :app:l8DexDesugarLibLeanbackArm64_v8aDebug UP-TO-DATE
+> Task :app:checkLeanbackArm64_v8aDebugDuplicateClasses UP-TO-DATE
+> Task :app:desugarLeanbackArm64_v8aDebugFileDependencies UP-TO-DATE
+> Task :app:mergeExtDexLeanbackArm64_v8aDebug UP-TO-DATE
+> Task :app:mergeLibDexLeanbackArm64_v8aDebug UP-TO-DATE
+> Task :app:checkLeanbackArm64_v8aDebugAarMetadata UP-TO-DATE
+> Task :app:mapLeanbackArm64_v8aDebugSourceSetPaths
+> Task :app:compileLeanbackArm64_v8aDebugNavigationResources UP-TO-DATE
+> Task :app:createLeanbackArm64_v8aDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksLeanbackArm64_v8aDebug UP-TO-DATE
+> Task :app:processLeanbackArm64_v8aDebugMainManifest UP-TO-DATE
+> Task :app:processLeanbackArm64_v8aDebugManifest UP-TO-DATE
+> Task :app:processLeanbackArm64_v8aDebugManifestForPackage UP-TO-DATE
+> Task :app:mergeLeanbackArm64_v8aDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeLeanbackArm64_v8aDebugNativeLibs UP-TO-DATE
+> Task :app:stripLeanbackArm64_v8aDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningLeanbackArm64_v8aDebug UP-TO-DATE
+> Task :app:writeLeanbackArm64_v8aDebugAppMetadata UP-TO-DATE
+> Task :app:writeLeanbackArm64_v8aDebugSigningConfigVersions UP-TO-DATE
+> Task :app:preLeanbackArm64_v8aDebugAndroidTestBuild SKIPPED
+> Task :app:dataBindingMergeDependencyArtifactsLeanbackArm64_v8aDebugAndroidTest UP-TO-DATE
+> Task :app:generateLeanbackArm64_v8aDebugAndroidTestResources UP-TO-DATE
+> Task :app:mergeLeanbackArm64_v8aDebugAndroidTestResources UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesLeanbackArm64_v8aDebugAndroidTest UP-TO-DATE
+> Task :app:processLeanbackArm64_v8aDebugAndroidTestManifest UP-TO-DATE
+> Task :app:generateLeanbackArm64_v8aDebugAndroidTestBuildConfig UP-TO-DATE
+> Task :app:packageLeanbackArm64_v8aDebugAndroidTestResources UP-TO-DATE
+> Task :app:processLeanbackArm64_v8aDebugAndroidTestNavigationResources UP-TO-DATE
+> Task :app:parseLeanbackArm64_v8aDebugAndroidTestLocalResources UP-TO-DATE
+> Task :app:generateLeanbackArm64_v8aDebugAndroidTestRFile UP-TO-DATE
+> Task :app:javaPreCompileLeanbackArm64_v8aDebugAndroidTest UP-TO-DATE
+> Task :app:generateLeanbackArm64_v8aDebugAndroidTestAssets UP-TO-DATE
+> Task :app:mergeLeanbackArm64_v8aDebugAndroidTestAssets UP-TO-DATE
+> Task :app:compressLeanbackArm64_v8aDebugAndroidTestAssets UP-TO-DATE
+> Task :app:generateLeanbackArm64_v8aDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :app:checkLeanbackArm64_v8aDebugAndroidTestDuplicateClasses UP-TO-DATE
+> Task :app:desugarLeanbackArm64_v8aDebugAndroidTestFileDependencies UP-TO-DATE
+> Task :app:mergeExtDexLeanbackArm64_v8aDebugAndroidTest UP-TO-DATE
+> Task :app:mergeLibDexLeanbackArm64_v8aDebugAndroidTest UP-TO-DATE
+> Task :app:checkLeanbackArm64_v8aDebugAndroidTestAarMetadata UP-TO-DATE
+> Task :app:mapLeanbackArm64_v8aDebugAndroidTestSourceSetPaths UP-TO-DATE
+> Task :app:compileLeanbackArm64_v8aDebugAndroidTestNavigationResources UP-TO-DATE
+> Task :app:processLeanbackArm64_v8aDebugAndroidTestResources UP-TO-DATE
+> Task :app:mergeLeanbackArm64_v8aDebugAndroidTestJniLibFolders UP-TO-DATE
+> Task :app:mergeLeanbackArm64_v8aDebugAndroidTestNativeLibs NO-SOURCE
+> Task :app:stripLeanbackArm64_v8aDebugAndroidTestDebugSymbols NO-SOURCE
+> Task :app:validateSigningLeanbackArm64_v8aDebugAndroidTest UP-TO-DATE
+> Task :app:writeLeanbackArm64_v8aDebugAndroidTestSigningConfigVersions UP-TO-DATE
+> Task :app:preMobileArm64_v8aDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileMobileArm64_v8aDebugUnitTest UP-TO-DATE
+> Task :app:preLeanbackArm64_v8aDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileLeanbackArm64_v8aDebugUnitTest UP-TO-DATE
+> Task :app:parseLeanbackArm64_v8aDebugLocalResources
+> Task :app:dataBindingGenBaseClassesLeanbackArm64_v8aDebug
+> Task :app:generateLeanbackArm64_v8aDebugRFile
+> Task :app:compileLeanbackArm64_v8aDebugKotlin NO-SOURCE
+> Task :app:processMobileArm64_v8aDebugResources
+> Task :app:processLeanbackArm64_v8aDebugResources
+
+> Task :app:compileLeanbackArm64_v8aDebugJavaWithJavac
+注: [1] Wrote GeneratedAppGlideModule with: [com.bumptech.glide.integration.okhttp3.OkHttpLibraryGlideModule, com.bumptech.glide.integration.avif.AvifGlideModule]
+注: 某些输入文件使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+注: /Users/liudongji/Documents/tv design/app/src/leanback/java/com/fongmi/android/tv/ui/activity/HomeActivity.java使用了未经检查或不安全的操作。
+注: 有关详细信息, 请使用 -Xlint:unchecked 重新编译。
+
+> Task :app:dexBuilderMobileArm64_v8aDebug
+> Task :app:processLeanbackArm64_v8aDebugJavaRes UP-TO-DATE
+> Task :app:mergeLeanbackArm64_v8aDebugJavaResource UP-TO-DATE
+> Task :app:bundleMobileArm64_v8aDebugClassesToCompileJar
+> Task :app:mergeProjectDexMobileArm64_v8aDebug
+> Task :app:dexBuilderLeanbackArm64_v8aDebug
+> Task :app:compileMobileArm64_v8aDebugAndroidTestKotlin NO-SOURCE
+
+> Task :app:compileMobileArm64_v8aDebugAndroidTestJavaWithJavac FAILED
+/Users/liudongji/Documents/tv design/app/src/androidTest/java/com/fongmi/android/tv/ui/dialog/UpdateDialogInstrumentedTest.java:38: 错误: 找不到符号
+                View confirm = Util.isLeanback() ? current.get().getDialog().findViewById(R.id.confirm)
+                                                                                              ^
+  符号:   变量 confirm
+  位置: 类 id
+注: /Users/liudongji/Documents/tv design/app/src/androidTest/java/com/fongmi/android/tv/ui/dialog/DanmakuSearchInstrumentedTest.java使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+1 个错误
+
+> Task :app:packageMobileArm64_v8aDebug
+> Task :app:createMobileArm64_v8aDebugApkListingFileRedirect UP-TO-DATE
+
+[Incubating] Problems report is available at: file:///Users/liudongji/Documents/tv%20design/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileMobileArm64_v8aDebugAndroidTestJavaWithJavac' (registered by plugin 'com.android.internal.application').
+> Compilation failed; see the compiler output below.
+  注: /Users/liudongji/Documents/tv design/app/src/androidTest/java/com/fongmi/android/tv/ui/dialog/DanmakuSearchInstrumentedTest.java使用或覆盖了已过时的 API。
+  注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+  /Users/liudongji/Documents/tv design/app/src/androidTest/java/com/fongmi/android/tv/ui/dialog/UpdateDialogInstrumentedTest.java:38: 错误: 找不到符号
+                  View confirm = Util.isLeanback() ? current.get().getDialog().findViewById(R.id.confirm)
+                                                                                                ^
+    符号:   变量 confirm
+    位置: 类 id
+  1 个错误
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.6.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 11s
+195 actionable tasks: 26 executed, 169 up-to-date

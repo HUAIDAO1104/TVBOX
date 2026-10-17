@@ -1,0 +1,422 @@
+[
+  {
+    "url": "https://ghfast.top/https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.75/pianduoduo-mobile-arm64_v8a.apk",
+    "status": 206,
+    "contentRange": "bytes 0-8388607/49365309",
+    "length": "8388608",
+    "headersMs": 2289,
+    "bytes": 8388608,
+    "elapsedSeconds": 13.95,
+    "KiBps": 587.3,
+    "milestones": [
+      {
+        "bytes": 262144,
+        "ms": 3346
+      },
+      {
+        "bytes": 524288,
+        "ms": 4509
+      },
+      {
+        "bytes": 786432,
+        "ms": 5087
+      },
+      {
+        "bytes": 1048576,
+        "ms": 5824
+      },
+      {
+        "bytes": 1310720,
+        "ms": 6100
+      },
+      {
+        "bytes": 1572864,
+        "ms": 6188
+      },
+      {
+        "bytes": 1835008,
+        "ms": 6384
+      },
+      {
+        "bytes": 2097152,
+        "ms": 6548
+      },
+      {
+        "bytes": 2359296,
+        "ms": 6909
+      },
+      {
+        "bytes": 2621440,
+        "ms": 7006
+      },
+      {
+        "bytes": 2883584,
+        "ms": 7499
+      },
+      {
+        "bytes": 3145728,
+        "ms": 8021
+      },
+      {
+        "bytes": 3407872,
+        "ms": 8022
+      },
+      {
+        "bytes": 3670016,
+        "ms": 8023
+      },
+      {
+        "bytes": 3932160,
+        "ms": 8301
+      },
+      {
+        "bytes": 4194304,
+        "ms": 8787
+      },
+      {
+        "bytes": 4456448,
+        "ms": 9283
+      },
+      {
+        "bytes": 4718592,
+        "ms": 9546
+      },
+      {
+        "bytes": 4980736,
+        "ms": 9547
+      },
+      {
+        "bytes": 5242880,
+        "ms": 9547
+      },
+      {
+        "bytes": 5505024,
+        "ms": 10388
+      },
+      {
+        "bytes": 5767168,
+        "ms": 10990
+      },
+      {
+        "bytes": 6029312,
+        "ms": 10991
+      },
+      {
+        "bytes": 6291456,
+        "ms": 11085
+      },
+      {
+        "bytes": 6553600,
+        "ms": 11477
+      },
+      {
+        "bytes": 6815744,
+        "ms": 11529
+      },
+      {
+        "bytes": 7077888,
+        "ms": 11992
+      },
+      {
+        "bytes": 7340032,
+        "ms": 12552
+      },
+      {
+        "bytes": 7602176,
+        "ms": 12742
+      },
+      {
+        "bytes": 7864320,
+        "ms": 12810
+      },
+      {
+        "bytes": 8126464,
+        "ms": 12952
+      },
+      {
+        "bytes": 8388608,
+        "ms": 13950
+      }
+    ]
+  },
+  {
+    "url": "https://gh-proxy.com/https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.75/pianduoduo-mobile-arm64_v8a.apk",
+    "status": 206,
+    "contentRange": "bytes 0-8388607/49365309",
+    "length": "8388608",
+    "headersMs": 912,
+    "bytes": 8388608,
+    "elapsedSeconds": 1.398,
+    "KiBps": 5858.6,
+    "milestones": [
+      {
+        "bytes": 262144,
+        "ms": 1015
+      },
+      {
+        "bytes": 524288,
+        "ms": 1056
+      },
+      {
+        "bytes": 786432,
+        "ms": 1086
+      },
+      {
+        "bytes": 1048576,
+        "ms": 1106
+      },
+      {
+        "bytes": 1310720,
+        "ms": 1126
+      },
+      {
+        "bytes": 1572864,
+        "ms": 1136
+      },
+      {
+        "bytes": 1835008,
+        "ms": 1142
+      },
+      {
+        "bytes": 2097152,
+        "ms": 1151
+      },
+      {
+        "bytes": 2359296,
+        "ms": 1159
+      },
+      {
+        "bytes": 2621440,
+        "ms": 1166
+      },
+      {
+        "bytes": 2883584,
+        "ms": 1177
+      },
+      {
+        "bytes": 3145728,
+        "ms": 1179
+      },
+      {
+        "bytes": 3407872,
+        "ms": 1183
+      },
+      {
+        "bytes": 3670016,
+        "ms": 1188
+      },
+      {
+        "bytes": 3932160,
+        "ms": 1193
+      },
+      {
+        "bytes": 4194304,
+        "ms": 1197
+      },
+      {
+        "bytes": 4456448,
+        "ms": 1206
+      },
+      {
+        "bytes": 4718592,
+        "ms": 1207
+      },
+      {
+        "bytes": 4980736,
+        "ms": 1209
+      },
+      {
+        "bytes": 5242880,
+        "ms": 1212
+      },
+      {
+        "bytes": 5505024,
+        "ms": 1215
+      },
+      {
+        "bytes": 5767168,
+        "ms": 1218
+      },
+      {
+        "bytes": 6029312,
+        "ms": 1221
+      },
+      {
+        "bytes": 6291456,
+        "ms": 1224
+      },
+      {
+        "bytes": 6553600,
+        "ms": 1351
+      },
+      {
+        "bytes": 6815744,
+        "ms": 1361
+      },
+      {
+        "bytes": 7077888,
+        "ms": 1367
+      },
+      {
+        "bytes": 7340032,
+        "ms": 1372
+      },
+      {
+        "bytes": 7602176,
+        "ms": 1378
+      },
+      {
+        "bytes": 7864320,
+        "ms": 1384
+      },
+      {
+        "bytes": 8126464,
+        "ms": 1392
+      },
+      {
+        "bytes": 8388608,
+        "ms": 1398
+      }
+    ]
+  },
+  {
+    "url": "https://ghproxy.net/https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.75/pianduoduo-mobile-arm64_v8a.apk",
+    "status": 206,
+    "contentRange": "bytes 0-8388607/49365309",
+    "length": "8388608",
+    "headersMs": 1523,
+    "bytes": 1933312,
+    "elapsedSeconds": 25.766,
+    "KiBps": 73.3,
+    "milestones": [
+      {
+        "bytes": 262144,
+        "ms": 4299
+      },
+      {
+        "bytes": 524288,
+        "ms": 6380
+      },
+      {
+        "bytes": 786432,
+        "ms": 9757
+      },
+      {
+        "bytes": 1048576,
+        "ms": 12624
+      },
+      {
+        "bytes": 1310720,
+        "ms": 14772
+      },
+      {
+        "bytes": 1572864,
+        "ms": 17864
+      },
+      {
+        "bytes": 1835008,
+        "ms": 21667
+      }
+    ]
+  },
+  {
+    "url": "https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.75/pianduoduo-mobile-arm64_v8a.apk",
+    "status": 206,
+    "contentRange": "bytes 0-8388607/49365309",
+    "length": "8388608",
+    "headersMs": 1726,
+    "bytes": 5799936,
+    "elapsedSeconds": 25.11,
+    "KiBps": 225.6,
+    "milestones": [
+      {
+        "bytes": 262144,
+        "ms": 2060
+      },
+      {
+        "bytes": 524288,
+        "ms": 2170
+      },
+      {
+        "bytes": 786432,
+        "ms": 2437
+      },
+      {
+        "bytes": 1048576,
+        "ms": 2858
+      },
+      {
+        "bytes": 1310720,
+        "ms": 3302
+      },
+      {
+        "bytes": 1572864,
+        "ms": 3931
+      },
+      {
+        "bytes": 1835008,
+        "ms": 4548
+      },
+      {
+        "bytes": 2097152,
+        "ms": 5313
+      },
+      {
+        "bytes": 2359296,
+        "ms": 6405
+      },
+      {
+        "bytes": 2621440,
+        "ms": 7897
+      },
+      {
+        "bytes": 2883584,
+        "ms": 9544
+      },
+      {
+        "bytes": 3145728,
+        "ms": 11138
+      },
+      {
+        "bytes": 3407872,
+        "ms": 12458
+      },
+      {
+        "bytes": 3670016,
+        "ms": 13391
+      },
+      {
+        "bytes": 3932160,
+        "ms": 14650
+      },
+      {
+        "bytes": 4194304,
+        "ms": 15614
+      },
+      {
+        "bytes": 4456448,
+        "ms": 16583
+      },
+      {
+        "bytes": 4718592,
+        "ms": 17895
+      },
+      {
+        "bytes": 4980736,
+        "ms": 19315
+      },
+      {
+        "bytes": 5242880,
+        "ms": 20452
+      },
+      {
+        "bytes": 5505024,
+        "ms": 22524
+      },
+      {
+        "bytes": 5767168,
+        "ms": 24871
+      }
+    ]
+  }
+]

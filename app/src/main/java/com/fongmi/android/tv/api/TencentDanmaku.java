@@ -28,11 +28,18 @@ public final class TencentDanmaku {
         return search(query, callback, CLIENT);
     }
 
+    public static NativeDanmaku.Job searchTarget(String query, String year, String type, IqiyiDanmaku.Callback<List<Danmaku>> callback) {
+        return search(query, year, type, callback, CLIENT);
+    }
     static NativeDanmaku.Job search(String query, IqiyiDanmaku.Callback<List<Danmaku>> callback, OkHttpClient client) {
+        return search(query, "", "", callback, client);
+    }
+    private static NativeDanmaku.Job search(String query, String year, String type, IqiyiDanmaku.Callback<List<Danmaku>> callback, OkHttpClient client) {
+        String cacheKey = query + "|" + year + "|" + type;
         Job job = new Job(15000, client);
         job.start(SEARCH, () -> {
             synchronized (CACHE) {
-                Catalogue cached = CACHE.get(query);
+                Catalogue cached = CACHE.get(cacheKey);
                 if (cached != null && System.nanoTime() - cached.created() < TimeUnit.MINUTES.toNanos(5)) return copy(cached.rows());
             }
             JsonObject payload = new JsonObject();
@@ -47,6 +54,7 @@ public final class TencentDanmaku {
             List<TencentDanmakuCodec.Work> works = TencentDanmakuCodec.works(job.json(SEARCH_URL, payload, 4_000_000), query);
             Map<String, Danmaku> rows = new LinkedHashMap<>();
             for (var work : works) {
+                if ((!year.isEmpty() || !type.isEmpty()) && !NativeDanmaku.acceptsWork(query, year, type, work.matchTitle(), work.year(), work.type())) continue;
                 for (Danmaku row : work.rows()) rows.putIfAbsent(row.getUrl(), row);
                 if ("电影".equals(work.type()) && !work.rows().isEmpty()) continue;
                 Set<String> visited = new HashSet<>();
@@ -73,7 +81,7 @@ public final class TencentDanmaku {
             job.check();
             List<Danmaku> result = List.copyOf(rows.values());
             if (!result.isEmpty()) synchronized (CACHE) {
-                CACHE.put(query, new Catalogue(System.nanoTime(), copy(result)));
+                CACHE.put(cacheKey, new Catalogue(System.nanoTime(), copy(result)));
                 while (CACHE.size() > 12) CACHE.remove(CACHE.keySet().iterator().next());
             }
             return result;

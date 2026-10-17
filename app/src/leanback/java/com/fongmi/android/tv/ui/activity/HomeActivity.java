@@ -3,7 +3,6 @@ package com.fongmi.android.tv.ui.activity;
 import android.app.SearchManager;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
@@ -117,9 +116,6 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     private boolean homeUiRestored;
     private boolean cachedHistoryShown;
     private List<History> cachedHistories = new ArrayList<>();
-    private static boolean brandShown;
-    private boolean skipBrandMinimum;
-    private long brandSplashStartedAt;
     private boolean brandSplashDismissed;
     private boolean brandSplashMotionStarted;
     private boolean brandSplashDismissRequested;
@@ -187,7 +183,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         initConfig();
         // Prefer revealing an already useful cache/home surface. On a genuinely cold first run,
         // fall back to the explicit skeleton after a bounded interval instead of looking frozen.
-        binding.brandSplash.postDelayed(this::dismissBrandSplashToLoading, 3500L);
+        binding.brandSplash.postDelayed(this::dismissBrandSplashToLoading, 800L);
         // Notification/service/update initialization must not compete with the first TV frame.
         binding.getRoot().post(deferredStartup);
     }
@@ -285,7 +281,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
                 WallConfig.get().init();
                 App.post(() -> {
                     if (isFinishing() || isDestroyed()) return;
-                    VodConfig.get().load(configCallback(false));
+                    VodConfig.get().loadIfNeeded(configCallback(false));
                     LiveConfig.get().load();
                     WallConfig.get().load();
                 });
@@ -460,8 +456,6 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     }
 
     private void prepareBrandSplash() {
-        skipBrandMinimum = brandShown;
-        brandShown = true;
         brandSplashDismissed = false;
         brandSplashMotionStarted = false;
         brandSplashDismissRequested = false;
@@ -523,7 +517,6 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     private void startBrandSplashMotion() {
         if (brandSplashDismissed || brandSplashMotionStarted || isFinishing() || isDestroyed()) return;
         brandSplashMotionStarted = true;
-        brandSplashStartedAt = SystemClock.uptimeMillis();
         DecelerateInterpolator cinematic = new DecelerateInterpolator(1.7f);
         OvershootInterpolator settle = new OvershootInterpolator(0.72f);
         binding.brandSplashBackdrop.animate().alpha(1f).scaleX(1f).scaleY(1f).setInterpolator(cinematic).setDuration(900L).start();
@@ -543,22 +536,20 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
 
     private void dismissBrandSplashWhenReady() {
         brandSplashDismissRequested = true;
-        if (!brandSplashMotionStarted) return;
-        long elapsed = SystemClock.uptimeMillis() - brandSplashStartedAt;
-        binding.brandSplash.postDelayed(this::dismissBrandSplash, Math.max(0L, (skipBrandMinimum ? 0L : 1400L) - elapsed));
+        dismissBrandSplash();
     }
 
     private void dismissBrandSplashToLoading() {
         if (brandSplashDismissed || isFinishing() || isDestroyed()) return;
         if (!homeAvailable && !cachedHistoryShown) pageController.showLoading(false);
         brandSplashDismissRequested = true;
-        if (brandSplashMotionStarted) dismissBrandSplash();
+        dismissBrandSplash();
     }
 
     private void dismissBrandSplash() {
         if (brandSplashDismissed || isFinishing() || isDestroyed()) return;
         brandSplashDismissed = true;
-        binding.brandSplash.animate().alpha(0f).setDuration(300L).withEndAction(() -> {
+        binding.brandSplash.animate().alpha(0f).setDuration(120L).withEndAction(() -> {
             binding.brandSplash.setVisibility(View.GONE);
             binding.brandSplash.setClickable(false);
             binding.brandSplash.setFocusable(false);

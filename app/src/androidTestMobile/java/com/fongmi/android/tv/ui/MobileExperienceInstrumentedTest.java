@@ -44,6 +44,7 @@ public class MobileExperienceInstrumentedTest {
     private volatile boolean failFast;
     private int episodeCount = 1;
     private boolean multipleFlags;
+    private int bulkRows;
     private final java.util.concurrent.CountDownLatch slowGate = new java.util.concurrent.CountDownLatch(1);
     private final AtomicInteger searchRequests = new AtomicInteger();
     private final java.util.concurrent.atomic.AtomicBoolean castHasHistory = new java.util.concurrent.atomic.AtomicBoolean();
@@ -66,6 +67,16 @@ public class MobileExperienceInstrumentedTest {
                 }
                 boolean search = request.getRequestUrl().queryParameter("wd") != null;
                 if (search) searchRequests.incrementAndGet();
+                if (search && bulkRows > 0) {
+                    var list = new com.google.gson.JsonArray();
+                    for (int i = 0; i < bulkRows; i++) {
+                        var item = new com.google.gson.JsonObject();
+                        item.addProperty("vod_id", "bulk-" + i); item.addProperty("vod_name", "测试电影" + i);
+                        list.add(item); list.add(item.deepCopy());
+                    }
+                    var result = new com.google.gson.JsonObject(); result.addProperty("pagecount", 1); result.add("list", list);
+                    return json(result.toString());
+                }
                 if (search && failFast && path.equals("/fast")) return new MockResponse().setResponseCode(500).setBody("invalid-json");
                 String pg = request.getRequestUrl().queryParameter("pg");
                 if ("2".equals(pg)) { pageRequests.incrementAndGet(); return json(results("3", false)); }
@@ -146,6 +157,29 @@ public class MobileExperienceInstrumentedTest {
         await(() -> count(value) == 0);
         onActivity(value, a -> assertEquals(View.VISIBLE, collect(a).requireView().findViewById(R.id.empty).getVisibility()));
         screenshot("search-empty-source");
+    }
+    @Test public void manySourcesStreamWithoutBlockingInputOrLosingRows() throws Exception {
+        bulkRows = 40;
+        sites = new ArrayList<>();
+        for (int i = 0; i < 60; i++) sites.add(site("bulk" + i, "测试源" + i));
+        setField(VodConfig.get(), "sites", sites); setField(VodConfig.get(), "home", sites.get(0));
+        Setting.putSearchSources(fixture.getUrl(), SearchSourcePreference.serialize(new LinkedHashSet<>(sites.stream().map(SearchSourcePreference::id).toList())));
+        var value = search(); long start = SystemClock.elapsedRealtime(); long worstInputMs = 0;
+        while (count(value) < 2400 && SystemClock.elapsedRealtime() - start < 20000) {
+            long posted = SystemClock.elapsedRealtime();
+            onActivity(value, a -> assertNotNull(collect(a).requireView().findViewById(R.id.stop)));
+            worstInputMs = Math.max(worstInputMs, SystemClock.elapsedRealtime() - posted);
+            SystemClock.sleep(25);
+        }
+        assertEquals(2400, count(value));
+        assertTrue("Main-thread input latency: " + worstInputMs, worstInputMs < 800);
+        onActivity(value, a -> {
+            TabLayout tabs = collect(a).requireView().findViewById(R.id.tabs);
+            assertEquals(61, tabs.getTabCount()); tabs.selectTab(tabs.getTabAt(60));
+        });
+        await(() -> count(value) == 40);
+        android.util.Log.i("Performance576QA", "MOBILE_BULK_SEARCH sources=60 rawRows=4800 visibleRows=2400 elapsedMs="
+                + (SystemClock.elapsedRealtime() - start) + " worstInputMs=" + worstInputMs);
     }
     @Test public void sourceSwitchRotationAndBackPreserveContextWithoutNewSearch() {
         var value = search(); await(() -> count(value) == 2);

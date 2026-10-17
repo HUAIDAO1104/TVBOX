@@ -116,6 +116,7 @@ jobs:
       - name: Generate update manifest
         env:
           RELEASE_NOTES: ${{ inputs.release_notes }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: |
           VERSION_CODE="$(sed -nE 's/^[[:space:]]*versionCode[[:space:]]+([0-9]+).*/\1/p' app/build.gradle | head -1)"
           VERSION_NAME="$(sed -nE 's/^[[:space:]]*versionName[[:space:]]+"([^"]+)".*/\1/p' app/build.gradle | head -1)"
@@ -124,6 +125,7 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --version-code "$VERSION_CODE" \
             --version-name "$VERSION_NAME" \
+            --tag "$RELEASE_TAG" \
             --notes "$NOTES" \
             --asset leanback-armeabi_v7a=dist/pianduoduo-leanback-armeabi_v7a.apk \
             --asset leanback-arm64_v8a=dist/pianduoduo-leanback-arm64_v8a.apk \

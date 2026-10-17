@@ -33,6 +33,7 @@ public class Updater implements Download.Callback, UpdateListener {
     private UpdateDialog dialog;
     private boolean mandatory;
     private boolean forced;
+    private volatile int downloadGeneration;
 
     private Updater() {
     }
@@ -115,12 +116,14 @@ public class Updater implements Download.Callback, UpdateListener {
 
     @Override
     public void onConfirm(View view) {
+        downloadGeneration++;
         view.setEnabled(false);
         if (dialog != null) dialog.setDownloading();
         download = Download.create(UpdateSource.assetCandidates(asset), getFile())
                 .sha256(asset.sha256())
+                .size(asset.size())
                 .connectTimeout(8_000L)
-                .readTimeout(60_000L)
+                .readTimeout(12_000L)
                 .fastestFirst()
                 .resume()
                 .tag("app-update");
@@ -129,6 +132,7 @@ public class Updater implements Download.Callback, UpdateListener {
 
     @Override
     public void onCancel(View view) {
+        downloadGeneration++;
         if (download != null) download.cancel();
         Path.clear(getFile());
         Path.clear(new File(getFile().getAbsolutePath() + ".sha256"));
@@ -165,16 +169,22 @@ public class Updater implements Download.Callback, UpdateListener {
 
     @Override
     public void success(File file) {
+        // Signature inspection and hashing a 50 MB APK must not freeze the update dialog.
+        if (dialog != null) dialog.setStatus(ResUtil.getString(R.string.update_verifying));
+        int generation = downloadGeneration;
+        Task.execute(() -> verifyAndInstall(file, generation));
+    }
+
+    private void verifyAndInstall(File file, int generation) {
         boolean checksumMatches = UpdateVerifier.checksumMatches(file, asset.sha256());
         UpdateVerifier.SignerStatus signerStatus = UpdateVerifier.signerStatus(App.get(), file);
+        if (generation != downloadGeneration) return;
         if (!UpdateVerifier.canInstall(checksumMatches, signerStatus)) {
             Path.clear(file);
-            Notify.show(R.string.update_invalid);
-            dismiss();
+            App.post(() -> { if (generation == downloadGeneration) { Notify.show(R.string.update_invalid); dismiss(); } });
             return;
         }
-        UpdateInstallerActivity.start(file);
-        dismiss();
+        App.post(() -> { if (generation == downloadGeneration) { UpdateInstallerActivity.start(file); dismiss(); } });
     }
 
     private String formatBytes(long bytes) {

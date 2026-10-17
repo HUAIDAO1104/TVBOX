@@ -24,6 +24,8 @@ import java.util.*;
 public class CollectFragment extends BaseFragment implements SearchAdapter.OnClickListener {
     private FragmentCollectBinding binding;
     private SiteViewModel model;
+    private SearchRowsViewModel resultsModel;
+    private int tabsGeneration;
     private SearchAdapter adapter;
     private List<Site> sites = List.of();
     private final Map<String, List<Vod>> rows = new LinkedHashMap<>();
@@ -74,8 +76,15 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
         binding.stop.setOnClickListener(v -> model.stopSearch());
         binding.retry.setOnClickListener(v -> model.requestMore(site -> (active.isEmpty() || active.equals(site.getKey())) && model.sourceState(site) != null && model.sourceState(site).failed(), false));
         binding.more.setOnClickListener(v -> model.requestMore(site -> site.getKey().equals(active), true));
-        startSearch(false);
-        model.getAggregateSearch().observe(getViewLifecycleOwner(), this::acceptSnapshot);
+        resultsModel = new ViewModelProvider(this).get(SearchRowsViewModel.class);
+        resultsModel.rows().observe(getViewLifecycleOwner(), value -> {
+            if (value.session() != model.currentSearchSession() || binding == null) return;
+            rows.clear(); rows.putAll(value.sources()); updateTabs(); renderRows(false);
+        });
+        model.getAggregateSearch().observe(getViewLifecycleOwner(), resultsModel::submit);
+        // Let navigation paint before building source tabs and starting the search session.
+        android.view.View root = binding.getRoot();
+        root.post(() -> { if (binding != null && binding.getRoot() == root) startSearch(false); });
         model.getSearchProgress().observe(getViewLifecycleOwner(), value -> { if (value.session() != model.currentSearchSession()) return; progress = value; renderStatus(); });
         model.getSourceProgress().observe(getViewLifecycleOwner(), value -> { updateTabs(); renderStatus(); });
     }
@@ -91,7 +100,15 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
         new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
                 .setTitle("切换结果来源")
                 .setSingleChoiceItems(names, binding.tabs.getSelectedTabPosition(), (dialog, which) -> {
-                    if (binding != null) binding.tabs.selectTab(binding.tabs.getTabAt(which));
+                    if (binding != null) {
+                        TabLayout.Tab tab = binding.tabs.getTabAt(which);
+                        if (tab != null) binding.tabs.selectTab(tab);
+                        else {
+                            positions.put(active, binding.recycler.getLayoutManager().onSaveInstanceState());
+                            active = sites.get(which - 1).getKey();
+                            model.prioritizeSearch(site -> site.getKey().equals(active)); renderRows(true);
+                        }
+                    }
                     dialog.dismiss();
                 }).setNegativeButton("关闭", null).show();
     }
@@ -104,25 +121,26 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
         updatingTabs = true;
         binding.tabs.removeAllTabs();
         binding.tabs.addTab(binding.tabs.newTab().setTag("").setText("全部"), active.isEmpty());
-        for (Site site : sites) binding.tabs.addTab(binding.tabs.newTab().setTag(site.getKey()).setText(SearchDisplayName.clean(site.getName())), active.equals(site.getKey()));
         updatingTabs = false;
+        int generation = ++tabsGeneration;
+        addSourceTabs(generation, 0);
         if (force || !model.hasSearch(keyword(), selection)) {
             if (!force && model.restoreCachedSearch(keyword(), selected)) { model.rememberSelection(selection); }
             else { model.searchCurrentContent(keyword(), false, s -> SearchSourcePreference.isEnabled(s, selected)); model.rememberSelection(selection); }
         }
         renderStatus();
     }
-    private void acceptSnapshot(SearchSnapshot value) {
-        if (value == null || value.session() != model.currentSearchSession()) return;
-        rows.clear();
-        Map<String, LinkedHashMap<String, Vod>> unique = new LinkedHashMap<>();
-        for (Result result : value.results()) for (Vod vod : result.getList()) {
-            unique.computeIfAbsent(vod.getSiteKey(), key -> new LinkedHashMap<>()).put(vod.getId().isEmpty() ? "name:" + vod.getName() : "id:" + vod.getId(), vod);
+    private void addSourceTabs(int generation, int from) {
+        if (binding == null || generation != tabsGeneration) return;
+        updatingTabs = true;
+        int end = Math.min(sites.size(), from + 8);
+        for (int i = from; i < end; i++) {
+            Site site = sites.get(i);
+            binding.tabs.addTab(binding.tabs.newTab().setTag(site.getKey()).setText(SearchDisplayName.clean(site.getName())), active.equals(site.getKey()));
         }
-        List<Vod> all = new ArrayList<>();
-        unique.forEach((key, items) -> { List<Vod> list = new ArrayList<>(items.values()); rows.put(key, list); all.addAll(list); });
-        rows.put("", all);
-        updateTabs(); renderRows(false);
+        updatingTabs = false;
+        updateTabs();
+        if (end < sites.size()) binding.tabs.postOnAnimation(() -> addSourceTabs(generation, end));
     }
     private void updateTabs() {
         if (binding == null) return;
@@ -133,8 +151,9 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
             String label = i == 0 ? "全部" : SearchDisplayName.clean(sites.get(i - 1).getName());
             SiteViewModel.SourceState state = i == 0 ? null : model.sourceState(sites.get(i - 1));
             String suffix = state != null && state.busy() ? " · 搜索中" : state != null && state.failed() ? " · 待重试" : "";
-            tab.setText(label + " " + count);
-            tab.setContentDescription(label + "，" + count + " 条结果" + suffix);
+            String text = label + " " + count, description = label + "，" + count + " 条结果" + suffix;
+            if (!android.text.TextUtils.equals(tab.getText(), text)) tab.setText(text);
+            if (!android.text.TextUtils.equals(tab.getContentDescription(), description)) tab.setContentDescription(description);
         }
     }
     private void renderRows(boolean restore) {
@@ -175,6 +194,7 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
         super.onDestroyView();
         // Rotation retains the ViewModel/session. Leaving the result route cancels its work.
         if (!requireActivity().isChangingConfigurations()) model.stopSearch();
+        tabsGeneration++;
         binding = null;
     }
 }

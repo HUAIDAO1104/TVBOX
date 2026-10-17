@@ -21,6 +21,12 @@ public class UpdateDialog extends BaseAlertDialog {
     private String title;
     private String desc;
 
+    @Override
+    public void onCancel(android.content.DialogInterface dialog) {
+        super.onCancel(dialog);
+        if (listener != null) listener.onCancel(null);
+    }
+
     public static UpdateDialog create() {
         return new UpdateDialog();
     }
@@ -96,6 +102,7 @@ public class UpdateDialog extends BaseAlertDialog {
         if (dialog != null) {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("0%");
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setText(R.string.dialog_negative);
         }
     }
 

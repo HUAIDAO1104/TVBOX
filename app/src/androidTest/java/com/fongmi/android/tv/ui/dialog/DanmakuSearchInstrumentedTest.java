@@ -315,7 +315,9 @@ public class DanmakuSearchInstrumentedTest {
             main(() -> { panel.onBack(); binding.keyword.setText(link); });
             submitSearch(); await(() -> indexOfSource(adapter, "platform-link") >= 0, 20000);
             clickRow(indexOfSource(adapter, "platform-link"));
-            await(() -> adapter.getItemCount() == 1, 5000); clickRow(0);
+            // A one-item work list and its one-item episode list have the same count.
+            // Wait for the episode identity before the next remote-control click.
+            await(() -> adapter.getItemCount() == 1 && link.equals(adapter.getItem(0).getUrl()), 5000); clickRow(0);
             await(() -> player.getSelectedDanmaku() != null && player.getSelectedDanmaku().getUrl().equals(link), 50000);
             assertTrue(link, parse(player.getSelectedDanmaku()) > 100);
             var context = VodPlaybackMedia.contextOf(player);
@@ -594,6 +596,12 @@ public class DanmakuSearchInstrumentedTest {
             boolean[] result = {false}; main(() -> result[0] = condition.getAsBoolean());
             if (result[0]) return;
             SystemClock.sleep(100);
+        }
+        if (binding != null) {
+            main(() -> android.util.Log.e("Danmaku576QA", "Timeout state: shown=" + binding.submit.isShown()
+                    + " windowFocus=" + binding.submit.hasWindowFocus() + " status=" + binding.providerStatus.getText()
+                    + " selected=" + (player == null || player.getSelectedDanmaku() == null ? "none" : player.getSelectedDanmaku().getUrl())));
+            screenshot("timeout-" + SystemClock.elapsedRealtime());
         }
         fail("UI condition timed out");
     }

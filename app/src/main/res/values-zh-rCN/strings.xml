@@ -257,6 +257,7 @@
     <string name="update_install_ready">下载完成，正在打开系统安装程序…</string>
     <string name="update_retry">重试</string>
     <string name="update_select_mirror">正在选择最快的更新镜像…</string>
+    <string name="update_verifying">下载完成，正在校验安装包…</string>
     <string name="update_download_status"><xliff:g name="source">%1$s</xliff:g> · <xliff:g name="speed">%2$s</xliff:g>/秒 · <xliff:g name="downloaded">%3$s</xliff:g>/<xliff:g name="total">%4$s</xliff:g></string>
     <string name="update_download_failed">下载已中断，当前进度已保留；请选择“重试”继续。</string>
 

@@ -21,6 +21,12 @@ public class UpdateDialog extends BaseAlertDialog {
     private String title;
     private String desc;
 
+    @Override
+    public void onCancel(android.content.DialogInterface dialog) {
+        super.onCancel(dialog);
+        if (listener != null) listener.onCancel(null);
+    }
+
     public static UpdateDialog create() {
         return new UpdateDialog();
     }
@@ -87,6 +93,8 @@ public class UpdateDialog extends BaseAlertDialog {
         binding.status.setText(R.string.update_select_mirror);
         binding.confirm.setEnabled(false);
         binding.confirm.setText("0%");
+        binding.cancel.setText(R.string.dialog_negative);
+        if (binding.cancel.getVisibility() == View.VISIBLE) binding.cancel.requestFocus();
     }
 
     public void setStatus(String status) {
@@ -98,6 +106,7 @@ public class UpdateDialog extends BaseAlertDialog {
         setStatus(error);
         binding.confirm.setEnabled(true);
         binding.confirm.setText(R.string.update_retry);
+        binding.confirm.requestFocus();
     }
 
     public void setRelease(String title, String desc, boolean mandatory) {

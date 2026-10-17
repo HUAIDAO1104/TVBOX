@@ -1,0 +1,9 @@
+com.fongmi.android.tv.ui.dialog.UpdateDialogInstrumentedTest:.
+com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest:...
+com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest:.
+com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest:..
+com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest:.
+
+Time: 130.292
+
+OK (8 tests)

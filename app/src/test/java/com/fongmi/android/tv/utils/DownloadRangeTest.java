@@ -1,10 +1,22 @@
 package com.fongmi.android.tv.utils;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
 public class DownloadRangeTest {
+
+    @Test public void rejectsWrongOffsetsTotalsAndInvalidRanges() {
+        assertTrue(DownloadRange.matches("bytes 262144-1310719/5000000", 262144, 1048576, 5000000));
+        assertFalse(DownloadRange.matches("bytes 0-1048575/5000000", 262144, 1048576, 5000000));
+        assertFalse(DownloadRange.matches("bytes 262144-1310719/5000001", 262144, 1048576, 5000000));
+        assertTrue(DownloadRange.startsAt("bytes 262144-4999999/5000000", 262144));
+        assertFalse(DownloadRange.startsAt("bytes 262144-262143/5000000", 262144));
+        assertFalse(DownloadRange.startsAt("bytes 262144-5000000/5000000", 262144));
+        assertFalse(DownloadRange.startsAt("bytes 9999999999999999999999-9/10", 262144));
+    }
 
     @Test
     public void readsFullSizeFromPartialContentRange() {

@@ -326,38 +326,44 @@ public class SiteViewModel extends ViewModel {
         };
     }
 
-    private synchronized void onSearchResult(int session, Site site, Result result, String keyword) {
-        if (currentSearchProgress.session() != session || currentSearchProgress.cancelled()) return;
-        SourceState prior = sourceStates.get(site.getKey());
-        int page = prior == null ? 1 : prior.page();
-        java.util.Set<String> seen = seenIds.computeIfAbsent(site.getKey(), ignored -> new java.util.HashSet<>());
-        int before = seen.size();
-        if (result != null) for (com.fongmi.android.tv.bean.Vod vod : result.getList()) seen.add(vod.getId());
-        boolean hasMore = result != null && !result.getList().isEmpty() && seen.size() > before
-                && (result.getPageCount() <= 0 || page < result.getPageCount());
+    private void onSearchResult(int session, Site site, Result result, String keyword) {
+        if (searchSession.get() != session) return;
+        List<com.fongmi.android.tv.bean.Vod> received = result == null ? List.of() : new ArrayList<>(result.getList());
+        // Relevance normalization can take hundreds of milliseconds for large sources. It must
+        // not hold the monitor used by UI source switching, cancellation and state reads.
         Result filtered = filterRelevant(result, keyword);
-        boolean valid = filtered != null && !filtered.getList().isEmpty();
-        sourceStates.put(site.getKey(), new SourceState(valid ? SourcePhase.SUCCESS
-                : result != null && result.hasMsg() ? SourcePhase.FAILED : SourcePhase.EMPTY, page, hasMore));
-        publishSources();
-        if (valid) SearchSourceHealthStore.get().success(site.getKey());
-        else if (result != null && result.hasMsg()) SearchSourceHealthStore.get().failure(site.getKey());
-        else SearchSourceHealthStore.get().empty(site.getKey());
-        if (filtered != null && !filtered.getList().isEmpty()) {
-            aggregateResults.add(filtered);
-            aggregateSearch.postValue(new SearchSnapshot(session, aggregateResults));
-            enrichPosters(session, site, filtered);
-        }
-        // MutableLiveData.postValue coalesces pending values. Aggregate search can finish several
-        // sources in the same main-loop frame, so dispatch each source as its own main-thread event
-        // or valid results (and their source tabs) can silently disappear.
-        App.post(() -> {
-            synchronized (SiteViewModel.this) {
-                if (currentSearchProgress.session() != session || currentSearchProgress.cancelled()) return;
+        synchronized (this) {
+            if (currentSearchProgress.session() != session || currentSearchProgress.cancelled()) return;
+            SourceState prior = sourceStates.get(site.getKey());
+            int page = prior == null ? 1 : prior.page();
+            java.util.Set<String> seen = seenIds.computeIfAbsent(site.getKey(), ignored -> new java.util.HashSet<>());
+            int before = seen.size();
+            for (com.fongmi.android.tv.bean.Vod vod : received) seen.add(vod.getId());
+            boolean hasMore = result != null && !received.isEmpty() && seen.size() > before
+                    && (result.getPageCount() <= 0 || page < result.getPageCount());
+            boolean valid = filtered != null && !filtered.getList().isEmpty();
+            sourceStates.put(site.getKey(), new SourceState(valid ? SourcePhase.SUCCESS
+                    : result != null && result.hasMsg() ? SourcePhase.FAILED : SourcePhase.EMPTY, page, hasMore));
+            publishSources();
+            if (valid) SearchSourceHealthStore.get().success(site.getKey());
+            else if (result != null && result.hasMsg()) SearchSourceHealthStore.get().failure(site.getKey());
+            else SearchSourceHealthStore.get().empty(site.getKey());
+            if (filtered != null && !filtered.getList().isEmpty()) {
+                aggregateResults.add(filtered);
+                aggregateSearch.postValue(new SearchSnapshot(session, aggregateResults));
+                enrichPosters(session, site, filtered);
             }
-            search.setValue(filtered);
-        });
-        recomputeSearchProgress();
+            // MutableLiveData.postValue coalesces pending values. Aggregate search can finish several
+            // sources in the same main-loop frame, so dispatch each source as its own main-thread event
+            // or valid results (and their source tabs) can silently disappear.
+            App.post(() -> {
+                synchronized (SiteViewModel.this) {
+                    if (currentSearchProgress.session() != session || currentSearchProgress.cancelled()) return;
+                }
+                search.setValue(filtered);
+            });
+            recomputeSearchProgress();
+        }
     }
 
     private Result filterRelevant(Result result, String keyword) {

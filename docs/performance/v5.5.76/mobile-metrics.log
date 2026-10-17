@@ -1,0 +1,18 @@
+10-17 19:19:34.926  4800  4815 I System.out: UPDATE_BURST_RECOVERY totalMs=4164 bytes=4194437
+10-17 19:19:35.185  4800  4815 I System.out: UPDATE_FAST_RACE firstBytesMs=5 totalMs=166
+10-17 19:19:40.005  4800  4815 I Performance576QA: UPDATE_FULL_APK firstBytesMs=1778 elapsedMs=4768 KiBps=10110 sources=[gh-proxy.com] progressEvents=49
+10-17 19:20:06.648  5015  5057 I MobileQA: Search entry and submit: 1152ms
+10-17 19:20:10.612  5015  5057 I Performance576QA: MOBILE_BULK_SEARCH sources=60 rawRows=4800 visibleRows=2400 elapsedMs=3964 worstInputMs=90
+10-17 19:20:12.101  5015  5057 I MobileQA: Search entry and submit: 829ms
+10-17 19:20:13.671  5015  5057 I MobileQA: Search entry and submit: 910ms
+10-17 19:20:13.863  5015  5057 I MobileQA: First partial result: 193ms, slow source still blocked
+10-17 19:20:17.302  5015  5057 I MobileQA: Search entry and submit: 843ms
+10-17 19:20:41.481  5015  5057 I System.out: SEARCH_PROCESS_TIMEOUT_MS=22746
+10-17 19:22:46.054  5700  5747 I Danmaku574QA: automatic 现在就出发第四季第1期上 matchAndDocumentMs=2444 parseAndControllerMs=423
+10-17 19:22:51.647  5700  5747 I Danmaku574QA: automatic 现在就出发第四季第1期下 matchAndDocumentMs=4873 parseAndControllerMs=720
+10-17 19:22:56.442  5700  5747 I Danmaku574QA: automatic 哪吒2正片 matchAndDocumentMs=3858 parseAndControllerMs=937
+10-17 19:23:21.689  5700  5747 I Danmaku575QA: visible pixels confirmed mango-upper
+10-17 19:23:24.402  5700  5747 I Danmaku575QA: visible pixels confirmed mango-lower
+10-17 19:23:27.717  5700  5747 I Danmaku575QA: visible pixels confirmed mango-bonus
+10-17 19:23:31.230  5700  5747 I Danmaku575QA: visible pixels confirmed youku-movie
+10-17 19:23:36.114  5700  5747 I Danmaku575QA: visible pixels confirmed bili-episode

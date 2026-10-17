@@ -1,0 +1,37 @@
+10-17 19:24:21.065  6742  6758 I System.out: UPDATE_BURST_RECOVERY totalMs=4114 bytes=4194437
+10-17 19:24:21.305  6742  6758 I System.out: UPDATE_FAST_RACE firstBytesMs=4 totalMs=134
+10-17 19:24:25.764  6742  6758 I Performance576QA: UPDATE_FULL_APK firstBytesMs=1251 elapsedMs=4361 KiBps=11054 sources=[gh-proxy.com] progressEvents=49
+10-17 19:24:48.639  6742  6758 I System.out: SEARCH_PROCESS_TIMEOUT_MS=22451
+10-17 19:25:22.113  6742  6742 I System.out: SEARCH_BENCHMARK sources=40 rows=800 mainWallMs=0 mainCpuMs=0
+10-17 19:25:27.711  6742  6758 I System.out: SEARCH_RESPONSIVENESS rows=500 totalMs=396 samples=21 mainP95Ms=2 mainMaxMs=28
+10-17 19:25:28.183  6742  6758 I System.out: SEARCH_RESPONSIVENESS rows=1000 totalMs=471 samples=26 mainP95Ms=6 mainMaxMs=18
+10-17 19:25:29.628  6742  6758 I System.out: SEARCH_RESPONSIVENESS rows=3000 totalMs=1445 samples=79 mainP95Ms=3 mainMaxMs=73
+10-17 19:26:50.571  7312  7328 I Danmaku574QA: automatic 现在就出发第四季第1期上 matchAndDocumentMs=3103 parseAndControllerMs=510
+10-17 19:26:53.891  7312  7328 I Danmaku574QA: automatic 现在就出发第四季第1期下 matchAndDocumentMs=2837 parseAndControllerMs=483
+10-17 19:26:59.332  7312  7328 I Danmaku574QA: automatic 哪吒2正片 matchAndDocumentMs=4605 parseAndControllerMs=836
+10-17 19:27:13.671  7312  7328 I Danmaku575QA: visible pixels confirmed mango-upper
+10-17 19:27:26.824  7312  7328 I Danmaku575QA: visible pixels confirmed mango-lower
+10-17 19:27:39.966  7312  7328 I Danmaku575QA: visible pixels confirmed mango-bonus
+10-17 19:27:58.378  7312  7328 I Danmaku575QA: visible pixels confirmed youku-movie
+10-17 19:28:49.384  8593  8653 I Danmaku575QA: loading youku-film https://v.youku.com/v_show/id_XNTkxNDY2Nzg2MA==.html
+10-17 19:28:56.375  8593  8653 I Danmaku575QA: youku-film source=https://v.youku.com/v_show/id_XNTkxNDY2Nzg2MA==.html comments=25936 lastMs=6423000 elapsedMs=6991
+10-17 19:28:56.375  8593  8653 I Danmaku575QA: loading bili-episode https://www.bilibili.com/bangumi/play/ep691614
+10-17 19:28:58.352  8593  8653 I Danmaku575QA: bili-episode source=https://www.bilibili.com/bangumi/play/ep691614 comments=6691 lastMs=1444022 elapsedMs=1976
+10-17 19:28:58.352  8593  8653 I Danmaku575QA: loading bili-part https://www.bilibili.com/video/BV17x411w7KC?p=3
+10-17 19:28:58.825  8593  8653 I Danmaku575QA: bili-part source=https://www.bilibili.com/video/BV17x411w7KC?p=3 comments=548 lastMs=319158 elapsedMs=473
+10-17 19:28:58.825  8593  8653 I Danmaku575QA: loading mango-link https://www.mgtv.com/b/896231/24579459.html
+10-17 19:29:03.247  8593  8653 I Danmaku575QA: mango-link source=https://www.mgtv.com/b/896231/24579459.html comments=5888 lastMs=2471173 elapsedMs=4423
+10-17 19:29:03.247  8593  8653 I Danmaku575QA: loading qq-link https://v.qq.com/x/cover/mzc00200tjkzeps/y4101qnn3jo.html
+10-17 19:29:10.016  8593  8653 I Danmaku575QA: qq-link source=https://v.qq.com/x/cover/mzc00200tjkzeps/y4101qnn3jo.html comments=149772 lastMs=8669000 elapsedMs=6769
+10-17 19:29:10.016  8593  8653 I Danmaku575QA: loading iqiyi-link https://www.iqiyi.com/v_pp7j21xlp4.html
+10-17 19:29:13.637  8593  8653 I Danmaku575QA: iqiyi-link source=https://www.iqiyi.com/v_pp7j21xlp4.html comments=2585 lastMs=2656000 elapsedMs=3621
+10-17 19:29:13.637  8593  8653 I Danmaku575QA: loading gamer-link https://ani.gamer.com.tw/animeVideo.php?sn=41645
+10-17 19:29:18.150  8593  8653 I Danmaku575QA: gamer-link source=https://ani.gamer.com.tw/animeVideo.php?sn=41645 comments=3001 lastMs=1425300 elapsedMs=4513
+10-17 19:29:49.972  8593  8653 I Danmaku574QA: automatic 现在就出发第四季第1期上 matchAndDocumentMs=245 parseAndControllerMs=719
+10-17 19:29:50.614  8593  8653 I Danmaku574QA: automatic 现在就出发第四季第1期下 matchAndDocumentMs=21 parseAndControllerMs=621
+10-17 19:29:51.572  8593  8653 I Danmaku574QA: automatic 哪吒2正片 matchAndDocumentMs=201 parseAndControllerMs=757
+10-17 19:30:03.024  8593  8653 I Danmaku575QA: visible pixels confirmed mango-upper
+10-17 19:30:06.930  8593  8653 I Danmaku575QA: visible pixels confirmed mango-lower
+10-17 19:30:19.889  8593  8653 I Danmaku575QA: visible pixels confirmed mango-bonus
+10-17 19:30:32.612  8593  8653 I Danmaku575QA: visible pixels confirmed youku-movie
+10-17 19:30:45.390  8593  8653 I Danmaku575QA: visible pixels confirmed bili-episode
