@@ -1,0 +1,22 @@
+{
+  "mobile": {
+    "passed": 3,
+    "skippedTvOnly": 1
+  },
+  "leanback": {
+    "passed": 4
+  },
+  "nativePaste": "Android clipboard context-menu action after an actual tap on the empty key field",
+  "verified": [
+    "normal non-password IME",
+    "complete paste value",
+    "mask after paste and blur",
+    "retain on validation failure",
+    "save to encrypted TV preferences",
+    "expired/cross-origin rejection",
+    "slow upload",
+    "TV QR parent refresh"
+  ],
+  "device": "Dedicated API 36 ARM64 emulator, mobile and leanback variants",
+  "physicalOemKeyboardTested": false
+}

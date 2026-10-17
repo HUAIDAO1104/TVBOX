@@ -104,6 +104,82 @@ public class AiPairingInstrumentedTest {
             assertEquals("fixture-slow-secret", DanmakuAiSetting.key());
         } finally { pairing.close(); }
     }
+    @Test public void phonePasteUsesNormalImeThenMasksAndSavesToTv() throws Exception {
+        var pairing=AiPairingSession.open(()->{});
+        var web=new AtomicReference<android.webkit.WebView>();
+        try(ActivityScenario<AiPasteTestActivity> scenario=ActivityScenario.launch(AiPasteTestActivity.class)) {
+            scenario.onActivity(a->{
+                var view=new android.webkit.WebView(a);view.getSettings().setJavaScriptEnabled(true);
+                a.setContentView(view);view.setFocusableInTouchMode(true);view.requestFocus();web.set(view);
+                view.loadUrl(Server.get().getAddress(true)+"/ai-setup#"+pairing.token());
+            });
+            awaitJs(web.get(),"!!document.getElementById('form') && !document.getElementById('form').hidden");
+            awaitJs(web.get(),"document.hasFocus()");
+            assertEquals("\"password\"",js(web.get(),"document.getElementById('key').type"));
+            tapKey(web.get());
+            awaitJs(web.get(),"document.activeElement.id==='key' && document.getElementById('key').type==='text'");
+            var editor=new android.view.inputmethod.EditorInfo();
+            var connection=new AtomicReference<android.view.inputmethod.InputConnection>();
+            long inputDeadline=android.os.SystemClock.elapsedRealtime()+5000;
+            do {
+                InstrumentationRegistry.getInstrumentation().runOnMainSync(()->connection.set(web.get().onCreateInputConnection(editor)));
+                if(connection.get()!=null)break;
+                android.os.SystemClock.sleep(100);
+            } while(android.os.SystemClock.elapsedRealtime()<inputDeadline);
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(()->{
+                ((android.content.ClipboardManager)web.get().getContext().getSystemService(Context.CLIPBOARD_SERVICE))
+                    .setPrimaryClip(android.content.ClipData.newPlainText("test key","fixture-native-paste-579"));
+            });
+            assertNotNull(connection.get());
+            int variation=editor.inputType & android.text.InputType.TYPE_MASK_VARIATION;
+            assertNotEquals(android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD,variation);
+            assertNotEquals(android.text.InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD,variation);
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(()->assertTrue(connection.get().performContextMenuAction(android.R.id.paste)));
+            awaitJs(web.get(),"document.getElementById('key').value==='fixture-native-paste-579' && document.getElementById('key').type==='password'");
+            assertEquals("false",js(web.get(),"document.activeElement.id==='key'"));
+            android.os.SystemClock.sleep(300);
+            Bitmap shot=InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
+            try(var output=new java.io.FileOutputStream(new File(App.get().getExternalFilesDir(null),"579-native-paste.png"))){shot.compress(Bitmap.CompressFormat.PNG,100,output);}shot.recycle();
+            // Leaving normal input without a paste must also restore masking.
+            js(web.get(),"document.getElementById('pasteKey').click()");
+            awaitJs(web.get(),"document.activeElement.id==='key' && document.getElementById('key').type==='text'");
+            js(web.get(),"document.getElementById('model').focus()");
+            awaitJs(web.get(),"document.getElementById('key').type==='password'");
+            // A validation failure keeps the pasted value for correction.
+            js(web.get(),"document.getElementById('base').value='http://invalid';document.getElementById('form').requestSubmit()");
+            awaitJs(web.get(),"document.getElementById('base').getAttribute('aria-invalid')==='true'");
+            assertEquals("\"fixture-native-paste-579\"",js(web.get(),"document.getElementById('key').value"));
+            js(web.get(),"document.getElementById('base').value='https://example.invalid/v1';document.getElementById('model').value='fixture-model';document.getElementById('form').requestSubmit()");
+            awaitJs(web.get(),"document.getElementById('form').hidden && document.getElementById('key').value===''");
+            assertEquals("fixture-native-paste-579",DanmakuAiSetting.key());
+            assertTrue(DanmakuAiSetting.enabled());
+            assertFalse(prefs.getString("credential","").contains("fixture-native-paste-579"));
+        } finally {
+            pairing.close();
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(()->{if(web.get()!=null)web.get().destroy();});
+        }
+    }
+    private void tapKey(android.webkit.WebView web) throws Exception {
+        js(web,"document.getElementById('key').scrollIntoView({block:'center'})");
+        android.os.SystemClock.sleep(200);
+        var point=JsonParser.parseString(js(web,"(()=>{const r=document.getElementById('key').getBoundingClientRect();return [(r.left+r.width/2)*devicePixelRatio,(r.top+r.height/2)*devicePixelRatio]})()")).getAsJsonArray();
+        int[] location=new int[2];InstrumentationRegistry.getInstrumentation().runOnMainSync(()->web.getLocationOnScreen(location));
+        float x=location[0]+point.get(0).getAsFloat(),y=location[1]+point.get(1).getAsFloat();
+        long now=android.os.SystemClock.uptimeMillis();
+        for(int action:new int[]{android.view.MotionEvent.ACTION_DOWN,android.view.MotionEvent.ACTION_UP}){
+            var event=android.view.MotionEvent.obtain(now,android.os.SystemClock.uptimeMillis(),action,x,y,0);
+            InstrumentationRegistry.getInstrumentation().sendPointerSync(event);event.recycle();
+        }
+    }
+    private String js(android.webkit.WebView web,String script) throws Exception {
+        var done=new java.util.concurrent.CountDownLatch(1);var value=new AtomicReference<String>();
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(()->web.evaluateJavascript(script,result->{value.set(result);done.countDown();}));
+        assertTrue("WebView script completed",done.await(10,java.util.concurrent.TimeUnit.SECONDS));return value.get();
+    }
+    private void awaitJs(android.webkit.WebView web,String script) throws Exception {
+        long deadline=android.os.SystemClock.elapsedRealtime()+15000;
+        while(!"true".equals(js(web,script))){if(android.os.SystemClock.elapsedRealtime()>=deadline)fail("WebView condition: "+script+"; state="+js(web,"JSON.stringify({active:document.activeElement.id,focused:document.hasFocus(),type:document.getElementById('key')?.type,pasteMode:typeof pasteMode==='undefined'?null:pasteMode})"));android.os.SystemClock.sleep(100);}
+    }
     private String decode(androidx.fragment.app.DialogFragment dialog) {
         try {Bitmap bitmap=((BitmapDrawable)((android.widget.ImageView)dialog.requireDialog().findViewById(R.id.code)).getDrawable()).getBitmap();int[] pixels=new int[bitmap.getWidth()*bitmap.getHeight()];bitmap.getPixels(pixels,0,bitmap.getWidth(),0,0,bitmap.getWidth(),bitmap.getHeight());
             String url=new MultiFormatReader().decode(new BinaryBitmap(new HybridBinarizer(new RGBLuminanceSource(bitmap.getWidth(),bitmap.getHeight(),pixels)))).getText();assertTrue(url.contains("/ai-setup#"));return url.substring(url.indexOf('#')+1);
