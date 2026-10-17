@@ -33,7 +33,7 @@ public final class DanmakuResultGrouper {
         if (source != null) {
             for (Danmaku item : source) {
                 if (item == null || item.isEmpty() || item.isBlockedSource()) continue;
-                String candidate = DanmakuMatch.canonicalTitle(item.getName());
+                String candidate = DanmakuMatch.canonicalTitle(item.getMatchName());
                 if (!base.equals(candidate.replaceFirst("#\\d+$", ""))
                         && !(expected.length() >= 2 && candidate.contains(expected))) continue;
                 // The API returns the complete season even when an episode is supplied. Keeping
@@ -87,7 +87,7 @@ public final class DanmakuResultGrouper {
         // thousands of times inside TimSort, especially for long variety catalogues on TVs.
         Map<Danmaku, Rank> ranks = new java.util.HashMap<>();
         for (Danmaku item : items) {
-            String name = item.getName();
+            String name = item.getMatchName();
             ranks.put(item, new Rank(editionRank(title, year, type, episode, name),
                     DanmakuMatch.displayScore(title, year, type, episode, name), seasonOrder(name),
                     providerOrder(name), normalized(DanmakuMatch.resultProvider(name)),
@@ -119,7 +119,7 @@ public final class DanmakuResultGrouper {
 
     private static int providerOrder(String name) {
         String provider = DanmakuMatch.resultProvider(name);
-        return "iqiyi".equalsIgnoreCase(provider) ? 0 : "360".equalsIgnoreCase(provider) ? 1 : 2;
+        return ("iqiyi".equalsIgnoreCase(provider) || "tencent".equalsIgnoreCase(provider)) ? 0 : "360".equalsIgnoreCase(provider) ? 1 : 2;
     }
 
     private static String normalized(String value) {

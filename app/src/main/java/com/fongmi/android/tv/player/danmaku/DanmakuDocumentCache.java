@@ -6,7 +6,7 @@ import androidx.annotation.NonNull;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.api.IqiyiDanmaku;
-import com.fongmi.android.tv.api.IqiyiDanmakuCodec;
+import com.fongmi.android.tv.api.NativeDanmaku;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -74,7 +74,7 @@ public final class DanmakuDocumentCache {
         File target = fileFor(source);
         if (isFresh(source, target)) {
             // Keep recently replayed episodes during LRU pruning.
-            if (!IqiyiDanmakuCodec.supports(source.toString())) target.setLastModified(System.currentTimeMillis());
+            if (!NativeDanmaku.supports(source.toString())) target.setLastModified(System.currentTimeMillis());
             App.post(() -> listener.onReady(source, Uri.fromFile(target)));
             return () -> {
             };
@@ -91,7 +91,7 @@ public final class DanmakuDocumentCache {
         }
         Request request;
         try {
-            request = IqiyiDanmakuCodec.supports(key) ? null : new Request.Builder().url(key).get().build();
+            request = NativeDanmaku.supports(key) ? null : new Request.Builder().url(key).get().build();
         } catch (RuntimeException error) {
             App.post(() -> listener.onFailure(source, new IOException(error)));
             return () -> {
@@ -116,7 +116,7 @@ public final class DanmakuDocumentCache {
             if (DOWNLOADS.get(download.key) != download || download.cancelled) return;
             download.retryRunnable = null;
         }
-        if (IqiyiDanmakuCodec.supports(download.key)) {
+        if (NativeDanmaku.supports(download.key)) {
             enqueueNative(download);
             return;
         }
@@ -166,7 +166,7 @@ public final class DanmakuDocumentCache {
     private static void enqueueNative(PendingDownload download) {
         Uri source = Uri.parse(download.key);
         File target = fileFor(source);
-        IqiyiDanmaku.Job job = IqiyiDanmaku.document(download.key, download::progress,
+        NativeDanmaku.Job job = NativeDanmaku.document(download.key, download::progress,
                 new IqiyiDanmaku.Callback<byte[]>() {
                     @Override public void onSuccess(byte[] bytes) {
                         try {
@@ -176,7 +176,7 @@ public final class DanmakuDocumentCache {
                                 writeAtomically(target, new java.io.ByteArrayInputStream(bytes), bytes.length,
                                         percent -> download.progress(95 + percent / 20));
                             }
-                            if (!isUsable(target)) throw new IOException("Empty iQiyi document");
+                            if (!isUsable(target)) throw new IOException("Empty native danmaku document");
                             prune(target);
                             complete(download, Uri.fromFile(target), null);
                         } catch (IOException error) { complete(download, null, error); }
@@ -188,7 +188,7 @@ public final class DanmakuDocumentCache {
     }
 
     private static boolean isFresh(Uri source, File target) {
-        return isUsable(target) && (!IqiyiDanmakuCodec.supports(source.toString())
+        return isUsable(target) && (!NativeDanmaku.supports(source.toString())
                 || System.currentTimeMillis() - target.lastModified() < TimeUnit.HOURS.toMillis(6));
     }
 
@@ -250,7 +250,7 @@ public final class DanmakuDocumentCache {
     }
 
     static boolean isCacheable(String source) {
-        return IqiyiDanmakuCodec.supports(source) || DanmakuHttp.isImmutableCommentUrl(source);
+        return NativeDanmaku.supports(source) || DanmakuHttp.isImmutableCommentUrl(source);
     }
 
     static String cacheKey(String source) {
@@ -409,7 +409,7 @@ public final class DanmakuDocumentCache {
         private final Request request;
         private final List<Subscription> subscribers = new ArrayList<>();
         private volatile Call call;
-        private volatile IqiyiDanmaku.Job nativeJob;
+        private volatile NativeDanmaku.Job nativeJob;
         private volatile boolean cancelled;
         private Runnable retryRunnable;
         private int retryCount;

@@ -30,7 +30,9 @@ public class DanmakuAiDialog extends BaseAlertDialog {
 
     @Override protected ViewBinding getBinding() { return binding = DialogDanmakuAiBinding.inflate(getLayoutInflater()); }
     @Override protected MaterialAlertDialogBuilder getBuilder() {
-        return builder().setTitle(R.string.danmaku_ai_title).setView(getBinding().getRoot())
+        MaterialAlertDialogBuilder form = new MaterialAlertDialogBuilder(requireActivity(), R.style.DanmakuAiDialogTheme);
+        if ("mobile".equals(BuildConfig.FLAVOR_mode)) form.setBackgroundInsetTop(0).setBackgroundInsetBottom(0);
+        return form.setTitle(R.string.danmaku_ai_title).setView(getBinding().getRoot())
                 .setPositiveButton(R.string.danmaku_ai_save, null).setNegativeButton(R.string.dialog_negative, null);
     }
 
@@ -44,6 +46,19 @@ public class DanmakuAiDialog extends BaseAlertDialog {
     }
 
     @Override protected void initEvent() {
+        binding.getRoot().addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            if (bottom - top == oldBottom - oldTop) return;
+            view.post(this::showFocusedField);
+        });
+        androidx.core.view.ViewCompat.setWindowInsetsAnimationCallback(binding.getRoot(),
+                new androidx.core.view.WindowInsetsAnimationCompat.Callback(
+                        androidx.core.view.WindowInsetsAnimationCompat.Callback.DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
+                    @Override public androidx.core.view.WindowInsetsCompat onProgress(androidx.core.view.WindowInsetsCompat insets,
+                            java.util.List<androidx.core.view.WindowInsetsAnimationCompat> animations) { return insets; }
+                    @Override public void onEnd(androidx.core.view.WindowInsetsAnimationCompat animation) {
+                        binding.getRoot().post(DanmakuAiDialog.this::showFocusedField);
+                    }
+                });
         binding.test.setOnClickListener(v -> submit(false));
         binding.clear.setOnClickListener(v -> {
             DanmakuAiMatcher.cancel(); DanmakuAiSetting.clear();
@@ -53,11 +68,45 @@ public class DanmakuAiDialog extends BaseAlertDialog {
         });
     }
 
+    private void showFocusedField() {
+        var scroll = binding.getRoot();
+        android.view.View focused = scroll.findFocus();
+        if (focused == null || focused == scroll) return;
+        int[] field = new int[2], viewport = new int[2];
+        focused.getLocationOnScreen(field);
+        scroll.getLocationOnScreen(viewport);
+        scroll.scrollBy(0, field[1] - viewport[1] - Math.round(8 * scroll.getResources().getDisplayMetrics().density));
+    }
+
     @Override public void onStart() {
         super.onStart();
         closed = false;
         if ("leanback".equals(BuildConfig.FLAVOR_mode)) setWidth(.65f);
-        if (getDialog().getWindow() != null) getDialog().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        if (getDialog().getWindow() != null) {
+            getDialog().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+            if ("mobile".equals(BuildConfig.FLAVOR_mode)) {
+                var window = getDialog().getWindow();
+                androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false);
+                if (android.os.Build.VERSION.SDK_INT >= 30)
+                    window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
+                var params = window.getAttributes();
+                params.height = android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+                params.width = android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+                window.setAttributes(params);
+                // Keep the title, scrolling form and actions inside the same IME-safe area.
+                android.view.View content = window.findViewById(android.R.id.content);
+                android.view.View panel = window.findViewById(androidx.appcompat.R.id.parentPanel);
+                panel.getLayoutParams().height = android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+                panel.requestLayout();
+                androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(content, (view, insets) -> {
+                    var safe = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars()
+                            | androidx.core.view.WindowInsetsCompat.Type.ime());
+                    view.setPadding(safe.left, safe.top, safe.right, safe.bottom);
+                    return insets;
+                });
+                androidx.core.view.ViewCompat.requestApplyInsets(content);
+            }
+        }
         ((AlertDialog) requireDialog()).getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> submit(true));
     }
 

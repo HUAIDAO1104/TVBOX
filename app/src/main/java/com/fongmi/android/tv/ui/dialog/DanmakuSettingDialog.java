@@ -97,6 +97,12 @@ public final class DanmakuSettingDialog {
                 searchPanel.bind();
             }
             binding.search.setOnClickListener(view -> showSearch());
+            View.OnClickListener ai = view -> {
+                if (getParentFragmentManager().findFragmentByTag("danmaku_ai") == null)
+                    new DanmakuAiDialog().show(getParentFragmentManager(), "danmaku_ai");
+            };
+            binding.ai.setOnClickListener(ai);
+            binding.searchPane.ai.setOnClickListener(ai);
             if (searchInitially) showSearch();
             else if (Util.isLeanback()) binding.search.requestFocus();
             bindBackNavigation();
@@ -185,6 +191,12 @@ public final class DanmakuSettingDialog {
                 searchPanel.bind();
             }
             binding.search.setOnClickListener(view -> showSearch());
+            View.OnClickListener ai = view -> {
+                if (getParentFragmentManager().findFragmentByTag("danmaku_ai") == null)
+                    new DanmakuAiDialog().show(getParentFragmentManager(), "danmaku_ai");
+            };
+            binding.ai.setOnClickListener(ai);
+            binding.searchPane.ai.setOnClickListener(ai);
             if (searchInitially) showSearch();
             else if (Util.isLeanback()) binding.search.requestFocus();
             bindBackNavigation();

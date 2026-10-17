@@ -1,0 +1,97 @@
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=3
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest:
+INSTRUMENTATION_STATUS: test=manualSearchGroupsWorksAndKeepsAllEpisodesSelectable
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=3
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:522)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:461)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:436)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.manualSearchGroupsWorksAndKeepsAllEpisodesSelectable(DanmakuSearchInstrumentedTest.java:134)
+
+INSTRUMENTATION_STATUS: stream=
+Error in manualSearchGroupsWorksAndKeepsAllEpisodesSelectable(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:522)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:461)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:436)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.manualSearchGroupsWorksAndKeepsAllEpisodesSelectable(DanmakuSearchInstrumentedTest.java:134)
+
+INSTRUMENTATION_STATUS: test=manualSearchGroupsWorksAndKeepsAllEpisodesSelectable
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=3
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=accessDeniedIsVisibleAndRetryRecovers
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=3
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:522)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:461)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:436)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.accessDeniedIsVisibleAndRetryRecovers(DanmakuSearchInstrumentedTest.java:263)
+
+INSTRUMENTATION_STATUS: stream=
+Error in accessDeniedIsVisibleAndRetryRecovers(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:522)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:461)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:436)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.accessDeniedIsVisibleAndRetryRecovers(DanmakuSearchInstrumentedTest.java:263)
+
+INSTRUMENTATION_STATUS: test=accessDeniedIsVisibleAndRetryRecovers
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=3
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=liveSeasonFourAndMovieAutomaticThenManualSelection
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=3
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=liveSeasonFourAndMovieAutomaticThenManualSelection
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 56.023
+There were 2 failures:
+1) manualSearchGroupsWorksAndKeepsAllEpisodesSelectable(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:522)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:461)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:436)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.manualSearchGroupsWorksAndKeepsAllEpisodesSelectable(DanmakuSearchInstrumentedTest.java:134)
+2) accessDeniedIsVisibleAndRetryRecovers(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:522)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:461)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:436)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.accessDeniedIsVisibleAndRetryRecovers(DanmakuSearchInstrumentedTest.java:263)
+
+FAILURES!!!
+Tests run: 3,  Failures: 2
+
+
+INSTRUMENTATION_CODE: -1

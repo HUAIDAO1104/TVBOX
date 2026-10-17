@@ -342,4 +342,6 @@
     <string name="danmaku_selection_loading">Loading the selected episode…</string>
     <string name="danmaku_selection_loaded">Danmaku loaded</string>
     <string name="danmaku_selection_failed">Could not load this episode. Select it to retry or choose another source.</string>
+    <string name="danmaku_ai_entry">AI matching · API key &amp; model</string>
+    <string name="danmaku_ai_model_hint">Recommended: qwen3.5-flash. Pricing is set by your provider.</string>
 </resources>

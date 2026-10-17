@@ -32,6 +32,12 @@ public class Danmaku {
     // Runtime-only identity of the manual-search endpoint that returned this item. The endpoint
     // itself may contain credentials, so only its non-reversible fingerprint is carried/stored.
     private transient String sourceKey;
+    // Only native catalogue adapters may populate a provider-verified alias for this query.
+    // Keep the real title in the UI/cache and never deserialize an untrusted alias from a URL.
+    private transient String matchName;
+
+    public String getMatchName() { return matchName == null || matchName.isBlank() ? getName() : matchName; }
+    public void setMatchName(String value) { matchName = value; }
 
     public static List<Danmaku> arrayFrom(String str) {
         Type listType = TypeToken.getParameterized(List.class, Danmaku.class).getType();
@@ -83,15 +89,22 @@ public class Danmaku {
     }
 
     public static boolean isBlockedSourceLabel(CharSequence label) {
-        String value = Normalizer.normalize(Objects.toString(label, ""), Normalizer.Form.NFKC)
-                .replaceAll("<[^>]*>", "")
-                .replaceAll("[\\p{Cf}\\u200B-\\u200D\\u2060\\uFEFF]", "")
-                .toLowerCase(Locale.ROOT)
-                .replaceAll("[\\s\\p{P}\\p{S}]+", "");
+        String value = Normalizer.normalize(Objects.toString(label, ""), Normalizer.Form.NFKC);
+        // This runs for every comment, including feature films with 150,000 entries.
+        // Removing markup/separators cannot introduce either required Chinese character.
+        // Avoid compiling and executing three regexes for every ordinary comment.
+        if (value.indexOf('小') < 0 || value.indexOf('白') < 0) return false;
+        value = LABEL_HTML.matcher(value).replaceAll("");
+        value = LABEL_INVISIBLE.matcher(value).replaceAll("").toLowerCase(Locale.ROOT);
+        value = LABEL_SEPARATORS.matcher(value).replaceAll("");
         // Match the two semantic tokens rather than one contiguous literal.  Repositories have
         // emitted this pseudo line with HTML, decorations and inserted words between the tokens.
         return value.contains("小白") && (value.contains("弹幕") || value.contains("彈幕"));
     }
+
+    private static final java.util.regex.Pattern LABEL_HTML = java.util.regex.Pattern.compile("<[^>]*>");
+    private static final java.util.regex.Pattern LABEL_INVISIBLE = java.util.regex.Pattern.compile("[\\p{Cf}\\u200B-\\u200D\\u2060\\uFEFF]");
+    private static final java.util.regex.Pattern LABEL_SEPARATORS = java.util.regex.Pattern.compile("[\\s\\p{P}\\p{S}]+");
 
     public String getName() {
         return name == null || name.isEmpty() ? getUrl() : name;

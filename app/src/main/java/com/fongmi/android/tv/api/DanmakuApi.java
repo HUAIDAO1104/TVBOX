@@ -44,7 +44,7 @@ public class DanmakuApi {
     }
 
     private static final String TAG = DanmakuApi.class.getSimpleName();
-    private static final Set<IqiyiDanmaku.Job> NATIVE_SEARCHES = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private static final Set<NativeDanmaku.Job> NATIVE_SEARCHES = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private static final AtomicInteger REQUEST_GENERATION = new AtomicInteger();
     private static final Set<DanmakuDocumentCache.Ticket> ACTIVE_VALIDATIONS =
             java.util.concurrent.ConcurrentHashMap.newKeySet();
@@ -131,7 +131,7 @@ public class DanmakuApi {
 
     private static List<String> orderedEndpoints(String preferredSourceKey) {
         LinkedHashSet<String> ordered = new LinkedHashSet<>();
-        ordered.add(IqiyiDanmakuCodec.SOURCE);
+        ordered.addAll(NativeDanmaku.sources());
         for (String apiUrl : DanmakuSetting.getSearchApiUrls()) {
             if (!preferredSourceKey.isEmpty()
                     && DanmakuManualMatchStore.sourceKey(apiUrl).equals(preferredSourceKey)) ordered.add(apiUrl);
@@ -166,7 +166,7 @@ public class DanmakuApi {
         List<Call> calls = new ArrayList<>();
         List<DanmakuDocumentCache.Ticket> validations =
                 Collections.synchronizedList(new ArrayList<>());
-        for (String url : apiUrls) calls.add(IqiyiDanmakuCodec.SOURCE.equals(url) ? null : createCall(candidateTitle, episode, url));
+        for (String url : apiUrls) calls.add(NativeDanmaku.isSource(url) ? null : createCall(candidateTitle, episode, url));
         for (int i = 0; i < calls.size(); i++) {
             Call current = calls.get(i);
             String apiUrl = apiUrls.get(i);
@@ -179,11 +179,11 @@ public class DanmakuApi {
                 @Override public void onFailure(IOException error) { onFailure(current, error); }
 
                 private void accept(List<Danmaku> items) {
-                    String sourceKey = IqiyiDanmakuCodec.SOURCE.equals(apiUrl) ? apiUrl : DanmakuManualMatchStore.sourceKey(apiUrl);
+                    String sourceKey = NativeDanmaku.isSource(apiUrl) ? apiUrl : DanmakuManualMatchStore.sourceKey(apiUrl);
                     for (Danmaku item : items) item.setSourceKey(sourceKey);
                     List<Danmaku> candidates = preferredName.isEmpty()
                             ? DanmakuMatch.ranked(candidateTitle, TextUtils.isEmpty(year) ? query.year() : year.trim(),
-                                    type, episode, items, Danmaku::getName)
+                                    type, episode, items, Danmaku::getMatchName)
                             : DanmakuMatch.rankedPreferred(preferredName, year, type, episode, items, Danmaku::getName);
                     if (candidates.isEmpty()) { completeOne(); return; }
                     verifyCandidates(generation, candidates, items, 0, finished, calls,
@@ -239,7 +239,7 @@ public class DanmakuApi {
             ProviderCallback provider = new ProviderCallback();
             if (current != null) current.enqueue(provider);
             else {
-                IqiyiDanmaku.Job job = IqiyiDanmaku.search(candidateTitle, provider);
+                NativeDanmaku.Job job = NativeDanmaku.search(apiUrl, candidateTitle, provider);
                 NATIVE_SEARCHES.add(job);
                 if (generation != REQUEST_GENERATION.get() || stats.delivered.get()) job.cancel();
             }
@@ -356,7 +356,7 @@ public class DanmakuApi {
     }
 
     private static void cancelNativeSearches() {
-        for (IqiyiDanmaku.Job job : NATIVE_SEARCHES) job.cancel();
+        for (NativeDanmaku.Job job : NATIVE_SEARCHES) job.cancel();
         NATIVE_SEARCHES.clear();
     }
 

@@ -19,6 +19,7 @@ import com.fongmi.android.tv.player.danmaku.DanmakuDocumentCache;
 import com.fongmi.android.tv.player.danmaku.FilteringBiliParser;
 import com.fongmi.android.tv.player.media.PlaySpec;
 import com.fongmi.android.tv.setting.DanmakuSetting;
+import com.fongmi.android.tv.playback.vod.VodPlaybackMedia;
 import com.fongmi.android.tv.ui.activity.HomeActivity;
 import okhttp3.mockwebserver.*;
 import org.junit.*;
@@ -53,6 +54,10 @@ public class DanmakuSearchInstrumentedTest {
         server.setDispatcher(new Dispatcher() {
             @Override public MockResponse dispatch(RecordedRequest request) {
                 if (request.getPath().startsWith("/api/v2/comment/")) {
+                    if (request.getPath().contains("/restore-fail")) {
+                        documentStarted.countDown();
+                        return new MockResponse().setHeadersDelay(2, TimeUnit.SECONDS).setResponseCode(404);
+                    }
                     if (request.getPath().contains("/bad")) return new MockResponse().setResponseCode(404);
                     documentStarted.countDown();
                     return new MockResponse().setBodyDelay(slowDocument ? 5 : 0, TimeUnit.SECONDS).setBody(
@@ -140,6 +145,118 @@ public class DanmakuSearchInstrumentedTest {
         await(() -> adapter.getItemCount() == 3, 5_000);
         screenshot("results");
         main(() -> { assertTrue(panel.onBack()); assertEquals(2, adapter.getItemCount()); });
+    }
+
+    @Test public void manualFailureRecoversTheConfirmedMovieOrPartAcrossProviders() throws Exception {
+        openPanel("错误片源名", "14");
+        for (String[] spec : List.of(new String[]{"电影", "正片", "/movie?"},
+                new String[]{"综艺", "2026-08-16 第1期上", "/upper?"},
+                new String[]{"综艺", "2026-08-16 第1期下", "/lower?"})) {
+            Danmaku selected = item("手选确认回归片(2026)【" + spec[0] + "】from stale - 【old-platform】 " + spec[1], "bad-manual");
+            CountDownLatch done = new CountDownLatch(1); AtomicReference<Danmaku> applied = new AtomicReference<>();
+            main(() -> VodPlaybackMedia.applyManualMatch(player, "片源的错误搜索词", selected, List.of(selected),
+                    value -> { applied.set(value); done.countDown(); }, done::countDown));
+            assertTrue(done.await(20, TimeUnit.SECONDS)); assertNotNull(spec[1], applied.get());
+            assertTrue(applied.get().getUrl(), applied.get().getUrl().contains(spec[2]));
+            assertEquals(2, parse(applied.get()));
+        }
+    }
+
+    @Test public void savedAutomaticRestoreCannotOverwriteANewerManualChoice() throws Exception {
+        openPanel("恢复竞态回归片", "正片");
+        var context = new com.fongmi.android.tv.playback.vod.DanmakuMatchContext("恢复竞态回归片", "2026", "电影", "正片");
+        Danmaku stale = item("恢复竞态回归片(2026)【电影】from stale - 正片", "restore-fail");
+        com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get().remember(context, "恢复竞态回归片", stale, List.of(stale));
+        var history = new com.fongmi.android.tv.bean.History(); history.setVodName("恢复竞态回归片");
+        var episode = new com.fongmi.android.tv.bean.Episode(); episode.setName("正片");
+        boolean auto = DanmakuSetting.isAuto(); DanmakuSetting.putAuto(true);
+        try {
+            main(() -> VodPlaybackMedia.searchDanmaku(new com.fongmi.android.tv.bean.Result(), history, episode, 1, "2026", "电影", player));
+            assertTrue(documentStarted.await(5, TimeUnit.SECONDS));
+            Danmaku confirmed = item("用户最终选择(2026)【电影】from fixture - 正片", "manual-winner");
+            CountDownLatch done = new CountDownLatch(1);
+            main(() -> VodPlaybackMedia.applyManualMatch(player, "用户最终选择", confirmed, List.of(confirmed), value -> done.countDown(), () -> fail("manual failed")));
+            assertTrue(done.await(5, TimeUnit.SECONDS));
+            SystemClock.sleep(2500);
+            main(() -> assertEquals(confirmed.getUrl(), player.getSelectedDanmaku().getUrl()));
+        } finally { DanmakuSetting.putAuto(auto); }
+    }
+
+    @Test public void aiKeyAndRecommendedModelAreReachableFromPlaybackSearch() throws Exception {
+        openPanel("正片");
+        main(() -> {
+            assertTrue(binding.ai.isShown());
+            if (com.fongmi.android.tv.utils.Util.isLeanback()) assertTrue(binding.ai.requestFocus());
+            binding.ai.performClick();
+        });
+        final DanmakuAiDialog[] dialog = new DanmakuAiDialog[1];
+        scenario.onActivity(a -> {
+            a.getSupportFragmentManager().executePendingTransactions();
+            dialog[0] = (DanmakuAiDialog) a.getSupportFragmentManager().findFragmentByTag("danmaku_ai");
+            assertNotNull(dialog[0]);
+        });
+        main(() -> {
+            var window = dialog[0].requireDialog();
+            assertEquals("qwen3.5-flash", ((android.widget.EditText) window.findViewById(R.id.model)).getText().toString());
+            assertNotNull(window.findViewById(R.id.key));
+            window.findViewById(R.id.key).requestFocus();
+        });
+        screenshot("ai-playback-entry");
+        if (!com.fongmi.android.tv.utils.Util.isLeanback()) {
+            main(() -> {
+                View key = dialog[0].requireDialog().findViewById(R.id.key);
+                ((android.view.inputmethod.InputMethodManager) key.getContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE))
+                        .showSoftInput(key, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+            });
+            SystemClock.sleep(1000);
+            screenshot("ai-playback-keyboard");
+            main(() -> {
+                var window = dialog[0].requireDialog().getWindow();
+                android.graphics.Rect frame = new android.graphics.Rect();
+                window.getDecorView().getWindowVisibleDisplayFrame(frame);
+                View save = ((androidx.appcompat.app.AlertDialog) dialog[0].requireDialog()).getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE);
+                int[] position = new int[2]; save.getLocationOnScreen(position);
+                assertTrue("Save below keyboard: " + position[1] + "/" + frame.bottom, position[1] + save.getHeight() <= frame.bottom);
+                View key = dialog[0].requireDialog().findViewById(R.id.key); key.getLocationOnScreen(position);
+                assertTrue("Key below keyboard", position[1] + key.getHeight() <= frame.bottom);
+                android.graphics.Rect visible = new android.graphics.Rect();
+                assertTrue(key.getGlobalVisibleRect(visible));
+                // Material's edit text may return the containing TextInputLayout rectangle,
+                // which also includes helper text. Require containment, not equal heights.
+                assertTrue("Entire key field must remain visible", visible.contains(new android.graphics.Rect(
+                        position[0], position[1], position[0] + key.getWidth(), position[1] + key.getHeight())));
+            });
+            screenshot("ai-playback-keyboard");
+        }
+    }
+
+    @Test public void liveSeasonFourAndMovieAutomaticThenManualSelection() throws Exception {
+        Assume.assumeTrue("true".equals(InstrumentationRegistry.getArguments().getString("danmakuLive")));
+        DanmakuSetting.putApiUrl("");
+        for (String[] spec : List.of(new String[]{"现在就出发第四季", "2026", "综艺", "第1期上", "r4102opm7x3"},
+                new String[]{"现在就出发第四季", "2026", "综艺", "第1期下", "z41023tinp7"},
+                new String[]{"哪吒2", "2025", "动画电影", "正片", "y4101qnn3jo"})) {
+            long start = SystemClock.elapsedRealtime();
+            Danmaku found = search(spec[0], spec[1], spec[2], spec[3]);
+            long matched = SystemClock.elapsedRealtime();
+            assertTrue(found.getUrl(), found.getUrl().endsWith(spec[4])); assertTrue(parse(found) > 1000);
+            android.util.Log.i("Danmaku574QA", "automatic " + spec[0] + spec[3] + " matchAndDocumentMs=" + (matched - start)
+                    + " parseAndControllerMs=" + (SystemClock.elapsedRealtime() - matched));
+        }
+        openPanel("现在就出发第四季", "第1期上");
+        var adapter = (com.fongmi.android.tv.ui.adapter.DanmakuAdapter) binding.recycler.getAdapter();
+        await(() -> indexOf(adapter, "现在就出发 第4季(2026)") >= 0, 20000);
+        screenshot("season-four-works");
+        clickRow(indexOf(adapter, "现在就出发 第4季(2026)"));
+        await(() -> adapter.getItemCount() > 1, 5000);
+        for (String vid : List.of("r4102opm7x3", "z41023tinp7")) {
+            int index = -1;
+            for (int i = 0; i < adapter.getItemCount(); i++) if (adapter.getItem(i).getUrl().endsWith(vid)) { index = i; break; }
+            assertTrue("Missing episode " + vid, index >= 0); clickRow(index);
+            await(() -> player.getSelectedDanmaku() != null && player.getSelectedDanmaku().getUrl().endsWith(vid), 15000);
+            assertTrue(parse(player.getSelectedDanmaku()) > 1000);
+        }
+        screenshot("season-four-episodes");
     }
 
     @Test public void accessDeniedIsVisibleAndRetryRecovers() throws Exception {

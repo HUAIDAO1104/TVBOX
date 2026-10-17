@@ -21,6 +21,9 @@ public class Trans {
         for (int i = 0; i < len; i++) {
             char t = UTF8T.charAt(i);
             char s = UTF8S.charAt(i);
+            // 吒 is also the simplified spelling in names such as 哪吒. It is not a
+            // traditional-only character; rewriting it to 咤 breaks exact catalogue search.
+            if (t == '吒' && s == '咤') continue;
             S2T.put(s, t);
             T2S.put(t, s);
         }

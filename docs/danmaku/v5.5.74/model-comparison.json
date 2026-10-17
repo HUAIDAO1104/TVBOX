@@ -1,0 +1,626 @@
+[
+  {
+    "model": "qwen-flash",
+    "passed": 7,
+    "total": 8,
+    "medianSeconds": 0.486,
+    "cases": [
+      {
+        "task": "clean",
+        "title": "喜剧之王【更新至14集】4K",
+        "episode": "14",
+        "expected": "喜剧之王",
+        "actual": "喜剧之王",
+        "pass": true,
+        "usage": {
+          "completion_tokens": 13,
+          "prompt_tokens": 208,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "total_tokens": 221
+        },
+        "seconds": 0.613
+      },
+      {
+        "task": "clean",
+        "title": "VIP线路 现在就出发第四季【更新至第1期】1080P",
+        "episode": "第1期上",
+        "expected": "现在就出发第四季",
+        "actual": "现在就出发第四季",
+        "pass": true,
+        "usage": {
+          "completion_tokens": 16,
+          "prompt_tokens": 220,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "total_tokens": 236
+        },
+        "seconds": 0.534
+      },
+      {
+        "task": "clean",
+        "title": "哪吒之魔童闹海【国语高清】",
+        "episode": "正片",
+        "expected": "哪吒之魔童闹海",
+        "actual": "哪吒之魔童闹海",
+        "pass": true,
+        "usage": {
+          "completion_tokens": 18,
+          "prompt_tokens": 208,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "total_tokens": 226
+        },
+        "seconds": 0.445
+      },
+      {
+        "task": "clean",
+        "title": "请回答1988",
+        "episode": "1",
+        "expected": "请回答1988",
+        "actual": "请回答1988",
+        "pass": true,
+        "usage": {
+          "completion_tokens": 16,
+          "prompt_tokens": 201,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "total_tokens": 217
+        },
+        "seconds": 0.382
+      },
+      {
+        "task": "clean",
+        "title": "哪吒2",
+        "episode": "正片",
+        "expected": "哪吒2",
+        "actual": "哪吒2",
+        "pass": true,
+        "usage": {
+          "completion_tokens": 13,
+          "prompt_tokens": 199,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "total_tokens": 212
+        },
+        "seconds": 0.516
+      },
+      {
+        "task": "select",
+        "title": "现在就出发第四季",
+        "episode": "第1期上",
+        "expected": 1,
+        "actual": 1,
+        "pass": true,
+        "usage": {
+          "completion_tokens": 14,
+          "prompt_tokens": 373,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "total_tokens": 387
+        },
+        "seconds": 0.499
+      },
+      {
+        "task": "select",
+        "title": "现在就出发第四季",
+        "episode": "第1期下",
+        "expected": 2,
+        "actual": 2,
+        "pass": true,
+        "usage": {
+          "completion_tokens": 14,
+          "prompt_tokens": 373,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "total_tokens": 387
+        },
+        "seconds": 0.396
+      },
+      {
+        "task": "select",
+        "title": "现在就出发第四季",
+        "episode": "第2期上",
+        "expected": -1,
+        "actual": 1,
+        "pass": false,
+        "usage": {
+          "completion_tokens": 15,
+          "prompt_tokens": 373,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "total_tokens": 388
+        },
+        "seconds": 0.473
+      }
+    ]
+  },
+  {
+    "model": "qwen-plus",
+    "passed": 8,
+    "total": 8,
+    "medianSeconds": 0.748,
+    "cases": [
+      {
+        "task": "clean",
+        "title": "喜剧之王【更新至14集】4K",
+        "episode": "14",
+        "expected": "喜剧之王",
+        "actual": "喜剧之王",
+        "pass": true,
+        "usage": {
+          "total_tokens": 222,
+          "completion_tokens": 14,
+          "prompt_tokens": 208,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "seconds": 0.974
+      },
+      {
+        "task": "clean",
+        "title": "VIP线路 现在就出发第四季【更新至第1期】1080P",
+        "episode": "第1期上",
+        "expected": "现在就出发第四季",
+        "actual": "现在就出发第四季",
+        "pass": true,
+        "usage": {
+          "total_tokens": 236,
+          "completion_tokens": 16,
+          "prompt_tokens": 220,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "seconds": 0.749
+      },
+      {
+        "task": "clean",
+        "title": "哪吒之魔童闹海【国语高清】",
+        "episode": "正片",
+        "expected": "哪吒之魔童闹海",
+        "actual": "哪吒之魔童闹海",
+        "pass": true,
+        "usage": {
+          "total_tokens": 225,
+          "completion_tokens": 17,
+          "prompt_tokens": 208,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "seconds": 0.786
+      },
+      {
+        "task": "clean",
+        "title": "请回答1988",
+        "episode": "1",
+        "expected": "请回答1988",
+        "actual": "请回答1988",
+        "pass": true,
+        "usage": {
+          "total_tokens": 217,
+          "completion_tokens": 16,
+          "prompt_tokens": 201,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "seconds": 0.746
+      },
+      {
+        "task": "clean",
+        "title": "哪吒2",
+        "episode": "正片",
+        "expected": "哪吒2",
+        "actual": "哪吒2",
+        "pass": true,
+        "usage": {
+          "total_tokens": 212,
+          "completion_tokens": 13,
+          "prompt_tokens": 199,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "seconds": 0.656
+      },
+      {
+        "task": "select",
+        "title": "现在就出发第四季",
+        "episode": "第1期上",
+        "expected": 1,
+        "actual": 1,
+        "pass": true,
+        "usage": {
+          "total_tokens": 384,
+          "completion_tokens": 11,
+          "prompt_tokens": 373,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "seconds": 0.773
+      },
+      {
+        "task": "select",
+        "title": "现在就出发第四季",
+        "episode": "第1期下",
+        "expected": 2,
+        "actual": 2,
+        "pass": true,
+        "usage": {
+          "total_tokens": 387,
+          "completion_tokens": 14,
+          "prompt_tokens": 373,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "seconds": 0.694
+      },
+      {
+        "task": "select",
+        "title": "现在就出发第四季",
+        "episode": "第2期上",
+        "expected": -1,
+        "actual": -1,
+        "pass": true,
+        "usage": {
+          "total_tokens": 386,
+          "completion_tokens": 13,
+          "prompt_tokens": 373,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "seconds": 0.719
+      }
+    ]
+  },
+  {
+    "model": "qwen3.5-flash",
+    "passed": 8,
+    "total": 8,
+    "medianSeconds": 0.668,
+    "cases": [
+      {
+        "task": "clean",
+        "title": "喜剧之王【更新至14集】4K",
+        "episode": "14",
+        "expected": "喜剧之王",
+        "actual": "喜剧之王",
+        "pass": true,
+        "usage": {
+          "prompt_tokens": 200,
+          "completion_tokens": 16,
+          "total_tokens": 216,
+          "completion_tokens_details": {
+            "text_tokens": 16
+          },
+          "prompt_tokens_details": {
+            "text_tokens": 200
+          }
+        },
+        "seconds": 0.727
+      },
+      {
+        "task": "clean",
+        "title": "VIP线路 现在就出发第四季【更新至第1期】1080P",
+        "episode": "第1期上",
+        "expected": "现在就出发第四季",
+        "actual": "现在就出发第四季",
+        "pass": true,
+        "usage": {
+          "prompt_tokens": 209,
+          "completion_tokens": 17,
+          "total_tokens": 226,
+          "completion_tokens_details": {
+            "text_tokens": 17
+          },
+          "prompt_tokens_details": {
+            "text_tokens": 209
+          }
+        },
+        "seconds": 0.812
+      },
+      {
+        "task": "clean",
+        "title": "哪吒之魔童闹海【国语高清】",
+        "episode": "正片",
+        "expected": "哪吒之魔童闹海",
+        "actual": "哪吒之魔童闹海",
+        "pass": true,
+        "usage": {
+          "prompt_tokens": 200,
+          "completion_tokens": 20,
+          "total_tokens": 220,
+          "completion_tokens_details": {
+            "text_tokens": 20
+          },
+          "prompt_tokens_details": {
+            "text_tokens": 200
+          }
+        },
+        "seconds": 0.662
+      },
+      {
+        "task": "clean",
+        "title": "请回答1988",
+        "episode": "1",
+        "expected": "请回答1988",
+        "actual": "请回答1988",
+        "pass": true,
+        "usage": {
+          "prompt_tokens": 195,
+          "completion_tokens": 20,
+          "total_tokens": 215,
+          "completion_tokens_details": {
+            "text_tokens": 20
+          },
+          "prompt_tokens_details": {
+            "text_tokens": 195
+          }
+        },
+        "seconds": 0.657
+      },
+      {
+        "task": "clean",
+        "title": "哪吒2",
+        "episode": "正片",
+        "expected": "哪吒2",
+        "actual": "哪吒2",
+        "pass": true,
+        "usage": {
+          "prompt_tokens": 192,
+          "completion_tokens": 15,
+          "total_tokens": 207,
+          "completion_tokens_details": {
+            "text_tokens": 15
+          },
+          "prompt_tokens_details": {
+            "text_tokens": 192
+          }
+        },
+        "seconds": 0.627
+      },
+      {
+        "task": "select",
+        "title": "现在就出发第四季",
+        "episode": "第1期上",
+        "expected": 1,
+        "actual": 1,
+        "pass": true,
+        "usage": {
+          "prompt_tokens": 367,
+          "completion_tokens": 14,
+          "total_tokens": 381,
+          "completion_tokens_details": {
+            "text_tokens": 14
+          },
+          "prompt_tokens_details": {
+            "text_tokens": 367
+          }
+        },
+        "seconds": 1.069
+      },
+      {
+        "task": "select",
+        "title": "现在就出发第四季",
+        "episode": "第1期下",
+        "expected": 2,
+        "actual": 2,
+        "pass": true,
+        "usage": {
+          "prompt_tokens": 367,
+          "completion_tokens": 14,
+          "total_tokens": 381,
+          "completion_tokens_details": {
+            "text_tokens": 14
+          },
+          "prompt_tokens_details": {
+            "text_tokens": 367
+          }
+        },
+        "seconds": 0.639
+      },
+      {
+        "task": "select",
+        "title": "现在就出发第四季",
+        "episode": "第2期上",
+        "expected": -1,
+        "actual": -1,
+        "pass": true,
+        "usage": {
+          "prompt_tokens": 367,
+          "completion_tokens": 14,
+          "total_tokens": 381,
+          "completion_tokens_details": {
+            "text_tokens": 14
+          },
+          "prompt_tokens_details": {
+            "text_tokens": 367
+          }
+        },
+        "seconds": 0.674
+      }
+    ]
+  },
+  {
+    "model": "deepseek-v4-flash",
+    "passed": 8,
+    "total": 8,
+    "medianSeconds": 3.617,
+    "cases": [
+      {
+        "task": "clean",
+        "title": "喜剧之王【更新至14集】4K",
+        "episode": "14",
+        "expected": "喜剧之王",
+        "actual": "喜剧之王",
+        "pass": true,
+        "usage": {
+          "completion_tokens": 263,
+          "prompt_tokens": 269,
+          "total_tokens": 532,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 250
+          }
+        },
+        "seconds": 4.995
+      },
+      {
+        "task": "clean",
+        "title": "VIP线路 现在就出发第四季【更新至第1期】1080P",
+        "episode": "第1期上",
+        "expected": "现在就出发第四季",
+        "actual": "现在就出发第四季",
+        "pass": true,
+        "usage": {
+          "completion_tokens": 20,
+          "prompt_tokens": 279,
+          "total_tokens": 299,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 5
+          }
+        },
+        "seconds": 2.698
+      },
+      {
+        "task": "clean",
+        "title": "哪吒之魔童闹海【国语高清】",
+        "episode": "正片",
+        "expected": "哪吒之魔童闹海",
+        "actual": "哪吒之魔童闹海",
+        "pass": true,
+        "usage": {
+          "completion_tokens": 247,
+          "prompt_tokens": 270,
+          "total_tokens": 517,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 230
+          }
+        },
+        "seconds": 4.787
+      },
+      {
+        "task": "clean",
+        "title": "请回答1988",
+        "episode": "1",
+        "expected": "请回答1988",
+        "actual": "请回答1988",
+        "pass": true,
+        "usage": {
+          "completion_tokens": 77,
+          "prompt_tokens": 263,
+          "total_tokens": 340,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 62
+          }
+        },
+        "seconds": 2.478
+      },
+      {
+        "task": "clean",
+        "title": "哪吒2",
+        "episode": "正片",
+        "expected": "哪吒2",
+        "actual": "哪吒2",
+        "pass": true,
+        "usage": {
+          "completion_tokens": 305,
+          "prompt_tokens": 262,
+          "total_tokens": 567,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 292
+          }
+        },
+        "seconds": 6.154
+      },
+      {
+        "task": "select",
+        "title": "现在就出发第四季",
+        "episode": "第1期上",
+        "expected": 1,
+        "actual": 1,
+        "pass": true,
+        "usage": {
+          "completion_tokens": 131,
+          "prompt_tokens": 430,
+          "total_tokens": 561,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 116
+          }
+        },
+        "seconds": 3.074
+      },
+      {
+        "task": "select",
+        "title": "现在就出发第四季",
+        "episode": "第1期下",
+        "expected": 2,
+        "actual": 2,
+        "pass": true,
+        "usage": {
+          "completion_tokens": 101,
+          "prompt_tokens": 430,
+          "total_tokens": 531,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 89
+          }
+        },
+        "seconds": 3.541
+      },
+      {
+        "task": "select",
+        "title": "现在就出发第四季",
+        "episode": "第2期上",
+        "expected": -1,
+        "actual": -1,
+        "pass": true,
+        "usage": {
+          "completion_tokens": 198,
+          "prompt_tokens": 430,
+          "total_tokens": 628,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 185
+          }
+        },
+        "seconds": 3.692
+      }
+    ]
+  }
+]

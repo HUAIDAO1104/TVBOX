@@ -319,4 +319,6 @@
     <string name="danmaku_selection_loading">正在載入所選集的彈幕…</string>
     <string name="danmaku_selection_loaded">彈幕已載入</string>
     <string name="danmaku_selection_failed">目前彈幕載入失敗，點擊選集重試或選擇其他來源</string>
+    <string name="danmaku_ai_entry">AI 輔助匹配 · 金鑰與模型</string>
+    <string name="danmaku_ai_model_hint">推薦 qwen3.5-flash，費用以服務商實際計費為準。</string>
 </resources>

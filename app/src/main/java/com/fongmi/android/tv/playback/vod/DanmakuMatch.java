@@ -358,7 +358,9 @@ public final class DanmakuMatch {
         return expected.part.isEmpty() || expected.part.equals(actual.part);
     }
 
-    static String episodeKey(String episode) { return DanmakuEpisode.from(episode).key(); }
+    static String episodeKey(String episode) {
+        return DanmakuEpisode.isMovieLabel(episode) ? "movie:main" : DanmakuEpisode.from(episode).key();
+    }
 
     public static Integer resultSeason(String value) {
         return seasonNumber(value);
@@ -444,6 +446,9 @@ public final class DanmakuMatch {
 
     static String normalizeMediaType(String value) {
         String type = value == null ? "" : value.toLowerCase(Locale.ROOT);
+        if (List.of("movie", "series", "anime", "variety").contains(type)) return type;
+        // Animation is a genre as well as a series category; an animated feature remains a movie.
+        if (type.contains("电影") || type.contains("动画片")) return "movie";
         if (type.contains("综艺") || type.contains("专访") || type.contains("真人秀")) return "variety";
         if (type.contains("动漫") || type.contains("动画") || type.contains("番剧") || type.contains("国漫")
                 || type.contains("日漫") || type.contains("卡通") || type.contains("年番")) return "anime";

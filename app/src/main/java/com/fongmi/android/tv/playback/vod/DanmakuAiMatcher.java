@@ -2,7 +2,7 @@ package com.fongmi.android.tv.playback.vod;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.api.IqiyiDanmaku;
-import com.fongmi.android.tv.api.IqiyiDanmakuCodec;
+import com.fongmi.android.tv.api.NativeDanmaku;
 import com.fongmi.android.tv.api.DanmakuSearchRequest;
 import com.fongmi.android.tv.bean.Danmaku;
 import com.fongmi.android.tv.player.danmaku.DanmakuDocumentCache;
@@ -58,7 +58,7 @@ public final class DanmakuAiMatcher {
         final Runnable deadline = this::fail;
         volatile Future<?> future;
         volatile DanmakuAiClient client;
-        volatile IqiyiDanmaku.Job nativeJob;
+        final List<NativeDanmaku.Job> nativeJobs = new CopyOnWriteArrayList<>();
         volatile boolean cancelled;
         volatile String stage = "clean";
 
@@ -75,7 +75,7 @@ public final class DanmakuAiMatcher {
                 if (done.get()) return;
                 String year = context.getYear().isEmpty() ? DanmakuQuery.from(context.getTitle()).year() : context.getYear();
                 List<Danmaku> eligible = DanmakuMatch.ranked(query, year, context.getType(),
-                        context.getEpisode(), catalogue, Danmaku::getName);
+                        context.getEpisode(), catalogue, Danmaku::getMatchName);
                 if (eligible.isEmpty()) { fail(); return; }
                 // An ambiguous edition/season/date is rejected by ranked() before model selection.
                 eligible = new ArrayList<>(eligible.subList(0, Math.min(40, eligible.size())));
@@ -90,7 +90,7 @@ public final class DanmakuAiMatcher {
                 // cannot suppress an available native document.
                 Danmaku selectedItem = eligible.remove(selected);
                 eligible.sort(java.util.Comparator.comparingInt(item ->
-                        IqiyiDanmakuCodec.supports(item.getUrl()) ? 0 : 1));
+                        NativeDanmaku.supports(item.getUrl()) ? 0 : 1));
                 eligible.add(0, selectedItem);
                 stage = "document";
                 verify(query, eligible, catalogue);
@@ -131,18 +131,21 @@ public final class DanmakuAiMatcher {
         List<Danmaku> catalogue(String query, DanmakuMatchContext context) throws InterruptedException {
             List<String> urls = DanmakuSetting.getSearchApiUrls();
             List<Danmaku> result = new CopyOnWriteArrayList<>();
-            CountDownLatch pending = new CountDownLatch(urls.size() + 1);
-            CountDownLatch nativeDone = new CountDownLatch(1);
-            nativeJob = IqiyiDanmaku.search(query, new IqiyiDanmaku.Callback<>() {
+            CountDownLatch pending = new CountDownLatch(urls.size() + NativeDanmaku.sources().size());
+            CountDownLatch nativeDone = new CountDownLatch(NativeDanmaku.sources().size());
+            for (String source : NativeDanmaku.sources()) {
+            var nativeJob = NativeDanmaku.search(source, query, new IqiyiDanmaku.Callback<>() {
                 @Override public void onSuccess(List<Danmaku> items) {
-                    for (Danmaku item : items) item.setSourceKey(IqiyiDanmakuCodec.SOURCE);
+                    for (Danmaku item : items) item.setSourceKey(source);
                     if (!done.get()) result.addAll(items);
                     nativeDone.countDown();
                     pending.countDown();
                 }
                 @Override public void onFailure(IOException error) { nativeDone.countDown(); pending.countDown(); }
             });
+            nativeJobs.add(nativeJob);
             if (done.get()) nativeJob.cancel();
+            }
             for (String url : urls) {
                 if (done.get()) break;
                 Call call = SEARCH.newCall(DanmakuSearchRequest.build(url, query, context.getEpisode(), "DanmakuAi"));
@@ -168,10 +171,10 @@ public final class DanmakuAiMatcher {
             while (!done.get() && System.nanoTime() < until && !pending.await(150, TimeUnit.MILLISECONDS)) {
                 // First verified identity may proceed immediately; slow supplementary APIs
                 // must not hold a native catalogue hostage for their entire timeout.
-                if (nativeDone.getCount() == 0 && !DanmakuMatch.ranked(query, year, context.getType(), context.getEpisode(),
-                        List.copyOf(result), Danmaku::getName).isEmpty()) break;
+                if (nativeDone.getCount() < NativeDanmaku.sources().size() && !DanmakuMatch.ranked(query, year, context.getType(), context.getEpisode(),
+                        List.copyOf(result), Danmaku::getMatchName).isEmpty()) break;
             }
-            if (nativeJob != null) nativeJob.cancel();
+            for (NativeDanmaku.Job job : nativeJobs) job.cancel();
             for (Call call : calls) call.cancel();
             return List.copyOf(result);
         }
@@ -188,7 +191,7 @@ public final class DanmakuAiMatcher {
         void cleanup() {
             App.removeCallbacks(deadline);
             if (client != null) client.cancel();
-            if (nativeJob != null) nativeJob.cancel();
+            for (NativeDanmaku.Job job : nativeJobs) job.cancel();
             for (Call call : calls) call.cancel();
             for (DanmakuDocumentCache.Ticket ticket : documents) ticket.cancel();
             if (future != null) future.cancel(true);

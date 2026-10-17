@@ -9,7 +9,7 @@ import okhttp3.HttpUrl;
 /** Device-local configuration, deliberately outside exported app preferences. */
 public final class DanmakuAiSetting {
     public static final String DEFAULT_BASE_URL = "https://llm-api.mcisaas.com/v1";
-    public static final String DEFAULT_MODEL = "qwen-flash";
+    public static final String DEFAULT_MODEL = "qwen3.5-flash";
 
     private static SharedPreferences prefs() {
         return App.get().getSharedPreferences("danmaku_ai_private", Context.MODE_PRIVATE);

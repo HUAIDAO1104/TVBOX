@@ -26,6 +26,50 @@ import org.junit.runner.RunWith;
 /** Exercises the real Activity/service/Exo/overlay path, including actual drawn pixels. */
 @RunWith(AndroidJUnit4.class)
 public class DanmakuPlaybackInstrumentedTest {
+    @Test public void liveVarietyUpperLowerAndMovieRenderActualCommentPixels() throws Exception {
+        org.junit.Assume.assumeTrue("true".equals(InstrumentationRegistry.getArguments().getString("danmakuLive")));
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        var context = instrumentation.getTargetContext();
+        boolean show = DanmakuSetting.isShow(), auto = DanmakuSetting.isAuto();
+        int engine = PlayerSetting.getEngine(), background = PlayerSetting.getBackground();
+        // A fresh media identity avoids restoring an earlier test run's end position.
+        File video = new File(context.getFilesDir(), "danmaku-live-playback-" + System.nanoTime() + ".mp4");
+        try (var input = instrumentation.getContext().getAssets().open("playback-buffering.mp4")) {
+            Files.write(video.toPath(), input.readAllBytes());
+        }
+        DanmakuSetting.putAuto(false); DanmakuSetting.putShow(false);
+        PlayerSetting.putEngine(PlayerSetting.ENGINE_EXO); PlayerSetting.putBackground(0);
+        try {
+            for (String[] sample : List.of(new String[]{"现在就出发 第4季(2026)【综艺】from tencent - 【qq】 第1期上", "r4102opm7x3"},
+                    new String[]{"现在就出发 第4季(2026)【综艺】from tencent - 【qq】 第1期下", "z41023tinp7"},
+                    new String[]{"哪吒之魔童闹海(2025)【电影】from tencent - 【qq】 正片", "y4101qnn3jo"})) {
+                Intent intent = new Intent(context, VideoActivity.class).putExtra("key", "push_agent")
+                        .putExtra("id", Uri.fromFile(video).toString()).putExtra("name", "弹幕真实文档验收");
+                Danmaku item = Danmaku.from("tencent-danmaku://video/" + sample[1]); item.setName(sample[0]);
+                try (ActivityScenario<VideoActivity> scenario = ActivityScenario.launch(intent)) {
+                    await(scenario, a -> a.service() != null, "playback service");
+                    scenario.onActivity(a -> { a.player().setRepeatOne(true); a.player().getPlayer().seekTo(0); a.player().getPlayer().play(); });
+                    await(scenario, a -> a.service() != null && a.player().isPlaying(), "Exo playback");
+                    scenario.onActivity(a -> a.player().setRepeatOne(true));
+                    AtomicBoolean applied = new AtomicBoolean(), failed = new AtomicBoolean();
+                    scenario.onActivity(a -> VodPlaybackMedia.applyManualMatch(a.player(), sample[0], item, List.of(item),
+                            selected -> applied.set(true), () -> failed.set(true)));
+                    await(scenario, a -> applied.get() || failed.get(), "native document", 60000);
+                    assertFalse(sample[0], failed.get());
+                    await(scenario, a -> hasPixels(a.getPlayerView().getDanmakuView()), "real comments drawn");
+                    var bitmap = instrumentation.getUiAutomation().takeScreenshot();
+                    File screenshot = new File(context.getExternalFilesDir(null), "visible-" + sample[1] + ".png");
+                    try (var out = new java.io.FileOutputStream(screenshot)) { bitmap.compress(Bitmap.CompressFormat.PNG, 100, out); }
+                    bitmap.recycle();
+                    android.util.Log.i("Danmaku574QA", "visible pixels confirmed " + sample[1]);
+                }
+            }
+        } finally {
+            DanmakuSetting.putShow(show); DanmakuSetting.putAuto(auto);
+            PlayerSetting.putEngine(engine); PlayerSetting.putBackground(background); video.delete();
+        }
+    }
+
     @Test public void manualSelectionRendersAndPipNeverPersistsTemporaryHiding() throws Exception {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         var context = instrumentation.getTargetContext();
@@ -98,7 +142,11 @@ public class DanmakuPlaybackInstrumentedTest {
 
     private static void await(ActivityScenario<VideoActivity> scenario, Predicate<VideoActivity> check,
                               String label) {
-        long deadline = SystemClock.elapsedRealtime() + 20000;
+        await(scenario, check, label, 20000);
+    }
+    private static void await(ActivityScenario<VideoActivity> scenario, Predicate<VideoActivity> check,
+                              String label, long timeout) {
+        long deadline = SystemClock.elapsedRealtime() + timeout;
         AtomicBoolean ready = new AtomicBoolean();
         while (SystemClock.elapsedRealtime() < deadline) {
             scenario.onActivity(a -> ready.set(check.test(a)));

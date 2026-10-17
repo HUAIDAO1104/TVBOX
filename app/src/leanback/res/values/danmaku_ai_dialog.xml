@@ -1,0 +1,3 @@
+<resources>
+    <style name="DanmakuAiDialogTheme" parent="ThemeOverlay.Material3.MaterialAlertDialog" />
+</resources>

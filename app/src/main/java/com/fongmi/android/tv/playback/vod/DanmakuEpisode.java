@@ -71,6 +71,9 @@ final class DanmakuEpisode {
 
     boolean matches(DanmakuEpisode actual) {
         if (!date.isEmpty() && !date.equals(actual.date)) return false;
+        // A release date is sometimes duplicated across a whole season by aggregators.
+        // When both sides also identify a period, an explicit conflict must still reject it.
+        if (number != null && actual.number != null && !number.equals(actual.number)) return false;
         if (date.isEmpty() && number != null && !number.equals(actual.number)) return false;
         if (!part.isEmpty() && !part.equals(actual.part)) return false;
         // Main programme, extras and previews are different timelines even on the same day.

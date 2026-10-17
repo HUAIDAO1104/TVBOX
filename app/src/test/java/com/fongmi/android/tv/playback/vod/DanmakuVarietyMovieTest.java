@@ -32,6 +32,17 @@ public class DanmakuVarietyMovieTest {
         assertFalse(DanmakuResultGrouper.prepare("流浪地球2", "2023", "电影", episode, items(fixture("movie"))).isEmpty());
     }
 
+    @Test public void confirmedMovieCanRestoreWithoutSearchingItsCatalogueAgain() {
+        Danmaku movie = items(List.of("哪吒之魔童闹海(2025)【电影】from tencent - 【qq】 正片")).get(0);
+        var context = new DanmakuMatchContext("哪吒2", "2025", "动画电影", "HD国语");
+        var cache = DanmakuManualMatchStore.buildEpisodeCache(context, movie, List.of(movie));
+        assertEquals(movie.getUrl(), cache.get("movie:main").url());
+        var selection = new DanmakuManualMatchStore.Selection("哪吒2", movie.getName(), "tencent-direct", cache, 0);
+        assertNotNull(selection.episode("正片"));
+        assertNotNull(selection.episode("HD国语"));
+        assertNull(selection.episode("第1期上"));
+    }
+
     @Test public void missingMovieTypeStillRecognizesCommonFeatureLabels() {
         for (String label : List.of("正片", "HD", "HD中字", "1080P", "蓝光", "全集")) {
             assertEquals("正片", VodPlaybackMedia.resolveEpisodeQuery(label, 1));

@@ -8,6 +8,12 @@ import org.junit.Test;
 
 public class DanmakuQueryTest {
 
+    @Test public void preservesNezhaSpellingThroughSimplifiedConversion() {
+        assertEquals("哪吒2", DanmakuQuery.from("哪吒2").searchTitle());
+        assertEquals("哪吒之魔童闹海", DanmakuQuery.from("哪吒之魔童鬧海【HD】").searchTitle());
+        assertEquals("叱吒风云", com.github.catvod.utils.Trans.t2s(false, "叱吒風雲"));
+    }
+
     @Test
     public void cleansCatalogYearAndReleaseMetadata() {
         DanmakuQuery query = DanmakuQuery.from("【国产】2005.欢天喜地七仙女.高清修复");

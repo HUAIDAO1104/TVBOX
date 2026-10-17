@@ -12,7 +12,7 @@ import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.DanmakuApi;
 import com.fongmi.android.tv.api.IqiyiDanmaku;
-import com.fongmi.android.tv.api.IqiyiDanmakuCodec;
+import com.fongmi.android.tv.api.NativeDanmaku;
 import com.fongmi.android.tv.bean.Danmaku;
 import com.fongmi.android.tv.databinding.ViewDanmakuSearchEmbeddedBinding;
 import com.fongmi.android.tv.player.PlayerManager;
@@ -57,7 +57,7 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
     private String searchType;
     private String searchEpisode;
     private boolean automaticRestoreStarted;
-    private IqiyiDanmaku.Job nativeSearch;
+    private final List<NativeDanmaku.Job> nativeSearches = new ArrayList<>();
     private List<DanmakuResultGrouper.Work> rankedWorks = List.of();
     private final Map<String, DanmakuResultGrouper.Work> works = new LinkedHashMap<>();
     private String openWork = "";
@@ -140,6 +140,8 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
     private void search() {
         String keyword = binding.keyword.getText() == null ? "" : binding.keyword.getText().toString().trim();
         if (keyword.isEmpty() || player == null || player.getMetadata() == null) return;
+        VodPlaybackMedia.cancelSelection(player);
+        applying = false;
         matchContext = VodPlaybackMedia.contextOf(player);
         searchTitle = DanmakuQuery.from(keyword).searchTitle();
         boolean sameWork = DanmakuMatch.isSameWork(searchTitle, matchContext.getTitle());
@@ -148,7 +150,8 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         int id = requestId.incrementAndGet();
         for (Call call : calls) call.cancel();
         calls.clear();
-        if (nativeSearch != null) nativeSearch.cancel();
+        for (NativeDanmaku.Job job : nativeSearches) job.cancel();
+        nativeSearches.clear();
         openWork = "";
         rankedWorks = List.of();
         works.clear();
@@ -164,17 +167,17 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         searchEpisode = matchContext.getEpisode().isEmpty() ? metadataEpisode : matchContext.getEpisode();
         List<String> apiUrls = DanmakuSetting.getSearchApiUrls();
         calls.addAll(DanmakuApi.newCalls(keyword, searchEpisode));
-        pending = calls.size() + 1;
+        pending = calls.size() + NativeDanmaku.sources().size();
         failed = denied = invalid = 0;
         binding.providerStatus.setText(ResUtil.getString(R.string.danmaku_search_running, pending));
-        nativeSearch = IqiyiDanmaku.search(searchTitle, new IqiyiDanmaku.Callback<List<Danmaku>>() {
+        for (String source : NativeDanmaku.sources()) nativeSearches.add(NativeDanmaku.search(source, searchTitle, new IqiyiDanmaku.Callback<List<Danmaku>>() {
             @Override public void onSuccess(List<Danmaku> items) {
-                App.post(() -> merge(id, items, IqiyiDanmakuCodec.SOURCE, items, 0));
+                App.post(() -> merge(id, items, source, items, 0));
             }
             @Override public void onFailure(IOException error) {
-                App.post(() -> merge(id, List.of(), IqiyiDanmakuCodec.SOURCE, List.of(), 1));
+                App.post(() -> merge(id, List.of(), source, List.of(), 1));
             }
-        });
+        }));
         for (int index = 0; index < calls.size(); index++) {
             String sourceKey = index < apiUrls.size()
                     ? DanmakuManualMatchStore.sourceKey(apiUrls.get(index)) : "";
@@ -364,7 +367,8 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
 
     void destroy() {
         destroyed = true;
-        if (nativeSearch != null) nativeSearch.cancel();
+        for (NativeDanmaku.Job job : nativeSearches) job.cancel();
+        nativeSearches.clear();
         requestId.incrementAndGet();
         sorter.shutdownNow();
         for (Call call : calls) call.cancel();

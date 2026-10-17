@@ -20,6 +20,7 @@ public final class VodPlaybackMedia {
     private static final Map<PlayerManager, DanmakuMatchContext> MATCH_CONTEXTS = new WeakHashMap<>();
     private static final Map<PlayerManager, Integer> MANUAL_REQUESTS = new WeakHashMap<>();
     private static final Map<PlayerManager, DanmakuDocumentCache.Ticket> MANUAL_DOWNLOADS = new WeakHashMap<>();
+    private static final Map<PlayerManager, DanmakuDocumentCache.Ticket> RESTORE_DOWNLOADS = new WeakHashMap<>();
     private static final java.util.concurrent.atomic.AtomicInteger MANUAL_SEQUENCE = new java.util.concurrent.atomic.AtomicInteger();
 
     public static MediaMetadata metadata(History history, Episode episode) {
@@ -153,7 +154,7 @@ public final class VodPlaybackMedia {
                 // serves its document. Verify it before mounting; on 404/5xx/empty XML, discard
                 // only that episode and transparently resolve the same confirmed season through
                 // the remaining providers.
-                DanmakuDocumentCache.load(cached.getUri(), new DanmakuDocumentCache.Listener() {
+                DanmakuDocumentCache.Ticket restore = DanmakuDocumentCache.load(cached.getUri(), new DanmakuDocumentCache.Listener() {
                     @Override
                     public void onProgress(android.net.Uri source, int percent) {
                         if (isCurrentIdentity(player, identity)) {
@@ -163,39 +164,53 @@ public final class VodPlaybackMedia {
 
                     @Override
                     public void onReady(android.net.Uri source, android.net.Uri local) {
-                        if (isCurrentIdentity(player, identity)) apply.accept(cached);
+                        if (!isCurrentIdentity(player, identity)) return;
+                        synchronized (RESTORE_DOWNLOADS) { RESTORE_DOWNLOADS.remove(player); }
+                        apply.accept(cached);
                     }
 
                     @Override
                     public void onFailure(android.net.Uri source, java.io.IOException error) {
                         if (!isCurrentIdentity(player, identity)) return;
+                        synchronized (RESTORE_DOWNLOADS) { RESTORE_DOWNLOADS.remove(player); }
                         DanmakuDocumentCache.invalidate(source);
                         DanmakuManualMatchStore.get().forgetEpisode(matchContext);
                         player.notifyDanmakuStatus(DanmakuStatus.matching());
                         resolveFresh.run();
                     }
                 });
+                synchronized (RESTORE_DOWNLOADS) {
+                    if (isCurrentIdentity(player, identity)) RESTORE_DOWNLOADS.put(player, restore);
+                    else restore.cancel();
+                }
             }
         }
     }
 
     /** Invalidates both the network request and the renderer source before a media transition. */
     public static void invalidate(PlayerManager player) {
-        DanmakuApi.cancel();
+        cancelSelection(player);
         if (player == null) return;
-        synchronized (REQUEST_IDENTITIES) {
-            REQUEST_IDENTITIES.remove(player);
-        }
         synchronized (MATCH_CONTEXTS) {
             MATCH_CONTEXTS.remove(player);
+        }
+        player.setDanmaku(Danmaku.empty());
+        player.notifyDanmakuStatus(DanmakuStatus.hidden());
+    }
+
+    /** Manual search/selection takes ownership while retaining playback identity and its source. */
+    public static void cancelSelection(PlayerManager player) {
+        DanmakuApi.cancel();
+        synchronized (REQUEST_IDENTITIES) { REQUEST_IDENTITIES.remove(player); }
+        synchronized (RESTORE_DOWNLOADS) {
+            DanmakuDocumentCache.Ticket restore = RESTORE_DOWNLOADS.remove(player);
+            if (restore != null) restore.cancel();
         }
         synchronized (MANUAL_REQUESTS) {
             MANUAL_REQUESTS.remove(player);
             DanmakuDocumentCache.Ticket ticket = MANUAL_DOWNLOADS.remove(player);
             if (ticket != null) ticket.cancel();
         }
-        player.setDanmaku(Danmaku.empty());
-        player.notifyDanmakuStatus(DanmakuStatus.hidden());
     }
 
     public static DanmakuMatchContext contextOf(PlayerManager player) {
@@ -222,7 +237,7 @@ public final class VodPlaybackMedia {
      *
      * <p>The search service returns rotating comment ids. Persisting a clicked row before its
      * document was verified poisoned every following episode with the same stale id. A failed
-     * click now resolves the same title/season/provider once more, then stores only the verified
+     * click now resolves the confirmed work/episode across providers, then stores only the verified
      * replacement.</p>
      */
     public static void applyManualMatch(PlayerManager player, String query, Danmaku selected,
@@ -233,7 +248,7 @@ public final class VodPlaybackMedia {
             if (onFailure != null) onFailure.run();
             return;
         }
-        DanmakuApi.cancel();
+        cancelSelection(player);
         DanmakuMatchContext context = contextOf(player);
         String effectiveQuery = Objects.toString(query, "").trim();
         if (effectiveQuery.isEmpty()) effectiveQuery = DanmakuQuery.from(context.getTitle()).searchTitle();
@@ -278,13 +293,14 @@ public final class VodPlaybackMedia {
                 if (!isCurrentManualRequest(player, request)) return;
                 finishManualDownload(player, request);
                 DanmakuDocumentCache.invalidate(source);
-                if (com.fongmi.android.tv.api.IqiyiDanmakuCodec.supports(selected.getUrl())) {
-                    failed.run();
-                    return;
-                }
-                player.notifyDanmakuStatus(DanmakuStatus.matching());
-                DanmakuApi.searchPreferredDetailed(finalQuery, context.getYear(), context.getType(),
-                        DanmakuEpisode.label(selected.getName()), selected.getName(), selected.getSourceKey(),
+                // A user already confirmed the exact work and episode. Resolve that identity
+                // across providers, never reapply the source site's potentially wrong season,
+                // title alias or ordinal playlist position to the manual choice.
+                String title = selected.getName().split("(?i)\\s*from\\s+", 2)[0];
+                String episode = "movie".equals(DanmakuMatch.candidateType(selected.getName()))
+                        ? "正片" : DanmakuEpisode.label(selected.getName());
+                DanmakuApi.searchDetailed(DanmakuQuery.from(title.replaceAll("【[^】]*】", "")).searchTitle(),
+                        DanmakuMatch.candidateYear(selected.getName()), DanmakuMatch.candidateType(selected.getName()), episode,
                         new DanmakuApi.SearchCallback() {
                             @Override
                             public void onProgress(int percent) {

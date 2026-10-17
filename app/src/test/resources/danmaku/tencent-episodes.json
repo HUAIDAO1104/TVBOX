@@ -1,0 +1,198 @@
+{
+  "ret": 0,
+  "data": {
+    "module_list_datas": [
+      {
+        "module_datas": [
+          {
+            "module_params": {
+              "has_next": "false",
+              "next_page_context": "",
+              "tabs": ""
+            },
+            "item_data_lists": {
+              "item_datas": [
+                {
+                  "item_params": {
+                    "cid": "mzc002001bk7moh",
+                    "vid": "v4102k0g66u",
+                    "title": "先导片上：沈腾沙滩十八滚“追杀”黄景瑜",
+                    "union_title": "先导片上：沈腾沙滩十八滚“追杀”黄景瑜",
+                    "tag_right_text": "2026-10-01",
+                    "is_trailer": "0",
+                    "duration": "2873"
+                  }
+                },
+                {
+                  "item_params": {
+                    "cid": "mzc002001bk7moh",
+                    "vid": "m41021vikm3",
+                    "title": "先导片下：贾冰爆炒！沈腾这一口很疯狂",
+                    "union_title": "先导片下：贾冰爆炒！沈腾这一口很疯狂",
+                    "tag_right_text": "2026-10-01",
+                    "is_trailer": "0",
+                    "duration": "2195"
+                  }
+                },
+                {
+                  "item_params": {
+                    "cid": "mzc002001bk7moh",
+                    "vid": "r4102opm7x3",
+                    "title": "第1期上：出发团变落汤鸡，沈腾被迫洗头",
+                    "union_title": "第1期上：出发团变落汤鸡，沈腾被迫洗头",
+                    "tag_right_text": "2026-10-10",
+                    "is_trailer": "0",
+                    "duration": "5417"
+                  }
+                },
+                {
+                  "item_params": {
+                    "cid": "mzc002001bk7moh",
+                    "vid": "z41023tinp7",
+                    "title": "第1期下：目击狼人杀升级，小白安宇猜词再共脑",
+                    "union_title": "第1期下：目击狼人杀升级，小白安宇猜词再共脑",
+                    "tag_right_text": "2026-10-11",
+                    "is_trailer": "0",
+                    "duration": "6665"
+                  }
+                },
+                {
+                  "item_params": {
+                    "cid": "mzc002001bk7moh",
+                    "vid": "r4102w56q2o",
+                    "title": "第1期加更：王楚然猜词变造词“气疯”沈腾",
+                    "union_title": "第1期加更：王楚然猜词变造词“气疯”沈腾",
+                    "tag_right_text": "2026-10-12",
+                    "is_trailer": "0",
+                    "duration": "2191"
+                  }
+                },
+                {
+                  "item_params": {
+                    "cid": "mzc002001bk7moh",
+                    "vid": "i4102b29cfo",
+                    "title": "第1期还有加更：王安宇脑力下线白敬亭直跺脚",
+                    "union_title": "第1期还有加更：王安宇脑力下线白敬亭直跺脚",
+                    "tag_right_text": "2026-10-13",
+                    "is_trailer": "0",
+                    "duration": "1720"
+                  }
+                },
+                {
+                  "item_params": {
+                    "cid": "mzc002001bk7moh",
+                    "vid": "v4102k3exsm",
+                    "title": "第2期上：“腾腾公主”飙戏，黄景瑜倒拔王安宇",
+                    "union_title": "第2期上：“腾腾公主”飙戏，黄景瑜倒拔王安宇",
+                    "tag_right_text": "2026-10-17",
+                    "is_trailer": "0",
+                    "duration": "4649"
+                  }
+                },
+                {
+                  "item_params": {
+                    "cid": "mzc002001bk7moh",
+                    "vid": "d4102qc1tnu",
+                    "title": "预告：沈腾顶爆炸头热舞，小胡被抽到五官变形",
+                    "union_title": "预告：沈腾顶爆炸头热舞，小胡被抽到五官变形",
+                    "tag_right_text": "2026-10-18",
+                    "is_trailer": "1",
+                    "duration": "69"
+                  }
+                },
+                {
+                  "item_params": {
+                    "cid": "mzc002001bk7moh",
+                    "vid": "r4102l9vne4",
+                    "title": "预告：”眼球运动“教科书来了！",
+                    "union_title": "预告：”眼球运动“教科书来了！",
+                    "tag_right_text": "2026-10-19",
+                    "is_trailer": "1",
+                    "duration": "64"
+                  }
+                },
+                {
+                  "item_params": {
+                    "cid": "",
+                    "vid": "",
+                    "title": "第1季",
+                    "union_title": "",
+                    "tag_right_text": "",
+                    "is_trailer": "",
+                    "duration": ""
+                  }
+                },
+                {
+                  "item_params": {
+                    "cid": "",
+                    "vid": "",
+                    "title": "第2季",
+                    "union_title": "",
+                    "tag_right_text": "",
+                    "is_trailer": "",
+                    "duration": ""
+                  }
+                },
+                {
+                  "item_params": {
+                    "cid": "",
+                    "vid": "",
+                    "title": "第3季",
+                    "union_title": "",
+                    "tag_right_text": "",
+                    "is_trailer": "",
+                    "duration": ""
+                  }
+                },
+                {
+                  "item_params": {
+                    "cid": "",
+                    "vid": "",
+                    "title": "第4季",
+                    "union_title": "",
+                    "tag_right_text": "",
+                    "is_trailer": "",
+                    "duration": ""
+                  }
+                },
+                {
+                  "item_params": {
+                    "cid": "",
+                    "vid": "",
+                    "title": "正片",
+                    "union_title": "",
+                    "tag_right_text": "",
+                    "is_trailer": "",
+                    "duration": ""
+                  }
+                },
+                {
+                  "item_params": {
+                    "cid": "",
+                    "vid": "",
+                    "title": "纯享",
+                    "union_title": "",
+                    "tag_right_text": "",
+                    "is_trailer": "",
+                    "duration": ""
+                  }
+                },
+                {
+                  "item_params": {
+                    "cid": "",
+                    "vid": "",
+                    "title": "特辑",
+                    "union_title": "",
+                    "tag_right_text": "",
+                    "is_trailer": "",
+                    "duration": ""
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

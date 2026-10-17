@@ -1,0 +1,385 @@
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest:
+INSTRUMENTATION_STATUS: test=manualSearchGroupsWorksAndKeepsAllEpisodesSelectable
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:522)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:461)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:436)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.manualSearchGroupsWorksAndKeepsAllEpisodesSelectable(DanmakuSearchInstrumentedTest.java:134)
+
+INSTRUMENTATION_STATUS: stream=
+Error in manualSearchGroupsWorksAndKeepsAllEpisodesSelectable(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:522)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:461)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:436)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.manualSearchGroupsWorksAndKeepsAllEpisodesSelectable(DanmakuSearchInstrumentedTest.java:134)
+
+INSTRUMENTATION_STATUS: test=manualSearchGroupsWorksAndKeepsAllEpisodesSelectable
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=accessDeniedIsVisibleAndRetryRecovers
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:522)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:461)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:436)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.accessDeniedIsVisibleAndRetryRecovers(DanmakuSearchInstrumentedTest.java:263)
+
+INSTRUMENTATION_STATUS: stream=
+Error in accessDeniedIsVisibleAndRetryRecovers(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:522)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:461)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:436)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.accessDeniedIsVisibleAndRetryRecovers(DanmakuSearchInstrumentedTest.java:263)
+
+INSTRUMENTATION_STATUS: test=accessDeniedIsVisibleAndRetryRecovers
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=liveProviderSearchesAndParsesUserExamples
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stack=org.junit.AssumptionViolatedException: got: <false>, expected: is <true>
+	at org.junit.Assume.assumeThat(Assume.java:106)
+	at org.junit.Assume.assumeTrue(Assume.java:50)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveProviderSearchesAndParsesUserExamples(DanmakuSearchInstrumentedTest.java:274)
+
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=liveProviderSearchesAndParsesUserExamples
+INSTRUMENTATION_STATUS_CODE: -4
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=aiKeyAndRecommendedModelAreReachableFromPlaybackSearch
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=aiKeyAndRecommendedModelAreReachableFromPlaybackSearch
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=switchingSearchCancelsObsoleteDocumentValidation
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=switchingSearchCancelsObsoleteDocumentValidation
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=savedAutomaticRestoreCannotOverwriteANewerManualChoice
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=savedAutomaticRestoreCannotOverwriteANewerManualChoice
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=manualFailureRecoversTheConfirmedMovieOrPartAcrossProviders
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=manualFailureRecoversTheConfirmedMovieOrPartAcrossProviders
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=liveSeasonFourAndMovieAutomaticThenManualSelection
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stack=org.junit.AssumptionViolatedException: got: <false>, expected: is <true>
+	at org.junit.Assume.assumeThat(Assume.java:106)
+	at org.junit.Assume.assumeTrue(Assume.java:50)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveSeasonFourAndMovieAutomaticThenManualSelection(DanmakuSearchInstrumentedTest.java:234)
+
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=liveSeasonFourAndMovieAutomaticThenManualSelection
+INSTRUMENTATION_STATUS_CODE: -4
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=automaticMovieAndDatedVarietyDownloadParseAndCache
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=automaticMovieAndDatedVarietyDownloadParseAndCache
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=10
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=liveDramaEpisode14AutomaticAndManualWorkEpisodeFlow
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=10
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stack=org.junit.AssumptionViolatedException: got: <false>, expected: is <true>
+	at org.junit.Assume.assumeThat(Assume.java:106)
+	at org.junit.Assume.assumeTrue(Assume.java:50)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveDramaEpisode14AutomaticAndManualWorkEpisodeFlow(DanmakuSearchInstrumentedTest.java:293)
+
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=liveDramaEpisode14AutomaticAndManualWorkEpisodeFlow
+INSTRUMENTATION_STATUS_CODE: -4
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=11
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=unavailableFirstFourDocumentsDoNotHideTheWorkingFifth
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest
+INSTRUMENTATION_STATUS: current=11
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=unavailableFirstFourDocumentsDoNotHideTheWorkingFifth
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest
+INSTRUMENTATION_STATUS: current=12
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest:
+INSTRUMENTATION_STATUS: test=liveDrama14CleansSelectsAndLoadsRealDocument
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest
+INSTRUMENTATION_STATUS: current=12
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=liveDrama14CleansSelectsAndLoadsRealDocument
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest
+INSTRUMENTATION_STATUS: current=13
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=unavailableModelChoiceFallsBackToEquivalentWorkingDocument
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest
+INSTRUMENTATION_STATUS: current=13
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=unavailableModelChoiceFallsBackToEquivalentWorkingDocument
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest
+INSTRUMENTATION_STATUS: current=14
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=settingsValidationKeepsFormAndSavedKeyIsNeverPrefilled
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest
+INSTRUMENTATION_STATUS: current=14
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=settingsValidationKeepsFormAndSavedKeyIsNeverPrefilled
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest
+INSTRUMENTATION_STATUS: current=15
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=liveAutomaticFallbackIsConditionalAndRemembersCleanQuery
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest
+INSTRUMENTATION_STATUS: current=15
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=liveAutomaticFallbackIsConditionalAndRemembersCleanQuery
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest
+INSTRUMENTATION_STATUS: current=16
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=sendsBoundedChatContractAndDoesNotFollowRedirects
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest
+INSTRUMENTATION_STATUS: current=16
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=sendsBoundedChatContractAndDoesNotFollowRedirects
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest
+INSTRUMENTATION_STATUS: current=17
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=encryptsKeyAndRequiresNewKeyForAnotherEndpoint
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest
+INSTRUMENTATION_STATUS: current=17
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=encryptsKeyAndRequiresNewKeyForAnotherEndpoint
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=18
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest:
+INSTRUMENTATION_STATUS: test=cancelledDocumentDoesNotEmitLateSuccessOrFailure
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=18
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=cancelledDocumentDoesNotEmitLateSuccessOrFailure
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=19
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=missingSegmentIsNotSilentlyTreatedAsEmpty
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=19
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=missingSegmentIsNotSilentlyTreatedAsEmpty
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=20
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=liveCurrentVarietyAndMovieProduceCompletePlayableDocuments
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=20
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stack=org.junit.AssumptionViolatedException: got: <false>, expected: is <true>
+	at org.junit.Assume.assumeThat(Assume.java:106)
+	at org.junit.Assume.assumeTrue(Assume.java:50)
+	at com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest.liveCurrentVarietyAndMovieProduceCompletePlayableDocuments(TencentDanmakuInstrumentedTest.java:70)
+
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=liveCurrentVarietyAndMovieProduceCompletePlayableDocuments
+INSTRUMENTATION_STATUS_CODE: -4
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=21
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=completeDocumentRequiresEverySegmentAndKeepsMilliseconds
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=21
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=completeDocumentRequiresEverySegmentAndKeepsMilliseconds
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=22
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=failedSegmentCannotCommitPartialDocument
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest
+INSTRUMENTATION_STATUS: current=22
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=22
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=failedSegmentCannotCommitPartialDocument
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 71.365
+There were 2 failures:
+1) manualSearchGroupsWorksAndKeepsAllEpisodesSelectable(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:522)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:461)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:436)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.manualSearchGroupsWorksAndKeepsAllEpisodesSelectable(DanmakuSearchInstrumentedTest.java:134)
+2) accessDeniedIsVisibleAndRetryRecovers(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:522)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:461)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:436)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.accessDeniedIsVisibleAndRetryRecovers(DanmakuSearchInstrumentedTest.java:263)
+
+FAILURES!!!
+Tests run: 22,  Failures: 2
+
+
+INSTRUMENTATION_CODE: -1

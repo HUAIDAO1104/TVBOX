@@ -1,0 +1,85 @@
+{
+  "ret": 0,
+  "data": {
+    "normalList": {
+      "itemList": [
+        {
+          "doc": {
+            "id": "mzc002001bk7moh"
+          },
+          "videoInfo": {
+            "title": "现在就出发 第4季",
+            "year": 2026,
+            "typeName": "综艺",
+            "hintWords": "",
+            "playFlag": 0,
+            "episodeSites": [
+              {
+                "enName": "qq",
+                "episodeInfoList": [
+                  {
+                    "id": "d4102qc1tnu",
+                    "title": "2026-10-18 预告：沈腾顶爆炸头热舞，小胡被抽到五官变形",
+                    "duration": "69"
+                  },
+                  {
+                    "id": "v4102k3exsm",
+                    "title": "2026-10-17 第2期上：“腾腾公主”飙戏，黄景瑜倒拔王安宇",
+                    "duration": "4649"
+                  },
+                  {
+                    "id": "i4102b29cfo",
+                    "title": "2026-10-13 第1期还有加更：王安宇脑力下线白敬亭直跺脚",
+                    "duration": "1720"
+                  },
+                  {
+                    "id": "r4102w56q2o",
+                    "title": "2026-10-12 第1期加更：王楚然猜词变造词“气疯”沈腾",
+                    "duration": "2191"
+                  },
+                  {
+                    "id": "z41023tinp7",
+                    "title": "2026-10-11 第1期下：目击狼人杀升级，小白安宇猜词再共脑",
+                    "duration": "6665"
+                  },
+                  {
+                    "id": "r4102opm7x3",
+                    "title": "2026-10-10 第1期上：出发团变落汤鸡，沈腾被迫洗头",
+                    "duration": "5417"
+                  },
+                  {
+                    "id": "m41021vikm3",
+                    "title": "2026-10-01 先导片下：贾冰爆炒！沈腾这一口很疯狂",
+                    "duration": "2195"
+                  },
+                  {
+                    "id": "v4102k0g66u",
+                    "title": "2026-10-01 先导片上：沈腾沙滩十八滚“追杀”黄景瑜",
+                    "duration": "2873"
+                  },
+                  {
+                    "id": "",
+                    "title": "查看更多",
+                    "duration": ""
+                  }
+                ]
+              }
+            ],
+            "playSites": [
+              {
+                "enName": "qq",
+                "episodeInfoList": [
+                  {
+                    "id": "d4102qc1tnu",
+                    "title": "立即播放",
+                    "duration": "69"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

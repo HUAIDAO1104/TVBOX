@@ -1,0 +1,39 @@
+{
+  "ret": 0,
+  "data": {
+    "normalList": {
+      "itemList": [
+        {
+          "doc": {
+            "id": "mzc00200tjkzeps"
+          },
+          "videoInfo": {
+            "title": "哪吒之魔童闹海",
+            "year": 2025,
+            "typeName": "电影",
+            "hintWords": "又名：哪吒2",
+            "playFlag": 0,
+            "episodeSites": [
+              {
+                "enName": "qq",
+                "episodeInfoList": []
+              }
+            ],
+            "playSites": [
+              {
+                "enName": "qq",
+                "episodeInfoList": [
+                  {
+                    "id": "y4101qnn3jo",
+                    "title": "立即播放",
+                    "duration": "8654"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,223 @@
+{
+  "versionCode": 625,
+  "versionName": "5.5.74-danmaku-variety",
+  "environment": "Android API 36 ARM64 emulator; mobile 320dp at 1.3 font scale; TV 1920x1080 at 160dpi",
+  "unit": {
+    "MobileArm64_v8a": {
+      "tests": 292,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "LeanbackArm64_v8a": {
+      "tests": 292,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "phone": {
+    "passed": 22,
+    "skipped": 2,
+    "finalResults": {
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#manualSearchGroupsWorksAndKeepsAllEpisodesSelectable": {
+        "status": "passed",
+        "evidence": "phone-regression-final.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#accessDeniedIsVisibleAndRetryRecovers": {
+        "status": "passed",
+        "evidence": "phone-regression-final.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveProviderSearchesAndParsesUserExamples": {
+        "status": "skipped",
+        "evidence": "phone-regression-final.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#aiKeyAndRecommendedModelAreReachableFromPlaybackSearch": {
+        "status": "passed",
+        "evidence": "phone-keyboard-final.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#switchingSearchCancelsObsoleteDocumentValidation": {
+        "status": "passed",
+        "evidence": "phone-regression-final.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#savedAutomaticRestoreCannotOverwriteANewerManualChoice": {
+        "status": "passed",
+        "evidence": "phone-regression-final.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#manualFailureRecoversTheConfirmedMovieOrPartAcrossProviders": {
+        "status": "passed",
+        "evidence": "phone-regression-final.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveSeasonFourAndMovieAutomaticThenManualSelection": {
+        "status": "passed",
+        "evidence": "phone-final-live.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#automaticMovieAndDatedVarietyDownloadParseAndCache": {
+        "status": "passed",
+        "evidence": "phone-regression-final.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveDramaEpisode14AutomaticAndManualWorkEpisodeFlow": {
+        "status": "skipped",
+        "evidence": "phone-regression-final.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#unavailableFirstFourDocumentsDoNotHideTheWorkingFifth": {
+        "status": "passed",
+        "evidence": "phone-regression-final.txt"
+      },
+      "com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest#liveDrama14CleansSelectsAndLoadsRealDocument": {
+        "status": "passed",
+        "evidence": "phone-regression-final.txt"
+      },
+      "com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest#unavailableModelChoiceFallsBackToEquivalentWorkingDocument": {
+        "status": "passed",
+        "evidence": "phone-regression-final.txt"
+      },
+      "com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest#settingsValidationKeepsFormAndSavedKeyIsNeverPrefilled": {
+        "status": "passed",
+        "evidence": "mobile-form-final.txt"
+      },
+      "com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest#liveAutomaticFallbackIsConditionalAndRemembersCleanQuery": {
+        "status": "passed",
+        "evidence": "phone-regression-final.txt"
+      },
+      "com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest#sendsBoundedChatContractAndDoesNotFollowRedirects": {
+        "status": "passed",
+        "evidence": "phone-regression-final.txt"
+      },
+      "com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest#encryptsKeyAndRequiresNewKeyForAnotherEndpoint": {
+        "status": "passed",
+        "evidence": "phone-regression-final.txt"
+      },
+      "com.fongmi.android.tv.ui.activity.DanmakuPlaybackInstrumentedTest#manualSelectionRendersAndPipNeverPersistsTemporaryHiding": {
+        "status": "passed",
+        "evidence": "phone-regression-final.txt"
+      },
+      "com.fongmi.android.tv.ui.activity.DanmakuPlaybackInstrumentedTest#liveVarietyUpperLowerAndMovieRenderActualCommentPixels": {
+        "status": "passed",
+        "evidence": "phone-final13.txt"
+      },
+      "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#cancelledDocumentDoesNotEmitLateSuccessOrFailure": {
+        "status": "passed",
+        "evidence": "tencent-phone.txt"
+      },
+      "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#missingSegmentIsNotSilentlyTreatedAsEmpty": {
+        "status": "passed",
+        "evidence": "tencent-phone.txt"
+      },
+      "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#liveCurrentVarietyAndMovieProduceCompletePlayableDocuments": {
+        "status": "passed",
+        "evidence": "tencent-phone.txt"
+      },
+      "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#completeDocumentRequiresEverySegmentAndKeepsMilliseconds": {
+        "status": "passed",
+        "evidence": "tencent-phone.txt"
+      },
+      "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#failedSegmentCannotCommitPartialDocument": {
+        "status": "passed",
+        "evidence": "tencent-phone.txt"
+      }
+    }
+  },
+  "tv": {
+    "passed": 19,
+    "skipped": 3,
+    "finalResults": {
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#manualSearchGroupsWorksAndKeepsAllEpisodesSelectable": {
+        "status": "passed",
+        "evidence": "tv-focus-final.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#accessDeniedIsVisibleAndRetryRecovers": {
+        "status": "passed",
+        "evidence": "tv-two.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveProviderSearchesAndParsesUserExamples": {
+        "status": "skipped",
+        "evidence": "tv-regression.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#aiKeyAndRecommendedModelAreReachableFromPlaybackSearch": {
+        "status": "passed",
+        "evidence": "tv-regression.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#switchingSearchCancelsObsoleteDocumentValidation": {
+        "status": "passed",
+        "evidence": "tv-regression.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#savedAutomaticRestoreCannotOverwriteANewerManualChoice": {
+        "status": "passed",
+        "evidence": "tv-regression.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#manualFailureRecoversTheConfirmedMovieOrPartAcrossProviders": {
+        "status": "passed",
+        "evidence": "tv-regression.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveSeasonFourAndMovieAutomaticThenManualSelection": {
+        "status": "passed",
+        "evidence": "tv-final.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#automaticMovieAndDatedVarietyDownloadParseAndCache": {
+        "status": "passed",
+        "evidence": "tv-regression.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#liveDramaEpisode14AutomaticAndManualWorkEpisodeFlow": {
+        "status": "skipped",
+        "evidence": "tv-regression.txt"
+      },
+      "com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest#unavailableFirstFourDocumentsDoNotHideTheWorkingFifth": {
+        "status": "passed",
+        "evidence": "tv-regression.txt"
+      },
+      "com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest#liveDrama14CleansSelectsAndLoadsRealDocument": {
+        "status": "passed",
+        "evidence": "tv-regression.txt"
+      },
+      "com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest#unavailableModelChoiceFallsBackToEquivalentWorkingDocument": {
+        "status": "passed",
+        "evidence": "tv-regression.txt"
+      },
+      "com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest#settingsValidationKeepsFormAndSavedKeyIsNeverPrefilled": {
+        "status": "passed",
+        "evidence": "tv-regression.txt"
+      },
+      "com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest#liveAutomaticFallbackIsConditionalAndRemembersCleanQuery": {
+        "status": "passed",
+        "evidence": "tv-regression.txt"
+      },
+      "com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest#sendsBoundedChatContractAndDoesNotFollowRedirects": {
+        "status": "passed",
+        "evidence": "tv-regression.txt"
+      },
+      "com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest#encryptsKeyAndRequiresNewKeyForAnotherEndpoint": {
+        "status": "passed",
+        "evidence": "tv-regression.txt"
+      },
+      "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#cancelledDocumentDoesNotEmitLateSuccessOrFailure": {
+        "status": "passed",
+        "evidence": "tv-regression.txt"
+      },
+      "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#missingSegmentIsNotSilentlyTreatedAsEmpty": {
+        "status": "passed",
+        "evidence": "tv-regression.txt"
+      },
+      "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#liveCurrentVarietyAndMovieProduceCompletePlayableDocuments": {
+        "status": "skipped",
+        "evidence": "tv-regression.txt"
+      },
+      "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#completeDocumentRequiresEverySegmentAndKeepsMilliseconds": {
+        "status": "passed",
+        "evidence": "tv-regression.txt"
+      },
+      "com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest#failedSegmentCannotCommitPartialDocument": {
+        "status": "passed",
+        "evidence": "tv-regression.txt"
+      }
+    }
+  },
+  "notes": [
+    "Latest result per scenario is listed; earlier failed runs remain in evidence files.",
+    "Mobile IME layout and playback-fixture end-position restoration were repaired before final reruns.",
+    "TV notification permission and immersive-mode onboarding initially blocked input; reruns followed setup and restoration of DPAD mode.",
+    "Skipped legacy live cases were not re-requested in this round; the requested season-four upper/lower and movie have separate passing live tests.",
+    "Live comment rendering uses local fixture video with real platform comments; current third-party source timing was unavailable.",
+    "No physical devices connected."
+  ]
+}
