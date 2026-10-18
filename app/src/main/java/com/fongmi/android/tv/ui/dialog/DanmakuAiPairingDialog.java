@@ -27,7 +27,10 @@ public final class DanmakuAiPairingDialog extends BaseAlertDialog {
     private final Runnable expire = () -> {
         App.removeCallbacks(checkAddress);
         if (session != null) session.close();
-        if (binding != null) { binding.code.setImageDrawable(null); binding.address.setText(R.string.danmaku_ai_scan_expired); }
+        if (binding != null) {
+            binding.code.setImageDrawable(null); binding.pairingCode.setText("");
+            binding.connection.setText(R.string.danmaku_ai_scan_expired);
+        }
     };
     @Override protected ViewBinding getBinding() { return binding = DialogDanmakuAiPairingBinding.inflate(getLayoutInflater()); }
     @Override protected MaterialAlertDialogBuilder getBuilder() {
@@ -38,13 +41,14 @@ public final class DanmakuAiPairingDialog extends BaseAlertDialog {
     @Override protected void initView() { refresh(); }
     private void refresh() {
         int request = ++generation;
-        App.removeCallbacks(expire); if (session != null) session.close();
+        App.removeCallbacks(expire, checkAddress); if (session != null) session.close();
         Server.get().start();
         session = AiPairingSession.open(() -> {
             if (!isAdded() || request != generation) return;
             getParentFragmentManager().setFragmentResult(DanmakuAiDialog.RESULT, Bundle.EMPTY); dismiss();
         });
         shownAddress = "";
+        binding.pairingCode.setText(getString(R.string.danmaku_ai_pairing_code, session.code().substring(0, 4) + " " + session.code().substring(4)));
         updateAddress();
         App.post(checkAddress, 2000);
         App.post(expire, AiPairingSession.LIFETIME_MS);
@@ -56,8 +60,10 @@ public final class DanmakuAiPairingDialog extends BaseAlertDialog {
             shownAddress = "";
             binding.code.setImageDrawable(null);
             binding.address.setText(R.string.danmaku_ai_scan_unavailable);
+            binding.connection.setText(R.string.danmaku_ai_scan_unavailable);
             return;
         }
+        binding.connection.setText(session.connected() ? R.string.danmaku_ai_phone_connected : R.string.danmaku_ai_phone_waiting);
         String address = base + "/ai-setup";
         if (address.equals(shownAddress)) return;
         shownAddress = address;

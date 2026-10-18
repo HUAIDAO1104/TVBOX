@@ -39,6 +39,69 @@ public class AiPairingInstrumentedTest {
         return http.newCall(request.build()).execute();
     }
     private String payload(String base, String key) { var o=new JsonObject();o.addProperty("baseUrl",base);o.addProperty("model","fixture-model");o.addProperty("key",key);o.addProperty("enabled",true);return o.toString(); }
+    private String pairBody(String code) { var data = new JsonObject(); data.addProperty("code", code); return data.toString(); }
+    @Test public void browserCodeIsBoundedRevokedAndDoesNotLockQr() throws Exception {
+        var pairing = AiPairingSession.open(() -> {});
+        try {
+            assertTrue(pairing.code().matches("[0-9]{8}"));
+            assertFalse(pairing.connected());
+            try (var r = request("", "pair", pairBody(pairing.code()), "https://other.invalid")) { assertEquals(403, r.code()); }
+            try (var r = request("", "pair", pairBody(pairing.code()), null)) {
+                assertEquals(200, r.code()); assertEquals(pairing.token(), JsonParser.parseString(r.body().string()).getAsJsonObject().get("token").getAsString());
+                assertEquals("no-store", r.header("Cache-Control"));
+            }
+            String wrong = pairing.code().equals("00000000") ? "11111111" : "00000000";
+            for (int i = 0; i < 5; i++) try (var r = request("", "pair", pairBody(wrong), null)) { assertEquals(i == 4 ? 429 : 400, r.code()); }
+            try (var r = request("", "pair", pairBody(pairing.code()), null)) { assertEquals(429, r.code()); }
+            try (var r = request(pairing.token(), "config", null, null)) { assertEquals(200, r.code()); }
+            assertTrue(pairing.connected());
+            pairing.close();
+            try (var r = request("", "pair", pairBody(pairing.code()), null)) { assertEquals(410, r.code()); }
+            pairing = AiPairingSession.open(() -> {});
+            try (var r = request("", "pair", pairBody(pairing.code()), null)) { assertEquals(200, r.code()); }
+            try (var r = request(pairing.token(), "save", payload("https://example.invalid/v1", "fixture-code-key"), null)) { assertEquals(200, r.code()); }
+            try (var r = request("", "pair", pairBody(pairing.code()), null)) { assertEquals(410, r.code()); }
+        } finally { pairing.close(); }
+    }
+    @Test public void browserAddressWithoutQrCanPairValidateAndSave() throws Exception {
+        var pairing = AiPairingSession.open(() -> {});
+        var web = new AtomicReference<android.webkit.WebView>();
+        try (ActivityScenario<AiPasteTestActivity> scenario = ActivityScenario.launch(AiPasteTestActivity.class)) {
+            scenario.onActivity(a -> {
+                var view = new android.webkit.WebView(a); view.getSettings().setJavaScriptEnabled(true);
+                a.setContentView(view); view.setFocusableInTouchMode(true); view.requestFocus(); web.set(view);
+                view.loadUrl(Server.get().getAddress() + "/ai-setup");
+            });
+            awaitJs(web.get(), "!!document.getElementById('pairForm') && !document.getElementById('pairForm').hidden");
+            assertEquals("true", js(web.get(), "document.getElementById('form').hidden"));
+            capture("581-browser-code.png");
+            js(web.get(), "document.getElementById('pairCode').value='123';document.getElementById('pairForm').requestSubmit()");
+            awaitJs(web.get(), "document.getElementById('pairCode').getAttribute('aria-invalid')==='true'");
+            String code = pairing.code();
+            String wrong = code.equals("00000000") ? "11111111" : "00000000";
+            js(web.get(), "document.getElementById('pairCode').value='" + wrong + "';document.getElementById('pairForm').requestSubmit()");
+            awaitJs(web.get(), "!document.getElementById('pairSubmit').disabled && document.getElementById('pairCode').getAttribute('aria-invalid')==='true'");
+            js(web.get(), "document.getElementById('pairCode').value='" + code.substring(0, 4) + " " + code.substring(4) + "';document.getElementById('pairForm').requestSubmit()");
+            awaitJs(web.get(), "!document.getElementById('form').hidden && document.getElementById('pairForm').hidden");
+            assertTrue(pairing.connected());
+            assertEquals("\"\"", js(web.get(), "location.hash"));
+            assertEquals("true", js(web.get(), "document.documentElement.scrollWidth<=innerWidth"));
+            js(web.get(), "document.activeElement.blur()");
+            capture("581-browser-form.png");
+            js(web.get(), "document.getElementById('base').value='https://example.invalid/v1';document.getElementById('model').value='fixture-model';document.getElementById('key').value='fixture-browser-key';document.getElementById('form').requestSubmit()");
+            awaitJs(web.get(), "document.getElementById('form').hidden && document.getElementById('key').value===''");
+            assertEquals("fixture-browser-key", DanmakuAiSetting.key());
+        } finally {
+            pairing.close();
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> { if (web.get() != null) web.get().destroy(); });
+        }
+    }
+    private void capture(String name) throws Exception {
+        android.os.SystemClock.sleep(250);
+        Bitmap image = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
+        try (var out = new java.io.FileOutputStream(new File(App.get().getExternalFilesDir(null), name))) { image.compress(Bitmap.CompressFormat.PNG, 100, out); }
+        image.recycle();
+    }
     @Test public void advertisedLanAddressServesPageAndRestartCannotBeStoppedByOldTask() throws Exception {
         var pending = new java.util.ArrayList<Runnable>();
         try {
@@ -88,7 +151,13 @@ public class AiPairingInstrumentedTest {
                 var qr=(androidx.fragment.app.DialogFragment)dialog.getChildFragmentManager().findFragmentByTag("ai_pairing");token.set(decode(qr));oldToken.set(token.get());
                 ((androidx.appcompat.app.AlertDialog)qr.requireDialog()).getButton(-1).performClick();token.set(decode(qr));assertNotEquals(oldToken.get(),token.get());});
             try(var r=request(oldToken.get(),"config",null,null)){assertEquals(410,r.code());}
-            android.os.SystemClock.sleep(400);
+            try(var r=request(token.get(),"config",null,null)){assertEquals(200,r.code());}
+            android.os.SystemClock.sleep(2200);
+            scenario.onActivity(a -> {
+                var dialog = (DanmakuAiDialog) a.getSupportFragmentManager().findFragmentByTag("ai-pairing-test");
+                var qr = (androidx.fragment.app.DialogFragment) dialog.getChildFragmentManager().findFragmentByTag("ai_pairing");
+                assertEquals(a.getString(R.string.danmaku_ai_phone_connected), ((android.widget.TextView) qr.requireDialog().findViewById(R.id.connection)).getText().toString());
+            });
             Bitmap image=InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
             try(var out=new java.io.FileOutputStream(new File(App.get().getExternalFilesDir(null),"577-ai-qr.png"))){image.compress(Bitmap.CompressFormat.PNG,100,out);}image.recycle();
             if("true".equals(InstrumentationRegistry.getArguments().getString("capturePairing"))) {

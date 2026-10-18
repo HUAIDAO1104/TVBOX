@@ -1,0 +1,25 @@
+{
+  "version": "5.5.81-fix",
+  "versionCode": 632,
+  "status": "validated",
+  "physicalWechatRootCauseConfirmed": false,
+  "qrEvidence": "User scans in WeChat; configuration HTML never appears. System-browser connectivity still unconfirmed.",
+  "pairingAndroid": {
+    "mobile": {
+      "passed": 6,
+      "skipped": 1
+    },
+    "leanback": {
+      "passed": 7,
+      "skipped": 0
+    }
+  },
+  "searchEvidence": "../danmaku-search-2026-10-18/",
+  "realApiKeyUsed": false,
+  "paidAiCalls": 0,
+  "localeQrChecks": [
+    "zh-CN",
+    "en",
+    "zh-TW"
+  ]
+}

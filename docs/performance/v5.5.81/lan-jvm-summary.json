@@ -1,0 +1,18 @@
+[
+  {
+    "mode": "Mobile",
+    "name": "com.fongmi.android.tv.server.LanAddressTest",
+    "tests": "2",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  },
+  {
+    "mode": "Leanback",
+    "name": "com.fongmi.android.tv.server.LanAddressTest",
+    "tests": "2",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  }
+]

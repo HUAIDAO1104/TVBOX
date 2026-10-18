@@ -353,7 +353,7 @@
     <string name="danmaku_gamer_direct">Bahamut · Direct</string>
     <string name="danmaku_status_ready_hidden">%1$d comments loaded; display is off. Turn on the player’s danmaku switch.</string>
     <string name="danmaku_ai_scan">Set up with phone</string>
-    <string name="danmaku_ai_scan_note">Connect your phone to the same Wi-Fi, scan this code and open it in a browser. Enter your API Key, endpoint and model. No separate server is needed. This code expires after 10 minutes or when this window closes.</string>
+    <string name="danmaku_ai_scan_note">Connect your phone to the same Wi-Fi. Scan with the phone camera or browser; if WeChat cannot open it, use the browser option below. Keep this window open. Codes expire after 10 minutes.</string>
     <string name="danmaku_ai_scan_refresh">Refresh code</string>
     <string name="danmaku_ai_scan_expired">Code expired. Choose Refresh code to continue.</string>
     <string name="danmaku_ai_scan_saved">Settings saved from phone. You can test the connection here.</string>
@@ -362,4 +362,8 @@
     <string name="danmaku_ai_saved_disabled">Key saved · AI matching disabled</string>
     <string name="danmaku_ai_scan_unavailable">No LAN connection. Connect the TV and phone to the same router, then refresh the code.</string>
     <string name="danmaku_search_updating">%1$d results available · %2$d providers still searching…</string>
+    <string name="danmaku_ai_browser_fallback">Cannot scan? Enter this address in your phone browser, then enter the pairing code.</string>
+    <string name="danmaku_ai_pairing_code">Pairing code: %1$s</string>
+    <string name="danmaku_ai_phone_waiting">Waiting for phone to connect</string>
+    <string name="danmaku_ai_phone_connected">Phone connected · waiting for you to save</string>
 </resources>

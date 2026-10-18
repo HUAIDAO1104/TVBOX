@@ -21,22 +21,31 @@ final class AiSetup {
                 return headers(response);
             } catch (Exception error) { return json(Response.Status.INTERNAL_ERROR, "unavailable"); }
         }
+        if (path.equals("/ai-setup/pair") && request.getMethod() == Method.POST) {
+            if (!sameOrigin(request)) return json(Response.Status.FORBIDDEN, "origin");
+            try {
+                JsonObject data = body(request);
+                if (!data.has("code") || !data.get("code").isJsonPrimitive() || !data.getAsJsonPrimitive("code").isString())
+                    throw new IllegalArgumentException("request");
+                String token = AiPairingSession.pair(data.get("code").getAsString());
+                JsonObject result = new JsonObject(); result.addProperty("token", token);
+                return headers(newFixedLengthResponse(Response.Status.OK, "application/json", result.toString()));
+            } catch (IllegalArgumentException error) {
+                String code = error.getMessage();
+                if ("expired".equals(code)) return json(Response.Status.GONE, code);
+                if ("pairing_locked".equals(code)) return json(Response.Status.TOO_MANY_REQUESTS, code);
+                return json(Response.Status.BAD_REQUEST, "pairing_code".equals(code) ? code : "request");
+            } catch (Exception error) { return json(Response.Status.INTERNAL_ERROR, "unavailable"); }
+        }
         AiPairingSession pairing = AiPairingSession.find(request.getHeaders().get("x-pairing-token"));
         if (pairing == null) return json(Response.Status.GONE, "expired");
         if (path.equals("/ai-setup/config") && request.getMethod() == Method.GET)
             return headers(newFixedLengthResponse(Response.Status.OK, "application/json", pairing.config().toString()));
         if (!path.equals("/ai-setup/save") || request.getMethod() != Method.POST)
             return json(Response.Status.NOT_FOUND, "not_found");
-        String origin = request.getHeaders().get("origin"), host = request.getHeaders().get("host");
-        if (origin == null || !origin.equals("http://" + host)) return json(Response.Status.FORBIDDEN, "origin");
-        if (!request.getHeaders().getOrDefault("content-type", "").startsWith("application/json"))
-            return json(Response.Status.BAD_REQUEST, "request");
+        if (!sameOrigin(request)) return json(Response.Status.FORBIDDEN, "origin");
         try {
-            int length = Integer.parseInt(request.getHeaders().getOrDefault("content-length", "0"));
-            if (length < 2 || length > 16384) return json(Response.Status.BAD_REQUEST, "request");
-            byte[] body = new byte[length]; int read = 0;
-            while (read < length) { int n = request.getInputStream().read(body, read, length - read); if (n < 0) return json(Response.Status.BAD_REQUEST, "request"); read += n; }
-            JsonObject data = JsonParser.parseString(new String(body, StandardCharsets.UTF_8)).getAsJsonObject();
+            JsonObject data = body(request);
             pairing.save(data.get("baseUrl").getAsString().trim(), data.get("model").getAsString().trim(),
                     data.get("key").getAsString().trim(), data.get("enabled").getAsBoolean());
             return json(Response.Status.OK, "saved");
@@ -44,6 +53,22 @@ final class AiSetup {
             String field = error.getMessage();
             return json(Response.Status.BAD_REQUEST, java.util.List.of("base_url", "model", "key").contains(field == null ? "" : field) ? field : "request");
         } catch (Exception error) { return json(Response.Status.INTERNAL_ERROR, "save_failed"); }
+    }
+    private static boolean sameOrigin(IHTTPSession request) {
+        return ("http://" + request.getHeaders().get("host")).equals(request.getHeaders().get("origin"));
+    }
+    private static JsonObject body(IHTTPSession request) throws Exception {
+        if (!sameOrigin(request) || !request.getHeaders().getOrDefault("content-type", "").startsWith("application/json"))
+            throw new IllegalArgumentException("request");
+        int length = Integer.parseInt(request.getHeaders().getOrDefault("content-length", "0"));
+        if (length < 2 || length > 16384) throw new IllegalArgumentException("request");
+        byte[] body = new byte[length]; int read = 0;
+        while (read < length) {
+            int n = request.getInputStream().read(body, read, length - read);
+            if (n < 0) throw new IllegalArgumentException("request");
+            read += n;
+        }
+        return JsonParser.parseString(new String(body, StandardCharsets.UTF_8)).getAsJsonObject();
     }
     private static Response json(Response.Status status, String code) {
         JsonObject data = new JsonObject(); data.addProperty("code", code);

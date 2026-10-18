@@ -330,7 +330,7 @@
     <string name="danmaku_gamer_direct">巴哈姆特 · 直連</string>
     <string name="danmaku_status_ready_hidden">已載入 %1$d 條彈幕，顯示已關閉；請開啟播放器的彈幕開關</string>
     <string name="danmaku_ai_scan">手機掃碼填寫</string>
-    <string name="danmaku_ai_scan_note">手機連接同一 Wi-Fi，掃碼後在瀏覽器開啟，填寫 API Key、介面位址及模型，無需另備伺服器。二維碼 10 分鐘有效，關閉視窗後失效。</string>
+    <string name="danmaku_ai_scan_note">手機連接同一 Wi-Fi，使用手機相機或瀏覽器掃碼。微信無法開啟時，可用右側方式連接。保持此視窗開啟，配對碼 10 分鐘有效。</string>
     <string name="danmaku_ai_scan_refresh">重新整理二維碼</string>
     <string name="danmaku_ai_scan_expired">二維碼已失效，請重新整理後掃碼。</string>
     <string name="danmaku_ai_scan_saved">手機提交的設定已儲存，可在此測試連線。</string>
@@ -339,4 +339,8 @@
     <string name="danmaku_ai_saved_disabled">密鑰已儲存 · AI 輔助配對未啟用</string>
     <string name="danmaku_ai_scan_unavailable">未連接區域網路，請將電視和手機連接同一路由器後重新整理二維碼。</string>
     <string name="danmaku_search_updating">已找到 %1$d 項 · 還有 %2$d 條線路正在搜尋…</string>
+    <string name="danmaku_ai_browser_fallback">掃碼無法開啟？在手機瀏覽器輸入以下位址，再填寫配對碼。</string>
+    <string name="danmaku_ai_pairing_code">配對碼：%1$s</string>
+    <string name="danmaku_ai_phone_waiting">等待手機連接</string>
+    <string name="danmaku_ai_phone_connected">手機已連接，等待儲存</string>
 </resources>
