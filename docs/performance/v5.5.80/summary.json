@@ -1,0 +1,22 @@
+{
+  "version": "5.5.80-fix",
+  "versionCode": 631,
+  "jvmTests": {
+    "mobile": 65,
+    "leanback": 65
+  },
+  "uniqueAndroidCases": 21,
+  "mobile": {
+    "passed": 20,
+    "skippedTvOnly": 1
+  },
+  "leanback": {
+    "passed": 21
+  },
+  "qrActualLanAddressTest": true,
+  "qrNetworkDisconnectReconnect": true,
+  "releaseUpgradeFrom": "5.5.79",
+  "realPhoneToPhysicalTvTested": false,
+  "realApiKeyUsed": false,
+  "notes": "Final search timings are single samples on the test network, not a speed guarantee."
+}

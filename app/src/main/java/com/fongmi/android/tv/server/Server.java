@@ -3,7 +3,6 @@ package com.fongmi.android.tv.server;
 import com.fongmi.android.tv.service.PlaybackService;
 import com.fongmi.android.tv.utils.Task;
 import com.github.catvod.Proxy;
-import com.github.catvod.utils.Util;
 
 public class Server {
 
@@ -39,30 +38,39 @@ public class Server {
     }
 
     public String getAddress(boolean local) {
-        return "http://" + (local ? "127.0.0.1" : Util.getIp()) + ":" + Proxy.getPort();
+        Nano running = nano;
+        String host = local ? "127.0.0.1" : LanAddress.current();
+        if (host.isEmpty() || running == null || !running.isAlive()) return "";
+        return "http://" + host + ":" + running.getListeningPort();
     }
 
     public synchronized void start() {
-        if (nano != null) return;
+        if (nano != null && nano.isAlive()) return;
+        if (nano != null) nano.stop();
         for (int i = 9978; i < 9999; i++) {
+            Nano started = null;
             try {
-                nano = com.fongmi.android.tv.App.isSearchProcess() ? new Nano("127.0.0.1", i) : new Nano(i);
+                started = com.fongmi.android.tv.App.isSearchProcess() ? new Nano("127.0.0.1", i) : new Nano(i);
                 // A phone can pause between headers and body while switching Wi-Fi radios.
                 // Keep a bounded socket wait without rejecting an otherwise valid QR save.
-                nano.start(10_000);
+                started.start(10_000);
+                nano = started;
                 Proxy.set(i);
                 break;
             } catch (Throwable e) {
+                if (started != null) started.stop();
                 nano = null;
             }
         }
     }
 
-    public void stop() {
-        Task.execute(() -> {
-            if (nano != null) nano.stop();
-            service = null;
-            nano = null;
-        });
+    public void stop() { stop(Task::execute); }
+
+    synchronized void stop(java.util.function.Consumer<Runnable> defer) {
+        Nano stopped = nano;
+        nano = null;
+        service = null;
+        // Capture this instance now: a queued stop must never close a newly opened QR server.
+        if (stopped != null) defer.accept(stopped::stop);
     }
 }

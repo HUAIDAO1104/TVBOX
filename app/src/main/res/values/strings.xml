@@ -360,4 +360,6 @@
     <string name="danmaku_ai_key_stored_placeholder">Saved · leave blank to keep</string>
     <string name="danmaku_ai_saved_enabled">Key saved · AI matching enabled</string>
     <string name="danmaku_ai_saved_disabled">Key saved · AI matching disabled</string>
+    <string name="danmaku_ai_scan_unavailable">No LAN connection. Connect the TV and phone to the same router, then refresh the code.</string>
+    <string name="danmaku_search_updating">%1$d results available · %2$d providers still searching…</string>
 </resources>

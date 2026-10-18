@@ -1,0 +1,5 @@
+{
+  "connected": "http://10.0.2.16:9978/ai-setup",
+  "offline": "未连接局域网，请将电视和手机连接同一路由器后刷新二维码。",
+  "restored": "http://10.0.2.16:9978/ai-setup"
+}

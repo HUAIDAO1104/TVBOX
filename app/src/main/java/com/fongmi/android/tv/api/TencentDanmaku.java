@@ -34,7 +34,7 @@ public final class TencentDanmaku {
     static NativeDanmaku.Job search(String query, IqiyiDanmaku.Callback<List<Danmaku>> callback, OkHttpClient client) {
         return search(query, "", "", callback, client);
     }
-    private static NativeDanmaku.Job search(String query, String year, String type, IqiyiDanmaku.Callback<List<Danmaku>> callback, OkHttpClient client) {
+    static NativeDanmaku.Job search(String query, String year, String type, IqiyiDanmaku.Callback<List<Danmaku>> callback, OkHttpClient client) {
         String cacheKey = query + "|" + year + "|" + type;
         Job job = new Job(15000, client);
         job.start(SEARCH, () -> {
@@ -56,6 +56,8 @@ public final class TencentDanmaku {
             for (var work : works) {
                 if ((!year.isEmpty() || !type.isEmpty()) && !NativeDanmaku.acceptsWork(query, year, type, work.matchTitle(), work.year(), work.type())) continue;
                 for (Danmaku row : work.rows()) rows.putIfAbsent(row.getUrl(), row);
+                job.check();
+                if (!rows.isEmpty()) callback.onPartial(copy(List.copyOf(rows.values())));
                 if ("电影".equals(work.type()) && !work.rows().isEmpty()) continue;
                 Set<String> visited = new HashSet<>();
                 ArrayDeque<String> contexts = new ArrayDeque<>();
@@ -68,6 +70,8 @@ public final class TencentDanmaku {
                         // Full catalogue labels carry broadcast dates/edition names missing
                         // from the search preview. Enrich the same verified video ID in place.
                         for (Danmaku row : page.rows()) rows.put(row.getUrl(), row);
+                        job.check();
+                        if (!rows.isEmpty()) callback.onPartial(copy(List.copyOf(rows.values())));
                         for (String next : page.contexts()) if (!visited.contains(next)) contexts.addLast(next);
                     } catch (IOException error) {
                         // Search already carries usable recent episodes. A supplementary page

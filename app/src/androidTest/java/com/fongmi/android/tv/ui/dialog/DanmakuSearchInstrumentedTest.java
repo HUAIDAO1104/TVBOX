@@ -20,7 +20,6 @@ import com.fongmi.android.tv.player.danmaku.FilteringBiliParser;
 import com.fongmi.android.tv.player.media.PlaySpec;
 import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.playback.vod.VodPlaybackMedia;
-import com.fongmi.android.tv.ui.activity.HomeActivity;
 import okhttp3.mockwebserver.*;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -38,7 +37,7 @@ public class DanmakuSearchInstrumentedTest {
     private volatile int status;
     private volatile boolean slowDocument;
     private final CountDownLatch documentStarted = new CountDownLatch(1);
-    private ActivityScenario<HomeActivity> scenario;
+    private ActivityScenario<DanmakuTestActivity> scenario;
     private DanmakuSearchPanel panel;
     private ViewDanmakuSearchEmbeddedBinding binding;
     private PlayerManager player;
@@ -147,6 +146,38 @@ public class DanmakuSearchInstrumentedTest {
         await(() -> adapter.getItemCount() == 3, 5_000);
         screenshot("results");
         main(() -> { assertTrue(panel.onBack()); assertEquals(2, adapter.getItemCount()); });
+    }
+
+    @Test public void liveManualMangoFirstResults() throws Exception {
+        liveFirstResults("披荆斩棘2026", "第10期上", "mango-direct");
+    }
+    @Test public void sheetSurvivesHostRecreationWithoutAStalePlayer() throws Exception {
+        openPanel("第1期下");
+        scenario.recreate();
+        scenario.onActivity(activity -> {
+            var restored = activity.getSupportFragmentManager().getFragments().stream()
+                    .filter(f -> f instanceof DanmakuSettingDialog.BottomSheet || f instanceof DanmakuSettingDialog.SideSheet)
+                    .findFirst().orElseThrow();
+            assertNotNull(((androidx.fragment.app.DialogFragment) restored).getDialog());
+            assertTrue(restored.requireView().findViewById(R.id.ai).isShown());
+        });
+    }
+    @Test public void liveManualTencentFirstResults() throws Exception {
+        liveFirstResults("现在就出发第四季", "第1期下", "tencent-direct");
+    }
+    @Test public void liveManualMovieFirstResults() throws Exception {
+        liveFirstResults("哪吒2", "正片", "tencent-direct");
+    }
+    private void liveFirstResults(String title, String episode, String source) throws Exception {
+        Assume.assumeTrue("true".equals(InstrumentationRegistry.getArguments().getString("danmakuLive")));
+        DanmakuSetting.putApiUrl("");
+        openPanel(title, episode);
+        var adapter = (com.fongmi.android.tv.ui.adapter.DanmakuAdapter) binding.recycler.getAdapter();
+        await(() -> indexOfSource(adapter, source) >= 0, 20_000);
+        System.out.println("MANUAL_FIRST_RESULT title=" + title + " elapsedMs=" + (SystemClock.elapsedRealtime() - lastSubmittedAt));
+        clickRow(indexOfSource(adapter, source));
+        assertTrue(adapter.getItemCount() > 0);
+        screenshot("580-manual-" + source + (title.equals("哪吒2") ? "-movie" : "-variety"));
     }
 
     @Test public void manualFailureRecoversTheConfirmedMovieOrPartAcrossProviders() throws Exception {
@@ -525,7 +556,7 @@ public class DanmakuSearchInstrumentedTest {
     private void openPanel(String episode) throws Exception { openPanel("弹幕验收虚构片", episode); }
 
     private void openPanel(String title, String episode) throws Exception {
-        scenario = ActivityScenario.launch(HomeActivity.class);
+        scenario = ActivityScenario.launch(DanmakuTestActivity.class);
         scenario.onActivity(activity -> {
             player = new PlayerManager((PlayerManager.Callback) java.lang.reflect.Proxy.newProxyInstance(
                     PlayerManager.Callback.class.getClassLoader(), new Class[]{PlayerManager.Callback.class},

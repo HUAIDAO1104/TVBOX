@@ -9,6 +9,9 @@ import okhttp3.*;
 
 /** Shared exact-then-base lookup. Only result metadata can justify a numeric title alias. */
 public final class DanmakuCatalogueSearch implements NativeDanmaku.Job {
+    private static final java.util.concurrent.ScheduledExecutorService TIMER = java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
+    private final java.util.concurrent.atomic.AtomicBoolean finished = new java.util.concurrent.atomic.AtomicBoolean();
+    private volatile java.util.concurrent.Future<?> timeout;
     public static final class HttpFailure extends IOException {
         public final int code;
         HttpFailure(int code) { super("Search HTTP " + code); this.code = code; }
@@ -41,21 +44,27 @@ public final class DanmakuCatalogueSearch implements NativeDanmaku.Job {
                                     String episode, boolean targeted, java.util.function.Predicate<List<Danmaku>> acceptable,
                                     IqiyiDanmaku.Callback<List<Danmaku>> callback) {
         var job = new DanmakuCatalogueSearch(source, query, year, type, episode, targeted, acceptable, callback);
+        // Covers DNS, worker queues and exact-to-base retries together, not per attempt.
+        if (!targeted) job.timeout = TIMER.schedule(() -> job.failure(new java.net.SocketTimeoutException("Catalogue search timed out")),
+                20, java.util.concurrent.TimeUnit.SECONDS);
         job.next(0); return job;
     }
     private void next(int index) {
-        if (cancelled) return;
-        if (index >= query.candidates().size()) { callback.onSuccess(List.of()); return; }
+        if (cancelled || finished.get()) return;
+        if (index >= query.candidates().size()) { success(List.of()); return; }
         String title = query.candidates().get(index);
         var receiver = new IqiyiDanmaku.Callback<List<Danmaku>>() {
+            public void onPartial(List<Danmaku> items) {
+                if (!targeted && !cancelled && !finished.get() && acceptable.test(items)) callback.onPartial(items);
+            }
             public void onSuccess(List<Danmaku> items) {
-                if (cancelled) return;
+                if (cancelled || finished.get()) return;
                 // The list is ranked once by its consumer, not twice on a slow TV.
                 if (!acceptable.test(items)) next(index + 1);
-                else callback.onSuccess(items);
+                else success(items);
             }
             public void onFailure(IOException error) {
-                if (!cancelled) callback.onFailure(error);
+                failure(error);
             }
         };
         if (NativeDanmaku.isSource(source)) {
@@ -75,10 +84,27 @@ public final class DanmakuCatalogueSearch implements NativeDanmaku.Job {
                 }
             });
         }
-        if (cancelled) cancel();
+        if (cancelled || finished.get()) cleanup();
+    }
+    private void success(List<Danmaku> items) {
+        if (!cancelled && finished.compareAndSet(false, true)) {
+            if (timeout != null) timeout.cancel(false);
+            callback.onSuccess(items);
+        }
+    }
+    private void failure(IOException error) {
+        if (!cancelled && finished.compareAndSet(false, true)) {
+            cleanup();
+            callback.onFailure(error);
+        }
     }
     @Override public void cancel() {
         cancelled = true;
+        finished.set(true);
+        cleanup();
+    }
+    private void cleanup() {
+        if (timeout != null) timeout.cancel(false);
         for (NativeDanmaku.Job job : nativeJobs) job.cancel();
         nativeJobs.clear();
         if (call != null) call.cancel();

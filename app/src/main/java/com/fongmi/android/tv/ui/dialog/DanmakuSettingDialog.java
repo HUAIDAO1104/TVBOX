@@ -50,6 +50,7 @@ public final class DanmakuSettingDialog {
 
     public void show(FragmentActivity activity) {
         FragmentManager manager = activity.getSupportFragmentManager();
+        if (activity.isFinishing() || activity.isDestroyed() || manager.isStateSaved()) return;
         for (Fragment fragment : manager.getFragments()) if (fragment instanceof BottomSheet || fragment instanceof SideSheet) return;
         PlayerManager target = resolvePlayer(player);
         if (Util.isFullscreenLand(activity) || Util.isLeanback()) new SideSheet(target, searchInitially).show(manager, null);
@@ -74,6 +75,8 @@ public final class DanmakuSettingDialog {
         private final boolean searchInitially;
         private DanmakuSearchPanel searchPanel;
         private boolean searchVisible;
+
+        public BottomSheet() { this(resolvePlayer(null), false); }
 
         BottomSheet(PlayerManager player, boolean searchInitially) {
             this.player = player;
@@ -166,6 +169,8 @@ public final class DanmakuSettingDialog {
         private final boolean searchInitially;
         private DanmakuSearchPanel searchPanel;
         private boolean searchVisible;
+
+        public SideSheet() { this(resolvePlayer(null), false); }
 
         SideSheet(PlayerManager player, boolean searchInitially) {
             this.player = player;

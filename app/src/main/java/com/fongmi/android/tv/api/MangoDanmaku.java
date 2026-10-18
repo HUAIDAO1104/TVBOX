@@ -59,6 +59,8 @@ public final class MangoDanmaku {
                 Set<String> months = new LinkedHashSet<>();
                 String current = str(obj(first, "cur"), "m");
                 addPage(rows, work, first);
+                job.check();
+                if (!rows.isEmpty()) callback.onPartial(copy(List.copyOf(rows.values())));
                 // Recent episodes are already in this authoritative page. Loading every
                 // previous month first wastes the TV's catalogue budget for no extra certainty.
                 if (eligible.size() == 1 && !episode.isEmpty() && !DanmakuMatch.ranked(query, year, type, episode,
@@ -71,10 +73,18 @@ public final class MangoDanmaku {
                 if (months.isEmpty()) months.add(current);
                 for (String month : months) {
                     JsonObject page = month.equals(current) ? first : response(job.text(listUrl(work.cid(), month, 1)), "code", "200");
-                    if (!month.equals(current)) addPage(rows, work, page);
+                    if (!month.equals(current)) {
+                        addPage(rows, work, page);
+                        job.check();
+                        if (!rows.isEmpty()) callback.onPartial(copy(List.copyOf(rows.values())));
+                    }
                     int total = number(page, "total");
                     if (total > 600) throw new IOException("Mango catalogue exceeds page limit");
-                    for (int pn = 2; pn <= (total + 59) / 60; pn++) addPage(rows, work, response(job.text(listUrl(work.cid(), month, pn)), "code", "200"));
+                    for (int pn = 2; pn <= (total + 59) / 60; pn++) {
+                        addPage(rows, work, response(job.text(listUrl(work.cid(), month, pn)), "code", "200"));
+                        job.check();
+                        if (!rows.isEmpty()) callback.onPartial(copy(List.copyOf(rows.values())));
+                    }
                 }
             }
             List<Danmaku> result = List.copyOf(rows.values());

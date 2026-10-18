@@ -34,13 +34,15 @@ public final class IqiyiDanmaku {
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/133.0.0.0 Safari/537.36";
 
     private static final class Client {
-        static final OkHttpClient INSTANCE = OkHttp.client().newBuilder()
+        static final OkHttpClient INSTANCE = new OkHttpClient.Builder()
                 .dispatcher(new okhttp3.Dispatcher()).connectTimeout(6, TimeUnit.SECONDS)
                 .readTimeout(10, TimeUnit.SECONDS).callTimeout(12, TimeUnit.SECONDS)
                 .retryOnConnectionFailure(false).build();
     }
 
     public interface Callback<T> {
+        /** A usable snapshot; more catalogue pages may still arrive. */
+        default void onPartial(T value) { }
         void onSuccess(T value);
         void onFailure(IOException error);
     }

@@ -39,6 +39,27 @@ public class AiPairingInstrumentedTest {
         return http.newCall(request.build()).execute();
     }
     private String payload(String base, String key) { var o=new JsonObject();o.addProperty("baseUrl",base);o.addProperty("model","fixture-model");o.addProperty("key",key);o.addProperty("enabled",true);return o.toString(); }
+    @Test public void advertisedLanAddressServesPageAndRestartCannotBeStoppedByOldTask() throws Exception {
+        var pending = new java.util.ArrayList<Runnable>();
+        try {
+            Server.get().stop(pending::add);
+            Server.get().start();
+            String address = Server.get().getAddress();
+            assertFalse("Connected emulator must advertise its actual LAN address", address.isEmpty());
+            assertFalse(address.contains("127.0.0.1"));
+            for (var task : pending) task.run();
+            pending.clear();
+            assertEquals(address, Server.get().getAddress());
+            try (var response = http.newCall(new Request.Builder().url(address + "/ai-setup").build()).execute()) {
+                assertEquals(200, response.code());
+                assertTrue(response.body().string().contains("pasteKey"));
+            }
+            var session = AiPairingSession.open(() -> {});
+            try (var response = http.newCall(new Request.Builder().url(address + "/ai-setup/config")
+                    .header("X-Pairing-Token", session.token()).build()).execute()) { assertEquals(200, response.code()); }
+            finally { session.close(); }
+        } finally { for (var task : pending) task.run(); }
+    }
     @Test public void sessionRejectsStaleAndCrossOriginRequestsAndNeverReturnsSecret() throws Exception {
         var pairing=AiPairingSession.open(()->{});
         try {

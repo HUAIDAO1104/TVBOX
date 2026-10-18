@@ -51,7 +51,7 @@ public class DanmakuApi {
 
     private static final class SearchClient {
         // Search must not queue behind catalogue scraping, video requests or large XML files.
-        static final okhttp3.OkHttpClient INSTANCE = OkHttp.client().newBuilder()
+        static final okhttp3.OkHttpClient INSTANCE = new okhttp3.OkHttpClient.Builder()
                 .dispatcher(new okhttp3.Dispatcher())
                 .connectTimeout(8, java.util.concurrent.TimeUnit.SECONDS)
                 .readTimeout(12, java.util.concurrent.TimeUnit.SECONDS)

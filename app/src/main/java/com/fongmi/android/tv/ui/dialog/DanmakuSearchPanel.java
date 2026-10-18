@@ -69,7 +69,7 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
     private int failed;
     private int denied;
     private int invalid;
-    private int renderVersion;
+    private volatile int renderVersion;
     private final java.util.concurrent.ExecutorService sorter = java.util.concurrent.Executors.newSingleThreadExecutor(r -> new Thread(r, "danmaku-results"));
 
     DanmakuSearchPanel(ViewDanmakuSearchEmbeddedBinding binding, PlayerManager player) {
@@ -177,22 +177,26 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
             String sourceKey = NativeDanmaku.isSource(source) ? source : DanmakuManualMatchStore.sourceKey(source);
             nativeSearches.add(DanmakuCatalogueSearch.search(source, query, searchYear, searchType, searchEpisode,
                     false, new IqiyiDanmaku.Callback<List<Danmaku>>() {
+                @Override public void onPartial(List<Danmaku> items) {
+                    for (Danmaku item : items) item.setSourceKey(sourceKey);
+                    App.post(() -> merge(id, items, sourceKey, items, 0, false));
+                }
                 @Override public void onSuccess(List<Danmaku> items) {
                     for (Danmaku item : items) item.setSourceKey(sourceKey);
-                    App.post(() -> merge(id, items, sourceKey, items, 0));
+                    App.post(() -> merge(id, items, sourceKey, items, 0, true));
                 }
                 @Override public void onFailure(IOException error) {
                     int failure = error instanceof DanmakuCatalogueSearch.HttpFailure http && (http.code == 401 || http.code == 403) ? 2
                             : error instanceof DanmakuCatalogueSearch.InvalidResponse ? 3 : 1;
-                    App.post(() -> merge(id, List.of(), sourceKey, List.of(), failure));
+                    App.post(() -> merge(id, List.of(), sourceKey, List.of(), failure, true));
                 }
             }));
         }
     }
 
     private void merge(int id, List<Danmaku> items, String sourceKey,
-                       List<Danmaku> catalogue, int failure) {
-        if (id != requestId.get()) return;
+                       List<Danmaku> catalogue, int failure, boolean complete) {
+        if (destroyed || id != requestId.get()) return;
         if (failure != 0) failed++;
         if (failure == 2) denied++;
         if (failure == 3) invalid++;
@@ -200,15 +204,15 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
             sourceCatalogues.put(sourceKey, catalogue);
         }
         for (Danmaku item : items) {
-            if (item == null || item.isEmpty() || results.containsKey(item.getUrl())) continue;
+            if (item == null || item.isEmpty()) continue;
             results.put(item.getUrl(), item);
         }
-        pending = Math.max(0, pending - 1);
+        if (complete) pending = Math.max(0, pending - 1);
         List<Danmaku> snapshot = List.copyOf(results.values());
         String title = searchTitle, year = searchYear, type = searchType, episode = searchEpisode;
         int version = ++renderVersion;
         sorter.execute(() -> {
-            if (id != requestId.get()) return;
+            if (id != requestId.get() || version != renderVersion) return;
             List<Danmaku> ranked = DanmakuResultGrouper.browse(title, year, type, episode, snapshot);
             List<DanmakuResultGrouper.Work> grouped = DanmakuResultGrouper.works(ranked);
             App.post(() -> {
@@ -248,7 +252,8 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
                 : failed > 0 ? R.string.danmaku_failure_network : R.string.danmaku_search_empty;
         binding.empty.setText(emptyMessage);
         binding.providerStatus.setText(pending > 0
-                ? ResUtil.getString(R.string.danmaku_search_running, pending)
+                ? ranked.isEmpty() ? ResUtil.getString(R.string.danmaku_search_running, pending)
+                : ResUtil.getString(R.string.danmaku_search_updating, ranked.size(), pending)
                 : failed > 0 ? ResUtil.getString(R.string.danmaku_search_partial, ranked.size(), failed)
                 : ResUtil.getString(openWork.isEmpty() ? R.string.danmaku_search_works : R.string.danmaku_search_result, ranked.size()));
         if (!openWork.isEmpty() && works.containsKey(openWork)) {

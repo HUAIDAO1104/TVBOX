@@ -16,7 +16,16 @@ public final class DanmakuAiPairingDialog extends BaseAlertDialog {
     private DialogDanmakuAiPairingBinding binding;
     private AiPairingSession session;
     private int generation;
+    private String shownAddress = "";
+    private final Runnable checkAddress = new Runnable() {
+        @Override public void run() {
+            if (binding == null || session == null) return;
+            updateAddress();
+            App.post(this, 2000);
+        }
+    };
     private final Runnable expire = () -> {
+        App.removeCallbacks(checkAddress);
         if (session != null) session.close();
         if (binding != null) { binding.code.setImageDrawable(null); binding.address.setText(R.string.danmaku_ai_scan_expired); }
     };
@@ -35,10 +44,25 @@ public final class DanmakuAiPairingDialog extends BaseAlertDialog {
             if (!isAdded() || request != generation) return;
             getParentFragmentManager().setFragmentResult(DanmakuAiDialog.RESULT, Bundle.EMPTY); dismiss();
         });
-        String address = Server.get().getAddress() + "/ai-setup";
+        shownAddress = "";
+        updateAddress();
+        App.post(checkAddress, 2000);
+        App.post(expire, AiPairingSession.LIFETIME_MS);
+    }
+    private void updateAddress() {
+        Server.get().start();
+        String base = Server.get().getAddress();
+        if (base.isEmpty()) {
+            shownAddress = "";
+            binding.code.setImageDrawable(null);
+            binding.address.setText(R.string.danmaku_ai_scan_unavailable);
+            return;
+        }
+        String address = base + "/ai-setup";
+        if (address.equals(shownAddress)) return;
+        shownAddress = address;
         binding.address.setText(address);
         binding.code.setImageBitmap(QRCode.getStandardBitmap(address + "#" + session.token(), 224));
-        App.post(expire, AiPairingSession.LIFETIME_MS);
     }
     @Override public void onStart() {
         super.onStart(); setWidth(.58f);
@@ -47,7 +71,7 @@ public final class DanmakuAiPairingDialog extends BaseAlertDialog {
     }
     @Override public void onDismiss(DialogInterface dialog) {
         generation++;
-        App.removeCallbacks(expire); if (session != null) session.close();
+        App.removeCallbacks(expire, checkAddress); if (session != null) session.close();
         super.onDismiss(dialog);
     }
 }

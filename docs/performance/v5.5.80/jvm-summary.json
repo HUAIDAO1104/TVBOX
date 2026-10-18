@@ -1,0 +1,14 @@
+[
+  {
+    "mode": "Mobile",
+    "tests": 65,
+    "failures": 0,
+    "errors": 0
+  },
+  {
+    "mode": "Leanback",
+    "tests": 65,
+    "failures": 0,
+    "errors": 0
+  }
+]

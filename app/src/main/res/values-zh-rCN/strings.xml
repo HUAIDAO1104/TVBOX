@@ -349,4 +349,6 @@
     <string name="danmaku_ai_key_stored_placeholder">已保存 · 留空保留</string>
     <string name="danmaku_ai_saved_enabled">密钥已保存 · AI 辅助匹配已启用</string>
     <string name="danmaku_ai_saved_disabled">密钥已保存 · AI 辅助匹配未启用</string>
+    <string name="danmaku_ai_scan_unavailable">未连接局域网，请将电视和手机连接同一路由器后刷新二维码。</string>
+    <string name="danmaku_search_updating">已找到 %1$d 项 · 还有 %2$d 条线路正在搜索…</string>
 </resources>

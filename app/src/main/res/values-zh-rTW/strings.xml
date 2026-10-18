@@ -337,4 +337,6 @@
     <string name="danmaku_ai_key_stored_placeholder">已儲存 · 留空保留</string>
     <string name="danmaku_ai_saved_enabled">密鑰已儲存 · AI 輔助配對已啟用</string>
     <string name="danmaku_ai_saved_disabled">密鑰已儲存 · AI 輔助配對未啟用</string>
+    <string name="danmaku_ai_scan_unavailable">未連接區域網路，請將電視和手機連接同一路由器後重新整理二維碼。</string>
+    <string name="danmaku_search_updating">已找到 %1$d 項 · 還有 %2$d 條線路正在搜尋…</string>
 </resources>
