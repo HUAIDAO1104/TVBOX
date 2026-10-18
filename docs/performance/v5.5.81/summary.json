@@ -1,7 +1,7 @@
 {
   "version": "5.5.81-fix",
   "versionCode": 632,
-  "status": "validated",
+  "status": "published",
   "physicalWechatRootCauseConfirmed": false,
   "qrEvidence": "User scans in WeChat; configuration HTML never appears. System-browser connectivity still unconfirmed.",
   "pairingAndroid": {
@@ -21,5 +21,8 @@
     "zh-CN",
     "en",
     "zh-TW"
-  ]
+  ],
+  "releaseCommit": "6aa2def33352899429a59082ceae6d0af6a1b4ad",
+  "latestSiteEvidence": "System browser also cannot open TV URL; failure is not specific to WeChat. Exact TV URL and phone Wi-Fi IP requested.",
+  "physicalConnectivityResolved": false
 }
