@@ -30,6 +30,16 @@ public class MangoDanmakuTest {
         assertThrows(IOException.class, () -> MangoDanmaku.comments("{\"status\":202,\"data\":{\"items\":null}}"));
         assertThrows(IOException.class, () -> MangoDanmaku.comments("{\"status\":0,\"data\":{}}"));
     }
+    @Test public void searchPreviewRejectsConflictingVideoIdentityAndPreservesEdition() throws Exception {
+        String search = fixture("mgtv-search-signed");
+        var work = MangoDanmaku.works(search, "披荆斩棘2026").get(0);
+        assertEquals(5, work.preview().size());
+        assertTrue(work.preview().get(0).getName().contains("2026-10-16 第10期上"));
+        var wrongClip = MangoDanmaku.works(search.replace("/b/896231/", "/b/999999/"), "披荆斩棘2026").get(0);
+        assertTrue(wrongClip.preview().isEmpty());
+        var wrongId = MangoDanmaku.works(search.replace("/24719651.html", "/99999999.html"), "披荆斩棘2026").get(0);
+        assertEquals(4, wrongId.preview().size());
+    }
     @Test public void movieCardsUseTheirOwnMetadataAndNeverRelabelExtrasAsMain() throws Exception {
         var works = MangoDanmaku.works(fixture("mgtv-movie-search"), "抓娃娃");
         assertEquals(1, works.size()); assertEquals("2024", works.get(0).year()); assertEquals("电影", works.get(0).type());

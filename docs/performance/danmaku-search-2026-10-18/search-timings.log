@@ -1,0 +1,15 @@
+I/System.out( 3911): MANUAL_FIRST_RESULT title=披荆斩棘2026 elapsedMs=554
+I/System.out( 3911): MANUAL_FIRST_RESULT title=哪吒2 elapsedMs=418
+I/System.out( 3911): MANUAL_FIRST_RESULT title=现在就出发第四季 elapsedMs=526
+I/System.out( 5181): MANUAL_ALIAS exactFails=true wrongYear=false elapsedMs=48
+I/System.out( 5181): MANUAL_ALIAS exactFails=false wrongYear=true elapsedMs=1243
+I/System.out( 5181): MANUAL_ALIAS exactFails=false wrongYear=false elapsedMs=364
+I/System.out( 5181): MANUAL_FIRST_RESULT title=披荆斩棘2026 elapsedMs=544
+I/System.out( 5181): MANUAL_FIRST_RESULT title=哪吒2 elapsedMs=425
+I/System.out( 5181): MANUAL_FIRST_RESULT title=现在就出发第四季 elapsedMs=2915
+I/System.out( 5888): MANUAL_ALIAS exactFails=true wrongYear=false elapsedMs=56
+I/System.out( 5888): MANUAL_ALIAS exactFails=false wrongYear=true elapsedMs=1232
+I/System.out( 5888): MANUAL_ALIAS exactFails=false wrongYear=false elapsedMs=357
+I/System.out( 5888): MANUAL_FIRST_RESULT title=披荆斩棘2026 elapsedMs=294
+I/System.out( 5888): MANUAL_FIRST_RESULT title=哪吒2 elapsedMs=311
+I/System.out( 5888): MANUAL_FIRST_RESULT title=现在就出发第四季 elapsedMs=328

@@ -15,7 +15,11 @@ public final class MangoDanmaku {
     public static final String SOURCE = "mango-direct";
     private static final Pattern ID = Pattern.compile("^mango-danmaku://video/(\\d{3,12})/(\\d{4,12})$");
     private static final Pattern PAGE = Pattern.compile("^https?://(?:www|w)\\.mgtv\\.com/b/(\\d{3,12})/(\\d{4,12})\\.html(?:[?#].*)?$");
-    record Work(String cid, String vid, String title, String year, String type, String matchTitle) { }
+    record Work(String cid, String vid, String title, String year, String type, String matchTitle, List<Danmaku> preview) {
+        Work(String cid, String vid, String title, String year, String type, String matchTitle) {
+            this(cid, vid, title, year, type, matchTitle, List.of());
+        }
+    }
     private record Cached(long created, List<Danmaku> rows) { }
     private static final Map<String, Cached> CACHE = new LinkedHashMap<>();
     public static boolean supports(String value) { return value != null && (ID.matcher(value).matches() || PAGE.matcher(value).matches()); }
@@ -54,10 +58,15 @@ public final class MangoDanmaku {
             for (Work work : works(job.text(searchUrl(query)), query)) {
                 if (NativeDanmaku.acceptsWork(query, year, type, work.matchTitle(), work.year(), work.type())) eligible.add(work);
             }
+            // Search already includes authoritative video IDs and broadcast/part labels.
+            // Do not hold these behind a separate catalogue host or an older season's pages.
+            for (Work work : eligible) for (Danmaku item : work.preview()) rows.put(item.getUrl(), item);
+            job.check();
+            if (!rows.isEmpty()) callback.onPartial(copy(List.copyOf(rows.values())));
+            Map<Work, JsonObject> firstPages = new LinkedHashMap<>();
             for (Work work : eligible) {
                 JsonObject first = response(job.text(listUrl(work.cid(), "", 1)), "code", "200");
-                Set<String> months = new LinkedHashSet<>();
-                String current = str(obj(first, "cur"), "m");
+                firstPages.put(work, first);
                 addPage(rows, work, first);
                 job.check();
                 if (!rows.isEmpty()) callback.onPartial(copy(List.copyOf(rows.values())));
@@ -65,6 +74,11 @@ public final class MangoDanmaku {
                 // previous month first wastes the TV's catalogue budget for no extra certainty.
                 if (eligible.size() == 1 && !episode.isEmpty() && !DanmakuMatch.ranked(query, year, type, episode,
                         new ArrayList<>(rows.values()), Danmaku::getMatchName).isEmpty()) return List.copyOf(rows.values());
+            }
+            for (var entry : firstPages.entrySet()) {
+                Work work = entry.getKey(); JsonObject first = entry.getValue();
+                Set<String> months = new LinkedHashSet<>();
+                String current = str(obj(first, "cur"), "m");
                 for (JsonElement m : array(first, "tab_m")) {
                     String month = str(m.getAsJsonObject(), "m");
                     if (month.matches("(?:19|20)\\d{4}")) months.add(month);
@@ -142,7 +156,19 @@ public final class MangoDanmaku {
                     JsonObject source = s.getAsJsonObject(); if (!"imgo".equals(str(source, "source"))) continue;
                     Matcher cid = Pattern.compile("/(?:h|b)/(\\d{3,12})(?:\\.html|/)").matcher(str(source, "url"));
                     if (!cid.find() || !seen.add(cid.group(1))) continue;
-                    result.add(new Work(cid.group(1), str(source, "vid"), title, editionYear, type, matchTitle));
+                    Work work = new Work(cid.group(1), str(source, "vid"), title, editionYear, type, matchTitle);
+                    List<Danmaku> preview = new ArrayList<>();
+                    for (var video : array(source, "videoList")) {
+                        JsonObject item = video.getAsJsonObject();
+                        String id = str(item, "vid"), link = str(item, "url");
+                        if (link.startsWith("//")) link = "https:" + link;
+                        Matcher page = PAGE.matcher(link);
+                        if (!page.matches() || !work.cid().equals(page.group(1)) || !id.equals(page.group(2))) continue;
+                        String label = str(item, "title");
+                        if (label.isBlank()) label = str(item, "subtitle");
+                        if (!label.isBlank()) preview.add(row(work, id, label));
+                    }
+                    result.add(new Work(work.cid(), work.vid(), title, editionYear, type, matchTitle, List.copyOf(preview)));
                     if (result.size() >= 4) return result;
                 }
             }
@@ -160,7 +186,7 @@ public final class MangoDanmaku {
             String label = "电影".equals(work.type())
                     ? DanmakuMatch.isEpisodeCompatible("正片", title) ? "正片" : title
                     : str(item, "t2") + " " + title;
-            Danmaku row = row(work, id, label); rows.putIfAbsent(row.getUrl(), row);
+            Danmaku row = row(work, id, label); rows.put(row.getUrl(), row);
         }
     }
     private static Danmaku row(Work w, String id, String label) {

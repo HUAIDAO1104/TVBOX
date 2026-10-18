@@ -1,0 +1,10 @@
+{
+  "status": "unreleased",
+  "baseRelease": "5.5.80",
+  "jvmTestsPerFlavor": 65,
+  "androidTestsPerFlavor": 21,
+  "physicalTvTested": false,
+  "qrRootCauseConfirmed": false,
+  "realKeyUsed": false,
+  "notes": "A preliminary native-paste check failed to complete on first run and passed in isolation. A live preview test was corrected after the platform moved the upper episode out of its recent list; final tests load both current lower and catalogue upper parts."
+}

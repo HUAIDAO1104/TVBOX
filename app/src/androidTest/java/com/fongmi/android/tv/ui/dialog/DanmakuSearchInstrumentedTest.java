@@ -151,6 +151,24 @@ public class DanmakuSearchInstrumentedTest {
     @Test public void liveManualMangoFirstResults() throws Exception {
         liveFirstResults("披荆斩棘2026", "第10期上", "mango-direct");
     }
+    @Test public void liveMangoPreviewSelectionLoadsTheCorrectDocument() throws Exception {
+        liveFirstResults("披荆斩棘2026", "第10期下", "mango-direct");
+        var adapter = (com.fongmi.android.tv.ui.adapter.DanmakuAdapter) binding.recycler.getAdapter();
+        // The live preview now starts with October 17's lower part. The upper part
+        // is supplied by the supplementary catalogue, and both must remain selectable.
+        for (String videoId : List.of("/24721646", "/24719651")) {
+            var selected = new java.util.concurrent.atomic.AtomicInteger(-1);
+            await(() -> {
+                for (int i = 0; i < adapter.getItemCount(); i++)
+                    if (adapter.getItem(i).getUrl().endsWith(videoId)) { selected.set(i); return true; }
+                return false;
+            }, 20000);
+            clickRow(selected.get());
+            await(() -> player.getSelectedDanmaku() != null && player.getSelectedDanmaku().getUrl().endsWith(videoId), 85000);
+            assertTrue(parse(player.getSelectedDanmaku()) > 1000);
+        }
+        screenshot("581-mango-preview-loaded");
+    }
     @Test public void sheetSurvivesHostRecreationWithoutAStalePlayer() throws Exception {
         openPanel("第1期下");
         scenario.recreate();

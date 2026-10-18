@@ -53,11 +53,15 @@ public final class TencentDanmaku {
             payload.add("extraInfo", extra);
             List<TencentDanmakuCodec.Work> works = TencentDanmakuCodec.works(job.json(SEARCH_URL, payload, 4_000_000), query);
             Map<String, Danmaku> rows = new LinkedHashMap<>();
+            List<TencentDanmakuCodec.Work> eligible = new ArrayList<>();
             for (var work : works) {
                 if ((!year.isEmpty() || !type.isEmpty()) && !NativeDanmaku.acceptsWork(query, year, type, work.matchTitle(), work.year(), work.type())) continue;
+                eligible.add(work);
                 for (Danmaku row : work.rows()) rows.putIfAbsent(row.getUrl(), row);
-                job.check();
-                if (!rows.isEmpty()) callback.onPartial(copy(List.copyOf(rows.values())));
+            }
+            job.check();
+            if (!rows.isEmpty()) callback.onPartial(copy(List.copyOf(rows.values())));
+            for (var work : eligible) {
                 if ("电影".equals(work.type()) && !work.rows().isEmpty()) continue;
                 Set<String> visited = new HashSet<>();
                 ArrayDeque<String> contexts = new ArrayDeque<>();

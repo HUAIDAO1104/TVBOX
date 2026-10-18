@@ -22,6 +22,36 @@ public class DanmakuProgressiveSearchTest {
     @Test public void tencentPreviewIsUsableBeforeSupplementaryEpisodesComplete() throws Exception {
         exercise(false);
     }
+    @Test public void mangoSearchPreviewDoesNotWaitForCatalogueHost() throws Exception {
+        String search = fixture("mgtv-search-signed");
+        var partial = new CountDownLatch(1);
+        var blocked = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        var result = new AtomicReference<List<Danmaku>>();
+        var client = new OkHttpClient.Builder().addInterceptor(chain -> {
+            if (!chain.request().url().host().startsWith("mobileso")) {
+                blocked.countDown();
+                try { release.await(5, TimeUnit.SECONDS); }
+                catch (InterruptedException error) { throw new IOException(error); }
+                throw new IOException("Catalogue host unavailable");
+            }
+            return new Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                    .body(ResponseBody.create(search, MediaType.get("application/json"))).build();
+        }).build();
+        var job = MangoDanmaku.search("披荆斩棘2026", "", "", "", new IqiyiDanmaku.Callback<List<Danmaku>>() {
+            public void onPartial(List<Danmaku> rows) { result.set(rows); partial.countDown(); }
+            public void onSuccess(List<Danmaku> rows) { }
+            public void onFailure(IOException error) { }
+        }, client);
+        try {
+            assertTrue("Search preview must arrive before the catalogue host", partial.await(1, TimeUnit.SECONDS));
+            assertTrue(blocked.await(1, TimeUnit.SECONDS));
+            var selected = com.fongmi.android.tv.playback.vod.DanmakuMatch.best("披荆斩棘2026", "2026", "综艺", "第10期上", result.get(), Danmaku::getMatchName);
+            assertNotNull(selected);
+            assertTrue(selected.getUrl().endsWith("/24719651"));
+            assertNull(com.fongmi.android.tv.playback.vod.DanmakuMatch.best("披荆斩棘2026", "2026", "综艺", "第10期下", result.get(), Danmaku::getMatchName));
+        } finally { release.countDown(); job.cancel(); }
+    }
     private void exercise(boolean mango) throws Exception {
         String search = fixture(mango ? "mgtv-search-signed" : "tencent-variety");
         String page = fixture("mgtv-master");
