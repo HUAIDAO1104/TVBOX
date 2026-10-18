@@ -366,4 +366,8 @@
     <string name="danmaku_ai_pairing_code">Pairing code: %1$s</string>
     <string name="danmaku_ai_phone_waiting">Waiting for phone to connect</string>
     <string name="danmaku_ai_phone_connected">Phone connected · waiting for you to save</string>
+    <string name="danmaku_ai_scan_preparing">Preparing the TV connection…</string>
+    <string name="danmaku_ai_scan_service_failed">The TV setup page is unavailable. Refresh to restart it.</string>
+    <string name="danmaku_ai_scan_permission">Allow local network / nearby devices access so your phone can connect to this TV.</string>
+    <string name="danmaku_ai_scan_allow">Allow connection</string>
 </resources>

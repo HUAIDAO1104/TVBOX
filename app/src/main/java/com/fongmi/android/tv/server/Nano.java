@@ -10,7 +10,7 @@ import com.fongmi.android.tv.server.process.Local;
 import com.fongmi.android.tv.server.process.Media;
 import com.fongmi.android.tv.server.process.Parse;
 import com.fongmi.android.tv.server.process.Proxy;
-import com.github.catvod.utils.Asset;
+import com.fongmi.android.tv.App;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -92,7 +92,7 @@ public class Nano extends NanoHTTPD {
     private Response getAssets(String path) {
         try {
             if (path.isEmpty()) path = INDEX;
-            InputStream is = Asset.open(path);
+            InputStream is = App.get().getAssets().open(path);
             return newFixedLengthResponse(Response.Status.OK, getMimeTypeForFile(path), is, -1);
         } catch (Exception e) {
             return newFixedLengthResponse(Response.Status.NOT_FOUND, MIME_HTML, null, 0);

@@ -343,4 +343,8 @@
     <string name="danmaku_ai_pairing_code">配對碼：%1$s</string>
     <string name="danmaku_ai_phone_waiting">等待手機連接</string>
     <string name="danmaku_ai_phone_connected">手機已連接，等待儲存</string>
+    <string name="danmaku_ai_scan_preparing">正在準備電視連線…</string>
+    <string name="danmaku_ai_scan_service_failed">電視設定服務尚未就緒，請重新整理後再試。</string>
+    <string name="danmaku_ai_scan_permission">需要允許本地網路／附近裝置存取，手機才能連接電視。</string>
+    <string name="danmaku_ai_scan_allow">允許連線</string>
 </resources>

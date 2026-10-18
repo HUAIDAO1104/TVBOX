@@ -1,6 +1,6 @@
 package com.fongmi.android.tv.server;
 
-import com.github.catvod.utils.Asset;
+import com.fongmi.android.tv.App;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.nio.charset.StandardCharsets;
@@ -12,7 +12,7 @@ final class AiSetup {
     static Response serve(IHTTPSession request) {
         String path = request.getUri();
         if (path.equals("/ai-setup") && request.getMethod() == Method.GET) {
-            try (var input = Asset.open("ai-setup.html")) {
+            try (var input = App.get().getAssets().open("ai-setup.html")) {
                 var output = new java.io.ByteArrayOutputStream();
                 byte[] buffer = new byte[4096];
                 for (int read; (read = input.read(buffer)) != -1;) output.write(buffer, 0, read);
@@ -48,7 +48,13 @@ final class AiSetup {
             JsonObject data = body(request);
             pairing.save(data.get("baseUrl").getAsString().trim(), data.get("model").getAsString().trim(),
                     data.get("key").getAsString().trim(), data.get("enabled").getAsBoolean());
-            return json(Response.Status.OK, "saved");
+            // Dismissing the window closes its listener. Flush the saved response first.
+            byte[] saved = "{\"code\":\"saved\"}".getBytes(StandardCharsets.UTF_8);
+            return headers(new Response(Response.Status.OK, "application/json", new java.io.ByteArrayInputStream(saved), saved.length) {
+                @Override protected void send(java.io.OutputStream output) {
+                    try { super.send(output); } finally { pairing.savedResponseSent(); }
+                }
+            });
         } catch (IllegalArgumentException error) {
             String field = error.getMessage();
             return json(Response.Status.BAD_REQUEST, java.util.List.of("base_url", "model", "key").contains(field == null ? "" : field) ? field : "request");

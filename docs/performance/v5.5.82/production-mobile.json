@@ -1,0 +1,6 @@
+{
+  "version": "5.5.82-fix",
+  "mode": "mobile-arm64-v8a",
+  "startup": "Starting: Intent { cmp=com.fongmi.android.tv/.ui.activity.HomeActivity }\nStatus: ok\nLaunchState: COLD\nActivity: com.fongmi.android.tv/.ui.activity.HomeActivity\nTotalTime: 548\nWaitTime: 550\nComplete\n",
+  "homeVisible": true
+}

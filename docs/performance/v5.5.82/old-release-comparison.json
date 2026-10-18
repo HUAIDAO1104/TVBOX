@@ -1,0 +1,18 @@
+[
+  {
+    "version": "5.5.77",
+    "httpStatus": 200,
+    "elapsedMs": 46,
+    "bytes": 11705,
+    "sha256": "780849ba479c5fd5af0e862fe17fe19c38df35354ef01d0d193bf17ae99f94c1",
+    "transport": "ADB forward; API 28 has no Wi-Fi interface"
+  },
+  {
+    "version": "5.5.81",
+    "httpStatus": 200,
+    "elapsedMs": 3,
+    "bytes": 17704,
+    "sha256": "a2c9601807f4184125b3d65ed3239c3b73e1f1a5835b649ab4834a3c74333255",
+    "transport": "ADB forward; API 28 has no Wi-Fi interface"
+  }
+]

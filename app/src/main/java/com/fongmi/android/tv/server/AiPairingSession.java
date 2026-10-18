@@ -56,6 +56,7 @@ public final class AiPairingSession {
         value.addProperty("hasKey", DanmakuAiSetting.hasKey()); value.addProperty("enabled", DanmakuAiSetting.enabled());
         return value;
     }
+    void savedResponseSent() { App.post(onSaved); }
     public void save(String base, String model, String key, boolean enabled) {
         synchronized (AiPairingSession.class) {
             if (find(token) != this) throw new IllegalStateException("expired");
@@ -63,6 +64,6 @@ public final class AiPairingSession {
             DanmakuAiSetting.save(base, model, key, enabled);
             closed = true; current = null;
         }
-        DanmakuAiMatcher.cancel(); App.post(onSaved);
+        DanmakuAiMatcher.cancel();
     }
 }

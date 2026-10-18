@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.fongmi.android.tv.server.LanAddressTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-18T17:26:18.143Z" hostname="administratordeMac-mini.local" time="0.03">
+  <properties/>
+  <testcase name="ethernetInUseWinsOverStaleWifiAndVpn" classname="com.fongmi.android.tv.server.LanAddressTest" time="0.003"/>
+  <testcase name="noLanNeverProducesLoopbackCellularOrInvalidQr" classname="com.fongmi.android.tv.server.LanAddressTest" time="0.023"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

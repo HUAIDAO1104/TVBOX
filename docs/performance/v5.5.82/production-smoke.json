@@ -1,0 +1,11 @@
+{
+  "version": "5.5.82-fix",
+  "mode": "leanback-arm64-v8a",
+  "startup": "Status: ok; cold launch TotalTime 987ms (captured before UI navigation)",
+  "actualPort": 35611,
+  "pageStatus": 200,
+  "pairCodeWorks": true,
+  "completeSavedResponse": true,
+  "tvSavedStatus": true,
+  "transport": "host HTTP through ADB forwarding to actual QR port; not a physical phone Wi-Fi test"
+}

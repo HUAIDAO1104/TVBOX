@@ -355,4 +355,8 @@
     <string name="danmaku_ai_pairing_code">配对码：%1$s</string>
     <string name="danmaku_ai_phone_waiting">等待手机连接</string>
     <string name="danmaku_ai_phone_connected">手机已连接，等待保存</string>
+    <string name="danmaku_ai_scan_preparing">正在准备电视连接…</string>
+    <string name="danmaku_ai_scan_service_failed">电视配置服务未就绪，请刷新重试。</string>
+    <string name="danmaku_ai_scan_permission">需要允许本地网络／附近设备访问，手机才能连接电视。</string>
+    <string name="danmaku_ai_scan_allow">允许连接</string>
 </resources>

@@ -33,13 +33,54 @@ public class AiPairingInstrumentedTest {
     @Before public void setup() { prefs=App.get().getSharedPreferences("danmaku_ai_private", Context.MODE_PRIVATE);old=prefs.getAll();prefs.edit().clear().commit();Server.get().start(); }
     @After public void cleanup() { var edit=prefs.edit().clear();for(var e:old.entrySet()){if(e.getValue() instanceof String s)edit.putString(e.getKey(),s);if(e.getValue() instanceof Boolean b)edit.putBoolean(e.getKey(),b);}edit.commit(); }
     private Response request(String token, String path, String body, String origin) throws Exception {
-        String address=Server.get().getAddress(true);
+        return requestAt(Server.get().getAddress(true), token, path, body, origin);
+    }
+    private Response requestAt(String address, String token, String path, String body, String origin) throws Exception {
         Request.Builder request=new Request.Builder().url(address+"/ai-setup/"+path).header("X-Pairing-Token",token);
         if(body!=null)request.header("Origin",origin==null?address:origin).post(RequestBody.create(body,MediaType.get("application/json")));
         return http.newCall(request.build()).execute();
     }
     private String payload(String base, String key) { var o=new JsonObject();o.addProperty("baseUrl",base);o.addProperty("model","fixture-model");o.addProperty("key",key);o.addProperty("enabled",true);return o.toString(); }
     private String pairBody(String code) { var data = new JsonObject(); data.addProperty("code", code); return data.toString(); }
+    @Test public void setupAssetsSurviveSharedPluginContextBeingCleared() throws Exception {
+        var context = com.github.catvod.Init.context();
+        String address = Server.get().getAddress(true);
+        try {
+            com.github.catvod.Init.set(null);
+            for (String path : new String[]{"/ai-setup", "/css/ui.css"}) {
+                try (var r = http.newCall(new Request.Builder().url(address + path).build()).execute()) {
+                    assertEquals("App-owned resource must not depend on a plugin context: " + path, 200, r.code());
+                    assertTrue(r.body().string().length() > 100);
+                }
+            }
+        } finally { com.github.catvod.Init.set(context); }
+    }
+    @Test public void qrPageSurvivesSharedPlaybackServerStopping() throws Exception {
+        org.junit.Assume.assumeTrue(BuildConfig.FLAVOR_mode.equals("leanback"));
+        var address = new AtomicReference<String>();
+        try (ActivityScenario<HomeActivity> scenario = ActivityScenario.launch(HomeActivity.class)) {
+            scenario.onActivity(a -> {
+                var dialog = new DanmakuAiDialog(); dialog.showNow(a.getSupportFragmentManager(), "ai-host-isolation-test");
+                dialog.requireDialog().findViewById(R.id.scan).performClick();
+            });
+            long deadline = android.os.SystemClock.elapsedRealtime() + 15000;
+            do {
+                scenario.onActivity(a -> {
+                    var dialog = (DanmakuAiDialog) a.getSupportFragmentManager().findFragmentByTag("ai-host-isolation-test");
+                    dialog.getChildFragmentManager().executePendingTransactions();
+                    var qr = (androidx.fragment.app.DialogFragment) dialog.getChildFragmentManager().findFragmentByTag("ai_pairing");
+                    if (qr != null) address.set(((android.widget.TextView) qr.requireDialog().findViewById(R.id.address)).getText().toString());
+                });
+                if (address.get() != null && address.get().startsWith("http://")) break;
+                android.os.SystemClock.sleep(100);
+            } while (android.os.SystemClock.elapsedRealtime() < deadline);
+            assertNotNull(address.get()); assertTrue(address.get().startsWith("http://"));
+            Server.get().stop(Runnable::run);
+            try (var r = http.newCall(new Request.Builder().url(address.get()).build()).execute()) {
+                assertEquals("An open pairing window must survive playback server cleanup", 200, r.code());
+            }
+        } finally { Server.get().start(); }
+    }
     @Test public void browserCodeIsBoundedRevokedAndDoesNotLockQr() throws Exception {
         var pairing = AiPairingSession.open(() -> {});
         try {
@@ -66,15 +107,16 @@ public class AiPairingInstrumentedTest {
     @Test public void browserAddressWithoutQrCanPairValidateAndSave() throws Exception {
         var pairing = AiPairingSession.open(() -> {});
         var web = new AtomicReference<android.webkit.WebView>();
-        try (ActivityScenario<AiPasteTestActivity> scenario = ActivityScenario.launch(AiPasteTestActivity.class)) {
+        try (var host = new AiPairingHost(); ActivityScenario<AiPasteTestActivity> scenario = ActivityScenario.launch(AiPasteTestActivity.class)) {
+            String address = ready(host).address();
             scenario.onActivity(a -> {
                 var view = new android.webkit.WebView(a); view.getSettings().setJavaScriptEnabled(true);
                 a.setContentView(view); view.setFocusableInTouchMode(true); view.requestFocus(); web.set(view);
-                view.loadUrl(Server.get().getAddress() + "/ai-setup");
+                view.loadUrl(address);
             });
             awaitJs(web.get(), "!!document.getElementById('pairForm') && !document.getElementById('pairForm').hidden");
             assertEquals("true", js(web.get(), "document.getElementById('form').hidden"));
-            capture("581-browser-code.png");
+            capture("582-browser-code.png");
             js(web.get(), "document.getElementById('pairCode').value='123';document.getElementById('pairForm').requestSubmit()");
             awaitJs(web.get(), "document.getElementById('pairCode').getAttribute('aria-invalid')==='true'");
             String code = pairing.code();
@@ -87,7 +129,7 @@ public class AiPairingInstrumentedTest {
             assertEquals("\"\"", js(web.get(), "location.hash"));
             assertEquals("true", js(web.get(), "document.documentElement.scrollWidth<=innerWidth"));
             js(web.get(), "document.activeElement.blur()");
-            capture("581-browser-form.png");
+            capture("582-browser-form.png");
             js(web.get(), "document.getElementById('base').value='https://example.invalid/v1';document.getElementById('model').value='fixture-model';document.getElementById('key').value='fixture-browser-key';document.getElementById('form').requestSubmit()");
             awaitJs(web.get(), "document.getElementById('form').hidden && document.getElementById('key').value===''");
             assertEquals("fixture-browser-key", DanmakuAiSetting.key());
@@ -101,6 +143,33 @@ public class AiPairingInstrumentedTest {
         Bitmap image = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
         try (var out = new java.io.FileOutputStream(new File(App.get().getExternalFilesDir(null), name))) { image.compress(Bitmap.CompressFormat.PNG, 100, out); }
         image.recycle();
+    }
+    private AiPairingHost.State ready(AiPairingHost host) throws Exception {
+        var done = new java.util.concurrent.CountDownLatch(1);
+        var value = new AtomicReference<AiPairingHost.State>();
+        host.check(state -> { value.set(state); done.countDown(); });
+        assertTrue("host check completes", done.await(8, java.util.concurrent.TimeUnit.SECONDS));
+        assertEquals(AiPairingHost.Status.READY, value.get().status());
+        return value.get();
+    }
+    @Test public void dedicatedHostRestartsDeadListenerAndClosesItsPort() throws Exception {
+        org.junit.Assume.assumeFalse("A Wi-Fi/Ethernet network is required", Server.get().getAddress().isEmpty());
+        String address;
+        var host = new AiPairingHost();
+        try {
+            address = ready(host).address();
+            assertNotEquals(Server.get().getAddress() + "/ai-setup", address);
+            var field = AiPairingHost.class.getDeclaredField("listener"); field.setAccessible(true);
+            ((fi.iki.elonen.NanoHTTPD) field.get(host)).stop();
+            address = ready(host).address();
+            try (var r = http.newCall(new Request.Builder().url(address).build()).execute()) { assertEquals(200, r.code()); }
+            try (var r = http.newCall(new Request.Builder().url(address.replace("/ai-setup", "/device")).build()).execute()) { assertEquals(404, r.code()); }
+        } finally { host.close(); }
+        var url = new java.net.URL(address);
+        try (var socket = new java.net.Socket()) {
+            try { socket.connect(new java.net.InetSocketAddress(url.getHost(), url.getPort()), 700); fail("Closed pairing port must not accept connections"); }
+            catch (java.io.IOException expected) { }
+        }
     }
     @Test public void advertisedLanAddressServesPageAndRestartCannotBeStoppedByOldTask() throws Exception {
         var pending = new java.util.ArrayList<Runnable>();
@@ -146,12 +215,22 @@ public class AiPairingInstrumentedTest {
     @Test public void tvQrCanBeDecodedRefreshRevokesOldAndSaveUpdatesParent() throws Exception {
         Assume.assumeTrue("leanback".equals(BuildConfig.FLAVOR_mode));
         var token=new AtomicReference<String>();var oldToken=new AtomicReference<String>();
+        var address = new AtomicReference<String>();
         try(ActivityScenario<HomeActivity> scenario=ActivityScenario.launch(HomeActivity.class)) {
-            scenario.onActivity(a->{var dialog=new DanmakuAiDialog();dialog.showNow(a.getSupportFragmentManager(),"ai-pairing-test");dialog.requireDialog().findViewById(R.id.scan).performClick();dialog.getChildFragmentManager().executePendingTransactions();
-                var qr=(androidx.fragment.app.DialogFragment)dialog.getChildFragmentManager().findFragmentByTag("ai_pairing");token.set(decode(qr));oldToken.set(token.get());
-                ((androidx.appcompat.app.AlertDialog)qr.requireDialog()).getButton(-1).performClick();token.set(decode(qr));assertNotEquals(oldToken.get(),token.get());});
-            try(var r=request(oldToken.get(),"config",null,null)){assertEquals(410,r.code());}
-            try(var r=request(token.get(),"config",null,null)){assertEquals(200,r.code());}
+            scenario.onActivity(a->{var dialog=new DanmakuAiDialog();dialog.showNow(a.getSupportFragmentManager(),"ai-pairing-test");dialog.requireDialog().findViewById(R.id.scan).performClick();});
+            String oldUrl = awaitQr(scenario);
+            oldToken.set(oldUrl.substring(oldUrl.indexOf('#') + 1));
+            address.set(oldUrl.substring(0, oldUrl.indexOf("/ai-setup")));
+            scenario.onActivity(a -> {
+                var dialog = (DanmakuAiDialog) a.getSupportFragmentManager().findFragmentByTag("ai-pairing-test");
+                var qr = (androidx.fragment.app.DialogFragment) dialog.getChildFragmentManager().findFragmentByTag("ai_pairing");
+                ((androidx.appcompat.app.AlertDialog)qr.requireDialog()).getButton(-1).performClick();
+            });
+            String url = awaitQr(scenario);
+            token.set(url.substring(url.indexOf('#') + 1)); assertNotEquals(oldToken.get(), token.get());
+            address.set(url.substring(0, url.indexOf("/ai-setup")));
+            try(var r=requestAt(address.get(),oldToken.get(),"config",null,null)){assertEquals(410,r.code());}
+            try(var r=requestAt(address.get(),token.get(),"config",null,null)){assertEquals(200,r.code());}
             android.os.SystemClock.sleep(2200);
             scenario.onActivity(a -> {
                 var dialog = (DanmakuAiDialog) a.getSupportFragmentManager().findFragmentByTag("ai-pairing-test");
@@ -165,7 +244,10 @@ public class AiPairingInstrumentedTest {
                 long deadline=android.os.SystemClock.elapsedRealtime()+300000;
                 while(!DanmakuAiSetting.hasKey()&&android.os.SystemClock.elapsedRealtime()<deadline)android.os.SystemClock.sleep(200);
                 assertTrue("browser submitted settings",DanmakuAiSetting.hasKey());
-            } else try(var r=request(token.get(),"save",payload("https://example.invalid/v1","fixture-secret"),null)){assertEquals(200,r.code());}
+            } else try(var r=requestAt(address.get(),token.get(),"save",payload("https://example.invalid/v1","fixture-secret"),null)) {
+                assertEquals(200,r.code());
+                assertEquals("saved", JsonParser.parseString(r.body().string()).getAsJsonObject().get("code").getAsString());
+            }
             InstrumentationRegistry.getInstrumentation().waitForIdleSync();
             scenario.onActivity(a->{var dialog=(DanmakuAiDialog)a.getSupportFragmentManager().findFragmentByTag("ai-pairing-test");dialog.getChildFragmentManager().executePendingTransactions();assertNull(dialog.getChildFragmentManager().findFragmentByTag("ai_pairing"));assertEquals("",((android.widget.EditText)dialog.requireDialog().findViewById(R.id.key)).getText().toString());assertTrue(((android.widget.TextView)dialog.requireDialog().findViewById(R.id.status)).getText().length()>0);
                 assertEquals(a.getString(R.string.danmaku_ai_key_stored_placeholder), ((com.google.android.material.textfield.TextInputLayout)dialog.requireDialog().findViewById(R.id.keyLayout)).getPlaceholderText().toString());
@@ -175,6 +257,20 @@ public class AiPairingInstrumentedTest {
                 assertEquals(a.getString(R.string.danmaku_ai_saved_enabled), ((android.widget.TextView)reopened.requireDialog().findViewById(R.id.status)).getText().toString());
                 reopened.dismissNow();});
         }
+    }
+    private String awaitQr(ActivityScenario<HomeActivity> scenario) throws Exception {
+        var token = new AtomicReference<String>();
+        long end = android.os.SystemClock.elapsedRealtime() + 15000;
+        while (token.get() == null && android.os.SystemClock.elapsedRealtime() < end) {
+            scenario.onActivity(a -> {
+                var dialog = (DanmakuAiDialog) a.getSupportFragmentManager().findFragmentByTag("ai-pairing-test");
+                dialog.getChildFragmentManager().executePendingTransactions();
+                var qr = (androidx.fragment.app.DialogFragment) dialog.getChildFragmentManager().findFragmentByTag("ai_pairing");
+                if (qr != null && ((android.widget.ImageView) qr.requireDialog().findViewById(R.id.code)).getDrawable() != null) token.set(decode(qr));
+            });
+            if (token.get() == null) android.os.SystemClock.sleep(100);
+        }
+        assertNotNull("A self-checked pairing QR must appear", token.get()); return token.get();
     }
     @Test public void slowPhoneUploadStillCommitsOnce() throws Exception {
         var pairing = AiPairingSession.open(() -> {});
@@ -272,7 +368,7 @@ public class AiPairingInstrumentedTest {
     }
     private String decode(androidx.fragment.app.DialogFragment dialog) {
         try {Bitmap bitmap=((BitmapDrawable)((android.widget.ImageView)dialog.requireDialog().findViewById(R.id.code)).getDrawable()).getBitmap();int[] pixels=new int[bitmap.getWidth()*bitmap.getHeight()];bitmap.getPixels(pixels,0,bitmap.getWidth(),0,0,bitmap.getWidth(),bitmap.getHeight());
-            String url=new MultiFormatReader().decode(new BinaryBitmap(new HybridBinarizer(new RGBLuminanceSource(bitmap.getWidth(),bitmap.getHeight(),pixels)))).getText();assertTrue(url.contains("/ai-setup#"));return url.substring(url.indexOf('#')+1);
+            String url=new MultiFormatReader().decode(new BinaryBitmap(new HybridBinarizer(new RGBLuminanceSource(bitmap.getWidth(),bitmap.getHeight(),pixels)))).getText();assertTrue(url.contains("/ai-setup#"));return url;
         }catch(Exception e){throw new AssertionError(e);}
     }
 }
