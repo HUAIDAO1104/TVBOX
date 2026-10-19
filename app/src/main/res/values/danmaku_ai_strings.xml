@@ -13,7 +13,7 @@
     <string name="danmaku_ai_clear">Remove key</string>
     <string name="danmaku_ai_cleared">Key removed. AI fallback is off.</string>
     <string name="danmaku_ai_bad_url">Enter an HTTPS base URL without query parameters or login information.</string>
-    <string name="danmaku_ai_bad_model">Enter a valid model name.</string>
+    <string name="danmaku_ai_bad_model">Choose a model from the dropdown.</string>
     <string name="danmaku_ai_bad_key">Enter an API key for this endpoint. Changing the endpoint requires a new key.</string>
     <string name="danmaku_ai_saving">Saving…</string>
     <string name="danmaku_ai_testing">Testing model matching…</string>

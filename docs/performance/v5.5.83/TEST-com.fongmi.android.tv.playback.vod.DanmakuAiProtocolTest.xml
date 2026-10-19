@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-19T06:31:17.232Z" hostname="administratordeMac-mini.local" time="0.02">
+  <properties/>
+  <testcase name="rejectsInventedWorkSeasonLossAndLowConfidence" classname="com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest" time="0.008"/>
+  <testcase name="acceptsCleanTitleWithoutAppendingEpisodeOrYear" classname="com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest" time="0.002"/>
+  <testcase name="preservesEditionAndEpisodeGatesBeforeSelection" classname="com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest" time="0.008"/>
+  <testcase name="promptContainsNamesAndIdsOnly" classname="com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest" time="0.001"/>
+  <testcase name="onlyAllowsExistingIntegerCandidateIds" classname="com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

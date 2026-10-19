@@ -13,7 +13,7 @@
     <string name="danmaku_ai_clear">移除金鑰</string>
     <string name="danmaku_ai_cleared">金鑰已移除，AI 輔助配對已關閉</string>
     <string name="danmaku_ai_bad_url">請輸入 HTTPS 介面根位址，不包含查詢參數或登入資訊</string>
-    <string name="danmaku_ai_bad_model">請輸入有效的模型名稱</string>
+    <string name="danmaku_ai_bad_model">請從下拉列表選擇模型</string>
     <string name="danmaku_ai_bad_key">請輸入此介面的 API Key；變更位址後需重新填寫</string>
     <string name="danmaku_ai_saving">正在儲存…</string>
     <string name="danmaku_ai_testing">正在測試模型配對能力…</string>

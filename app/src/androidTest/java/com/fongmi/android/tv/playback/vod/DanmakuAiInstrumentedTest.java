@@ -67,7 +67,7 @@ public class DanmakuAiInstrumentedTest {
         try (MockWebServer server = new MockWebServer(); MockWebServer destination = new MockWebServer()) {
             server.start(); destination.start();
             server.enqueue(new MockResponse().setBody("{\"choices\":[{\"message\":{\"content\":\"{\\\"query\\\":\\\"喜剧之王\\\",\\\"confidence\\\":1}\"}}]}"));
-            var client = new DanmakuAiClient(server.url("/v1").toString(), "fixture-model", "fixture-secret");
+            var client = new DanmakuAiClient(server.url("/v1").toString(), "deepseek-v4.1-flash", "fixture-secret");
             var context = new DanmakuMatchContext("喜剧之王4K", "2026", "电视剧", "第14集");
             assertEquals("喜剧之王", DanmakuAiProtocol.query(client.complete(DanmakuAiProtocol.context("clean", context)), context));
             var request = server.takeRequest(2, TimeUnit.SECONDS);
@@ -77,6 +77,8 @@ public class DanmakuAiInstrumentedTest {
             assertEquals("Bearer fixture-secret", request.getHeader("Authorization"));
             var body = JsonParser.parseString(request.getBody().readUtf8()).getAsJsonObject();
             assertEquals(180, body.get("max_tokens").getAsInt());
+            assertEquals("disabled", body.getAsJsonObject("thinking").get("type").getAsString());
+            assertFalse(body.has("enable_thinking"));
             assertEquals(2, body.getAsJsonArray("messages").size());
             server.enqueue(new MockResponse().setResponseCode(302).addHeader("Location", destination.url("/stolen")));
             try { client.complete(DanmakuAiProtocol.context("clean", context)); fail("Followed redirect"); }
@@ -91,6 +93,135 @@ public class DanmakuAiInstrumentedTest {
             try { client.complete(DanmakuAiProtocol.context("clean", context)); fail("Ran after cancellation"); }
             catch (java.io.IOException expected) { assertEquals("cancelled", expected.getMessage()); }
         }
+    }
+
+    @Test public void fetchesAuthenticatedModelsAndCancelsSlowRequests() throws Exception {
+        try (MockWebServer server = new MockWebServer(); MockWebServer destination = new MockWebServer()) {
+            server.start(); destination.start();
+            var client = new DanmakuAiClient(server.url("/v1").toString(), "", "fixture-model-key");
+            server.enqueue(new MockResponse().setBody("{\"data\":[{\"id\":\"deepseek-v4.1-flash\"},{\"id\":\"qwen3.5-flash\"}]}"));
+            assertEquals(2, client.models().size());
+            var request = server.takeRequest();
+            assertEquals("GET", request.getMethod()); assertEquals("/v1/models", request.getPath());
+            assertEquals("Bearer fixture-model-key", request.getHeader("Authorization"));
+            for (var response : List.of(new MockResponse().setResponseCode(401), new MockResponse().setBody("{\"data\":[]}"),
+                    new MockResponse().setBody("x".repeat(524289)), new MockResponse().setResponseCode(302).addHeader("Location", destination.url("/models")))) {
+                server.enqueue(response);
+                try { client.models(); fail("Accepted invalid model response"); } catch (java.io.IOException expected) { }
+                server.takeRequest();
+            }
+            assertEquals(0, destination.getRequestCount());
+            server.enqueue(new MockResponse().setHeadersDelay(10, TimeUnit.SECONDS).setBody("{\"data\":[]}"));
+            var worker = java.util.concurrent.Executors.newSingleThreadExecutor();
+            try {
+                var result = worker.submit(() -> { try { client.models(); return false; } catch (java.io.IOException expected) { return true; } });
+                assertNotNull(server.takeRequest(2, TimeUnit.SECONDS)); client.cancel();
+                assertTrue(result.get(2, TimeUnit.SECONDS));
+            } finally { worker.shutdownNow(); }
+        }
+    }
+
+    @androidx.test.filters.SdkSuppress(minSdkVersion = 29)
+    @Test public void modelDropdownSelectsWithoutTypingAndSavesTheApiId() throws Exception {
+        try (ActivityScenario<HomeActivity> scenario = ActivityScenario.launch(HomeActivity.class)) {
+            scenario.onActivity(activity -> {
+                var dialog = new DanmakuAiDialog(); dialog.showNow(activity.getSupportFragmentManager(), "model-choice-test");
+                var window = (androidx.appcompat.app.AlertDialog) dialog.requireDialog();
+                com.google.android.material.textfield.MaterialAutoCompleteTextView model = window.findViewById(R.id.model);
+                assertNull("No model-name keyboard", model.getKeyListener());
+                assertTrue(model.getText().toString().contains("DeepSeek V4.1 Flash"));
+                model.requestFocus();
+            });
+            var instrumentation = InstrumentationRegistry.getInstrumentation();
+            instrumentation.waitForIdleSync();
+            var ready = new java.util.concurrent.atomic.AtomicBoolean();
+            long focusDeadline = android.os.SystemClock.elapsedRealtime() + 5000;
+            do {
+                scenario.onActivity(activity -> {
+                    var dialog = (DanmakuAiDialog) activity.getSupportFragmentManager().findFragmentByTag("model-choice-test");
+                    var model = dialog.requireDialog().findViewById(R.id.model);
+                    ready.set(model.hasWindowFocus() && model.hasFocus() && model.isLaidOut());
+                });
+                if (!ready.get()) android.os.SystemClock.sleep(50);
+            } while (!ready.get() && android.os.SystemClock.elapsedRealtime() < focusDeadline);
+            assertTrue("Model field ready for actual input", ready.get());
+            if (com.fongmi.android.tv.utils.Util.isMobile()) {
+                var point = new int[2];
+                scenario.onActivity(activity -> {
+                    var dialog = (DanmakuAiDialog) activity.getSupportFragmentManager().findFragmentByTag("model-choice-test");
+                    var model = dialog.requireDialog().findViewById(R.id.model); model.getLocationOnScreen(point);
+                    point[0] += model.getWidth() / 2; point[1] += model.getHeight() / 2;
+                });
+                long down = android.os.SystemClock.uptimeMillis();
+                for (int action : new int[]{android.view.MotionEvent.ACTION_DOWN, android.view.MotionEvent.ACTION_UP}) {
+                    var event = android.view.MotionEvent.obtain(down, android.os.SystemClock.uptimeMillis(), action, point[0], point[1], 0);
+                    event.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN); instrumentation.sendPointerSync(event); event.recycle(); android.os.SystemClock.sleep(60);
+                }
+            } else instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_DPAD_CENTER);
+            instrumentation.waitForIdleSync(); android.os.SystemClock.sleep(300);
+            var image = instrumentation.getUiAutomation().takeScreenshot();
+            try (var output = new java.io.FileOutputStream(new File(App.get().getExternalFilesDir(null), "583-native-model-popup.png"))) {
+                image.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output);
+            } finally { image.recycle(); }
+            if (com.fongmi.android.tv.utils.Util.isMobile()) {
+                var bounds = new AtomicReference<android.graphics.Rect>();
+                instrumentation.runOnMainSync(() -> {
+                    for (var window : android.view.inspector.WindowInspector.getGlobalWindowViews()) {
+                        var rectangle = modelChoiceBounds(window, "Qwen 3.5 Flash");
+                        if (rectangle != null) bounds.set(rectangle);
+                    }
+                });
+                assertNotNull("Qwen visible in dropdown", bounds.get());
+                var rect = bounds.get();
+                long now = android.os.SystemClock.uptimeMillis();
+                for (int action : new int[]{android.view.MotionEvent.ACTION_DOWN, android.view.MotionEvent.ACTION_UP}) {
+                    var event = android.view.MotionEvent.obtain(now, android.os.SystemClock.uptimeMillis(), action, rect.centerX(), rect.centerY(), 0);
+                    event.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN); instrumentation.sendPointerSync(event); event.recycle(); android.os.SystemClock.sleep(60);
+                }
+            } else {
+                boolean selected = false;
+                for (int i = 0; i < 5; i++) {
+                    instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_DPAD_DOWN);
+                    instrumentation.waitForIdleSync();
+                    var index = new java.util.concurrent.atomic.AtomicInteger(-1);
+                    scenario.onActivity(activity -> {
+                        var dialog = (DanmakuAiDialog) activity.getSupportFragmentManager().findFragmentByTag("model-choice-test");
+                        index.set(((android.widget.AutoCompleteTextView) dialog.requireDialog().findViewById(R.id.model)).getListSelection());
+                    });
+                    if (index.get() == 2) { selected = true; break; }
+                }
+                assertTrue("TV direction keys reach Qwen", selected);
+                instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_DPAD_CENTER);
+            }
+            instrumentation.waitForIdleSync();
+            scenario.onActivity(activity -> {
+                var dialog = (DanmakuAiDialog) activity.getSupportFragmentManager().findFragmentByTag("model-choice-test");
+                var window = (androidx.appcompat.app.AlertDialog) dialog.requireDialog();
+                var model = (android.widget.TextView) window.findViewById(R.id.model);
+                assertEquals("Qwen 3.5 Flash", model.getText().toString());
+                ((android.widget.EditText) window.findViewById(R.id.key)).setText("fixture-dropdown-key");
+                window.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).performClick();
+            });
+            long until = android.os.SystemClock.elapsedRealtime() + 5000;
+            while (!DanmakuAiSetting.hasKey() && android.os.SystemClock.elapsedRealtime() < until) android.os.SystemClock.sleep(50);
+            assertTrue(DanmakuAiSetting.hasKey()); assertEquals("qwen3.5-flash", DanmakuAiSetting.model());
+            scenario.onActivity(activity -> {
+                var dialog = new DanmakuAiDialog(); dialog.showNow(activity.getSupportFragmentManager(), "model-choice-reopened");
+                var model = (android.widget.TextView) dialog.requireDialog().findViewById(R.id.model);
+                assertEquals("Qwen 3.5 Flash", model.getText().toString()); dialog.dismissNow();
+            });
+        }
+    }
+
+    private android.graphics.Rect modelChoiceBounds(android.view.View view, String label) {
+        if (view instanceof android.widget.TextView text && label.contentEquals(text.getText()) && view.isShown()) {
+            var position = new int[2]; view.getLocationOnScreen(position);
+            return new android.graphics.Rect(position[0], position[1], position[0] + view.getWidth(), position[1] + view.getHeight());
+        }
+        if (view instanceof android.view.ViewGroup group) for (int i = 0; i < group.getChildCount(); i++) {
+            var rect = modelChoiceBounds(group.getChildAt(i), label); if (rect != null) return rect;
+        }
+        return null;
     }
 
     @Test public void unavailableModelChoiceFallsBackToEquivalentWorkingDocument() throws Exception {

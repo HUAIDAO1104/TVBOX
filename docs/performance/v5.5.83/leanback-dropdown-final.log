@@ -1,0 +1,38 @@
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest:
+INSTRUMENTATION_STATUS: test=modelDropdownSelectsWithoutTypingAndSavesTheApiId
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=modelDropdownSelectsWithoutTypingAndSavesTheApiId
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.server.AiPairingInstrumentedTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.server.AiPairingInstrumentedTest:
+INSTRUMENTATION_STATUS: test=phoneModelDropdownRefreshFailureStaleResponseAndSave
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.server.AiPairingInstrumentedTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=phoneModelDropdownRefreshFailureStaleResponseAndSave
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 7.242
+
+OK (2 tests)
+
+
+INSTRUMENTATION_CODE: -1

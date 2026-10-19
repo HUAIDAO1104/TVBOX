@@ -40,7 +40,9 @@ public final class DanmakuAiClient {
         body.addProperty("model", model);
         body.addProperty("temperature", 0);
         body.addProperty("max_tokens", 180);
-        body.addProperty("enable_thinking", false);
+        if (model.toLowerCase(java.util.Locale.ROOT).contains("deepseek")) {
+            JsonObject thinking = new JsonObject(); thinking.addProperty("type", "disabled"); body.add("thinking", thinking);
+        } else body.addProperty("enable_thinking", false);
         JsonArray messages = new JsonArray();
         messages.add(message("system", DanmakuAiProtocol.SYSTEM));
         messages.add(message("user", input.toString()));
@@ -64,6 +66,21 @@ public final class DanmakuAiClient {
     }
 
     public void cancel() { cancelled = true; Call active = call; if (active != null) active.cancel(); }
+
+    public java.util.List<DanmakuAiModels.Model> models() throws IOException {
+        if (cancelled) throw new IOException("cancelled");
+        if (key.isBlank()) throw new IOException("credential");
+        call = CLIENT.newCall(new Request.Builder().url(baseUrl + "/models").header("Authorization", "Bearer " + key).build());
+        call.timeout().timeout(8, TimeUnit.SECONDS);
+        if (cancelled) call.cancel();
+        try (var response = call.execute()) {
+            if (!response.isSuccessful()) throw new IOException("http_" + response.code());
+            if (response.body() == null) throw new IOException("response");
+            byte[] bytes = response.body().byteStream().readNBytes(524289);
+            if (bytes.length > 524288) throw new IOException("response");
+            return DanmakuAiModels.parse(new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
+        }
+    }
 
     private static JsonObject message(String role, String content) {
         JsonObject message = new JsonObject(); message.addProperty("role", role); message.addProperty("content", content); return message;

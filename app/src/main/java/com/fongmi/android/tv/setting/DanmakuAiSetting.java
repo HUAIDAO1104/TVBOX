@@ -9,7 +9,7 @@ import okhttp3.HttpUrl;
 /** Device-local configuration, deliberately outside exported app preferences. */
 public final class DanmakuAiSetting {
     public static final String DEFAULT_BASE_URL = "https://llm-api.mcisaas.com/v1";
-    public static final String DEFAULT_MODEL = "qwen3.5-flash";
+    public static final String DEFAULT_MODEL = com.fongmi.android.tv.playback.vod.DanmakuAiModels.DEFAULT;
 
     private static SharedPreferences prefs() {
         return App.get().getSharedPreferences("danmaku_ai_private", Context.MODE_PRIVATE);
@@ -20,6 +20,16 @@ public final class DanmakuAiSetting {
     public static boolean hasKey() { return !prefs().getString("credential", "").isEmpty(); }
     public static boolean enabled() { return prefs().getBoolean("enabled", false) && hasKey(); }
     public static String key() { return KeystoreCipher.decrypt(prefs().getString("credential", "")); }
+
+    /** A stored key must never be sent to an edited endpoint. Runs off the UI thread. */
+    public static String credentialFor(String base, String replacement) {
+        if (replacement.length() > 4096 || replacement.contains("\n") || replacement.contains("\r")) throw new IllegalArgumentException("key");
+        if (!replacement.isBlank()) return replacement.trim();
+        if (!base.equals(baseUrl()) || !hasKey()) throw new IllegalArgumentException("key");
+        String saved = key();
+        if (saved.isBlank()) throw new IllegalArgumentException("key");
+        return saved;
+    }
 
     public static String normalizeBaseUrl(String value) {
         HttpUrl url = HttpUrl.parse(value.trim());

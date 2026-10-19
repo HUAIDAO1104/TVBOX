@@ -41,6 +41,24 @@ final class AiSetup {
         if (pairing == null) return json(Response.Status.GONE, "expired");
         if (path.equals("/ai-setup/config") && request.getMethod() == Method.GET)
             return headers(newFixedLengthResponse(Response.Status.OK, "application/json", pairing.config().toString()));
+        if (path.equals("/ai-setup/models") && request.getMethod() == Method.POST) {
+            if (!sameOrigin(request)) return json(Response.Status.FORBIDDEN, "origin");
+            try {
+                JsonObject data = body(request);
+                String base = com.fongmi.android.tv.setting.DanmakuAiSetting.normalizeBaseUrl(data.get("baseUrl").getAsString());
+                String key = com.fongmi.android.tv.setting.DanmakuAiSetting.credentialFor(base, data.get("key").getAsString());
+                var models = new com.fongmi.android.tv.playback.vod.DanmakuAiClient(base, "", key).models();
+                if (AiPairingSession.find(request.getHeaders().get("x-pairing-token")) != pairing) return json(Response.Status.GONE, "expired");
+                JsonObject result = new JsonObject(); result.add("models", com.fongmi.android.tv.playback.vod.DanmakuAiModels.json(models));
+                return headers(newFixedLengthResponse(Response.Status.OK, "application/json", result.toString()));
+            } catch (IllegalArgumentException error) {
+                return json(Response.Status.BAD_REQUEST, "base_url".equals(error.getMessage()) ? "base_url" : "key");
+            } catch (Exception error) {
+                String code = error.getMessage();
+                return json(Response.Status.INTERNAL_ERROR, "http_401".equals(code) || "http_403".equals(code) ? "models_auth"
+                        : "models_empty".equals(code) ? "models_empty" : "models_unavailable");
+            }
+        }
         if (!path.equals("/ai-setup/save") || request.getMethod() != Method.POST)
             return json(Response.Status.NOT_FOUND, "not_found");
         if (!sameOrigin(request)) return json(Response.Status.FORBIDDEN, "origin");

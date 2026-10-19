@@ -1,0 +1,18 @@
+{
+  "http": 200,
+  "requestedModel": "deepseek-v4.1-flash",
+  "returnedModel": "deepseek-v4-1-flash-260910",
+  "content": "{\"query\":\"喜剧之王\",\"confidence\":0.9}",
+  "usage": {
+    "completion_tokens": 12,
+    "prompt_tokens": 196,
+    "total_tokens": 208,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    }
+  },
+  "elapsedMs": 2781
+}

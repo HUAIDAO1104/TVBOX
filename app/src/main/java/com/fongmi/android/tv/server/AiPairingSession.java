@@ -54,6 +54,8 @@ public final class AiPairingSession {
         JsonObject value = new JsonObject();
         value.addProperty("baseUrl", DanmakuAiSetting.baseUrl()); value.addProperty("model", DanmakuAiSetting.model());
         value.addProperty("hasKey", DanmakuAiSetting.hasKey()); value.addProperty("enabled", DanmakuAiSetting.enabled());
+        value.add("models", com.fongmi.android.tv.playback.vod.DanmakuAiModels.json(
+                com.fongmi.android.tv.playback.vod.DanmakuAiModels.presets(DanmakuAiSetting.baseUrl(), DanmakuAiSetting.model())));
         return value;
     }
     void savedResponseSent() { App.post(onSaved); }

@@ -42,6 +42,72 @@ public class AiPairingInstrumentedTest {
     }
     private String payload(String base, String key) { var o=new JsonObject();o.addProperty("baseUrl",base);o.addProperty("model","fixture-model");o.addProperty("key",key);o.addProperty("enabled",true);return o.toString(); }
     private String pairBody(String code) { var data = new JsonObject(); data.addProperty("code", code); return data.toString(); }
+    @Test public void modelRefreshRequiresPairingOriginAndNewKeyForNewHost() throws Exception {
+        DanmakuAiSetting.save("https://example.invalid/v1", "saved-model", "fixture-private-key", true);
+        var pairing = AiPairingSession.open(() -> {});
+        try {
+            String body = "{\"baseUrl\":\"https://other.invalid/v1\",\"key\":\"\"}";
+            try (var r = request("wrong", "models", body, null)) { assertEquals(410, r.code()); }
+            try (var r = request(pairing.token(), "models", body, "https://other.invalid")) { assertEquals(403, r.code()); }
+            try (var r = request(pairing.token(), "models", body, null)) {
+                assertEquals(400, r.code()); assertEquals("key", JsonParser.parseString(r.body().string()).getAsJsonObject().get("code").getAsString());
+            }
+        } finally { pairing.close(); }
+    }
+    @androidx.test.filters.SdkSuppress(minSdkVersion = 29)
+    @Test public void phoneModelDropdownRefreshFailureStaleResponseAndSave() throws Exception {
+        var pairing = AiPairingSession.open(() -> {});
+        var web = new AtomicReference<android.webkit.WebView>();
+        try (ActivityScenario<AiPasteTestActivity> scenario = ActivityScenario.launch(AiPasteTestActivity.class)) {
+            scenario.onActivity(a -> {
+                var view = new android.webkit.WebView(a); view.getSettings().setJavaScriptEnabled(true);
+                a.setContentView(view); view.setFocusableInTouchMode(true); view.requestFocus(); web.set(view);
+                view.loadUrl(Server.get().getAddress(true) + "/ai-setup#" + pairing.token());
+            });
+            awaitJs(web.get(), "!!document.getElementById('model') && document.getElementById('model').options.length>1");
+            assertEquals("\"SELECT\"", js(web.get(), "document.getElementById('model').tagName"));
+            assertEquals("\"deepseek-v4.1-flash\"", js(web.get(), "document.getElementById('model').value"));
+            js(web.get(), "window.realFetch=window.fetch;window.replyMode='slow';window.fetch=(url,opts)=>String(url).endsWith('/models')?new Promise(resolve=>{window.pendingModelReply=resolve;if(window.replyMode==='fail')resolve(new Response(JSON.stringify({code:'models_auth'}),{status:500}));if(window.replyMode==='ok')resolve(new Response(JSON.stringify({models:[{id:'deepseek-v4.1-flash',label:'DeepSeek V4.1 Flash',recommended:true},{id:'fixture-choice',label:'Fixture model'}]}),{status:200}));}):window.realFetch(url,opts)");
+            js(web.get(), "document.getElementById('key').value='fixture-model-key';document.getElementById('refreshModels').click()");
+            awaitJs(web.get(), "document.getElementById('refreshModels').disabled");
+            js(web.get(), "document.getElementById('model').dispatchEvent(new Event('change',{bubbles:true}))");
+            assertEquals("true", js(web.get(), "!document.getElementById('refreshModels').disabled && document.getElementById('modelHelp').textContent===t.modelHelp && !document.getElementById('model').hasAttribute('aria-busy')"));
+            js(web.get(), "document.getElementById('refreshModels').click()");
+            awaitJs(web.get(), "document.getElementById('refreshModels').disabled");
+            js(web.get(), "document.getElementById('base').value='https://other.invalid/v1';document.getElementById('base').dispatchEvent(new Event('input',{bubbles:true}));window.pendingModelReply(new Response(JSON.stringify({models:[{id:'stale-id',label:'stale'}]}),{status:200}))");
+            android.os.SystemClock.sleep(150);
+            assertEquals("\"\"", js(web.get(), "document.getElementById('model').value"));
+            assertEquals("false", js(web.get(), "Array.from(document.getElementById('model').options).some(o=>o.value==='stale-id')"));
+            js(web.get(), "document.getElementById('base').value='https://llm-api.mcisaas.com/v1';document.getElementById('base').dispatchEvent(new Event('input',{bubbles:true}));window.replyMode='fail';document.getElementById('refreshModels').click()");
+            awaitJs(web.get(), "!document.getElementById('refreshModels').disabled && document.getElementById('modelHelp').textContent===t.modelsAuth");
+            assertEquals("\"deepseek-v4.1-flash\"", js(web.get(), "document.getElementById('model').value"));
+            js(web.get(), "window.replyMode='ok';document.getElementById('refreshModels').click()");
+            awaitJs(web.get(), "Array.from(document.getElementById('model').options).some(o=>o.value==='fixture-choice')");
+            tapField(web.get(), "model");
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            android.os.SystemClock.sleep(400);
+            capture("583-web-model-popup.png");
+            var choice = new AtomicReference<android.graphics.Rect>();
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+                for (var window : android.view.inspector.WindowInspector.getGlobalWindowViews()) {
+                    var rect = modelChoiceBounds(window, "Fixture model"); if (rect != null) choice.set(rect);
+                }
+            });
+            assertNotNull("Web model picker is open", choice.get());
+            long tap = android.os.SystemClock.uptimeMillis();
+            for (int action : new int[]{android.view.MotionEvent.ACTION_DOWN, android.view.MotionEvent.ACTION_UP}) {
+                var event = android.view.MotionEvent.obtain(tap, android.os.SystemClock.uptimeMillis(), action, choice.get().centerX(), choice.get().centerY(), 0);
+                event.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+                InstrumentationRegistry.getInstrumentation().sendPointerSync(event); event.recycle(); android.os.SystemClock.sleep(60);
+            }
+            awaitJs(web.get(), "document.getElementById('model').value==='fixture-choice'");
+            js(web.get(), "document.getElementById('form').requestSubmit()");
+            awaitJs(web.get(), "document.getElementById('form').hidden");
+            assertEquals("fixture-choice", DanmakuAiSetting.model());
+        } finally {
+            pairing.close(); InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> { if (web.get() != null) web.get().destroy(); });
+        }
+    }
     @Test public void setupAssetsSurviveSharedPluginContextBeingCleared() throws Exception {
         var context = com.github.catvod.Init.context();
         String address = Server.get().getAddress(true);
@@ -130,7 +196,7 @@ public class AiPairingInstrumentedTest {
             assertEquals("true", js(web.get(), "document.documentElement.scrollWidth<=innerWidth"));
             js(web.get(), "document.activeElement.blur()");
             capture("582-browser-form.png");
-            js(web.get(), "document.getElementById('base').value='https://example.invalid/v1';document.getElementById('model').value='fixture-model';document.getElementById('key').value='fixture-browser-key';document.getElementById('form').requestSubmit()");
+            js(web.get(), "document.getElementById('base').value='https://example.invalid/v1';document.getElementById('model').value='deepseek-v4.1-flash';document.getElementById('key').value='fixture-browser-key';document.getElementById('form').requestSubmit()");
             awaitJs(web.get(), "document.getElementById('form').hidden && document.getElementById('key').value===''");
             assertEquals("fixture-browser-key", DanmakuAiSetting.key());
         } finally {
@@ -138,6 +204,17 @@ public class AiPairingInstrumentedTest {
             InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> { if (web.get() != null) web.get().destroy(); });
         }
     }
+    private android.graphics.Rect modelChoiceBounds(android.view.View view, String label) {
+        if (view instanceof android.widget.TextView text && label.contentEquals(text.getText()) && view.isShown()) {
+            var position = new int[2]; view.getLocationOnScreen(position);
+            return new android.graphics.Rect(position[0], position[1], position[0] + view.getWidth(), position[1] + view.getHeight());
+        }
+        if (view instanceof android.view.ViewGroup group) for (int i = 0; i < group.getChildCount(); i++) {
+            var rect = modelChoiceBounds(group.getChildAt(i), label); if (rect != null) return rect;
+        }
+        return null;
+    }
+
     private void capture(String name) throws Exception {
         android.os.SystemClock.sleep(250);
         Bitmap image = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
@@ -335,7 +412,7 @@ public class AiPairingInstrumentedTest {
             js(web.get(),"document.getElementById('base').value='http://invalid';document.getElementById('form').requestSubmit()");
             awaitJs(web.get(),"document.getElementById('base').getAttribute('aria-invalid')==='true'");
             assertEquals("\"fixture-native-paste-579\"",js(web.get(),"document.getElementById('key').value"));
-            js(web.get(),"document.getElementById('base').value='https://example.invalid/v1';document.getElementById('model').value='fixture-model';document.getElementById('form').requestSubmit()");
+            js(web.get(),"document.getElementById('base').value='https://example.invalid/v1';document.getElementById('model').value='deepseek-v4.1-flash';document.getElementById('form').requestSubmit()");
             awaitJs(web.get(),"document.getElementById('form').hidden && document.getElementById('key').value===''");
             assertEquals("fixture-native-paste-579",DanmakuAiSetting.key());
             assertTrue(DanmakuAiSetting.enabled());
@@ -346,15 +423,18 @@ public class AiPairingInstrumentedTest {
         }
     }
     private void tapKey(android.webkit.WebView web) throws Exception {
-        js(web,"document.getElementById('key').scrollIntoView({block:'center'})");
+        tapField(web, "key");
+    }
+    private void tapField(android.webkit.WebView web, String id) throws Exception {
+        js(web,"document.getElementById('" + id + "').scrollIntoView({block:'center'})");
         android.os.SystemClock.sleep(200);
-        var point=JsonParser.parseString(js(web,"(()=>{const r=document.getElementById('key').getBoundingClientRect();return [(r.left+r.width/2)*devicePixelRatio,(r.top+r.height/2)*devicePixelRatio]})()")).getAsJsonArray();
+        var point=JsonParser.parseString(js(web,"(()=>{const r=document.getElementById('" + id + "').getBoundingClientRect();return [(r.left+r.width/2)*devicePixelRatio,(r.top+r.height/2)*devicePixelRatio]})()")).getAsJsonArray();
         int[] location=new int[2];InstrumentationRegistry.getInstrumentation().runOnMainSync(()->web.getLocationOnScreen(location));
         float x=location[0]+point.get(0).getAsFloat(),y=location[1]+point.get(1).getAsFloat();
         long now=android.os.SystemClock.uptimeMillis();
         for(int action:new int[]{android.view.MotionEvent.ACTION_DOWN,android.view.MotionEvent.ACTION_UP}){
             var event=android.view.MotionEvent.obtain(now,android.os.SystemClock.uptimeMillis(),action,x,y,0);
-            InstrumentationRegistry.getInstrumentation().sendPointerSync(event);event.recycle();
+            event.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);InstrumentationRegistry.getInstrumentation().sendPointerSync(event);event.recycle();android.os.SystemClock.sleep(60);
         }
     }
     private String js(android.webkit.WebView web,String script) throws Exception {

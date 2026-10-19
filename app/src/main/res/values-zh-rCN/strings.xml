@@ -334,7 +334,7 @@
     <string name="danmaku_selection_loaded">弹幕已加载</string>
     <string name="danmaku_selection_failed">当前弹幕加载失败，点击选集重试或选择其他来源</string>
     <string name="danmaku_ai_entry">AI 辅助匹配 · 密钥与模型</string>
-    <string name="danmaku_ai_model_hint">推荐 qwen3.5-flash，费用以服务商实际计费为准。</string>
+    <string name="danmaku_ai_model_hint">下拉选择模型，新配置默认 DeepSeek V4.1 Flash，费用以服务商计费为准。</string>
     <string name="danmaku_tencent_direct">腾讯视频 · 直连</string>
     <string name="danmaku_mango_direct">芒果TV · 直连</string>
     <string name="danmaku_youku_direct">优酷 · 直连</string>
@@ -359,4 +359,12 @@
     <string name="danmaku_ai_scan_service_failed">电视配置服务未就绪，请刷新重试。</string>
     <string name="danmaku_ai_scan_permission">需要允许本地网络／附近设备访问，手机才能连接电视。</string>
     <string name="danmaku_ai_scan_allow">允许连接</string>
+    <string name="danmaku_ai_recommended">\u0020· 推荐</string>
+    <string name="danmaku_ai_models_refresh">刷新模型列表</string>
+    <string name="danmaku_ai_models_loading">正在读取服务商模型…</string>
+    <string name="danmaku_ai_models_key">填写 Key 后可刷新完整模型列表。</string>
+    <string name="danmaku_ai_models_loaded">已更新服务商模型列表，点击下拉选择。</string>
+    <string name="danmaku_ai_models_missing">当前选择未在列表中返回，可下拉更换或保留原配置。</string>
+    <string name="danmaku_ai_models_empty">服务商未返回可用的对话模型，保留原选择，可刷新重试。</string>
+    <string name="danmaku_ai_models_failed">模型列表加载失败，保留原选择，请刷新重试。</string>
 </resources>

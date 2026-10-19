@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.fongmi.android.tv.playback.vod.DanmakuAiModelsTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-19T06:31:17.216Z" hostname="administratordeMac-mini.local" time="0.014">
+  <properties/>
+  <testcase name="serializesIdsSeparatelyFromDisplayLabels" classname="com.fongmi.android.tv.playback.vod.DanmakuAiModelsTest" time="0.002"/>
+  <testcase name="rejectsEmptyMalformedAndUnboundedCatalogues" classname="com.fongmi.android.tv.playback.vod.DanmakuAiModelsTest" time="0.007"/>
+  <testcase name="presetsBelongToTheirProviderAndKeepExistingChoice" classname="com.fongmi.android.tv.playback.vod.DanmakuAiModelsTest" time="0.001"/>
+  <testcase name="ranksProviderIdsAndFiltersNonChatEndpoints" classname="com.fongmi.android.tv.playback.vod.DanmakuAiModelsTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

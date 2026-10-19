@@ -345,7 +345,7 @@
     <string name="danmaku_selection_loaded">Danmaku loaded</string>
     <string name="danmaku_selection_failed">Could not load this episode. Select it to retry or choose another source.</string>
     <string name="danmaku_ai_entry">AI matching · API key &amp; model</string>
-    <string name="danmaku_ai_model_hint">Recommended: qwen3.5-flash. Pricing is set by your provider.</string>
+    <string name="danmaku_ai_model_hint">Choose a model. New setups default to DeepSeek V4.1 Flash; provider pricing applies.</string>
     <string name="danmaku_tencent_direct">Tencent Video · Direct</string>
     <string name="danmaku_mango_direct">Mango TV · Direct</string>
     <string name="danmaku_youku_direct">Youku · Direct</string>
@@ -370,4 +370,12 @@
     <string name="danmaku_ai_scan_service_failed">The TV setup page is unavailable. Refresh to restart it.</string>
     <string name="danmaku_ai_scan_permission">Allow local network / nearby devices access so your phone can connect to this TV.</string>
     <string name="danmaku_ai_scan_allow">Allow connection</string>
+    <string name="danmaku_ai_recommended">\u0020· Recommended</string>
+    <string name="danmaku_ai_models_refresh">Refresh model list</string>
+    <string name="danmaku_ai_models_loading">Loading provider models…</string>
+    <string name="danmaku_ai_models_key">Enter your key to load the full model list.</string>
+    <string name="danmaku_ai_models_loaded">Provider models updated. Choose from the dropdown.</string>
+    <string name="danmaku_ai_models_missing">The provider did not list your current model. Choose another or keep the saved choice.</string>
+    <string name="danmaku_ai_models_empty">No chat models returned. Your selection is kept; refresh to retry.</string>
+    <string name="danmaku_ai_models_failed">Could not load models. Your selection is kept; refresh to retry.</string>
 </resources>

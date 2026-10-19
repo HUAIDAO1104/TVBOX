@@ -1,0 +1,13 @@
+{
+  "version": "5.5.83-fix",
+  "mode": "leanback-arm64-v8a",
+  "startup": "Starting: Intent { cmp=com.fongmi.android.tv/.ui.activity.HomeActivity }\nStatus: ok\nLaunchState: COLD\nActivity: com.fongmi.android.tv/.ui.activity.HomeActivity\nTotalTime: 1046\nWaitTime: 1049\nComplete\n",
+  "actualPort": 35855,
+  "pageStatus": 200,
+  "pairCodeWorks": true,
+  "completeSavedResponse": true,
+  "tvSavedStatus": true,
+  "defaultModel": "deepseek-v4.1-flash",
+  "nativeSelectInPage": true,
+  "transport": "host HTTP through ADB forwarding to actual QR port; not a physical phone Wi-Fi test"
+}
