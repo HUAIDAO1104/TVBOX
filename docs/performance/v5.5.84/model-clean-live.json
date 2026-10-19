@@ -1,0 +1,122 @@
+[
+  {
+    "input": {
+      "task": "clean",
+      "title": "现在就出发第四季",
+      "year": "2026",
+      "type": "综艺",
+      "episode": "第1期上"
+    },
+    "http": 200,
+    "model": "deepseek-v4-1-flash-260910",
+    "content": "{\"query\":\"现在就出发\",\"episode\":\"第1期上\",\"confidence\":0.95}",
+    "usage": {
+      "completion_tokens": 20,
+      "prompt_tokens": 321,
+      "total_tokens": 341,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "elapsedMs": 2713
+  },
+  {
+    "input": {
+      "task": "clean",
+      "title": "披荆斩棘2026【4K】",
+      "year": "2026",
+      "type": "综艺",
+      "episode": "第十期上"
+    },
+    "http": 200,
+    "model": "deepseek-v4-1-flash-260910",
+    "content": "{\"query\":\"披荆斩棘\",\"episode\":\"第10期上\",\"confidence\":0.9}",
+    "usage": {
+      "completion_tokens": 22,
+      "prompt_tokens": 326,
+      "total_tokens": 348,
+      "prompt_tokens_details": {
+        "cached_tokens": 256
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "elapsedMs": 2701
+  },
+  {
+    "input": {
+      "task": "clean",
+      "title": "【剧版】喜剧之王（2026）更新至14集4K",
+      "year": "2026",
+      "type": "电视剧",
+      "episode": "第14集"
+    },
+    "http": 200,
+    "model": "deepseek-v4-1-flash-260910",
+    "content": "{\"query\":\"喜剧之王\",\"episode\":\"第14集\",\"confidence\":0.9}",
+    "usage": {
+      "completion_tokens": 19,
+      "prompt_tokens": 332,
+      "total_tokens": 351,
+      "prompt_tokens_details": {
+        "cached_tokens": 256
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "elapsedMs": 3156
+  },
+  {
+    "input": {
+      "task": "clean",
+      "title": "哪吒2",
+      "year": "2025",
+      "type": "电影",
+      "episode": "正片"
+    },
+    "http": 200,
+    "model": "deepseek-v4-1-flash-260910",
+    "content": "{\"query\":\"哪吒2\",\"episode\":\"正片\",\"confidence\":1.0}",
+    "usage": {
+      "completion_tokens": 18,
+      "prompt_tokens": 317,
+      "total_tokens": 335,
+      "prompt_tokens_details": {
+        "cached_tokens": 256
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "elapsedMs": 2721
+  },
+  {
+    "input": {
+      "task": "clean",
+      "title": "现在就出发第四季",
+      "year": "2026",
+      "type": "综艺",
+      "episode": "EP01 Part B"
+    },
+    "http": 200,
+    "model": "deepseek-v4-1-flash-260910",
+    "content": "{\"query\":\"现在就出发\",\"episode\":\"第1期下\",\"confidence\":0.95}",
+    "usage": {
+      "completion_tokens": 20,
+      "prompt_tokens": 321,
+      "total_tokens": 341,
+      "prompt_tokens_details": {
+        "cached_tokens": 256
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      }
+    },
+    "elapsedMs": 2990
+  }
+]

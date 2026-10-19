@@ -31,11 +31,17 @@ public final class TencentDanmaku {
     public static NativeDanmaku.Job searchTarget(String query, String year, String type, IqiyiDanmaku.Callback<List<Danmaku>> callback) {
         return search(query, year, type, callback, CLIENT);
     }
+    public static NativeDanmaku.Job searchTarget(String query, String identity, String year, String type, IqiyiDanmaku.Callback<List<Danmaku>> callback) {
+        return search(query, identity, year, type, callback, CLIENT);
+    }
     static NativeDanmaku.Job search(String query, IqiyiDanmaku.Callback<List<Danmaku>> callback, OkHttpClient client) {
         return search(query, "", "", callback, client);
     }
     static NativeDanmaku.Job search(String query, String year, String type, IqiyiDanmaku.Callback<List<Danmaku>> callback, OkHttpClient client) {
-        String cacheKey = query + "|" + year + "|" + type;
+        return search(query, query, year, type, callback, client);
+    }
+    static NativeDanmaku.Job search(String query, String identity, String year, String type, IqiyiDanmaku.Callback<List<Danmaku>> callback, OkHttpClient client) {
+        String cacheKey = query + "|" + identity + "|" + year + "|" + type;
         Job job = new Job(15000, client);
         job.start(SEARCH, () -> {
             synchronized (CACHE) {
@@ -55,7 +61,8 @@ public final class TencentDanmaku {
             Map<String, Danmaku> rows = new LinkedHashMap<>();
             List<TencentDanmakuCodec.Work> eligible = new ArrayList<>();
             for (var work : works) {
-                if ((!year.isEmpty() || !type.isEmpty()) && !NativeDanmaku.acceptsWork(query, year, type, work.matchTitle(), work.year(), work.type())) continue;
+                if ((!identity.equals(query) || !year.isEmpty() || !type.isEmpty())
+                        && !NativeDanmaku.acceptsWork(identity, year, type, work.matchTitle(), work.year(), work.type())) continue;
                 eligible.add(work);
                 for (Danmaku row : work.rows()) rows.putIfAbsent(row.getUrl(), row);
             }

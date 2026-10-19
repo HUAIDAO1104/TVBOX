@@ -11,6 +11,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class TencentDanmakuCodecTest {
+    @Test public void broadQueryAliasCannotEraseTheOfficialSeason() throws Exception {
+        String json = "{\"ret\":0,\"data\":{\"normalList\":{\"itemList\":[{\"doc\":{\"id\":\"mzc002001bk7moh\"},\"videoInfo\":{\"title\":\"现在就出发 第4季\",\"year\":2026,\"typeName\":\"综艺\",\"hintWords\":\"又名：现在就出发\",\"episodeSites\":[{\"enName\":\"qq\",\"episodeInfoList\":[{\"id\":\"r4102opm7x3\",\"title\":\"2026-10-10 第1期上\"}]}]}}]}}}";
+        var works = TencentDanmakuCodec.works(json, "现在就出发");
+        assertEquals("现在就出发 第4季", works.get(0).matchTitle());
+        assertNotNull(DanmakuMatch.best("现在就出发第四季", "2026", "综艺", "第1期上", works.get(0).rows(), Danmaku::getMatchName));
+        assertNull(DanmakuMatch.best("现在就出发第三季", "2026", "综艺", "第1期上", works.get(0).rows(), Danmaku::getMatchName));
+    }
     private String fixture(String name) throws IOException {
         try (var in = getClass().getResourceAsStream("/danmaku/tencent-" + name + ".json")) {
             assertNotNull(in); return new String(in.readAllBytes(), StandardCharsets.UTF_8);

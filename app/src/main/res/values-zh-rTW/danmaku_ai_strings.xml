@@ -24,4 +24,7 @@
     <string name="danmaku_ai_connection_error">連線或儲存失敗，請檢查設定後重試</string>
     <string name="danmaku_ai_matching">AI 正在輔助配對彈幕…</string>
     <string name="danmaku_ai_not_configured">未設定</string>
+    <string name="danmaku_failure_ai_network">AI 模型請求逾時或無法連線，請重試或切換模型</string>
+    <string name="danmaku_failure_ai_denied">AI 服務拒絕存取，請檢查 API Key</string>
+    <string name="danmaku_failure_ai_invalid">AI 未回傳可靠的配對資訊，請重試或手動搜尋</string>
 </resources>

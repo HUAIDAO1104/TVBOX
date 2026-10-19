@@ -1,48 +1,46 @@
 package com.fongmi.android.tv.playback.vod;
 
 import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.api.DanmakuCatalogueSearch;
 import com.fongmi.android.tv.api.IqiyiDanmaku;
 import com.fongmi.android.tv.api.NativeDanmaku;
-import com.fongmi.android.tv.api.DanmakuSearchRequest;
 import com.fongmi.android.tv.bean.Danmaku;
 import com.fongmi.android.tv.player.danmaku.DanmakuDocumentCache;
+import com.fongmi.android.tv.player.danmaku.DanmakuStatus;
 import com.fongmi.android.tv.setting.DanmakuAiSetting;
 import com.fongmi.android.tv.setting.DanmakuSetting;
-import com.github.catvod.net.OkHttp;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import okhttp3.Call;
-import okhttp3.Response;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
-/** Opt-in fallback. Two small model requests, real catalogue IDs, verified document only. */
+/** AI normalizes metadata; real platform catalogues and episode guards decide what may load. */
 public final class DanmakuAiMatcher {
     public interface Callback {
         void onFound(String query, Danmaku item, List<Danmaku> catalogue);
         void onFailure();
+        default void onFailure(DanmakuStatus.Failure reason) { onFailure(); }
         void onProgress(int percent);
     }
-    private static final java.util.concurrent.ExecutorService WORKER = Executors.newSingleThreadExecutor();
-    private static final okhttp3.OkHttpClient SEARCH = OkHttp.client().newBuilder()
-            .dispatcher(new okhttp3.Dispatcher()).connectTimeout(5, TimeUnit.SECONDS)
-            .readTimeout(12, TimeUnit.SECONDS).callTimeout(15, TimeUnit.SECONDS)
-            .retryOnConnectionFailure(false).build();
+    private static final ExecutorService WORKER = Executors.newSingleThreadExecutor();
     private static Job active;
 
     public static synchronized boolean search(DanmakuMatchContext context, Callback callback) {
         cancel();
         if (!DanmakuAiSetting.enabled()) return false;
+        start(context, null, NativeDanmaku.sources(), DanmakuSetting.getSearchApiUrls(), callback);
+        return true;
+    }
+
+    // Scoped dependencies also exercise the complete automatic path against controlled servers.
+    static synchronized void start(DanmakuMatchContext context, DanmakuAiClient client,
+                                   List<String> direct, List<String> backup, Callback callback) {
+        cancel();
         Job job = new Job(callback);
+        job.client = client;
         active = job;
         App.post(job.deadline, 45000);
-        job.future = WORKER.submit(() -> job.run(context));
-        return true;
+        job.future = WORKER.submit(() -> job.run(context, direct, backup));
     }
 
     public static synchronized void cancel() {
@@ -53,51 +51,85 @@ public final class DanmakuAiMatcher {
     private static final class Job {
         final Callback callback;
         final AtomicBoolean done = new AtomicBoolean();
-        final List<Call> calls = new CopyOnWriteArrayList<>();
         final List<DanmakuDocumentCache.Ticket> documents = new CopyOnWriteArrayList<>();
+        final List<NativeDanmaku.Job> searches = new CopyOnWriteArrayList<>();
+        final Set<String> completeSources = ConcurrentHashMap.newKeySet();
         final Runnable deadline = this::fail;
         volatile Future<?> future;
         volatile DanmakuAiClient client;
-        final List<NativeDanmaku.Job> nativeJobs = new CopyOnWriteArrayList<>();
         volatile boolean cancelled;
         volatile String stage = "clean";
+        volatile DanmakuStatus.Failure failure = DanmakuStatus.Failure.AI_NETWORK;
 
         Job(Callback callback) { this.callback = callback; }
 
-        void run(DanmakuMatchContext context) {
+        void run(DanmakuMatchContext original, List<String> direct, List<String> backup) {
             try {
-                client = DanmakuAiClient.configured();
-                if (done.get()) { client.cancel(); return; }
-                String query = DanmakuAiProtocol.query(client.complete(DanmakuAiProtocol.context("clean", context)), context);
-                if (query.isEmpty() || done.get()) { fail(); return; }
-                stage = "catalogue";
-                List<Danmaku> catalogue = catalogue(query, context);
                 if (done.get()) return;
-                String year = context.getYear().isEmpty() ? DanmakuQuery.from(context.getTitle()).year() : context.getYear();
-                List<Danmaku> eligible = DanmakuMatch.ranked(query, year, context.getType(),
-                        context.getEpisode(), catalogue, Danmaku::getMatchName);
-                if (eligible.isEmpty()) { fail(); return; }
-                // An ambiguous edition/season/date is rejected by ranked() before model selection.
-                eligible = new ArrayList<>(eligible.subList(0, Math.min(40, eligible.size())));
-                List<String> names = new ArrayList<>();
-                for (Danmaku item : eligible) names.add(item.getName());
-                stage = "select";
-                int selected = DanmakuAiProtocol.selectedIndex(client.complete(
-                        DanmakuAiProtocol.selection(context, query, names)), eligible.size());
-                if (selected < 0 || done.get()) { fail(); return; }
-                // AI identifies the work/episode, not which mirror is currently healthy. Race
-                // its choice with one verified-equivalent alternative so a stale/slow mirror
-                // cannot suppress an available native document.
-                Danmaku selectedItem = eligible.remove(selected);
-                eligible.sort(java.util.Comparator.comparingInt(item ->
-                        NativeDanmaku.supports(item.getUrl()) ? 0 : 1));
-                eligible.add(0, selectedItem);
+                // Android Keystore access belongs on the worker, never the playback UI.
+                if (client == null) client = DanmakuAiClient.configured();
+                if (done.get()) { client.cancel(); return; }
+                String response = client.complete(DanmakuAiProtocol.context("clean", original));
+                String query = DanmakuAiProtocol.query(response, original);
+                if (query.isEmpty()) { failure = DanmakuStatus.Failure.AI_INVALID_RESPONSE; fail(); return; }
+                DanmakuMatchContext context = DanmakuAiProtocol.matchingContext(original, query, response);
+                stage = "catalogue";
+                failure = DanmakuStatus.Failure.NETWORK;
+                List<Danmaku> catalogue = catalogue(query, context, direct, backup);
+                if (done.get()) return;
+                List<Danmaku> eligible = ranked(context, catalogue);
+                // A precise result from the AI-cleaned query needs no second model round trip.
+                if (eligible.isEmpty() && !catalogue.isEmpty()) {
+                    List<Danmaku> choices = new ArrayList<>(catalogue);
+                    choices.sort(Comparator.comparingInt((Danmaku item) -> DanmakuMatch.displayScore(context.getTitle(),
+                            context.getYear(), context.getType(), context.getEpisode(), item.getMatchName())).reversed());
+                    choices = new ArrayList<>(choices.subList(0, Math.min(40, choices.size())));
+                    stage = "select";
+                    failure = DanmakuStatus.Failure.AI_NETWORK;
+                    response = client.complete(DanmakuAiProtocol.selection(original, query, choices.stream().map(Danmaku::getMatchName).toList()));
+                    int selected = DanmakuAiProtocol.selectedIndex(response, choices.size());
+                    if (selected >= 0) {
+                        String episode = DanmakuAiProtocol.normalizedEpisode(response, context.getEpisode());
+                        var normalized = new DanmakuMatchContext(context.getTitle(), context.getYear(), context.getType(), episode);
+                        eligible = ranked(normalized, catalogue);
+                        // The model can explain a label, never override explicit identity conflicts.
+                        Danmaku selectedItem = choices.get(selected);
+                        if (!eligible.contains(selectedItem)) eligible = List.of();
+                        else { eligible.remove(selectedItem); eligible.add(0, selectedItem); }
+                    }
+                }
+                if (eligible.isEmpty()) {
+                    if (!catalogue.isEmpty()) failure = DanmakuStatus.Failure.NO_MATCH;
+                    fail(); return;
+                }
                 stage = "document";
                 verify(query, eligible, catalogue);
+            } catch (IOException error) {
+                if (com.fongmi.android.tv.BuildConfig.DEBUG) android.util.Log.d("DanmakuAi", "Request failed at " + stage + ": " + error.getClass().getSimpleName()
+                        + (Objects.toString(error.getMessage(), "").matches("http_[0-9]{3}|cancelled|Canceled|credential|response") ? " " + error.getMessage() : "")
+                        + (Objects.toString(error.getMessage(), "").startsWith("unexpected end of stream") ? " connection_closed" : ""));
+                if (stage.equals("clean") || stage.equals("select")) {
+                    failure = "http_401".equals(error.getMessage()) || "http_403".equals(error.getMessage()) || "credential".equals(error.getMessage())
+                            ? DanmakuStatus.Failure.AI_ACCESS_DENIED
+                            : "response".equals(error.getMessage()) ? DanmakuStatus.Failure.AI_INVALID_RESPONSE : DanmakuStatus.Failure.AI_NETWORK;
+                }
+                fail();
             } catch (Exception ignored) { fail(); }
         }
 
+        List<Danmaku> ranked(DanmakuMatchContext context, List<Danmaku> items) {
+            if (!DanmakuMatch.canUsePartialCatalogue(context.getType(), context.getEpisode(), items, Danmaku::getMatchName))
+                items = items.stream().filter(item -> completeSources.contains(item.getSourceKey())).toList();
+            List<Danmaku> result = new ArrayList<>(DanmakuMatch.ranked(context.getTitle(), context.getYear(), context.getType(),
+                    context.getEpisode(), items, Danmaku::getMatchName));
+            result.sort(Comparator.comparingInt(item -> NativeDanmaku.supports(item.getUrl()) ? 0 : 1));
+            return result;
+        }
+
         void verify(String query, List<Danmaku> candidates, List<Danmaku> catalogue) {
+            App.removeCallbacks(deadline);
+            App.post(deadline, candidates.stream().anyMatch(item -> com.fongmi.android.tv.api.MangoDanmaku.supports(item.getUrl())) ? 80000 : 45000);
+            failure = DanmakuStatus.Failure.DOWNLOAD;
             var next = new java.util.concurrent.atomic.AtomicInteger();
             int workers = Math.min(2, candidates.size());
             var remaining = new java.util.concurrent.atomic.AtomicInteger(workers);
@@ -128,62 +160,62 @@ public final class DanmakuAiMatcher {
             for (int i = 0; i < workers; i++) new Loader().run();
         }
 
-        List<Danmaku> catalogue(String query, DanmakuMatchContext context) throws InterruptedException {
-            List<String> urls = DanmakuSetting.getSearchApiUrls();
-            List<Danmaku> result = new CopyOnWriteArrayList<>();
-            CountDownLatch pending = new CountDownLatch(urls.size() + NativeDanmaku.sources().size());
-            CountDownLatch nativeDone = new CountDownLatch(NativeDanmaku.sources().size());
-            for (String source : NativeDanmaku.sources()) {
-            var nativeJob = NativeDanmaku.search(source, query, new IqiyiDanmaku.Callback<>() {
-                @Override public void onSuccess(List<Danmaku> items) {
-                    for (Danmaku item : items) item.setSourceKey(source);
-                    if (!done.get()) result.addAll(items);
-                    nativeDone.countDown();
-                    pending.countDown();
-                }
-                @Override public void onFailure(IOException error) { nativeDone.countDown(); pending.countDown(); }
-            });
-            nativeJobs.add(nativeJob);
-            if (done.get()) nativeJob.cancel();
-            }
-            for (String url : urls) {
-                if (done.get()) break;
-                Call call = SEARCH.newCall(DanmakuSearchRequest.build(url, query, context.getEpisode(), "DanmakuAi"));
-                calls.add(call);
-                if (done.get()) { call.cancel(); break; }
-                call.enqueue(new okhttp3.Callback() {
-                    @Override public void onFailure(Call call, IOException error) { pending.countDown(); }
-                    @Override public void onResponse(Call call, Response response) {
-                        try (Response closeable = response) {
-                            if (done.get() || !closeable.isSuccessful() || closeable.body() == null) return;
-                            byte[] bytes = closeable.body().byteStream().readNBytes(2_000_001);
-                            if (bytes.length > 2_000_000) return;
-                            List<Danmaku> items = Danmaku.arrayFrom(new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
-                            for (Danmaku item : items) item.setSourceKey(DanmakuManualMatchStore.sourceKey(url));
-                            if (!done.get()) result.addAll(items);
-                        } catch (Exception ignored) {
-                        } finally { pending.countDown(); }
+        List<Danmaku> catalogue(String title, DanmakuMatchContext context, List<String> direct, List<String> backup) throws InterruptedException {
+            Map<String, Danmaku> rows = new ConcurrentHashMap<>();
+            AtomicInteger pending = new AtomicInteger(direct.size());
+            AtomicInteger responses = new AtomicInteger(), denied = new AtomicInteger(), invalid = new AtomicInteger();
+            DanmakuQuery query = DanmakuQuery.from(context.getTitle(), context.getYear()).forDiscovery(context.getType());
+            java.util.function.Consumer<String> lookup = source -> {
+                if (done.get()) return;
+                var search = DanmakuCatalogueSearch.searchWork(source, query, context.getYear(), context.getType(),
+                        items -> items.stream().anyMatch(item -> DanmakuAiProtocol.sameWork(context, item.getMatchName())), new IqiyiDanmaku.Callback<>() {
+                    private void collect(List<Danmaku> items) {
+                        if (done.get()) return;
+                        for (Danmaku item : items) if (DanmakuAiProtocol.sameWork(context, item.getMatchName())) {
+                            item.setSourceKey(NativeDanmaku.isSource(source) ? source : DanmakuManualMatchStore.sourceKey(source));
+                            rows.put(source + "|" + item.getUrl(), item);
+                        }
+                    }
+                    @Override public void onPartial(List<Danmaku> items) { collect(items); }
+                    @Override public void onSuccess(List<Danmaku> items) {
+                        collect(items);
+                        completeSources.add(NativeDanmaku.isSource(source) ? source : DanmakuManualMatchStore.sourceKey(source));
+                        responses.incrementAndGet(); pending.decrementAndGet();
+                    }
+                    @Override public void onFailure(IOException error) {
+                        if (error instanceof DanmakuCatalogueSearch.HttpFailure http && (http.code == 401 || http.code == 403)) denied.incrementAndGet();
+                        else if (error instanceof DanmakuCatalogueSearch.InvalidResponse) invalid.incrementAndGet();
+                        pending.decrementAndGet();
                     }
                 });
+                searches.add(search);
+                if (done.get()) search.cancel();
+            };
+            direct.forEach(lookup);
+            long start = System.nanoTime(), until = start + TimeUnit.SECONDS.toNanos(20);
+            boolean backupStarted = false;
+            while (!done.get() && System.nanoTime() < until) {
+                if (!ranked(context, List.copyOf(rows.values())).isEmpty()) break;
+                if (!backupStarted && (pending.get() == 0 || System.nanoTime() - start >= TimeUnit.MILLISECONDS.toNanos(1500))) {
+                    backupStarted = true;
+                    pending.addAndGet(backup.size());
+                    backup.forEach(lookup);
+                }
+                if (backupStarted && pending.get() == 0) break;
+                Thread.sleep(100);
             }
-            long until = System.nanoTime() + TimeUnit.SECONDS.toNanos(15);
-            String year = context.getYear().isEmpty() ? DanmakuQuery.from(context.getTitle()).year() : context.getYear();
-            while (!done.get() && System.nanoTime() < until && !pending.await(150, TimeUnit.MILLISECONDS)) {
-                // First verified identity may proceed immediately; slow supplementary APIs
-                // must not hold a native catalogue hostage for their entire timeout.
-                if (nativeDone.getCount() < NativeDanmaku.sources().size() && !DanmakuMatch.ranked(query, year, context.getType(), context.getEpisode(),
-                        List.copyOf(result), Danmaku::getMatchName).isEmpty()) break;
-            }
-            for (NativeDanmaku.Job job : nativeJobs) job.cancel();
-            for (Call call : calls) call.cancel();
-            return List.copyOf(result);
+            for (NativeDanmaku.Job search : searches) search.cancel();
+            failure = !rows.isEmpty() || responses.get() > 0 ? DanmakuStatus.Failure.NO_MATCH
+                    : denied.get() > 0 ? DanmakuStatus.Failure.ACCESS_DENIED
+                    : invalid.get() > 0 ? DanmakuStatus.Failure.INVALID_RESPONSE : DanmakuStatus.Failure.NETWORK;
+            return List.copyOf(rows.values());
         }
 
         void fail() {
             if (!done.compareAndSet(false, true)) return;
-            if (com.fongmi.android.tv.BuildConfig.DEBUG) android.util.Log.d("DanmakuAi", "Failed stage=" + stage);
+            if (com.fongmi.android.tv.BuildConfig.DEBUG) android.util.Log.d("DanmakuAi", "Failed stage=" + stage + " reason=" + failure);
             cleanup();
-            App.post(() -> { if (!cancelled) callback.onFailure(); });
+            App.post(() -> { if (!cancelled) callback.onFailure(failure); });
         }
 
         void cancel() { cancelled = true; done.set(true); cleanup(); }
@@ -191,8 +223,7 @@ public final class DanmakuAiMatcher {
         void cleanup() {
             App.removeCallbacks(deadline);
             if (client != null) client.cancel();
-            for (NativeDanmaku.Job job : nativeJobs) job.cancel();
-            for (Call call : calls) call.cancel();
+            for (NativeDanmaku.Job search : searches) search.cancel();
             for (DanmakuDocumentCache.Ticket ticket : documents) ticket.cancel();
             if (future != null) future.cancel(true);
         }

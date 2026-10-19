@@ -22,6 +22,7 @@ public class VodPlaybackMediaTest {
 
     @Test
     public void automaticDanmakuUsesTheSelectedEpisodeInsteadOfProviderOrdering() {
+        assertEquals("EP01 Part B", VodPlaybackMedia.resolveEpisodeQuery("EP01 Part B", 3, "综艺"));
         assertEquals("9", VodPlaybackMedia.resolveEpisodeQuery("[2.1 GB]9.mp4【百花杀】", 16));
         assertEquals("预告片", VodPlaybackMedia.resolveEpisodeQuery("预告片", 12));
         assertEquals("20260720特辑", VodPlaybackMedia.resolveEpisodeQuery("20260720特辑", 3));

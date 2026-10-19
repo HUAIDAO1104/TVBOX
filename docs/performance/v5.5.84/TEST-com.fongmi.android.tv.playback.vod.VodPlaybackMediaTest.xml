@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-19T07:35:44.674Z" hostname="administratordeMac-mini.local" time="0.007">
+  <properties/>
+  <testcase name="playbackIdentityIncludesSourceAndEpisodeUrlNotOnlyVisibleLabels" classname="com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest" time="0.0"/>
+  <testcase name="staleDanmakuResponseCannotCrossIntoAnotherTitleOrEpisode" classname="com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest" time="0.0"/>
+  <testcase name="manualMappingSurvivesRepositoryMetadataDriftButKeepsSeasonBoundary" classname="com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest" time="0.0"/>
+  <testcase name="explicitVideoLinkRestoresOnlyTheConfirmedEpisode" classname="com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest" time="0.001"/>
+  <testcase name="releaseObfuscatedEpisodeCacheMigratesWithoutLinkedTreeMapCast" classname="com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest" time="0.0"/>
+  <testcase name="manualSelectionCachesEveryEpisodeFromTheExactSeasonAndPlatform" classname="com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest" time="0.0"/>
+  <testcase name="retiredProviderEpisodeCacheFallsBackToFreshResolution" classname="com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest" time="0.0"/>
+  <testcase name="manualEndpointIdentityNeverPersistsRawCredentialUrl" classname="com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest" time="0.005"/>
+  <testcase name="manualDanmakuPreferenceIsScopedToWorkSeasonNotEpisode" classname="com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest" time="0.0"/>
+  <testcase name="aggregateEpisodeCountNeverBecomesTheEpisodeQuery" classname="com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest" time="0.0"/>
+  <testcase name="stableManualCacheRoundTripSurvivesFutureMinificationChanges" classname="com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest" time="0.001"/>
+  <testcase name="automaticDanmakuUsesTheSelectedEpisodeInsteadOfProviderOrdering" classname="com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest" time="0.0"/>
+  <testcase name="legacyKeywordOnlyMappingRemainsUsableAfterMigration" classname="com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

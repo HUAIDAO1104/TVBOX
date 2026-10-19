@@ -76,6 +76,14 @@ public class PlatformPlaybackInstrumentedTest {
     // Generated black, silent 2-hour fixture: ffmpeg -f lavfi -i color=c=black:s=320x180:r=1:d=7200
     // -c:v libx264 -preset ultrafast -pix_fmt yuv420p -g 1 -movflags +faststart playback-timeline.mp4
     @Test public void mangoAutomaticCommentsSurviveLongTimelineAndViewLifecycle() throws Exception {
+        automaticTimeline("披荆斩棘2026", "第10期上", "577-timeline");
+    }
+
+    @Test public void tencentAutomaticCommentsSurviveLongTimelineAndViewLifecycle() throws Exception {
+        automaticTimeline("现在就出发第四季", "第1期上", "584-tencent-timeline");
+    }
+
+    private void automaticTimeline(String title, String episode, String capture) throws Exception {
         org.junit.Assume.assumeTrue("true".equals(InstrumentationRegistry.getArguments().getString("danmakuLive")));
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         var context = instrumentation.getTargetContext();
@@ -88,20 +96,20 @@ public class PlatformPlaybackInstrumentedTest {
         DanmakuSetting.putAuto(true); DanmakuSetting.putShow(true);
         PlayerSetting.putEngine(PlayerSetting.ENGINE_EXO); PlayerSetting.putBackground(0);
         Intent intent = new Intent(context, VideoActivity.class).putExtra("key", "push_agent")
-                .putExtra("id", Uri.fromFile(video).toString()).putExtra("name", "披荆斩棘2026");
+                .putExtra("id", Uri.fromFile(video).toString()).putExtra("name", title);
         try (ActivityScenario<VideoActivity> scenario = ActivityScenario.launch(intent)) {
             await(scenario, a -> a.service() != null && a.player().isPlaying(), "Exo long playback");
             onActivity(scenario, a -> {
-                var metadata = new androidx.media3.common.MediaMetadata.Builder().setTitle("披荆斩棘2026").setArtist("第10期上").build();
+                var metadata = new androidx.media3.common.MediaMetadata.Builder().setTitle(title).setArtist(episode).build();
                 a.player().setMetadata(metadata);
             });
             await(scenario, a -> a.player().isPlaying(), "new playback identity");
             onActivity(scenario, a -> {
                 a.player().getPlayer().seekTo(600000);
                 var history = new com.fongmi.android.tv.bean.History();
-                history.setVodName("披荆斩棘2026"); history.setKey("timeline-test");
+                history.setVodName(title); history.setKey("timeline-test");
                 VodPlaybackMedia.searchDanmaku(new com.fongmi.android.tv.bean.Result(), history,
-                        com.fongmi.android.tv.bean.Episode.create("第10期上", "timeline"), 1, "2026", "综艺", a.player());
+                        com.fongmi.android.tv.bean.Episode.create(episode, "timeline"), 1, "2026", "综艺", a.player());
             });
             await(scenario, a -> a.player().haveDanmaku(), "automatic native match", 90000);
             for (long position : new long[]{600000, 2400000, 60000}) {
@@ -124,7 +132,7 @@ public class PlatformPlaybackInstrumentedTest {
             onActivity(scenario, a -> a.player().getPlayer().play());
             awaitScreenComments(scenario, "comments after background return");
             var bitmap = instrumentation.getUiAutomation().takeScreenshot();
-            try (var out = new java.io.FileOutputStream(new File(context.getExternalFilesDir(null), "577-timeline.png"))) {
+            try (var out = new java.io.FileOutputStream(new File(context.getExternalFilesDir(null), capture + ".png"))) {
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
             }
             bitmap.recycle();

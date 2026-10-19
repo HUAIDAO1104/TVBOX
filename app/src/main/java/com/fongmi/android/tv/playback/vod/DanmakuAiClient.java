@@ -20,7 +20,9 @@ public final class DanmakuAiClient {
     private static final OkHttpClient CLIENT = new OkHttpClient.Builder().dns(OkHttp.dns())
             .dispatcher(new okhttp3.Dispatcher()).followRedirects(false).followSslRedirects(false)
             .connectTimeout(5, TimeUnit.SECONDS).readTimeout(10, TimeUnit.SECONDS)
-            .callTimeout(12, TimeUnit.SECONDS).retryOnConnectionFailure(false).build();
+            // Recover a pooled socket closed by the gateway within this same 12-second
+            // budget. Disabling recovery made the second model request fail immediately.
+            .callTimeout(12, TimeUnit.SECONDS).retryOnConnectionFailure(true).build();
     private final String baseUrl, model, key;
     private volatile Call call;
     private volatile boolean cancelled;

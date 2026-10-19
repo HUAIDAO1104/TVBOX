@@ -45,7 +45,10 @@ public final class VodPlaybackMedia {
         String title = history.getVodName();
         String episodeName = episode.getName();
         String episodeQuery = resolveEpisodeQuery(episodeName, stableEpisodeIndex, type);
-        DanmakuMatchContext matchContext = new DanmakuMatchContext(title, year, type, episodeQuery);
+        // Preserve the source's complete label for AI and manual recovery. Reducing an
+        // unfamiliar "EP01 Part B" to "1" destroys the evidence needed to identify its half.
+        DanmakuMatchContext matchContext = new DanmakuMatchContext(title, year, type,
+                episodeName.isEmpty() ? episodeQuery : episodeName);
         synchronized (MATCH_CONTEXTS) {
             MATCH_CONTEXTS.put(player, matchContext);
         }
@@ -106,7 +109,10 @@ public final class VodPlaybackMedia {
                         apply.accept(item);
                     }
                     @Override public void onFailure() {
-                        if (isCurrentIdentity(player, identity)) player.notifyDanmakuStatus(DanmakuStatus.failed(reason));
+                        onFailure(DanmakuStatus.Failure.NO_MATCH);
+                    }
+                    @Override public void onFailure(DanmakuStatus.Failure aiFailure) {
+                        if (isCurrentIdentity(player, identity)) player.notifyDanmakuStatus(DanmakuStatus.failed(aiFailure));
                     }
                     @Override public void onProgress(int percent) {
                         if (isCurrentIdentity(player, identity)) player.notifyDanmakuStatus(DanmakuStatus.downloading(percent));
@@ -426,11 +432,11 @@ public final class VodPlaybackMedia {
         String label = Objects.toString(episodeName, "").trim();
         DanmakuEpisode identity = DanmakuEpisode.from(label);
         if (!identity.date.isEmpty() || !identity.part.isEmpty() || !identity.extra.isEmpty()) return label;
+        if ("variety".equals(DanmakuMatch.normalizeMediaType(type))) return label;
         if (identity.number != null && identity.number > 0) return String.valueOf(identity.number);
         if ("movie".equals(DanmakuMatch.normalizeMediaType(type)) || DanmakuEpisode.isMovieLabel(label)) return "正片";
         // Variety playlist positions include trailers, extras and split episodes. An ordinal
         // index is not a broadcast period; keep the label for exact date/edition matching.
-        if ("variety".equals(DanmakuMatch.normalizeMediaType(type))) return label;
         if (stableEpisodeIndex > 0) return String.valueOf(stableEpisodeIndex);
         return label;
     }

@@ -708,6 +708,9 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
                 case ACCESS_DENIED -> getString(R.string.danmaku_failure_denied);
                 case INVALID_RESPONSE -> getString(R.string.danmaku_failure_invalid);
                 case EMPTY_DOCUMENT -> getString(R.string.danmaku_failure_empty);
+                case AI_NETWORK -> getString(R.string.danmaku_failure_ai_network);
+                case AI_ACCESS_DENIED -> getString(R.string.danmaku_failure_ai_denied);
+                case AI_INVALID_RESPONSE -> getString(R.string.danmaku_failure_ai_invalid);
                 default -> getString(R.string.danmaku_failure_download);
             });
             default -> "";

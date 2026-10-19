@@ -1,0 +1,32 @@
+I/Danmaku584QA( 8056): 现在就出发第四季【4K】 第1期上 query=现在就出发 error=null elapsedMs=11614 source=tencent-danmaku://video/r4102opm7x3
+I/Danmaku584QA( 8056): 现在就出发第四季 EP01 Part B query=现在就出发 error=null elapsedMs=6956 source=tencent-danmaku://video/z41023tinp7
+I/Danmaku584QA( 8056): 现在就出发第四季 2026年10月10日上 query=现在就出发 error=null elapsedMs=3156 source=tencent-danmaku://video/r4102opm7x3
+D/DanmakuAi( 8056): Request failed at clean: SocketTimeoutException
+D/DanmakuAi( 8056): Failed stage=clean reason=AI_NETWORK
+I/Danmaku584QA( 8056): 现在就出发第四季 第1期加更 query=null error=AI_NETWORK elapsedMs=10419 source=
+I/Danmaku584QA( 8056): player automatic AI fallback elapsedMs=17006 stages=[HIDDEN, MATCHING, AI_MATCHING] source=tencent-danmaku://video/z41023tinp7
+D/DanmakuAi( 8056): Failed stage=select reason=NO_MATCH
+D/DanmakuAi( 8056): Request failed at clean: IOException http_401
+D/DanmakuAi( 8056): Failed stage=clean reason=AI_ACCESS_DENIED
+I/Danmaku584QA( 8056): automatic 第1期上 elapsedMs=283 source=tencent-danmaku://video/r4102opm7x3
+I/Danmaku584QA( 8056): automatic 第1期下 elapsedMs=193 source=tencent-danmaku://video/z41023tinp7
+I/Danmaku584QA( 8056): automatic 2026年10月10日上 elapsedMs=256 source=tencent-danmaku://video/r4102opm7x3
+I/Danmaku584QA( 8056): automatic 第1期加更 elapsedMs=1897 source=tencent-danmaku://video/r4102w56q2o
+I/Danmaku577QA( 8056): comments at 600000 composed moving pixels=177
+I/Danmaku577QA( 8056): pixels position=602539 source=mango-danmaku://video/896231/24719651
+I/Danmaku577QA( 8056): comments at 2400000 composed moving pixels=143
+I/Danmaku577QA( 8056): pixels position=2410747 source=mango-danmaku://video/896231/24719651
+I/Danmaku577QA( 8056): comments at 60000 composed moving pixels=303
+I/Danmaku577QA( 8056): pixels position=61907 source=mango-danmaku://video/896231/24719651
+I/Danmaku577QA( 8056): comments after pause/resume composed moving pixels=702
+I/Danmaku577QA( 8056): comments after fullscreen composed moving pixels=1417
+I/Danmaku577QA( 8056): comments after background return composed moving pixels=234
+I/Danmaku577QA( 8056): comments at 600000 composed moving pixels=249
+I/Danmaku577QA( 8056): pixels position=602468 source=tencent-danmaku://video/r4102opm7x3
+I/Danmaku577QA( 8056): comments at 2400000 composed moving pixels=569
+I/Danmaku577QA( 8056): pixels position=2402472 source=tencent-danmaku://video/r4102opm7x3
+I/Danmaku577QA( 8056): comments at 60000 composed moving pixels=367
+I/Danmaku577QA( 8056): pixels position=62459 source=tencent-danmaku://video/r4102opm7x3
+I/Danmaku577QA( 8056): comments after pause/resume composed moving pixels=5664
+I/Danmaku577QA( 8056): comments after fullscreen composed moving pixels=10629
+I/Danmaku577QA( 8056): comments after background return composed moving pixels=898

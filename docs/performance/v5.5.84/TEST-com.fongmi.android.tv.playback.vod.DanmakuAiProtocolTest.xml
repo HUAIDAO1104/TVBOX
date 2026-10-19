@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-19T07:35:44.019Z" hostname="administratordeMac-mini.local" time="0.021">
+  <properties/>
+  <testcase name="acceptsCleanTitleWithoutAppendingEpisodeOrYear" classname="com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest" time="0.004"/>
+  <testcase name="mixedProviderLabelsDoNotMakeOneEpisodeAmbiguous" classname="com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest" time="0.011"/>
+  <testcase name="preservesEditionAndEpisodeGatesBeforeSelection" classname="com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest" time="0.002"/>
+  <testcase name="promptContainsNamesAndIdsOnly" classname="com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest" time="0.0"/>
+  <testcase name="onlyAllowsExistingIntegerCandidateIds" classname="com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest" time="0.001"/>
+  <testcase name="broadSearchKeepsOriginalSeasonAsSelectionConstraint" classname="com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest" time="0.002"/>
+  <testcase name="modelCanNormalizeLabelsButCannotInventSchedulesOrSwitchHalves" classname="com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

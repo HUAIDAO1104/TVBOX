@@ -330,6 +330,9 @@
     <string name="danmaku_failure_disabled">automatic loading is disabled</string>
     <string name="danmaku_failure_no_match">no exact match for this title and episode</string>
     <string name="danmaku_failure_network">a danmaku service timed out or is unreachable; retry or switch service</string>
+    <string name="danmaku_failure_ai_network">the AI model timed out or is unreachable; retry or select another model</string>
+    <string name="danmaku_failure_ai_denied">the AI service rejected access; check your API key</string>
+    <string name="danmaku_failure_ai_invalid">the AI model did not return a reliable match; retry or search manually</string>
     <string name="danmaku_failure_invalid">the service returned invalid data</string>
     <string name="danmaku_failure_download">the comment file could not be downloaded</string>
     <string name="danmaku_failure_empty">the comment file is empty or cannot be parsed</string>

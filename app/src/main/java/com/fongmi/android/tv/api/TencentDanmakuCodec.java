@@ -36,9 +36,13 @@ public final class TencentDanmakuCodec {
                     || "2".equals(string(info, "playFlag"))) continue;
             String matchTitle = title;
             String hints = clean(string(info, "hintWords"));
-            if (hints.matches("^(?:又名|别名)\\s*[：:].+")) {
+            if (!DanmakuMatch.isSameBaseWork(query, title) && hints.matches("^(?:又名|别名)\\s*[：:].+")) {
                 for (String alias : hints.replaceFirst("^(?:又名|别名)\\s*[：:]", "").split("[、,，/|]")) {
-                    if (DanmakuMatch.isSameWork(query, alias.trim())) matchTitle = alias.trim();
+                    if (DanmakuMatch.isSameWork(query, alias.trim())) {
+                        matchTitle = alias.trim();
+                        Integer season = DanmakuMatch.resultSeason(title);
+                        if (season != null && DanmakuMatch.resultSeason(matchTitle) == null) matchTitle += " 第" + season + "季";
+                    }
                 }
             }
             if (!DanmakuMatch.isSameBaseWork(query, matchTitle)) continue;

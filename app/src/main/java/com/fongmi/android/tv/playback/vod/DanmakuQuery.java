@@ -123,6 +123,20 @@ public final class DanmakuQuery {
         return new DanmakuQuery(raw, primary, year, new ArrayList<>(ordered));
     }
 
+    /** Retrieval terms may be broad; searchTitle remains the protected playback identity. */
+    public DanmakuQuery forDiscovery(String type) {
+        Set<String> terms = new LinkedHashSet<>();
+        boolean variety = "variety".equals(DanmakuMatch.normalizeMediaType(type));
+        String seed = variety && candidates.size() > 1 ? candidates.get(1) : searchTitle;
+        String base = seed.replaceFirst("(?i)\\s*(?:第?\\s*[0-9零〇一二两三四五六七八九十百]+\\s*[季部]|season\\s*\\d{1,2}|s\\d{1,2})\\s*$", "").trim();
+        if (!base.equals(searchTitle) && base.length() >= 2) add(terms, base);
+        // Only a variety show's annual suffix is a broad-first query. Numbers in film
+        // titles (哪吒2, 1917) and drama titles (请回答1988) retain their exact lookup.
+        if (variety && candidates.size() > 1) add(terms, candidates.get(1));
+        terms.addAll(candidates);
+        return new DanmakuQuery(rawTitle, searchTitle, year, new ArrayList<>(terms));
+    }
+
     private static String stripTrailingRelease(String value, Pattern pattern) {
         Matcher matcher = pattern.matcher(value);
         if (!matcher.find()) return value;

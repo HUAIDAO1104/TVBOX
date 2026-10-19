@@ -119,6 +119,17 @@ final class DanmakuEpisode {
 
     String timelineKey() { return key() + (!date.isEmpty() && number != null ? "|period:" + number : ""); }
 
+    boolean sameTimeline(DanmakuEpisode other) {
+        if (!part.equals(other.part) || !extra.equals(other.extra)) return false;
+        if (number != null && other.number != null && !number.equals(other.number)) return false;
+        if (!date.isEmpty() && !other.date.isEmpty() && !sameDate(other)) return false;
+        // A dated platform row and an undated mirror row can still identify the same
+        // numbered period. A date-only row and a number-only row cannot establish that link.
+        return number != null && number.equals(other.number)
+                || !date.isEmpty() && sameDate(other)
+                || !identified() && !other.identified();
+    }
+
     String key() {
         String identity = !date.isEmpty() ? "date:" + date : number == null ? "" : number.toString();
         if (identity.isEmpty() && !extra.isEmpty()) identity = "edition";

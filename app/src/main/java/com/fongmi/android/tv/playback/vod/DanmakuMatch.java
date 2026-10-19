@@ -142,7 +142,7 @@ public final class DanmakuMatch {
         int bestScore = Integer.MIN_VALUE;
         Set<String> years = new HashSet<>();
         Set<String> types = new HashSet<>();
-        Set<String> timelines = new HashSet<>();
+        List<DanmakuEpisode> timelines = new ArrayList<>();
         Set<Integer> seasons = new HashSet<>();
         String expectedYear = normalizeYear(year);
         String expectedType = normalizeMediaType(type);
@@ -164,7 +164,7 @@ public final class DanmakuMatch {
             if (expectedType.isEmpty() && !candidateMediaType.isEmpty()) types.add(candidateMediaType);
             if ("variety".equals(candidateMediaType) || "variety".equals(expectedType)
                     || !DanmakuEpisode.from(episode).date.isEmpty()) {
-                timelines.add(DanmakuEpisode.from(candidate).timelineKey());
+                timelines.add(DanmakuEpisode.from(candidate));
             }
             int score = displayScore(title, year, type, episode, candidate);
             if (best == null || score > bestScore) {
@@ -177,7 +177,7 @@ public final class DanmakuMatch {
         if (expectedSeason(title, type, episode) == null && seasons.size() > 1) return null;
         // A date/period can contain two halves. Leave those choices visible to manual search
         // rather than silently mounting whichever half the provider happens to return first.
-        if (timelines.size() > 1) return null;
+        if (ambiguousTimelines(timelines)) return null;
         return best;
     }
 
@@ -216,12 +216,12 @@ public final class DanmakuMatch {
         if (items == null || canonicalTitle(selectedName).length() < 2) return null;
         T best = null;
         int bestScore = Integer.MIN_VALUE;
-        Set<String> timelines = new HashSet<>();
+        List<DanmakuEpisode> timelines = new ArrayList<>();
         for (T item : items) {
             if (item == null) continue;
             String candidate = name.apply(item);
             if (!isPreferredFamily(selectedName, year, type, episode, candidate)) continue;
-            if ("variety".equals(candidateType(candidate))) timelines.add(DanmakuEpisode.from(candidate).timelineKey());
+            if ("variety".equals(candidateType(candidate))) timelines.add(DanmakuEpisode.from(candidate));
             int score = displayScore(selectedName, preferredYear(selectedName, year),
                     preferredType(selectedName, type), episode, candidate);
             if (sameNonEmpty(resultPlatform(selectedName), resultPlatform(candidate))) score += 40;
@@ -230,7 +230,13 @@ public final class DanmakuMatch {
                 bestScore = score;
             }
         }
-        return timelines.size() > 1 ? null : best;
+        return ambiguousTimelines(timelines) ? null : best;
+    }
+
+    private static boolean ambiguousTimelines(List<DanmakuEpisode> values) {
+        for (int i = 0; i < values.size(); i++) for (int j = i + 1; j < values.size(); j++)
+            if (!values.get(i).sameTimeline(values.get(j))) return true;
+        return false;
     }
 
     /** Returns the confirmed catalogue's current-episode alternatives in preference order. */
@@ -365,6 +371,13 @@ public final class DanmakuMatch {
         return expected.matches(actual);
     }
 
+    /** An unfinished variety catalogue may still contain the other half of this period. */
+    public static <T> boolean canUsePartialCatalogue(String type, String episode, List<T> items, Function<T, String> name) {
+        boolean variety = "variety".equals(normalizeMediaType(type))
+                || items.stream().anyMatch(item -> "variety".equals(candidateType(name.apply(item))));
+        return !variety || !DanmakuEpisode.from(episode).part.isEmpty();
+    }
+
     /** Manual search can show extras when the current episode has no explicit edition label. */
     public static boolean isManualEpisodeCompatible(String episode, String candidate) {
         DanmakuEpisode expected = DanmakuEpisode.from(episode);
@@ -414,6 +427,14 @@ public final class DanmakuMatch {
                 .replaceAll("<[^>]*>", "")
                 .replaceAll("[\\p{Cf}\\u200B-\\u200D\\u2060\\uFEFF]", "");
         text = PROVIDER_SUFFIX.matcher(text).replaceFirst("");
+        Matcher medium = TYPE_META.matcher(text);
+        while (medium.find()) {
+            if (medium.start() > 0 && !normalizeMediaType(medium.group(1)).isEmpty()
+                    && DanmakuEpisode.from(text.substring(medium.end())).identified()) {
+                text = text.substring(0, medium.start());
+                break;
+            }
+        }
         text = YEAR_META.matcher(text).replaceAll("");
         text = stripMetadataBrackets(text);
         text = EPISODE_META.matcher(text).replaceAll(" ");

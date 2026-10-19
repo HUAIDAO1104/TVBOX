@@ -1,0 +1,98 @@
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.playback.vod.DanmakuAiMatchingInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=
+com.fongmi.android.tv.playback.vod.DanmakuAiMatchingInstrumentedTest:
+INSTRUMENTATION_STATUS: test=closedPooledConnectionRecoversWithinTheSameRequestBudget
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.fongmi.android.tv.playback.vod.DanmakuAiMatchingInstrumentedTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stack=java.io.IOException: unexpected end of stream on http://127.0.0.1:42991/...
+	at okhttp3.internal.http1.Http1ExchangeCodec.readResponseHeaders(Http1ExchangeCodec.kt:252)
+	at okhttp3.internal.connection.Exchange.readResponseHeaders(Exchange.kt:116)
+	at okhttp3.internal.http.CallServerInterceptor.intercept(CallServerInterceptor.kt:97)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:332)
+	at okhttp3.internal.connection.ConnectInterceptor.intercept(ConnectInterceptor.kt:34)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:332)
+	at okhttp3.internal.cache.CacheInterceptor.intercept(CacheInterceptor.kt:98)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:332)
+	at okhttp3.internal.http.BridgeInterceptor.intercept(BridgeInterceptor.kt:83)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:332)
+	at okhttp3.internal.http.RetryAndFollowUpInterceptor.intercept(RetryAndFollowUpInterceptor.kt:72)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:332)
+	at okhttp3.internal.connection.RealCall.getResponseWithInterceptorChain$okhttp(RealCall.kt:232)
+	at okhttp3.internal.connection.RealCall.execute(RealCall.kt:187)
+	at com.fongmi.android.tv.playback.vod.DanmakuAiClient.complete(DanmakuAiClient.java:55)
+	at com.fongmi.android.tv.playback.vod.DanmakuAiMatchingInstrumentedTest.closedPooledConnectionRecoversWithinTheSameRequestBudget(DanmakuAiMatchingInstrumentedTest.java:156)
+	... 33 trimmed
+Caused by: java.io.EOFException: \n not found: limit=0 content=…
+	at okio.RealBufferedSource.readUtf8LineStrict(RealBufferedSource.kt:362)
+	at okhttp3.internal.http1.HeadersReader.readLine(HeadersReader.kt:32)
+	at okhttp3.internal.http1.Http1ExchangeCodec.readResponseHeaders(Http1ExchangeCodec.kt:215)
+	... 49 more
+
+INSTRUMENTATION_STATUS: stream=
+Error in closedPooledConnectionRecoversWithinTheSameRequestBudget(com.fongmi.android.tv.playback.vod.DanmakuAiMatchingInstrumentedTest):
+java.io.IOException: unexpected end of stream on http://127.0.0.1:42991/...
+	at okhttp3.internal.http1.Http1ExchangeCodec.readResponseHeaders(Http1ExchangeCodec.kt:252)
+	at okhttp3.internal.connection.Exchange.readResponseHeaders(Exchange.kt:116)
+	at okhttp3.internal.http.CallServerInterceptor.intercept(CallServerInterceptor.kt:97)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:332)
+	at okhttp3.internal.connection.ConnectInterceptor.intercept(ConnectInterceptor.kt:34)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:332)
+	at okhttp3.internal.cache.CacheInterceptor.intercept(CacheInterceptor.kt:98)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:332)
+	at okhttp3.internal.http.BridgeInterceptor.intercept(BridgeInterceptor.kt:83)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:332)
+	at okhttp3.internal.http.RetryAndFollowUpInterceptor.intercept(RetryAndFollowUpInterceptor.kt:72)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:332)
+	at okhttp3.internal.connection.RealCall.getResponseWithInterceptorChain$okhttp(RealCall.kt:232)
+	at okhttp3.internal.connection.RealCall.execute(RealCall.kt:187)
+	at com.fongmi.android.tv.playback.vod.DanmakuAiClient.complete(DanmakuAiClient.java:55)
+	at com.fongmi.android.tv.playback.vod.DanmakuAiMatchingInstrumentedTest.closedPooledConnectionRecoversWithinTheSameRequestBudget(DanmakuAiMatchingInstrumentedTest.java:156)
+	... 33 trimmed
+Caused by: java.io.EOFException: \n not found: limit=0 content=…
+	at okio.RealBufferedSource.readUtf8LineStrict(RealBufferedSource.kt:362)
+	at okhttp3.internal.http1.HeadersReader.readLine(HeadersReader.kt:32)
+	at okhttp3.internal.http1.Http1ExchangeCodec.readResponseHeaders(Http1ExchangeCodec.kt:215)
+	... 49 more
+
+INSTRUMENTATION_STATUS: test=closedPooledConnectionRecoversWithinTheSameRequestBudget
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_RESULT: stream=
+
+Time: 0.057
+There was 1 failure:
+1) closedPooledConnectionRecoversWithinTheSameRequestBudget(com.fongmi.android.tv.playback.vod.DanmakuAiMatchingInstrumentedTest)
+java.io.IOException: unexpected end of stream on http://127.0.0.1:42991/...
+	at okhttp3.internal.http1.Http1ExchangeCodec.readResponseHeaders(Http1ExchangeCodec.kt:252)
+	at okhttp3.internal.connection.Exchange.readResponseHeaders(Exchange.kt:116)
+	at okhttp3.internal.http.CallServerInterceptor.intercept(CallServerInterceptor.kt:97)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:332)
+	at okhttp3.internal.connection.ConnectInterceptor.intercept(ConnectInterceptor.kt:34)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:332)
+	at okhttp3.internal.cache.CacheInterceptor.intercept(CacheInterceptor.kt:98)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:332)
+	at okhttp3.internal.http.BridgeInterceptor.intercept(BridgeInterceptor.kt:83)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:332)
+	at okhttp3.internal.http.RetryAndFollowUpInterceptor.intercept(RetryAndFollowUpInterceptor.kt:72)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:332)
+	at okhttp3.internal.connection.RealCall.getResponseWithInterceptorChain$okhttp(RealCall.kt:232)
+	at okhttp3.internal.connection.RealCall.execute(RealCall.kt:187)
+	at com.fongmi.android.tv.playback.vod.DanmakuAiClient.complete(DanmakuAiClient.java:55)
+	at com.fongmi.android.tv.playback.vod.DanmakuAiMatchingInstrumentedTest.closedPooledConnectionRecoversWithinTheSameRequestBudget(DanmakuAiMatchingInstrumentedTest.java:156)
+	... 33 trimmed
+Caused by: java.io.EOFException: \n not found: limit=0 content=…
+	at okio.RealBufferedSource.readUtf8LineStrict(RealBufferedSource.kt:362)
+	at okhttp3.internal.http1.HeadersReader.readLine(HeadersReader.kt:32)
+	at okhttp3.internal.http1.Http1ExchangeCodec.readResponseHeaders(Http1ExchangeCodec.kt:215)
+	... 49 more
+
+FAILURES!!!
+Tests run: 1,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1

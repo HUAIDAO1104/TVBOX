@@ -8,6 +8,17 @@ import org.junit.Test;
 
 public class DanmakuQueryTest {
 
+    @Test public void discoverySeparatesWorkTitleFromSeasonAndAnnualMetadata() {
+        var query = DanmakuQuery.from("【4K】现在就出发第四季").forDiscovery("综艺");
+        assertEquals("现在就出发第四季", query.searchTitle());
+        assertEquals(java.util.List.of("现在就出发", "现在就出发第四季"), query.candidates());
+        assertEquals("披荆斩棘", DanmakuQuery.from("披荆斩棘2026").forDiscovery("综艺").candidates().get(0));
+        assertEquals("披荆斩棘", DanmakuQuery.from("披荆斩棘2026").forDiscovery("真人秀").candidates().get(0));
+        assertEquals("现在就出发", DanmakuQuery.from("现在就出发第4季2026").forDiscovery("variety").candidates().get(0));
+        for (String title : java.util.List.of("哪吒2", "1917", "请回答1988"))
+            assertEquals(title, DanmakuQuery.from(title).forDiscovery("电影").candidates().get(0));
+    }
+
     @Test public void preservesNezhaSpellingThroughSimplifiedConversion() {
         assertEquals("哪吒2", DanmakuQuery.from("哪吒2").searchTitle());
         assertEquals("哪吒之魔童闹海", DanmakuQuery.from("哪吒之魔童鬧海【HD】").searchTitle());

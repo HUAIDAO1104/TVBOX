@@ -29,7 +29,11 @@ public final class NativeDanmaku {
         return search(source, query, callback);
     }
     public static Job search(String source, String query, String year, String type, String episode, IqiyiDanmaku.Callback<List<Danmaku>> callback) {
-        if (MangoDanmaku.SOURCE.equals(source)) return MangoDanmaku.searchTarget(query, year, type, episode, callback);
+        return search(source, query, query, year, type, episode, callback);
+    }
+    public static Job search(String source, String query, String identity, String year, String type, String episode, IqiyiDanmaku.Callback<List<Danmaku>> callback) {
+        if (MangoDanmaku.SOURCE.equals(source)) return MangoDanmaku.searchTarget(query, identity, year, type, episode, callback);
+        if (TencentDanmakuCodec.SOURCE.equals(source)) return TencentDanmaku.searchTarget(query, identity, year, type, callback);
         return search(source, query, year, type, callback);
     }
     static boolean acceptsWork(String query, String year, String type, String title, String workYear, String workType) {

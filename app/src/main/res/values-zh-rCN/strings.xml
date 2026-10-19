@@ -319,6 +319,9 @@
     <string name="danmaku_failure_disabled">自动加载已关闭</string>
     <string name="danmaku_failure_no_match">没有找到与当前作品和集数完全匹配的弹幕</string>
     <string name="danmaku_failure_network">弹幕服务超时或无法连接，请再次搜索或更换服务</string>
+    <string name="danmaku_failure_ai_network">AI 模型请求超时或无法连接，请重试或切换模型</string>
+    <string name="danmaku_failure_ai_denied">AI 服务拒绝访问，请检查 API Key</string>
+    <string name="danmaku_failure_ai_invalid">AI 未返回可靠的匹配信息，请重试或手动搜索</string>
     <string name="danmaku_failure_invalid">弹幕服务返回的数据格式无效</string>
     <string name="danmaku_failure_download">弹幕文件下载失败</string>
     <string name="danmaku_failure_empty">弹幕文件为空或无法解析</string>

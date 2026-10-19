@@ -1,0 +1,8 @@
+I/Danmaku584QA( 8721): 现在就出发第四季【4K】 第1期上 query=现在就出发 error=null elapsedMs=4114 source=tencent-danmaku://video/r4102opm7x3
+I/Danmaku584QA( 8721): 现在就出发第四季 EP01 Part B query=现在就出发 error=null elapsedMs=2413 source=tencent-danmaku://video/z41023tinp7
+I/Danmaku584QA( 8721): 现在就出发第四季 2026年10月10日上 query=现在就出发 error=null elapsedMs=2767 source=tencent-danmaku://video/r4102opm7x3
+I/Danmaku584QA( 8721): 现在就出发第四季 第1期加更 query=现在就出发 error=null elapsedMs=2344 source=tencent-danmaku://video/r4102w56q2o
+I/Danmaku584QA( 8721): 披荆斩棘2026 第十期上 query=披荆斩棘 error=null elapsedMs=4586 source=mango-danmaku://video/896231/24719651
+I/Danmaku584QA( 8721): 披荆斩棘2026 会员加更第1期 query=披荆斩棘 error=null elapsedMs=6738 source=mango-danmaku://video/896231/24579459
+I/Danmaku584QA( 8721): 哪吒2 正片 query=哪吒2 error=null elapsedMs=6897 source=tencent-danmaku://video/y4101qnn3jo
+I/Danmaku584QA( 8721): 【剧版】喜剧之王（2026）更新至14集4K 第14集 query=喜剧之王 error=null elapsedMs=5699 source=iqiyi-danmaku://video/2586684050154100

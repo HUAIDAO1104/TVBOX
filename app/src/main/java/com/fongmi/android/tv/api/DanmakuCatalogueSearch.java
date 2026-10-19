@@ -22,13 +22,14 @@ public final class DanmakuCatalogueSearch implements NativeDanmaku.Job {
     }
     private final String source, year, type, episode;
     private final DanmakuQuery query;
-    private final boolean targeted;
+    private final boolean targeted, scopeWork;
     private final IqiyiDanmaku.Callback<List<Danmaku>> callback;
     private final java.util.function.Predicate<List<Danmaku>> acceptable;
     private volatile boolean cancelled;
     private final List<Attempt> attempts;
     private int winner = -1;
     private IOException lastError;
+    private boolean receivedResponse;
 
     private static final class Attempt {
         boolean started, complete;
@@ -38,10 +39,10 @@ public final class DanmakuCatalogueSearch implements NativeDanmaku.Job {
     }
 
     private DanmakuCatalogueSearch(String source, DanmakuQuery query, String year, String type,
-                                  String episode, boolean targeted, java.util.function.Predicate<List<Danmaku>> acceptable,
+                                  String episode, boolean targeted, boolean scopeWork, java.util.function.Predicate<List<Danmaku>> acceptable,
                                   IqiyiDanmaku.Callback<List<Danmaku>> callback) {
         this.source = source; this.query = query; this.year = year == null ? "" : year;
-        this.type = type; this.episode = episode; this.targeted = targeted; this.callback = callback;
+        this.type = type; this.episode = episode; this.targeted = targeted; this.scopeWork = scopeWork; this.callback = callback;
         this.acceptable = acceptable;
         this.attempts = query.candidates().stream().map(title -> new Attempt()).toList();
     }
@@ -50,17 +51,29 @@ public final class DanmakuCatalogueSearch implements NativeDanmaku.Job {
         return search(source, query, year, type, episode, targeted,
                 items -> items.stream().anyMatch(item -> DanmakuResultGrouper.isWorkCandidate(query.searchTitle(), item)), callback);
     }
-    static NativeDanmaku.Job search(String source, DanmakuQuery query, String year, String type,
+    public static NativeDanmaku.Job search(String source, DanmakuQuery query, String year, String type,
                                     String episode, boolean targeted, java.util.function.Predicate<List<Danmaku>> acceptable,
                                     IqiyiDanmaku.Callback<List<Danmaku>> callback) {
-        var job = new DanmakuCatalogueSearch(source, query, year, type, episode, targeted, acceptable, callback);
+        return start(source, query, year, type, episode, targeted, targeted, acceptable, callback);
+    }
+    /** Full episode catalogue for the selected work, without paginating unrelated seasons. */
+    public static NativeDanmaku.Job searchWork(String source, DanmakuQuery query, String year, String type,
+                                              java.util.function.Predicate<List<Danmaku>> acceptable,
+                                              IqiyiDanmaku.Callback<List<Danmaku>> callback) {
+        return start(source, query, year, type, "", false, true, acceptable, callback);
+    }
+    private static NativeDanmaku.Job start(String source, DanmakuQuery query, String year, String type,
+                                           String episode, boolean targeted, boolean scopeWork,
+                                           java.util.function.Predicate<List<Danmaku>> acceptable,
+                                           IqiyiDanmaku.Callback<List<Danmaku>> callback) {
+        var job = new DanmakuCatalogueSearch(source, query, year, type, episode, targeted, scopeWork, acceptable, callback);
         // Covers DNS, worker queues and exact-to-base retries together, not per attempt.
-        if (!targeted) job.timeout = TIMER.schedule(() -> job.failure(new java.net.SocketTimeoutException("Catalogue search timed out")),
+        job.timeout = TIMER.schedule(() -> job.failure(new java.net.SocketTimeoutException("Catalogue search timed out")),
                 20, java.util.concurrent.TimeUnit.SECONDS);
         job.next(0);
         // A slow/empty numeric query must not hold the usable base title behind its entire
         // catalogue. Manual results still pass the original work/year acceptance predicate.
-        if (!targeted && job.attempts.size() > 1) job.hedge = TIMER.schedule(job::startFallback, 350, java.util.concurrent.TimeUnit.MILLISECONDS);
+        if (job.attempts.size() > 1) job.hedge = TIMER.schedule(job::startFallback, 350, java.util.concurrent.TimeUnit.MILLISECONDS);
         return job;
     }
     private void startFallback() {
@@ -80,7 +93,8 @@ public final class DanmakuCatalogueSearch implements NativeDanmaku.Job {
         String title = query.candidates().get(index);
         var receiver = new IqiyiDanmaku.Callback<List<Danmaku>>() {
             public void onPartial(List<Danmaku> items) {
-                if (!targeted) received(index, items, false);
+                if (targeted && !com.fongmi.android.tv.playback.vod.DanmakuMatch.canUsePartialCatalogue(type, episode, items, Danmaku::getMatchName)) return;
+                received(index, items, false);
             }
             public void onSuccess(List<Danmaku> items) {
                 received(index, items, true);
@@ -90,16 +104,20 @@ public final class DanmakuCatalogueSearch implements NativeDanmaku.Job {
             }
         };
         if (NativeDanmaku.isSource(source)) {
-            attempt.job = targeted ? NativeDanmaku.search(source, title, year.isEmpty() ? query.year() : year, type, episode, receiver)
+            attempt.job = scopeWork ? NativeDanmaku.search(source, title, query.searchTitle(), year.isEmpty() ? query.year() : year, type, episode, receiver)
                     : NativeDanmaku.search(source, title, receiver);
         } else {
-            attempt.call = DanmakuApi.createCall(title, episode, source);
+            // Fetch a work catalogue, then resolve dates/periods/halves locally. Passing a
+            // source's raw episode label upstream often turns a valid title into no results.
+            attempt.call = DanmakuApi.createCall(title, "", source);
             attempt.call.enqueue(new Callback() {
                 public void onFailure(Call call, IOException error) { receiver.onFailure(error); }
                 public void onResponse(Call call, Response response) {
                     try (Response closeable = response) {
                         if (!closeable.isSuccessful() || closeable.body() == null) throw new HttpFailure(closeable.code());
-                        receiver.onSuccess(Danmaku.arrayFrom(closeable.body().string()));
+                        byte[] bytes = closeable.body().byteStream().readNBytes(4_000_001);
+                        if (bytes.length > 4_000_000) throw new InvalidResponse(new IOException("Catalogue exceeds limit"));
+                        receiver.onSuccess(Danmaku.arrayFrom(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)));
                     } catch (Exception error) {
                         receiver.onFailure(error instanceof IOException io ? io : new InvalidResponse(error));
                     }
@@ -115,7 +133,7 @@ public final class DanmakuCatalogueSearch implements NativeDanmaku.Job {
         boolean accepted = acceptable.test(items);
         synchronized (this) {
             if (cancelled || finished.get() || winner >= 0 && winner != index) return;
-            if (complete) attempts.get(index).complete = true;
+            if (complete) { attempts.get(index).complete = true; receivedResponse = true; }
             if (accepted && winner < 0) {
                 winner = index;
                 if (hedge != null) hedge.cancel(false);
@@ -123,7 +141,7 @@ public final class DanmakuCatalogueSearch implements NativeDanmaku.Job {
             }
         }
         if (accepted) {
-            if (complete) success(items);
+            if (complete || targeted) success(items);
             else if (!cancelled && !finished.get()) callback.onPartial(items);
         } else if (complete) {
             advance();
@@ -133,7 +151,7 @@ public final class DanmakuCatalogueSearch implements NativeDanmaku.Job {
         boolean terminal;
         synchronized (this) {
             if (cancelled || finished.get() || winner >= 0 && winner != index) return;
-            terminal = targeted || winner == index;
+            terminal = winner == index;
             attempts.get(index).complete = true;
             lastError = error;
         }
@@ -146,7 +164,7 @@ public final class DanmakuCatalogueSearch implements NativeDanmaku.Job {
         synchronized (this) {
             if (cancelled || finished.get() || winner >= 0) return;
             if (!attempts.stream().allMatch(attempt -> attempt.complete)) return;
-            error = lastError;
+            error = receivedResponse ? null : lastError;
         }
         if (error == null) success(List.of());
         else failure(error);

@@ -5,7 +5,8 @@ public final class DanmakuStatus {
 
     public enum Stage { HIDDEN, MATCHING, AI_MATCHING, RESTORING, DOWNLOADING, READY, FAILED }
 
-    public enum Failure { NONE, DISABLED, NO_MATCH, NETWORK, ACCESS_DENIED, INVALID_RESPONSE, DOWNLOAD, EMPTY_DOCUMENT }
+    public enum Failure { NONE, DISABLED, NO_MATCH, NETWORK, ACCESS_DENIED, INVALID_RESPONSE, DOWNLOAD, EMPTY_DOCUMENT,
+        AI_NETWORK, AI_ACCESS_DENIED, AI_INVALID_RESPONSE }
 
     private final Stage stage;
     private final Failure failure;

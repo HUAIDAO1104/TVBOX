@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.fongmi.android.tv.playback.vod.DanmakuQueryTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-19T07:35:44.090Z" hostname="administratordeMac-mini.local" time="0.001">
+  <properties/>
+  <testcase name="cleansCatalogYearAndReleaseMetadata" classname="com.fongmi.android.tv.playback.vod.DanmakuQueryTest" time="0.0"/>
+  <testcase name="discoverySeparatesWorkTitleFromSeasonAndAnnualMetadata" classname="com.fongmi.android.tv.playback.vod.DanmakuQueryTest" time="0.001"/>
+  <testcase name="gluedYearFallbackRequiresMatchingCatalogueMetadata" classname="com.fongmi.android.tv.playback.vod.DanmakuQueryTest" time="0.0"/>
+  <testcase name="stripsAggregateEpisodeCountFromProviderTitles" classname="com.fongmi.android.tv.playback.vod.DanmakuQueryTest" time="0.0"/>
+  <testcase name="preservesSeasonAndMeaningfulTitleNumbers" classname="com.fongmi.android.tv.playback.vod.DanmakuQueryTest" time="0.0"/>
+  <testcase name="stripsInterleavedUpdateBadgesWithoutAddingNoiseBack" classname="com.fongmi.android.tv.playback.vod.DanmakuQueryTest" time="0.0"/>
+  <testcase name="preservesNezhaSpellingThroughSimplifiedConversion" classname="com.fongmi.android.tv.playback.vod.DanmakuQueryTest" time="0.0"/>
+  <testcase name="unwrapsARealTitleWithoutTreatingItAsMetadata" classname="com.fongmi.android.tv.playback.vod.DanmakuQueryTest" time="0.0"/>
+  <testcase name="keepsNumericTitleExactAndAllowsMetadataCheckedFallback" classname="com.fongmi.android.tv.playback.vod.DanmakuQueryTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

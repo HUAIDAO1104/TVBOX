@@ -37,11 +37,17 @@ public final class MangoDanmaku {
     public static NativeDanmaku.Job searchTarget(String query, String year, String type, String episode, IqiyiDanmaku.Callback<List<Danmaku>> callback) {
         return search(query, year, type, episode, callback, NativeDanmakuRequest.CLIENT);
     }
+    public static NativeDanmaku.Job searchTarget(String query, String identity, String year, String type, String episode, IqiyiDanmaku.Callback<List<Danmaku>> callback) {
+        return search(query, identity, year, type, episode, callback, NativeDanmakuRequest.CLIENT);
+    }
     static NativeDanmaku.Job search(String query, IqiyiDanmaku.Callback<List<Danmaku>> callback, OkHttpClient client) {
         return search(query, "", "", "", callback, client);
     }
     static NativeDanmaku.Job search(String query, String year, String type, String episode, IqiyiDanmaku.Callback<List<Danmaku>> callback, OkHttpClient client) {
-        String cacheKey = query + "|" + year + "|" + type + "|" + episode;
+        return search(query, query, year, type, episode, callback, client);
+    }
+    static NativeDanmaku.Job search(String query, String identity, String year, String type, String episode, IqiyiDanmaku.Callback<List<Danmaku>> callback, OkHttpClient client) {
+        String cacheKey = query + "|" + identity + "|" + year + "|" + type + "|" + episode;
         var job = new NativeDanmakuRequest(18000, "https://so.mgtv.com/", client);
         job.start(NativeDanmakuRequest.SEARCH, () -> {
             synchronized (CACHE) {
@@ -56,7 +62,7 @@ public final class MangoDanmaku {
             Map<String, Danmaku> rows = new LinkedHashMap<>();
             List<Work> eligible = new ArrayList<>();
             for (Work work : works(job.text(searchUrl(query)), query)) {
-                if (NativeDanmaku.acceptsWork(query, year, type, work.matchTitle(), work.year(), work.type())) eligible.add(work);
+                if (NativeDanmaku.acceptsWork(identity, year, type, work.matchTitle(), work.year(), work.type())) eligible.add(work);
             }
             // Search already includes authoritative video IDs and broadcast/part labels.
             // Do not hold these behind a separate catalogue host or an older season's pages.
@@ -72,7 +78,7 @@ public final class MangoDanmaku {
                 if (!rows.isEmpty()) callback.onPartial(copy(List.copyOf(rows.values())));
                 // Recent episodes are already in this authoritative page. Loading every
                 // previous month first wastes the TV's catalogue budget for no extra certainty.
-                if (eligible.size() == 1 && !episode.isEmpty() && !DanmakuMatch.ranked(query, year, type, episode,
+                if (eligible.size() == 1 && !episode.isEmpty() && !DanmakuMatch.ranked(identity, year, type, episode,
                         new ArrayList<>(rows.values()), Danmaku::getMatchName).isEmpty()) return List.copyOf(rows.values());
             }
             for (var entry : firstPages.entrySet()) {

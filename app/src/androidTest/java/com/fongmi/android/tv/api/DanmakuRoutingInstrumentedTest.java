@@ -14,6 +14,23 @@ import java.util.concurrent.atomic.*;
 
 @RunWith(AndroidJUnit4.class)
 public class DanmakuRoutingInstrumentedTest {
+    @Test public void liveAutomaticBroadTitleKeepsSeasonDatesHalvesAndExtras() throws Exception {
+        org.junit.Assume.assumeTrue("true".equals(InstrumentationRegistry.getArguments().getString("danmakuLive")));
+        for (String[] spec : List.of(new String[]{"第1期上", "r4102opm7x3"}, new String[]{"第1期下", "z41023tinp7"},
+                new String[]{"2026年10月10日上", "r4102opm7x3"}, new String[]{"第1期加更", "r4102w56q2o"})) {
+            var done = new CountDownLatch(1); var item = new AtomicReference<Danmaku>();
+            var failure = new AtomicReference<DanmakuApi.SearchFailure>(); long start = android.os.SystemClock.elapsedRealtime();
+            DanmakuApi.searchDetailed("现在就出发第四季", "2026", "综艺", spec[0], new DanmakuApi.SearchCallback() {
+                public void onFound(Danmaku found, List<Danmaku> rows) { item.set(found); done.countDown(); }
+                public void onFailure(DanmakuApi.SearchFailure error) { failure.set(error); done.countDown(); }
+            });
+            try {
+                assertTrue(done.await(95, TimeUnit.SECONDS)); assertNotNull(spec[0] + ": " + failure.get(), item.get());
+                assertTrue(item.get().getUrl(), item.get().getUrl().endsWith(spec[1]));
+                android.util.Log.i("Danmaku584QA", "automatic " + spec[0] + " elapsedMs=" + (android.os.SystemClock.elapsedRealtime() - start) + " source=" + item.get().getUrl());
+            } finally { DanmakuApi.cancel(); }
+        }
+    }
     private String endpoint(MockWebServer server) { return server.url("/search?name={name}&episode={episode}").toString().replace("%7B", "{").replace("%7D", "}"); }
     private MockResponse rows(MockWebServer server, String label, String path) {
         Danmaku item = Danmaku.from(server.url("/api/v2/comment/" + path + "?format=xml").toString());

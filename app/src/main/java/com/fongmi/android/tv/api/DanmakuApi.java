@@ -122,7 +122,7 @@ public class DanmakuApi {
                              List<String> direct, List<String> backup, SearchCallback callback) {
         int generation = beginSearch();
         SearchStats stats = new SearchStats(generation, callback, backup);
-        DanmakuQuery query = DanmakuQuery.from(name, year);
+        DanmakuQuery query = DanmakuQuery.from(name, year).forDiscovery(type);
         stats.backupSearch = () -> searchCandidateParallel(generation, query, Objects.toString(year, ""),
                 Objects.toString(type, ""), episode, preferredName, stats.backup, callback, 0, 0, stats);
         if (!backup.isEmpty()) App.post(stats.backupDeadline, 8_000L);
@@ -161,6 +161,7 @@ public class DanmakuApi {
             stats.startBackup();
             if (stats.phases.decrementAndGet() > 0) return;
             SearchFailure failure = stats.download.get() > 0 ? SearchFailure.DOWNLOAD
+                    : stats.responses.get() > 0 ? SearchFailure.NO_MATCH
                     : stats.denied.get() > 0 ? SearchFailure.ACCESS_DENIED
                     : stats.network.get() > 0 ? SearchFailure.NETWORK
                     : stats.invalid.get() > 0 ? SearchFailure.INVALID_RESPONSE : SearchFailure.NO_MATCH;
@@ -179,18 +180,21 @@ public class DanmakuApi {
         for (String apiUrl : apiUrls) {
             class ProviderCallback implements IqiyiDanmaku.Callback<List<Danmaku>> {
                 final AtomicBoolean completed = new AtomicBoolean();
-                List<Danmaku> candidates = List.of();
                 boolean accepts(List<Danmaku> items) {
-                    candidates = preferredName.isEmpty()
+                    return !rank(items).isEmpty();
+                }
+                List<Danmaku> rank(List<Danmaku> items) {
+                    return preferredName.isEmpty()
                             ? DanmakuMatch.ranked(candidateTitle, TextUtils.isEmpty(year) ? query.year() : year.trim(),
                                     type, episode, items, Danmaku::getMatchName)
                             : DanmakuMatch.rankedPreferred(preferredName, year, type, episode, items, Danmaku::getName);
-                    return !candidates.isEmpty();
                 }
                 @Override public void onSuccess(List<Danmaku> items) {
                     if (generation != REQUEST_GENERATION.get() || finished.get()) return;
+                    stats.responses.incrementAndGet();
                     String sourceKey = NativeDanmaku.isSource(apiUrl) ? apiUrl : DanmakuManualMatchStore.sourceKey(apiUrl);
                     for (Danmaku item : items) item.setSourceKey(sourceKey);
+                    List<Danmaku> candidates = rank(items);
                     if (candidates.isEmpty()) { completeOne(); return; }
                     if (directStage) stats.directCandidateFound.set(true);
                     verifyCandidates(generation, candidates, items, 0, finished, calls,
@@ -393,6 +397,7 @@ public class DanmakuApi {
         }
 
         private final AtomicInteger invalid = new AtomicInteger();
+        private final AtomicInteger responses = new AtomicInteger();
         private final AtomicInteger network = new AtomicInteger();
         private final AtomicInteger download = new AtomicInteger();
         private final AtomicInteger denied = new AtomicInteger();
