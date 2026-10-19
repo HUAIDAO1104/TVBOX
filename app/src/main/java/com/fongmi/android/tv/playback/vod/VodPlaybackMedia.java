@@ -48,7 +48,7 @@ public final class VodPlaybackMedia {
         // Preserve the source's complete label for AI and manual recovery. Reducing an
         // unfamiliar "EP01 Part B" to "1" destroys the evidence needed to identify its half.
         DanmakuMatchContext matchContext = new DanmakuMatchContext(title, year, type,
-                episodeName.isEmpty() ? episodeQuery : episodeName);
+                episodeName.isEmpty() ? episodeQuery : episodeName, episodeQuery);
         synchronized (MATCH_CONTEXTS) {
             MATCH_CONTEXTS.put(player, matchContext);
         }
@@ -434,7 +434,8 @@ public final class VodPlaybackMedia {
         if (!identity.date.isEmpty() || !identity.part.isEmpty() || !identity.extra.isEmpty()) return label;
         if ("variety".equals(DanmakuMatch.normalizeMediaType(type))) return label;
         if (identity.number != null && identity.number > 0) return String.valueOf(identity.number);
-        if ("movie".equals(DanmakuMatch.normalizeMediaType(type)) || DanmakuEpisode.isMovieLabel(label)) return "正片";
+        String mediaType = DanmakuMatch.normalizeMediaType(type);
+        if ("movie".equals(mediaType) || mediaType.isEmpty() && DanmakuEpisode.isMovieLabel(label)) return "正片";
         // Variety playlist positions include trailers, extras and split episodes. An ordinal
         // index is not a broadcast period; keep the label for exact date/edition matching.
         if (stableEpisodeIndex > 0) return String.valueOf(stableEpisodeIndex);

@@ -17,7 +17,7 @@ public class DanmakuAiProtocolTest {
 
     @Test public void broadSearchKeepsOriginalSeasonAsSelectionConstraint() {
         assertEquals("", DanmakuAiProtocol.query("{\"query\":\"无关电视剧\",\"confidence\":1}", drama));
-        assertEquals("", DanmakuAiProtocol.query("{\"query\":\"喜剧之王\",\"confidence\":0.6}", drama));
+        assertEquals("喜剧之王", DanmakuAiProtocol.query("{\"query\":\"喜剧之王\",\"confidence\":0.6}", drama));
         var season = new DanmakuMatchContext("现在就出发第四季", "2026", "综艺", "第1期");
         assertEquals("现在就出发", DanmakuAiProtocol.query("{\"query\":\"现在就出发\",\"confidence\":1}", season));
         assertEquals("现在就出发 第四季", DanmakuAiProtocol.query("{\"query\":\"现在就出发 第四季\",\"confidence\":1}", season));
@@ -52,9 +52,8 @@ public class DanmakuAiProtocolTest {
     @Test public void onlyAllowsExistingIntegerCandidateIds() {
         assertEquals(1, DanmakuAiProtocol.selectedIndex("{\"id\":1,\"confidence\":1}", 2));
         for (String value : List.of("{\"id\":2,\"confidence\":1}", "{\"id\":-1,\"confidence\":1}",
-                "{\"id\":0.5,\"confidence\":1}", "{\"id\":\"0\",\"confidence\":1}",
-                "{\"id\":0,\"confidence\":0.8}", "{\"url\":\"https://invented.invalid/a.xml\"}",
-                "{\"id\":0,\"confidence\":1.1}", "null", "[]", "not JSON"))
+                "{\"id\":0.5,\"confidence\":1}", "{\"id\":true}", "{\"id\":\"0.5\"}",
+                "{\"url\":\"https://invented.invalid/a.xml\"}", "null", "[]", "not JSON"))
             assertEquals(value, -1, DanmakuAiProtocol.selectedIndex(value, 2));
     }
 
@@ -71,5 +70,51 @@ public class DanmakuAiProtocolTest {
         assertTrue(json.contains("\"id\":0"));
         assertFalse(json.contains("url"));
         assertFalse(json.contains("key"));
+    }
+
+    @Test public void discoveryUsesTitleEvidenceInsteadOfASelfReportedScore() {
+        for (String suffix : List.of("", ",\"confidence\":0.85", ",\"confidence\":\"0.95\""))
+            assertEquals("喜剧之王", DanmakuAiProtocol.query("{\"query\":\"喜剧之王\"" + suffix + "}", drama));
+        assertEquals("", DanmakuAiProtocol.query("{\"query\":\"另一部作品\"}", drama));
+    }
+
+    @Test public void acceptsOneStructuredAnswerSurroundedByExplanation() {
+        assertEquals("喜剧之王", DanmakuAiProtocol.query("搜索词如下：\n```json\n{\"query\":\"喜剧之王\",\"confidence\":0.95}\n```\n已保留原集数。", drama));
+        assertEquals("", DanmakuAiProtocol.query("{\"query\":\"喜剧之王\",\"confidence\":1} {\"query\":\"另一作品\",\"confidence\":1}", drama));
+        assertEquals("", DanmakuAiProtocol.query("[{\"query\":\"喜剧之王\",\"confidence\":1}]", drama));
+        assertEquals("", DanmakuAiProtocol.query("```json\n[{\"query\":\"喜剧之王\"}]\n```", drama));
+        assertEquals("", DanmakuAiProtocol.query("{\"query\":\"喜剧之王\"", drama));
+    }
+
+    @Test public void handlesTextPartsWithoutUsingReasoningAsTheAnswer() throws Exception {
+        assertEquals("{\"query\":\"喜剧之王\"}", DanmakuAiProtocol.completion("{\"choices\":[{\"message\":{\"content\":[{\"type\":\"reasoning\",\"text\":\"ignore\"},{\"type\":\"text\",\"text\":\"{\\\"query\\\":\\\"喜剧之王\\\"}\"}]}}]}"));
+        for (String value : List.of("{}", "{\"choices\":[]}", "{\"choices\":[{\"message\":{\"content\":null,\"reasoning_content\":\"not an answer\"}}]}",
+                "{\"choices\":[{\"message\":{\"content\":\"\"}}]}")) {
+            try { DanmakuAiProtocol.completion(value); fail(value); }
+            catch (java.io.IOException expected) { assertEquals("response", expected.getMessage()); }
+        }
+    }
+
+    @Test public void localFallbackRetainsIdentityAndSignificantNumbers() {
+        assertEquals("喜剧之王", DanmakuAiProtocol.fallbackQuery(drama));
+        assertEquals("现在就出发", DanmakuAiProtocol.fallbackQuery(new DanmakuMatchContext("现在就出发第四季", "2026", "综艺", "第1期下")));
+        assertEquals("哪吒2", DanmakuAiProtocol.fallbackQuery(new DanmakuMatchContext("哪吒2", "2025", "电影", "正片")));
+        assertEquals("", DanmakuAiProtocol.fallbackQuery(new DanmakuMatchContext("https://example.invalid/film", "", "", "")));
+        assertEquals(0, DanmakuAiProtocol.selectedIndex("{\"id\":0,\"confidence\":\"0.95\"}", 1));
+        assertEquals(0, DanmakuAiProtocol.selectedIndex("{\"id\":0}", 1));
+        assertEquals(0, DanmakuAiProtocol.selectedIndex("{\"id\":\"0\",\"confidence\":0.6}", 1));
+        assertEquals("第10期下", DanmakuAiProtocol.normalizedEpisode("{\"episode\":\"第10期下\"}", "EP10 Part B"));
+        assertEquals("第10期上", DanmakuAiProtocol.normalizedEpisode("{\"episode\":\"第10期下\"}", "第10期上"));
+    }
+
+    @Test public void rawDramaLabelDoesNotDiscardThePlayersResolvedEpisode() {
+        var context = new DanmakuMatchContext("喜剧之王", "2026", "电视剧", "05(全38集)", "5");
+        assertTrue(DanmakuAiProtocol.context("clean", context).toString().contains("\"episodeHint\":\"5\""));
+        for (String response : List.of("", "{\"episode\":\"第13集\",\"confidence\":1}")) {
+            var matched = DanmakuAiProtocol.matchingContext(context, "喜剧之王", response);
+            assertEquals("5", matched.getEpisode());
+            assertTrue(DanmakuMatch.ranked("喜剧之王", "2026", "电视剧", matched.getEpisode(),
+                    List.of("喜剧之王(2026)【电视剧】from fixture - 第13集"), x -> x).isEmpty());
+        }
     }
 }

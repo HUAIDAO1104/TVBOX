@@ -27,6 +27,8 @@ public class VodPlaybackMediaTest {
         assertEquals("预告片", VodPlaybackMedia.resolveEpisodeQuery("预告片", 12));
         assertEquals("20260720特辑", VodPlaybackMedia.resolveEpisodeQuery("20260720特辑", 3));
         assertEquals("4", VodPlaybackMedia.resolveEpisodeQuery("360P修复版", 4));
+        assertEquals("14", VodPlaybackMedia.resolveEpisodeQuery("蓝光", 14, "电视剧"));
+        assertEquals("正片", VodPlaybackMedia.resolveEpisodeQuery("蓝光", 1, "电影"));
     }
 
     @Test

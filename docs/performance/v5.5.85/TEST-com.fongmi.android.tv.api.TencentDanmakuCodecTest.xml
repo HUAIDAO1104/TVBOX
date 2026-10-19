@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.fongmi.android.tv.api.TencentDanmakuCodecTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-19T08:25:41.345Z" hostname="administratordeMac-mini.local" time="0.044">
+  <properties/>
+  <testcase name="millisecondsColorsAndXmlEscapingSurviveConversion" classname="com.fongmi.android.tv.api.TencentDanmakuCodecTest" time="0.0"/>
+  <testcase name="currentSeasonHasDistinctUpperAndLowerRealIds" classname="com.fongmi.android.tv.api.TencentDanmakuCodecTest" time="0.01"/>
+  <testcase name="aliasesCannotBeInjectedByThirdPartyJson" classname="com.fongmi.android.tv.api.TencentDanmakuCodecTest" time="0.015"/>
+  <testcase name="denseSegmentsAreSampledAcrossTheirTimeline" classname="com.fongmi.android.tv.api.TencentDanmakuCodecTest" time="0.014"/>
+  <testcase name="fullDramaCatalogueUsesThePlatformsEpisodeNumber" classname="com.fongmi.android.tv.api.TencentDanmakuCodecTest" time="0.001"/>
+  <testcase name="officialMovieAliasMatchesButRetainsActualDisplayTitle" classname="com.fongmi.android.tv.api.TencentDanmakuCodecTest" time="0.003"/>
+  <testcase name="zeroSummaryCountsDoNotDiscardRealSegments" classname="com.fongmi.android.tv.api.TencentDanmakuCodecTest" time="0.0"/>
+  <testcase name="broadQueryAliasCannotEraseTheOfficialSeason" classname="com.fongmi.android.tv.api.TencentDanmakuCodecTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

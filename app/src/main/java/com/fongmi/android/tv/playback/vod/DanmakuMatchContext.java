@@ -9,12 +9,18 @@ public final class DanmakuMatchContext {
     private final String year;
     private final String type;
     private final String episode;
+    private final String resolvedEpisode;
 
     public DanmakuMatchContext(String title, String year, String type, String episode) {
+        this(title, year, type, episode, episode);
+    }
+
+    public DanmakuMatchContext(String title, String year, String type, String episode, String resolvedEpisode) {
         this.title = Objects.toString(title, "").trim();
         this.year = Objects.toString(year, "").trim();
         this.type = Objects.toString(type, "").trim();
         this.episode = Objects.toString(episode, "").trim();
+        this.resolvedEpisode = Objects.toString(resolvedEpisode, this.episode).trim();
     }
 
     public static DanmakuMatchContext empty() {
@@ -36,4 +42,6 @@ public final class DanmakuMatchContext {
     public String getEpisode() {
         return episode;
     }
+
+    public String getResolvedEpisode() { return resolvedEpisode; }
 }

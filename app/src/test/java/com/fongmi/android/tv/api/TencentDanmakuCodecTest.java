@@ -11,6 +11,19 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class TencentDanmakuCodecTest {
+    @Test public void fullDramaCatalogueUsesThePlatformsEpisodeNumber() throws Exception {
+        var work = new TencentDanmakuCodec.Work("mzc002002kqssyu", "庆余年第二季", "2024", "电视剧", "庆余年第二季", List.of());
+        String json = "{\"ret\":0,\"data\":{\"module_list_datas\":[{\"module_datas\":[{\"item_data_lists\":{\"item_datas\":["
+                + "{\"item_params\":{\"cid\":\"mzc002002kqssyu\",\"vid\":\"b41007m5t4f\",\"union_title\":\"庆余年第二季_14\",\"title\":\"14\"}},"
+                + "{\"item_params\":{\"cid\":\"mzc002002kqssyu\",\"vid\":\"z4100poa1e3\",\"union_title\":\"庆余年第二季_13\",\"title\":\"13\"}},"
+                + "{\"item_params\":{\"cid\":\"mzc002002kqssyu\",\"vid\":\"q4100dpkd26\",\"union_title\":\"预告\",\"title\":\"14\",\"is_trailer\":\"1\"}},"
+                + "{\"item_params\":{\"cid\":\"mzc002004dw1xx2\",\"vid\":\"g4100eu22qm\",\"union_title\":\"其他版本_14\",\"title\":\"14\"}}"
+                + "]}}]}]}}";
+        var rows = TencentDanmakuCodec.episodes(json, work).rows();
+        var match = DanmakuMatch.best("庆余年第二季", "2024", "电视剧", "第14集", rows, Danmaku::getMatchName);
+        assertNotNull(match); assertTrue(match.getUrl().endsWith("b41007m5t4f")); assertEquals(2, rows.size());
+        assertNull(DanmakuMatch.best("庆余年第一季", "2024", "电视剧", "第14集", rows, Danmaku::getMatchName));
+    }
     @Test public void broadQueryAliasCannotEraseTheOfficialSeason() throws Exception {
         String json = "{\"ret\":0,\"data\":{\"normalList\":{\"itemList\":[{\"doc\":{\"id\":\"mzc002001bk7moh\"},\"videoInfo\":{\"title\":\"现在就出发 第4季\",\"year\":2026,\"typeName\":\"综艺\",\"hintWords\":\"又名：现在就出发\",\"episodeSites\":[{\"enName\":\"qq\",\"episodeInfoList\":[{\"id\":\"r4102opm7x3\",\"title\":\"2026-10-10 第1期上\"}]}]}}]}}}";
         var works = TencentDanmakuCodec.works(json, "现在就出发");

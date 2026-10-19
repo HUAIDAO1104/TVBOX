@@ -14,6 +14,30 @@ import java.util.concurrent.atomic.*;
 
 @RunWith(AndroidJUnit4.class)
 public class DanmakuRoutingInstrumentedTest {
+    @Test public void liveDramaAutomaticMatchesAcrossTitlesAndEpisodeLabels() throws Exception {
+        org.junit.Assume.assumeTrue("true".equals(InstrumentationRegistry.getArguments().getString("danmakuLive")));
+        List<String> errors = new ArrayList<>();
+        for (String[] spec : List.of(new String[]{"喜剧之王", "2026", "第14集"},
+                new String[]{"狂飙", "2023", "14"}, new String[]{"庆余年第二季", "2024", "第14集"},
+                new String[]{"长相思第二季", "2024", "第5集"}, new String[]{"罚罪2", "2025", "第2集"})) {
+            var done = new CountDownLatch(1); var found = new AtomicReference<Danmaku>();
+            var failure = new AtomicReference<DanmakuApi.SearchFailure>(); long start = android.os.SystemClock.elapsedRealtime();
+            DanmakuApi.searchDetailed(spec[0], spec[1], "电视剧", spec[2], new DanmakuApi.SearchCallback() {
+                public void onFound(Danmaku item, List<Danmaku> rows) { found.set(item); done.countDown(); }
+                public void onFailure(DanmakuApi.SearchFailure error) { failure.set(error); done.countDown(); }
+            });
+            try {
+                assertTrue("Drama search deadline", done.await(95, TimeUnit.SECONDS));
+                android.util.Log.i("Danmaku585QA", "drama " + Arrays.toString(spec) + " failure=" + failure.get()
+                        + " elapsedMs=" + (android.os.SystemClock.elapsedRealtime()-start)
+                        + " result=" + (found.get()==null ? "" : found.get().getMatchName()+" "+found.get().getUrl()));
+                if (found.get()==null) errors.add(Arrays.toString(spec)+": "+failure.get());
+                else assertFalse(com.fongmi.android.tv.playback.vod.DanmakuMatch.ranked(spec[0], spec[1], "电视剧", spec[2],
+                        List.of(found.get()), Danmaku::getMatchName).isEmpty());
+            } finally { DanmakuApi.cancel(); }
+        }
+        assertEquals(List.of(), errors);
+    }
     @Test public void liveAutomaticBroadTitleKeepsSeasonDatesHalvesAndExtras() throws Exception {
         org.junit.Assume.assumeTrue("true".equals(InstrumentationRegistry.getArguments().getString("danmakuLive")));
         for (String[] spec : List.of(new String[]{"第1期上", "r4102opm7x3"}, new String[]{"第1期下", "z41023tinp7"},

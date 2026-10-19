@@ -69,8 +69,20 @@ public final class DanmakuAiMatcher {
                 // Android Keystore access belongs on the worker, never the playback UI.
                 if (client == null) client = DanmakuAiClient.configured();
                 if (done.get()) { client.cancel(); return; }
-                String response = client.complete(DanmakuAiProtocol.context("clean", original));
+                String response = "";
+                try { response = client.complete(DanmakuAiProtocol.context("clean", original)); }
+                catch (IOException error) {
+                    // An empty/malformed model answer must not block a real catalogue lookup.
+                    // Authentication, transport failures and cancellation retain their cause.
+                    if (!"response".equals(error.getMessage())) throw error;
+                }
+                if (done.get()) return;
                 String query = DanmakuAiProtocol.query(response, original);
+                if (query.isEmpty()) {
+                    query = DanmakuAiProtocol.fallbackQuery(original);
+                    response = ""; // Rejected suggestions must not normalize the episode either.
+                    if (com.fongmi.android.tv.BuildConfig.DEBUG) android.util.Log.d("DanmakuAi", "Using locally verified title after invalid model normalization");
+                }
                 if (query.isEmpty()) { failure = DanmakuStatus.Failure.AI_INVALID_RESPONSE; fail(); return; }
                 DanmakuMatchContext context = DanmakuAiProtocol.matchingContext(original, query, response);
                 stage = "catalogue";

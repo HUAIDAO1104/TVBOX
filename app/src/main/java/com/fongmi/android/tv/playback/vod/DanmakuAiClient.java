@@ -42,6 +42,7 @@ public final class DanmakuAiClient {
         body.addProperty("model", model);
         body.addProperty("temperature", 0);
         body.addProperty("max_tokens", 180);
+        body.addProperty("stream", false);
         if (model.toLowerCase(java.util.Locale.ROOT).contains("deepseek")) {
             JsonObject thinking = new JsonObject(); thinking.addProperty("type", "disabled"); body.add("thinking", thinking);
         } else body.addProperty("enable_thinking", false);
@@ -59,11 +60,7 @@ public final class DanmakuAiClient {
             if (response.body() == null) throw new IOException("response");
             byte[] bytes = response.body().byteStream().readNBytes(65537);
             if (bytes.length > 65536) throw new IOException("response");
-            JsonObject result = JsonParser.parseString(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
-            String content = result.getAsJsonArray("choices").get(0).getAsJsonObject()
-                    .getAsJsonObject("message").get("content").getAsString();
-            if (content.length() > 8192) throw new IOException("response");
-            return content;
+            return DanmakuAiProtocol.completion(new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
         } catch (RuntimeException e) { throw new IOException("response"); }
     }
 

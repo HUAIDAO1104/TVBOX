@@ -65,7 +65,7 @@ public class DanmakuAiMatchingInstrumentedTest {
                             var candidate = value.getAsJsonObject();
                             if (candidate.get("name").getAsString().contains("第1期下")) selected = candidate.get("id").getAsInt();
                         }
-                        return model("{\"id\":" + selected + ",\"episode\":\"第1期下\",\"confidence\":1}");
+                        return model("{\"id\":\"" + selected + "\",\"episode\":\"第1期下\"}");
                     }
                     if (request.getPath().startsWith("/search")) {
                         sentQuery.set(request.getRequestUrl().queryParameter("name"));
@@ -92,7 +92,7 @@ public class DanmakuAiMatchingInstrumentedTest {
                     if (request.getPath().contains("/chat/completions")) {
                         String input = JsonParser.parseString(request.getBody().readUtf8()).getAsJsonObject()
                                 .getAsJsonArray("messages").get(1).getAsJsonObject().get("content").getAsString();
-                        return input.contains("candidates") ? model("{\"id\":0,\"episode\":\"第1期下\",\"confidence\":1}")
+                        return input.contains("candidates") ? model("{\"id\":\"0\",\"episode\":\"第1期下\"}")
                                 : model("{\"query\":\"目录综艺\",\"episode\":\"第1期上\",\"confidence\":1}");
                     }
                     return new MockResponse().setBody(App.gson().toJson(List.of(row(server,
@@ -113,6 +113,37 @@ public class DanmakuAiMatchingInstrumentedTest {
             DanmakuAiMatcher.start(new DanmakuMatchContext("目录综艺", "2026", "综艺", "第1期上"),
                     new DanmakuAiClient(server.url("/v1").toString(), "fixture", "fixture-key"), List.of(), List.of(), result);
             result.await(3); assertEquals(DanmakuStatus.Failure.AI_ACCESS_DENIED, result.error);
+        }
+    }
+
+    @Test public void invalidModelNormalizationStillLoadsVerifiedDramaEpisode() throws Exception {
+        for (String response : List.of("", "not JSON", "{\"query\":\"目录电视剧\",\"confidence\":0.85}",
+                "说明：```json\n{\"query\":\"目录电视剧\",\"confidence\":\"0.95\"}\n```",
+                "{\"query\":\"无关节目\",\"episode\":\"第13集\",\"confidence\":1}")) {
+            try (var server = new MockWebServer()) {
+                server.start(); AtomicInteger modelCalls = new AtomicInteger();
+                var items = List.of(row(server, "目录电视剧第二季(2026)【电视剧】from fixture - 第14集", "correct14"),
+                        row(server, "目录电视剧第二季(2026)【电视剧】from fixture - 第13集", "wrong13"),
+                        row(server, "目录电视剧第一季(2025)【电视剧】from fixture - 第14集", "wrongSeason"));
+                server.setDispatcher(new Dispatcher() {
+                    @Override public MockResponse dispatch(RecordedRequest request) {
+                        if (request.getPath().contains("/chat/completions")) { modelCalls.incrementAndGet(); return model(response); }
+                        if (request.getPath().startsWith("/search")) {
+                            assertEquals("目录电视剧", request.getRequestUrl().queryParameter("name"));
+                            assertEquals("", request.getRequestUrl().queryParameter("episode"));
+                            return new MockResponse().setBody(App.gson().toJson(items));
+                        }
+                        assertTrue(request.getPath(), request.getPath().contains("/correct14?"));
+                        return new MockResponse().setBody("<i><d p=\"1,1,25,16777215,0,0,0,1\">第十四集弹幕</d></i>");
+                    }
+                });
+                Result result = new Result();
+                DanmakuAiMatcher.start(new DanmakuMatchContext("目录电视剧第二季【4K】", "2026", "电视剧", "14(全38集)", "14"),
+                        new DanmakuAiClient(server.url("/v1").toString(), "fixture", "fixture-key"), List.of(endpoint(server)), List.of(), result);
+                result.await(6); assertNotNull("failure="+result.error, result.item);
+                assertTrue(result.item.getUrl().contains("/correct14?")); assertEquals(1,modelCalls.get());
+                DanmakuAiMatcher.cancel();
+            }
         }
     }
 
@@ -185,6 +216,24 @@ public class DanmakuAiMatchingInstrumentedTest {
     }
 
     @Test public void livePlayerFallbackUsesConfiguredAiAndPreservesRawEpisode() throws Exception {
+        livePlayerFallback("【测试专线】现在就出发第四季", "EP01 Part B", 3, "2026", "综艺", "z41023tinp7", "现在就出发", true);
+    }
+
+    @Test public void livePlayerFallbackKeepsResolvedDramaEpisode() throws Exception {
+        livePlayerFallback("【测试专线】喜剧之王", "14(全24集)", 14, "2026", "电视剧", "2586684050154100", "喜剧之王", true);
+    }
+
+    @Test public void livePlayerAutomaticallyLoadsDramaWithoutManualSearch() throws Exception {
+        for (String[] spec : List.of(new String[]{"喜剧之王", "2026", "第14集", "14", "2586684050154100"},
+                new String[]{"狂飙", "2023", "14(全39集)", "14", "2856211773028900"},
+                new String[]{"庆余年第二季", "2024", "第14集", "14", "b41007m5t4f"},
+                new String[]{"长相思第二季", "2024", "蓝光", "5", "j41000ms26r"},
+                new String[]{"罚罪2", "2025", "第2集", "2", "2329990978126400"}))
+            livePlayerFallback(spec[0], spec[2], Integer.parseInt(spec[3]), spec[1], "电视剧", spec[4], spec[0], false);
+    }
+
+    private void livePlayerFallback(String title, String episode, int episodeIndex, String year, String type,
+                                    String expectedId, String expectedQuery, boolean expectedAi) throws Exception {
         String endpoint = InstrumentationRegistry.getArguments().getString("aiLiveEndpoint", "");
         Assume.assumeTrue(!endpoint.isEmpty());
         var prefs = App.get().getSharedPreferences("danmaku_ai_private", android.content.Context.MODE_PRIVATE);
@@ -199,11 +248,10 @@ public class DanmakuAiMatchingInstrumentedTest {
             prefs.edit().putString("base_url", endpoint).commit();
             com.fongmi.android.tv.setting.DanmakuSetting.putAuto(true);
             com.fongmi.android.tv.setting.DanmakuSetting.putLoad(true);
-            String title = "【测试专线】现在就出发第四季", episode = "EP01 Part B";
             var selected = new CountDownLatch(1);
             var stages = new CopyOnWriteArrayList<DanmakuStatus.Stage>();
             var source = new AtomicReference<android.net.Uri>();
-            var history = new com.fongmi.android.tv.bean.History(); history.setKey("584-ai-fallback"); history.setVodName(title);
+            var history = new com.fongmi.android.tv.bean.History(); history.setKey("585-ai-fallback-" + title); history.setVodName(title);
             long start = android.os.SystemClock.elapsedRealtime();
             InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
                 player[0] = new com.fongmi.android.tv.player.PlayerManager((com.fongmi.android.tv.player.PlayerManager.Callback)
@@ -218,14 +266,14 @@ public class DanmakuAiMatchingInstrumentedTest {
                             new androidx.media3.common.MediaMetadata.Builder().setTitle(title).setArtist(episode).build()));
                 } catch (Exception error) { throw new AssertionError(error); }
                 VodPlaybackMedia.searchDanmaku(new com.fongmi.android.tv.bean.Result(), history,
-                        com.fongmi.android.tv.bean.Episode.create(episode, "fixture"), 3, "2026", "综艺", player[0]);
+                        com.fongmi.android.tv.bean.Episode.create(episode, "fixture"), episodeIndex, year, type, player[0]);
             });
             assertTrue("Automatic player fallback deadline", selected.await(100, TimeUnit.SECONDS));
-            assertTrue(stages.toString(), stages.contains(DanmakuStatus.Stage.AI_MATCHING));
-            assertTrue(source.get().toString(), source.get().toString().endsWith("z41023tinp7"));
-            var saved = DanmakuManualMatchStore.get().find(new DanmakuMatchContext(title, "2026", "综艺", episode));
-            assertNotNull(saved); assertEquals("现在就出发", saved.query());
-            android.util.Log.i("Danmaku584QA", "player automatic AI fallback elapsedMs=" + (android.os.SystemClock.elapsedRealtime() - start) + " stages=" + stages + " source=" + source.get());
+            assertEquals(stages.toString(), expectedAi, stages.contains(DanmakuStatus.Stage.AI_MATCHING));
+            assertTrue(source.get().toString(), source.get().toString().endsWith(expectedId));
+            var saved = DanmakuManualMatchStore.get().find(new DanmakuMatchContext(title, year, type, episode));
+            assertNotNull(saved); assertEquals(expectedQuery, saved.query());
+            android.util.Log.i("Danmaku584QA", "player automatic " + title + " " + episode + " elapsedMs=" + (android.os.SystemClock.elapsedRealtime() - start) + " stages=" + stages + " source=" + source.get());
         } finally {
             InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> { if (player[0] != null) { VodPlaybackMedia.invalidate(player[0]); player[0].release(); } });
             com.fongmi.android.tv.setting.DanmakuSetting.putAuto(auto); com.fongmi.android.tv.setting.DanmakuSetting.putLoad(load);

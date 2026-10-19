@@ -81,9 +81,17 @@ public final class TencentDanmakuCodec {
                 if (!work.id().equals(string(ep, "cid")) || "1".equals(string(ep, "is_trailer"))) continue;
                 String label = clean(string(ep, "union_title"));
                 if (label.isBlank()) label = clean(string(ep, "title"));
+                if (label.contains("预告")) continue;
                 if ("电影".equals(work.type())) { if (integer(ep, "duration") < 1200) continue; label = "正片"; }
                 else if (work.type().startsWith("综艺")) label = string(ep, "tag_right_text") + " " + label;
-                else if (label.matches("\\d{1,4}")) label = "第" + label + "集";
+                else {
+                    // Full pages can use "作品第二季_14" as union_title, while title is
+                    // the platform's explicit episode index. Preview lists omit middle
+                    // episodes, so parsing only the display title loses those episodes.
+                    String number = clean(string(ep, "title"));
+                    if (number.matches("\\d{1,4}")) label = "第" + number + "集";
+                    else if (label.matches("\\d{1,4}")) label = "第" + label + "集";
+                }
                 add(rows, work, string(ep, "vid"), label);
             }
             if ("true".equals(string(params, "has_next"))) addContext(contexts, string(params, "next_page_context"));
