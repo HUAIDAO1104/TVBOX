@@ -54,12 +54,16 @@ public final class DanmakuAiMatcher {
         final List<DanmakuDocumentCache.Ticket> documents = new CopyOnWriteArrayList<>();
         final List<NativeDanmaku.Job> searches = new CopyOnWriteArrayList<>();
         final Set<String> completeSources = ConcurrentHashMap.newKeySet();
+        final Set<String> attemptedDocuments = ConcurrentHashMap.newKeySet();
         final Runnable deadline = this::fail;
         volatile Future<?> future;
         volatile DanmakuAiClient client;
         volatile boolean cancelled;
         volatile String stage = "clean";
         volatile DanmakuStatus.Failure failure = DanmakuStatus.Failure.AI_NETWORK;
+        volatile Catalogue discovery;
+        volatile DanmakuMatchContext verificationContext;
+        boolean verifying;
 
         Job(Callback callback) { this.callback = callback; }
 
@@ -87,9 +91,10 @@ public final class DanmakuAiMatcher {
                 DanmakuMatchContext context = DanmakuAiProtocol.matchingContext(original, query, response);
                 stage = "catalogue";
                 failure = DanmakuStatus.Failure.NETWORK;
-                List<Danmaku> catalogue = catalogue(query, context, direct, backup);
+                List<Danmaku> catalogue = catalogue(context, direct, backup);
                 if (done.get()) return;
                 List<Danmaku> eligible = ranked(context, catalogue);
+                verificationContext = context;
                 // A precise result from the AI-cleaned query needs no second model round trip.
                 if (eligible.isEmpty() && !catalogue.isEmpty()) {
                     List<Danmaku> choices = new ArrayList<>(catalogue);
@@ -107,7 +112,10 @@ public final class DanmakuAiMatcher {
                         // The model can explain a label, never override explicit identity conflicts.
                         Danmaku selectedItem = choices.get(selected);
                         if (!eligible.contains(selectedItem)) eligible = List.of();
-                        else { eligible.remove(selectedItem); eligible.add(0, selectedItem); }
+                        else {
+                            verificationContext = normalized;
+                            eligible.remove(selectedItem); eligible.add(0, selectedItem);
+                        }
                     }
                 }
                 if (eligible.isEmpty()) {
@@ -139,8 +147,11 @@ public final class DanmakuAiMatcher {
         }
 
         void verify(String query, List<Danmaku> candidates, List<Danmaku> catalogue) {
-            App.removeCallbacks(deadline);
-            App.post(deadline, candidates.stream().anyMatch(item -> com.fongmi.android.tv.api.MangoDanmaku.supports(item.getUrl())) ? 80000 : 45000);
+            if (!verifying) {
+                verifying = true;
+                App.removeCallbacks(deadline);
+                App.post(deadline, candidates.stream().anyMatch(item -> com.fongmi.android.tv.api.MangoDanmaku.supports(item.getUrl())) ? 80000 : 45000);
+            }
             failure = DanmakuStatus.Failure.DOWNLOAD;
             var next = new java.util.concurrent.atomic.AtomicInteger();
             int workers = Math.min(2, candidates.size());
@@ -148,9 +159,13 @@ public final class DanmakuAiMatcher {
             class Loader implements Runnable {
                 @Override public void run() {
                     if (done.get()) return;
-                    int index = next.getAndIncrement();
-                    if (index >= candidates.size()) { if (remaining.decrementAndGet() == 0) fail(); return; }
-                    Danmaku item = candidates.get(index);
+                    Danmaku item;
+                    do {
+                        int index = next.getAndIncrement();
+                        if (index >= candidates.size()) { if (remaining.decrementAndGet() == 0) resumeVerification(query); return; }
+                        item = candidates.get(index);
+                    } while (!attemptedDocuments.add(item.getUrl()));
+                    Danmaku selected = item;
                     var ticket = DanmakuDocumentCache.load(item.getUri(), new DanmakuDocumentCache.Listener() {
                         @Override public void onProgress(android.net.Uri source, int percent) {
                             if (!done.get()) callback.onProgress(percent);
@@ -158,7 +173,7 @@ public final class DanmakuAiMatcher {
                         @Override public void onReady(android.net.Uri source, android.net.Uri local) {
                             if (!done.compareAndSet(false, true)) return;
                             cleanup();
-                            callback.onFound(query, item, catalogue);
+                            callback.onFound(query, selected, discovery == null ? catalogue : discovery.snapshot());
                         }
                         @Override public void onFailure(android.net.Uri source, IOException error) {
                             if (com.fongmi.android.tv.BuildConfig.DEBUG) android.util.Log.d("DanmakuAi", "Candidate document unavailable; trying equivalent alternatives");
@@ -172,12 +187,69 @@ public final class DanmakuAiMatcher {
             for (int i = 0; i < workers; i++) new Loader().run();
         }
 
-        List<Danmaku> catalogue(String title, DanmakuMatchContext context, List<String> direct, List<String> backup) throws InterruptedException {
-            Map<String, Danmaku> rows = new ConcurrentHashMap<>();
-            AtomicInteger pending = new AtomicInteger(direct.size());
-            AtomicInteger responses = new AtomicInteger(), denied = new AtomicInteger(), invalid = new AtomicInteger();
-            DanmakuQuery query = DanmakuQuery.from(context.getTitle(), context.getYear()).forDiscovery(context.getType());
-            java.util.function.Consumer<String> lookup = source -> {
+        void resumeVerification(String query) {
+            if (done.get()) return;
+            if (discovery == null) { fail(); return; }
+            // A matching title is not a usable document. Keep in-flight direct catalogues
+            // alive and open backups when the first provider's IDs are stale/unavailable.
+            future = WORKER.submit(() -> {
+                try {
+                    discovery.startBackup();
+                    while (!done.get()) {
+                        List<Danmaku> rows = discovery.snapshot();
+                        List<Danmaku> next = ranked(verificationContext, rows).stream()
+                                .filter(item -> !attemptedDocuments.contains(item.getUrl())).toList();
+                        if (!next.isEmpty()) { verify(query, next, rows); return; }
+                        if (discovery.finished()) { fail(); return; }
+                        Thread.sleep(100);
+                    }
+                } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
+            });
+            if (done.get()) future.cancel(true);
+        }
+
+        List<Danmaku> catalogue(DanmakuMatchContext context, List<String> direct, List<String> backup) throws InterruptedException {
+            Catalogue work = new Catalogue(context, backup);
+            discovery = work;
+            work.pending.set(direct.size());
+            direct.forEach(work::lookup);
+            while (!done.get()) {
+                if (!ranked(context, work.snapshot()).isEmpty()) break;
+                if (work.pending.get() == 0 || System.nanoTime() - work.started >= TimeUnit.MILLISECONDS.toNanos(1500)) work.startBackup();
+                if (work.finished()) break;
+                Thread.sleep(100);
+            }
+            failure = !work.rows.isEmpty() || work.responses.get() > 0 ? DanmakuStatus.Failure.NO_MATCH
+                    : work.denied.get() > 0 ? DanmakuStatus.Failure.ACCESS_DENIED
+                    : work.invalid.get() > 0 ? DanmakuStatus.Failure.INVALID_RESPONSE : DanmakuStatus.Failure.NETWORK;
+            return work.snapshot();
+        }
+
+        final class Catalogue {
+            final Map<String, Danmaku> rows = new ConcurrentHashMap<>();
+            final AtomicInteger pending = new AtomicInteger(), responses = new AtomicInteger(), denied = new AtomicInteger(), invalid = new AtomicInteger();
+            final AtomicBoolean backupStarted = new AtomicBoolean();
+            final long started = System.nanoTime();
+            volatile long expires = started + TimeUnit.SECONDS.toNanos(20);
+            final DanmakuMatchContext context;
+            final DanmakuQuery query;
+            final List<String> backup;
+            Catalogue(DanmakuMatchContext context, List<String> backup) {
+                this.context = context; this.backup = backup;
+                query = DanmakuQuery.from(context.getTitle(), context.getYear()).forDiscovery(context.getType());
+            }
+            List<Danmaku> snapshot() { return List.copyOf(rows.values()); }
+            boolean finished() {
+                return backupStarted.get() && pending.get() == 0
+                        || System.nanoTime() >= expires;
+            }
+            void startBackup() {
+                if (done.get() || !backupStarted.compareAndSet(false, true)) return;
+                expires = System.nanoTime() + TimeUnit.SECONDS.toNanos(20);
+                pending.addAndGet(backup.size());
+                backup.forEach(this::lookup);
+            }
+            void lookup(String source) {
                 if (done.get()) return;
                 var search = DanmakuCatalogueSearch.searchWork(source, query, context.getYear(), context.getType(),
                         items -> items.stream().anyMatch(item -> DanmakuAiProtocol.sameWork(context, item.getMatchName())), new IqiyiDanmaku.Callback<>() {
@@ -202,25 +274,7 @@ public final class DanmakuAiMatcher {
                 });
                 searches.add(search);
                 if (done.get()) search.cancel();
-            };
-            direct.forEach(lookup);
-            long start = System.nanoTime(), until = start + TimeUnit.SECONDS.toNanos(20);
-            boolean backupStarted = false;
-            while (!done.get() && System.nanoTime() < until) {
-                if (!ranked(context, List.copyOf(rows.values())).isEmpty()) break;
-                if (!backupStarted && (pending.get() == 0 || System.nanoTime() - start >= TimeUnit.MILLISECONDS.toNanos(1500))) {
-                    backupStarted = true;
-                    pending.addAndGet(backup.size());
-                    backup.forEach(lookup);
-                }
-                if (backupStarted && pending.get() == 0) break;
-                Thread.sleep(100);
             }
-            for (NativeDanmaku.Job search : searches) search.cancel();
-            failure = !rows.isEmpty() || responses.get() > 0 ? DanmakuStatus.Failure.NO_MATCH
-                    : denied.get() > 0 ? DanmakuStatus.Failure.ACCESS_DENIED
-                    : invalid.get() > 0 ? DanmakuStatus.Failure.INVALID_RESPONSE : DanmakuStatus.Failure.NETWORK;
-            return List.copyOf(rows.values());
         }
 
         void fail() {

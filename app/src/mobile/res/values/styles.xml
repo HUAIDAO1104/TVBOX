@@ -56,7 +56,7 @@
     </style>
     <style name="Mobile.Action" parent="Widget.Material3.Button.TextButton">
         <item name="iconGravity">textStart</item>
-        <item name="android:minHeight">48dp</item><item name="android:textSize">13sp</item><item name="android:textColor">@color/mobile_text</item><item name="iconTint">@color/mobile_muted</item><item name="iconSize">20dp</item><item name="iconPadding">8dp</item><item name="android:paddingHorizontal">10dp</item><item name="android:insetLeft">0dp</item><item name="android:insetRight">0dp</item><item name="cornerRadius">10dp</item>
+        <item name="android:minHeight">48dp</item><item name="android:textSize">13sp</item><item name="android:textColor">@color/mobile_text</item><item name="iconTint">@color/mobile_muted</item><item name="iconSize">20dp</item><item name="iconPadding">8dp</item><item name="android:paddingLeft">10dp</item><item name="android:paddingRight">10dp</item><item name="android:insetLeft">0dp</item><item name="android:insetRight">0dp</item><item name="cornerRadius">10dp</item>
     </style>
     <style name="Mobile.Icon" parent="">
         <item name="android:layout_width">48dp</item><item name="android:layout_height">48dp</item><item name="android:padding">12dp</item><item name="android:background">?attr/selectableItemBackgroundBorderless</item><item name="android:clickable">true</item><item name="android:focusable">true</item>

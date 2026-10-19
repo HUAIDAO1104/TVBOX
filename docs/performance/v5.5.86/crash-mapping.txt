@@ -1,0 +1,26 @@
+# compiler: R8
+# compiler_version: 9.2.14
+# min_api: 24
+# common_typos_disable
+# {"id":"com.android.tools.r8.mapping","version":"2.2"}
+# pg_map_id: 3d1e0ed309839cec7e16c8ef40de6eb49fb16202b70fe0ad08dcac7cb9550c97
+# pg_map_hash: SHA-256 3d1e0ed309839cec7e16c8ef40de6eb49fb16202b70fe0ad08dcac7cb9550c97
+com.fongmi.android.tv.api.DanmakuCatalogueSearch$2 -> n70:
+# {"id":"sourceFile","fileName":"DanmakuCatalogueSearch.java"}
+    com.fongmi.android.tv.api.DanmakuCatalogueSearch$1 val$receiver -> c
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Lyj;"}
+    1:6:void <init>(com.fongmi.android.tv.api.DanmakuCatalogueSearch,com.fongmi.android.tv.api.DanmakuCatalogueSearch$1):113:113 -> <init>
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lyj;)V"}
+    1:6:void onFailure(okhttp3.Call,java.io.IOException):114:114 -> onFailure
+    1:2:void onResponse(okhttp3.Call,okhttp3.Response):116:116 -> onResponse
+    3:14:void onResponse(okhttp3.Call,okhttp3.Response):117:117 -> onResponse
+    15:29:void onResponse(okhttp3.Call,okhttp3.Response):118:118 -> onResponse
+    30:35:void onResponse(okhttp3.Call,okhttp3.Response):119:119 -> onResponse
+    36:46:void onResponse(okhttp3.Call,okhttp3.Response):120:120 -> onResponse
+    47:56:void com.fongmi.android.tv.api.DanmakuCatalogueSearch$1.onSuccess(java.util.List):100:100 -> onResponse
+    47:56:void onResponse(okhttp3.Call,okhttp3.Response):120 -> onResponse
+    57:64:void onResponse(okhttp3.Call,okhttp3.Response):121:121 -> onResponse
+    65:77:void onResponse(okhttp3.Call,okhttp3.Response):119:119 -> onResponse
+    78:89:void onResponse(okhttp3.Call,okhttp3.Response):117:117 -> onResponse
+    90:98:void onResponse(okhttp3.Call,okhttp3.Response):116:116 -> onResponse
+    99:115:void onResponse(okhttp3.Call,okhttp3.Response):122:122 -> onResponse

@@ -58,7 +58,7 @@ public final class DanmakuAiClient {
         try (var response = call.execute()) {
             if (!response.isSuccessful()) throw new IOException("http_" + response.code());
             if (response.body() == null) throw new IOException("response");
-            byte[] bytes = response.body().byteStream().readNBytes(65537);
+            byte[] bytes = com.fongmi.android.tv.utils.InputStreamCompat.readUpTo(response.body().byteStream(), 65537);
             if (bytes.length > 65536) throw new IOException("response");
             return DanmakuAiProtocol.completion(new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
         } catch (RuntimeException e) { throw new IOException("response"); }
@@ -75,7 +75,7 @@ public final class DanmakuAiClient {
         try (var response = call.execute()) {
             if (!response.isSuccessful()) throw new IOException("http_" + response.code());
             if (response.body() == null) throw new IOException("response");
-            byte[] bytes = response.body().byteStream().readNBytes(524289);
+            byte[] bytes = com.fongmi.android.tv.utils.InputStreamCompat.readUpTo(response.body().byteStream(), 524289);
             if (bytes.length > 524288) throw new IOException("response");
             return DanmakuAiModels.parse(new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
         }

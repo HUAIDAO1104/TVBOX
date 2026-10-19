@@ -35,7 +35,7 @@ public class PlatformPlaybackInstrumentedTest {
         // A fresh media identity avoids restoring an earlier test run's end position.
         File video = new File(context.getFilesDir(), "danmaku-live-playback-" + System.nanoTime() + ".mp4");
         try (var input = instrumentation.getContext().getAssets().open("playback-buffering.mp4")) {
-            Files.write(video.toPath(), input.readAllBytes());
+            Files.write(video.toPath(), com.fongmi.android.tv.utils.InputStreamCompat.readUpTo(input, 8 * 1024 * 1024));
         }
         DanmakuSetting.putAuto(false); DanmakuSetting.putShow(false);
         PlayerSetting.putEngine(PlayerSetting.ENGINE_EXO); PlayerSetting.putBackground(0);
@@ -73,8 +73,8 @@ public class PlatformPlaybackInstrumentedTest {
         }
     }
 
-    // Generated black, silent 2-hour fixture: ffmpeg -f lavfi -i color=c=black:s=320x180:r=1:d=7200
-    // -c:v libx264 -preset ultrafast -pix_fmt yuv420p -g 1 -movflags +faststart playback-timeline.mp4
+    // Generated black, silent 2-hour fixture: ffmpeg -f lavfi -i color=c=black:s=320x180:r=24:d=7200
+    // -c:v libx264 -preset ultrafast -pix_fmt yuv420p -g 24 -bf 0 -movflags +faststart playback-timeline.mp4
     @Test public void mangoAutomaticCommentsSurviveLongTimelineAndViewLifecycle() throws Exception {
         automaticTimeline("披荆斩棘2026", "第10期上", "577-timeline");
     }
@@ -91,7 +91,7 @@ public class PlatformPlaybackInstrumentedTest {
         int engine = PlayerSetting.getEngine(), background = PlayerSetting.getBackground();
         File video = new File(context.getFilesDir(), "timeline-" + System.nanoTime() + ".mp4");
         try (var input = instrumentation.getContext().getAssets().open("playback-timeline.mp4")) {
-            Files.write(video.toPath(), input.readAllBytes());
+            Files.write(video.toPath(), com.fongmi.android.tv.utils.InputStreamCompat.readUpTo(input, 8 * 1024 * 1024));
         }
         DanmakuSetting.putAuto(true); DanmakuSetting.putShow(true);
         PlayerSetting.putEngine(PlayerSetting.ENGINE_EXO); PlayerSetting.putBackground(0);

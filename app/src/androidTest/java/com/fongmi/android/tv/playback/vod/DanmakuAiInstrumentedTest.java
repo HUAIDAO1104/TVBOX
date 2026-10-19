@@ -121,6 +121,19 @@ public class DanmakuAiInstrumentedTest {
         }
     }
 
+    @Test public void liveGatewayTlsWorksWithoutPuttingARealKeyOnTheDevice() throws Exception {
+        Assume.assumeTrue("true".equals(InstrumentationRegistry.getArguments().getString("danmakuLive")));
+        // Real model tests use a host relay to keep the provider key off the QA device.
+        // Also exercise Android's own HTTPS/trust store. The invalid token normally gets
+        // an HTTP rejection; a public model list is also valid. DNS/TLS failures are not.
+        var client = new DanmakuAiClient(DanmakuAiSetting.DEFAULT_BASE_URL, "", "invalid-transport-probe");
+        try {
+            assertFalse(client.models().isEmpty());
+        } catch (java.io.IOException error) {
+            assertTrue(error.toString(), "http_401".equals(error.getMessage()) || "http_403".equals(error.getMessage()));
+        } finally { client.cancel(); }
+    }
+
     @androidx.test.filters.SdkSuppress(minSdkVersion = 29)
     @Test public void modelDropdownSelectsWithoutTypingAndSavesTheApiId() throws Exception {
         try (ActivityScenario<HomeActivity> scenario = ActivityScenario.launch(HomeActivity.class)) {

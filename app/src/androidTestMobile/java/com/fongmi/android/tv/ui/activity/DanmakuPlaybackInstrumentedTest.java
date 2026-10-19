@@ -35,7 +35,7 @@ public class DanmakuPlaybackInstrumentedTest {
         // A fresh media identity avoids restoring an earlier test run's end position.
         File video = new File(context.getFilesDir(), "danmaku-live-playback-" + System.nanoTime() + ".mp4");
         try (var input = instrumentation.getContext().getAssets().open("playback-buffering.mp4")) {
-            Files.write(video.toPath(), input.readAllBytes());
+            Files.write(video.toPath(), com.fongmi.android.tv.utils.InputStreamCompat.readUpTo(input, 8 * 1024 * 1024));
         }
         DanmakuSetting.putAuto(false); DanmakuSetting.putShow(false);
         PlayerSetting.putEngine(PlayerSetting.ENGINE_EXO); PlayerSetting.putBackground(0);
@@ -78,7 +78,7 @@ public class DanmakuPlaybackInstrumentedTest {
         File video = new File(context.getFilesDir(), "danmaku-playback-test.mp4");
         File xml = new File(context.getFilesDir(), "danmaku-playback-test.xml");
         try (var input = instrumentation.getContext().getAssets().open("playback-buffering.mp4")) {
-            Files.write(video.toPath(), input.readAllBytes());
+            Files.write(video.toPath(), com.fongmi.android.tv.utils.InputStreamCompat.readUpTo(input, 8 * 1024 * 1024));
         }
         StringBuilder comments = new StringBuilder("<i>");
         for (int i = 0; i < 48; i++) comments.append("<d p=\"").append(i / 4.0)

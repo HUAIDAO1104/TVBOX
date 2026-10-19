@@ -115,7 +115,7 @@ public final class DanmakuCatalogueSearch implements NativeDanmaku.Job {
                 public void onResponse(Call call, Response response) {
                     try (Response closeable = response) {
                         if (!closeable.isSuccessful() || closeable.body() == null) throw new HttpFailure(closeable.code());
-                        byte[] bytes = closeable.body().byteStream().readNBytes(4_000_001);
+                        byte[] bytes = com.fongmi.android.tv.utils.InputStreamCompat.readUpTo(closeable.body().byteStream(), 4_000_001);
                         if (bytes.length > 4_000_000) throw new InvalidResponse(new IOException("Catalogue exceeds limit"));
                         receiver.onSuccess(Danmaku.arrayFrom(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)));
                     } catch (Exception error) {

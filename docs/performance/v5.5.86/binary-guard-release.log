@@ -1,0 +1,5 @@
+Checked mobile-arm64_v8a.apk: 3 DEX files
+Checked mobile-armeabi_v7a.apk: 3 DEX files
+Checked leanback-arm64_v8a.apk: 3 DEX files
+Checked leanback-armeabi_v7a.apk: 3 DEX files
+PASS: no unsupported stream API references

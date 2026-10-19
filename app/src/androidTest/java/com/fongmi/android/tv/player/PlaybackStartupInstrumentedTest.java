@@ -30,7 +30,7 @@ public class PlaybackStartupInstrumentedTest {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         byte[] video;
         try (var input = instrumentation.getContext().getAssets().open("playback-buffering.mp4")) {
-            video = input.readAllBytes();
+            video = com.fongmi.android.tv.utils.InputStreamCompat.readUpTo(input, 8 * 1024 * 1024);
         }
         NanoHTTPD server = new NanoHTTPD("127.0.0.1", 0) {
             @Override public Response serve(IHTTPSession session) {

@@ -17,7 +17,7 @@ import java.util.concurrent.*;
 public class WarmSearchWorkerInstrumentedTest {
     private byte[] fixture() throws Exception {
         try (var input = InstrumentationRegistry.getInstrumentation().getContext().getAssets().open("search-fixture.zip")) {
-            return input.readAllBytes();
+            return com.fongmi.android.tv.utils.InputStreamCompat.readUpTo(input, 8 * 1024 * 1024);
         }
     }
     private Site source(MockWebServer server, String key) {

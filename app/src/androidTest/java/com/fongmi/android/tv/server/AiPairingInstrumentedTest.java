@@ -362,7 +362,7 @@ public class AiPairingInstrumentedTest {
             out.write(body, 0, 12); out.flush();
             android.os.SystemClock.sleep(900);
             out.write(body, 12, body.length - 12); out.flush();
-            String response = new String(socket.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            String response = new String(com.fongmi.android.tv.utils.InputStreamCompat.readUpTo(socket.getInputStream(), 8 * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8);
             assertTrue(response, response.startsWith("HTTP/1.1 200"));
             assertEquals("fixture-slow-secret", DanmakuAiSetting.key());
         } finally { pairing.close(); }

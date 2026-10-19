@@ -19,8 +19,8 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // Keep compatibility fixes on a strictly newer version so TV installers do not retain
         // the previous APK while preserving its database for the migration chain below.
-        versionCode 636
-        versionName "5.5.85-fix"
+        versionCode 637
+        versionName "5.5.86-fix"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
@@ -102,6 +102,10 @@ android {
     lint {
         disable 'UnsafeOptInUsageError'
         disable 'ExpiredTargetSdkVersion'
+        if (project.hasProperty('androidApiCheck')) {
+            checkOnly 'NewApi', 'InlinedApi'
+            abortOnError true
+        }
     }
 
     compileOptions {
@@ -118,6 +122,15 @@ androidComponents {
         def abi = flavors['abi'] ?: 'abi'
         variant.outputs.each { output ->
             output.outputFileName.set("${mode}-${abi}.apk")
+        }
+        // Run against the packaged DEX, including dependencies, on local and CI builds.
+        // Java desugaring alone does not make readNBytes available on Android 7-12.
+        def streamCheck = tasks.register("verify${variant.name.capitalize()}StreamApis", Exec) {
+            commandLine 'python3', rootProject.file('scripts/check_android_io_compat.py').absolutePath,
+                    layout.buildDirectory.file("outputs/apk/${variant.name}/release/${mode}-${abi}.apk").get().asFile.absolutePath
+        }
+        tasks.matching { it.name == "assemble${variant.name.capitalize()}" }.configureEach {
+            finalizedBy streamCheck
         }
     }
 }
