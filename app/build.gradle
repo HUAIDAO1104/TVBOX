@@ -127,7 +127,7 @@ androidComponents {
         // Java desugaring alone does not make readNBytes available on Android 7-12.
         def streamCheck = tasks.register("verify${variant.name.capitalize()}StreamApis", Exec) {
             commandLine 'python3', rootProject.file('scripts/check_android_io_compat.py').absolutePath,
-                    layout.buildDirectory.file("outputs/apk/${variant.name}/release/${mode}-${abi}.apk").get().asFile.absolutePath
+                    layout.buildDirectory.file("outputs/apk/${mode}${abi.capitalize()}/release/${mode}-${abi}.apk").get().asFile.absolutePath
         }
         tasks.matching { it.name == "assemble${variant.name.capitalize()}" }.configureEach {
             finalizedBy streamCheck
