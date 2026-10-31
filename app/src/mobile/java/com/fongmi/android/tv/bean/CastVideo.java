@@ -5,7 +5,11 @@ import com.github.catvod.utils.Path;
 
 import java.util.Map;
 
-public record CastVideo(String name, String url, long position, Map<String, String> headers) {
+public record CastVideo(String name, String url, long position, Map<String, String> headers, int width, int height) {
+
+    public CastVideo(String name, String url, long position, Map<String, String> headers) {
+        this(name, url, position, headers, 0, 0);
+    }
 
     public CastVideo {
         if (url.startsWith("file")) url = Server.get().getAddress() + "/" + url.replace(Path.rootPath(), "").replace("://", "");

@@ -227,7 +227,7 @@ public class CastDialog extends MobileSheetDialog implements DeviceAdapter.OnCli
         if (connecting) return;
         connecting = true; discovering = false;
         int generation = ++castGeneration;
-        App.post(connectionTimeout, 15000);
+        App.post(connectionTimeout, item.isDLNA() ? 45000 : 15000);
         if (castCall != null) castCall.cancel();
         App.removeCallbacks(discoveryFinished);
         binding.status.setText("正在连接 " + item.getName() + "…");

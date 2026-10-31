@@ -909,7 +909,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     @Override public CastVideo castVideo() {
-        return !playbackReady || player().isEmpty() ? null : new CastVideo(mBinding.name.getText().toString(), player().getUrl(), player().getPosition(), player().getHeaders());
+        return !playbackReady || player().isEmpty() ? null : new CastVideo(mBinding.name.getText().toString(), player().getUrl(), player().getPosition(), player().getHeaders(), player().getVideoWidth(), player().getVideoHeight());
     }
     @Override public History castHistory() { return mHistory; }
 
@@ -919,7 +919,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
             return;
         }
         hideControl();
-        CastDialog.create().history(mHistory).video(new CastVideo(mBinding.name.getText().toString(), player().getUrl(), player().getPosition(), player().getHeaders())).fm(true).show(this);
+        CastDialog.create().history(mHistory).video(new CastVideo(mBinding.name.getText().toString(), player().getUrl(), player().getPosition(), player().getHeaders(), player().getVideoWidth(), player().getVideoHeight())).fm(true).show(this);
     }
 
     private void onInfo() {

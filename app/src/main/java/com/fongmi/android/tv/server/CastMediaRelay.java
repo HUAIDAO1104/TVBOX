@@ -57,11 +57,17 @@ public final class CastMediaRelay {
 
     /** Check the same authenticated source before telling the phone player to stop. */
     public void prepare(Session session) throws IOException {
-        Call call = request(session, session.source, "GET", Collections.emptyMap());
+        Call call = request(session, session.source, "GET", Map.of("range", "bytes=0-65535"));
         try (Response response = call.execute()) {
             if (!response.isSuccessful() || response.body() == null)
                 throw new IOException("投屏视频源暂不可用（HTTP " + response.code() + "）");
-            session.mime = contentType(response);
+            session.mime = CastMediaType.detect(response, session.mime);
+            session.byteSeek = response.code() == 206 && response.header("Content-Range", "").matches("bytes 0-[0-9]+/[0-9]+");
+            if (session.byteSeek) {
+                String range = response.header("Content-Range");
+                session.length = Long.parseLong(range.substring(range.lastIndexOf('/') + 1));
+            } else if (response.code() == 200) session.length = response.body().contentLength();
+            session.resource("0").mime = session.mime;
             if (session.mime.equals("text/html") || session.mime.contains("json"))
                 throw new IOException("视频源返回了错误页面，请更换线路后重试");
             if (session != current) throw new IOException("投屏已取消");
@@ -97,8 +103,9 @@ public final class CastMediaRelay {
         Session session = current;
         String[] path = request.getUri().split("/", 5);
         if (session == null || path.length < 4 || !path[2].equals(session.token)) return error(404, "Cast session expired");
-        HttpUrl source = session.resource(path[3]);
-        if (source == null) return error(404, "Unknown media resource");
+        Resource resource = session.resource(path[3]);
+        if (resource == null) return error(404, "Unknown media resource");
+        HttpUrl source = resource.url;
         String method = request.getMethod().name();
         if (!method.equals("GET") && !method.equals("HEAD")) return error(405, "Method not allowed");
         session.lastAccess = System.nanoTime();
@@ -106,7 +113,7 @@ public final class CastMediaRelay {
         Response upstream = null;
         try {
             boolean head = method.equals("HEAD");
-            boolean hls = mimeFor(source).contains("mpegurl") || (path[3].equals("0") && session.mime.contains("mpegurl"));
+            boolean hls = resource.mime.contains("mpegurl");
             call = request(session, source, head && hls ? "GET" : method, request.getHeaders());
             upstream = call.execute();
             // Some media CDNs reject HEAD although GET works. Never buffer the fallback body.
@@ -120,7 +127,9 @@ public final class CastMediaRelay {
             ResponseBody body = upstream.body();
             if (body == null) throw new IOException("Empty upstream response");
             boolean hasBody = upstream.request().method().equals("GET");
-            String mime = hasBody ? contentType(upstream) : headerType(upstream);
+            String mime = resource.key ? CastMediaType.BINARY
+                    : hasBody ? CastMediaType.detect(upstream, resource.mime) : CastMediaType.header(upstream, resource.mime);
+            if (upstream.isSuccessful()) resource.mime = mime;
             boolean playlist = hasBody && upstream.isSuccessful() && mime.equals("application/vnd.apple.mpegurl");
             NanoHTTPD.Response result;
             if (playlist) {
@@ -138,7 +147,7 @@ public final class CastMediaRelay {
                 InputStream stream = new FilterInputStream(body.byteStream()) {
                     @Override public int read(byte[] b, int off, int len) throws IOException {
                         int count = super.read(b, off, len);
-                        if (count > 0 && ownedResponse.isSuccessful()) session.markMediaRead();
+                        if (count > 0 && !resource.key && ownedResponse.isSuccessful()) session.markMediaRead();
                         return count;
                     }
                     @Override public void close() throws IOException {
@@ -159,6 +168,8 @@ public final class CastMediaRelay {
                 upstream = null;
                 call = null;
             }
+            if (path[3].equals("0") && session.byteSeek && !playlist && upstreamSuccess(result))
+                result.addHeader("Accept-Ranges", "bytes");
             result.addHeader("transferMode.dlna.org", "Streaming");
             boolean byteSeek = "bytes".equalsIgnoreCase(result.getHeader("Accept-Ranges")) || result.getHeader("Content-Range") != null;
             result.addHeader("contentFeatures.dlna.org", "DLNA.ORG_OP=" + (byteSeek ? "01" : "00") + ";DLNA.ORG_CI=0");
@@ -182,7 +193,7 @@ public final class CastMediaRelay {
         // Plugin HTTP servers can incorrectly send a body on HEAD. Do not reuse that socket.
         if (method.equals("HEAD")) request.header("Connection", "close");
         // The receiver's range wins over the phone player's previous playback position.
-        boolean playlist = mimeFor(url).contains("mpegurl") || (url.equals(session.source) && session.mime.contains("mpegurl"));
+        boolean playlist = session.isPlaylist(url);
         for (String name : new String[]{"range", "if-range"}) {
             String value = incoming.get(name);
             // Rewritten manifests have different offsets/lengths from their upstream representation.
@@ -194,13 +205,8 @@ public final class CastMediaRelay {
         return call;
     }
 
-    private static String contentType(Response response) throws IOException {
-        ResponseBody body = response.body();
-        if (body != null && body.source().request(7)) {
-            String prefix = body.source().buffer().clone().readUtf8(7);
-            if (prefix.startsWith("#EXTM3U")) return "application/vnd.apple.mpegurl";
-        }
-        return headerType(response);
+    private static boolean upstreamSuccess(NanoHTTPD.Response response) {
+        return response.getStatus().getRequestStatus() >= 200 && response.getStatus().getRequestStatus() < 300;
     }
 
     private static NanoHTTPD.Response headResponse(Response response, String mime) {
@@ -213,25 +219,6 @@ public final class CastMediaRelay {
         return new NanoHTTPD.Response(status(response.code()), mime, empty, 0) {
             @Override protected long sendContentLengthHeaderIfNotAlreadyPresent(PrintWriter writer, long size) { return 0; }
         };
-    }
-
-    private static String headerType(Response response) {
-        String type = response.header("Content-Type", "").split(";", 2)[0].trim().toLowerCase(Locale.ROOT);
-        if (type.contains("mpegurl")) return "application/vnd.apple.mpegurl";
-        if (!type.isEmpty() && !type.equals("application/octet-stream")) return type;
-        return mimeFor(response.request().url());
-    }
-
-    private static String mimeFor(HttpUrl url) {
-        String path = url.encodedPath().toLowerCase(Locale.ROOT);
-        if (path.endsWith(".m3u8") || path.endsWith(".m3u")) return "application/vnd.apple.mpegurl";
-        if (path.endsWith(".ts")) return "video/mp2t";
-        if (path.endsWith(".mkv")) return "video/x-matroska";
-        if (path.endsWith(".webm")) return "video/webm";
-        if (path.endsWith(".vtt")) return "text/vtt";
-        if (path.endsWith(".aac")) return "audio/aac";
-        if (path.endsWith(".key")) return "application/octet-stream";
-        return "video/mp4";
     }
 
     private static byte[] readPlaylist(InputStream stream) throws IOException {
@@ -250,27 +237,39 @@ public final class CastMediaRelay {
         if (text.startsWith("\uFEFF")) text = text.substring(1);
         if (!text.trim().startsWith("#EXTM3U")) throw new IOException("Invalid HLS playlist");
         StringBuilder output = new StringBuilder();
+        boolean variant = false;
+        boolean fragmented = text.contains("#EXT-X-MAP:");
         for (String line : text.split("\\r?\\n", -1)) {
             String trimmed = line.trim();
             if (trimmed.startsWith("#")) {
+                variant = trimmed.startsWith("#EXT-X-STREAM-INF:") || variant;
+                boolean key = trimmed.startsWith("#EXT-X-KEY:") || trimmed.startsWith("#EXT-X-SESSION-KEY:");
+                String hint = key ? CastMediaType.BINARY
+                        : trimmed.startsWith("#EXT-X-MEDIA:") || trimmed.startsWith("#EXT-X-I-FRAME-STREAM-INF:")
+                        || trimmed.startsWith("#EXT-X-RENDITION-REPORT:") ? CastMediaType.HLS
+                        : trimmed.startsWith("#EXT-X-MAP:") || fragmented ? "video/mp4" : "video/mp2t";
                 Matcher matcher = URI_ATTRIBUTE.matcher(line);
                 StringBuffer replaced = new StringBuffer();
                 while (matcher.find()) matcher.appendReplacement(replaced, Matcher.quoteReplacement(matcher.group(1)
-                        + relayUri(session, base, matcher.group(2)) + matcher.group(3)));
+                        + relayUri(session, base, matcher.group(2), hint, key) + matcher.group(3)));
                 matcher.appendTail(replaced);
                 output.append(replaced);
-            } else if (!trimmed.isEmpty()) output.append(relayUri(session, base, trimmed));
+            } else if (!trimmed.isEmpty()) {
+                output.append(relayUri(session, base, trimmed,
+                        variant ? CastMediaType.HLS : fragmented ? "video/mp4" : "video/mp2t", false));
+                variant = false;
+            }
             output.append('\n');
         }
         return output.toString();
     }
 
-    private static String relayUri(Session session, HttpUrl base, String value) throws IOException {
+    private static String relayUri(Session session, HttpUrl base, String value, String hint, boolean key) throws IOException {
         // Inline keys and DRM schemes are not HTTP resources and must retain their semantics.
         if (value.matches("(?i)^[a-z][a-z0-9+.-]*:.*") && !value.startsWith("http://") && !value.startsWith("https://")) return value;
         HttpUrl resolved = base.resolve(value);
         if (resolved == null) throw new IOException("Invalid HLS resource");
-        return session.register(resolved);
+        return session.register(resolved, hint, key);
     }
 
     private static void copyHeaders(Response from, NanoHTTPD.Response to) {
@@ -293,49 +292,73 @@ public final class CastMediaRelay {
         };
     }
 
+    private static final class Resource {
+        final HttpUrl url;
+        final boolean key;
+        volatile String mime;
+        Resource(HttpUrl url, String hint, boolean key) {
+            this.url = url;
+            this.key = key;
+            String type = CastMediaType.fromPath(url);
+            mime = key || CastMediaType.BINARY.equals(type) ? hint : type;
+        }
+    }
+
     public static final class Session {
         private final String token = UUID.randomUUID().toString();
         private final String address;
         private final HttpUrl source;
         private final Map<String, String> headers;
-        private final Map<String, HttpUrl> resources = new LinkedHashMap<>();
+        private final Map<String, Resource> resources = new LinkedHashMap<>();
         private final Map<HttpUrl, String> ids = new HashMap<>();
         private final Set<Call> calls = ConcurrentHashMap.newKeySet();
         private final CountDownLatch mediaRead = new CountDownLatch(1);
         private volatile boolean receivedMedia;
         private volatile long lastAccess = System.nanoTime();
         private volatile String mime;
+        private volatile boolean byteSeek;
+        private volatile long length = -1;
         private int nextId;
 
         private Session(String address, HttpUrl source, Map<String, String> headers) {
             this.address = address.replaceAll("/+$", "");
             this.source = source;
             this.headers = headers == null ? Collections.emptyMap() : new HashMap<>(headers);
-            this.mime = mimeFor(source);
-            register(source);
+            this.mime = CastMediaType.fromPath(source);
+            register(source, mime, false);
         }
 
-        public String url() { return address + PREFIX + token + "/0/" + (mime.contains("mpegurl") ? "video.m3u8" : "video.mp4"); }
+        public String url() { return address + PREFIX + token + "/0/video" + CastMediaType.extension(mime); }
+        public boolean hasMedia() { return receivedMedia; }
+        public boolean canSeek() { return byteSeek || mime.equals(CastMediaType.HLS); }
+        public boolean canByteSeek() { return byteSeek && !mime.equals(CastMediaType.HLS); }
+        public Long length() { return length >= 0 && !mime.equals(CastMediaType.HLS) ? length : null; }
         public String mimeType() { return mime; }
         public boolean awaitMedia(long timeoutMs) throws InterruptedException {
             return mediaRead.await(timeoutMs, TimeUnit.MILLISECONDS) && receivedMedia;
         }
         private void markMediaRead() { receivedMedia = true; mediaRead.countDown(); }
 
-        private synchronized HttpUrl resource(String id) { return resources.get(id); }
+        private synchronized Resource resource(String id) { return resources.get(id); }
 
-        private synchronized String register(HttpUrl url) {
+        private synchronized boolean isPlaylist(HttpUrl url) {
+            String id = ids.get(url);
+            Resource resource = id == null ? null : resources.get(id);
+            return resource != null && resource.mime.equals(CastMediaType.HLS);
+        }
+
+        private synchronized String register(HttpUrl url, String hint, boolean key) {
             String id = ids.get(url);
             if (id == null) {
                 if (resources.size() >= MAX_RESOURCES) {
-                    String oldest = resources.keySet().stream().filter(key -> !key.equals("0")).findFirst().get();
-                    ids.remove(resources.remove(oldest));
+                    String oldest = resources.keySet().stream().filter(resourceId -> !resourceId.equals("0")).findFirst().get();
+                    ids.remove(resources.remove(oldest).url);
                 }
                 id = Integer.toString(nextId++);
-                resources.put(id, url);
+                resources.put(id, new Resource(url, hint, key));
                 ids.put(url, id);
             }
-            String suffix = url.encodedPath().toLowerCase(Locale.ROOT).endsWith(".m3u8") ? "index.m3u8" : "media";
+            String suffix = CastMediaType.resourceName(url, resources.get(id).mime, key);
             return address + PREFIX + token + "/" + id + "/" + suffix;
         }
 

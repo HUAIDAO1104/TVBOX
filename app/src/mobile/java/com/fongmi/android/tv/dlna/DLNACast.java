@@ -6,6 +6,7 @@ import com.fongmi.android.tv.bean.CastVideo;
 import com.fongmi.android.tv.bean.Device;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.server.CastMediaRelay;
+import com.fongmi.android.tv.server.CastStartupGate;
 import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.server.process.CastProxy;
 import com.fongmi.android.tv.service.CastRelayService;
@@ -16,6 +17,11 @@ import org.jupnp.model.action.ActionInvocation;
 import org.jupnp.model.message.UpnpResponse;
 import org.jupnp.model.meta.RemoteService;
 import org.jupnp.support.avtransport.callback.Play;
+import org.jupnp.support.avtransport.callback.GetTransportInfo;
+import org.jupnp.support.avtransport.callback.GetPositionInfo;
+import org.jupnp.support.model.TransportInfo;
+import org.jupnp.support.model.TransportState;
+import org.jupnp.support.model.PositionInfo;
 import org.jupnp.support.avtransport.callback.Seek;
 import org.jupnp.support.avtransport.callback.SetAVTransportURI;
 import org.jupnp.support.contentdirectory.DIDLParser;
@@ -33,7 +39,11 @@ public final class DLNACast {
     private final java.util.function.Consumer<String> failure;
     private volatile CastMediaRelay.Session session;
     private volatile boolean cancelled;
-    private boolean completed;
+    private volatile boolean completed;
+    private volatile boolean failed;
+    private final CastStartupGate startup = new CastStartupGate();
+    private long startTime;
+    private boolean finishing;
 
     public DLNACast(CastVideo video, Runnable runnable, java.util.function.Consumer<String> failure) {
         this.video = video;
@@ -43,6 +53,7 @@ public final class DLNACast {
     public DLNACast(CastVideo video, Runnable runnable) { this(video, runnable, Notify::show); }
 
     public void cast(Device item) {
+        startTime = System.nanoTime();
         DLNACastManager mgr = DLNACastManager.get();
         ControlPoint control = mgr.getControlPoint();
         RemoteService service = mgr.findAVTransport(item);
@@ -54,7 +65,7 @@ public final class DLNACast {
                 Task.execute(() -> {
                     try {
                         CastProxy.relay().prepare(session);
-                        if (!cancelled) control.execute(uriAction(control, service));
+                        if (active()) control.execute(uriAction(control, service));
                     } catch (Exception e) {
                         fail("视频转发准备失败，请更换线路或检查网络后重试");
                     }
@@ -75,7 +86,8 @@ public final class DLNACast {
     }
 
     private void fail(String message) {
-        if (cancelled) return;
+        if (cancelled || failed || completed) return;
+        failed = true;
         if (session != null) CastProxy.relay().close(session);
         App.post(() -> { if (!cancelled) failure.accept(message); });
     }
@@ -83,7 +95,10 @@ public final class DLNACast {
     private String buildMetaData() {
         try {
             DIDLContent content = new DIDLContent();
-            VideoItem item = new VideoItem("0", "-1", video.name(), "", new Res(new ProtocolInfo("http-get:*:" + session.mimeType() + ":*"), null, session.url()));
+            Res resource = new Res(new ProtocolInfo("http-get:*:" + session.mimeType()
+                    + ":DLNA.ORG_OP=" + (session.canByteSeek() ? "01" : "00") + ";DLNA.ORG_CI=0"), session.length(), session.url());
+            if (video.width() > 0 && video.height() > 0) resource.setResolution(video.width(), video.height());
+            VideoItem item = new VideoItem("0", "-1", video.name(), "", resource);
             content.addItem(item);
             return new DIDLParser().generate(content);
         } catch (Exception e) {
@@ -95,7 +110,7 @@ public final class DLNACast {
         return new SetAVTransportURI(service, session.url(), buildMetaData()) {
             @Override
             public void success(ActionInvocation i) {
-                if (!cancelled) control.execute(playAction(control, service));
+                if (active()) control.execute(playAction(control, service));
             }
 
             @Override
@@ -109,24 +124,10 @@ public final class DLNACast {
         return new Play(service) {
             @Override
             public void success(ActionInvocation i) {
-                if (cancelled) return;
-                if (video.position() > 0) control.execute(seekAction(service));
-                Task.execute(() -> {
-                    try {
-                        if (!session.awaitMedia(10_000)) {
-                            fail("电视未能读取视频，请检查手机和电视是否在同一 Wi-Fi");
-                            return;
-                        }
-                        App.post(() -> {
-                            if (cancelled) return;
-                            completed = true;
-                            runnable.run();
-                        });
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        fail("投屏已中断，请重试");
-                    }
-                });
+                if (!active()) return;
+                // Play only acknowledges the command. Seek during TRANSITIONING can make
+                // receivers download up to the old position before showing their first frame.
+                App.post(() -> pollPlayback(control, service));
             }
 
             @Override
@@ -136,16 +137,68 @@ public final class DLNACast {
         };
     }
 
-    private Seek seekAction(RemoteService service) {
-        return new Seek(service, SeekMode.REL_TIME, formatMs(video.position())) {
-            @Override
-            public void success(ActionInvocation i) {
-            }
+    private boolean active() { return !cancelled && !completed && !failed; }
 
-            @Override
-            public void failure(ActionInvocation i, UpnpResponse r, String m) {
+    private void pollPlayback(ControlPoint control, RemoteService service) {
+        if (!active() || finishing) return;
+        if ((System.nanoTime() - startTime) / 1_000_000L > 40_000) {
+            fail(session.hasMedia() ? "电视已收到视频但尚未开始播放，请尝试兼容线路或电视版接收端"
+                    : "电视未能读取视频，请检查网络或更换线路");
+            return;
+        }
+        control.execute(new GetTransportInfo(service) {
+            @Override public void received(ActionInvocation<?> invocation, TransportInfo info) {
+                boolean playing = info.getCurrentTransportState() == TransportState.PLAYING;
+                App.post(() -> {
+                    if (!active()) return;
+                    if (playing && service.getAction("GetPositionInfo") != null) readPosition(control, service);
+                    else observed(control, service, playing, -1);
+                });
             }
-        };
+            @Override public void failure(ActionInvocation invocation, UpnpResponse response, String message) {
+                App.post(() -> { if (active()) App.post(() -> pollPlayback(control, service), 750); });
+            }
+        });
+    }
+
+    private void readPosition(ControlPoint control, RemoteService service) {
+        control.execute(new GetPositionInfo(service) {
+            @Override public void received(ActionInvocation<?> invocation, PositionInfo position) {
+                long seconds = -1;
+                try {
+                    if (position.getRelTime() != null && position.getRelTime().matches("[0-9]+:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?"))
+                        seconds = position.getTrackElapsedSeconds();
+                } catch (RuntimeException ignored) { }
+                long elapsed = seconds;
+                App.post(() -> observed(control, service, true, elapsed));
+            }
+            @Override public void failure(ActionInvocation invocation, UpnpResponse response, String message) {
+                App.post(() -> observed(control, service, true, -1));
+            }
+        });
+    }
+
+    private void observed(ControlPoint control, RemoteService service, boolean playing, long seconds) {
+        if (!active() || finishing) return;
+        if (!startup.observe(System.nanoTime() / 1_000_000L, session.hasMedia(), playing, seconds)) {
+            App.post(() -> pollPlayback(control, service), 500);
+            return;
+        }
+        finishing = true;
+        if (startup.shouldResume(session.canSeek(), video.position()) && service.getAction("Seek") != null) {
+            control.execute(new Seek(service, SeekMode.REL_TIME, formatMs(video.position())) {
+                @Override public void success(ActionInvocation invocation) { App.post(DLNACast.this::complete); }
+                @Override public void failure(ActionInvocation invocation, UpnpResponse response, String message) { App.post(DLNACast.this::complete); }
+            });
+            // A receiver with a broken Seek implementation must not leave the sheet open forever.
+            App.post(this::complete, 3000);
+        } else complete();
+    }
+
+    private void complete() {
+        if (!active()) return;
+        completed = true;
+        runnable.run();
     }
 
     private String formatMs(long ms) {
