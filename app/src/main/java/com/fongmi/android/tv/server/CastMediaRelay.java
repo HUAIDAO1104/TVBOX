@@ -57,8 +57,17 @@ public final class CastMediaRelay {
 
     /** Check the same authenticated source before telling the phone player to stop. */
     public void prepare(Session session) throws IOException {
-        Call call = request(session, session.source, "GET", Map.of("range", "bytes=0-65535"));
+        prepare(session, true);
+    }
+
+    private void prepare(Session session, boolean probeRange) throws IOException {
+        Call call = request(session, session.source, "GET", probeRange ? Map.of("range", "bytes=0-65535") : Collections.emptyMap());
         try (Response response = call.execute()) {
+            if (probeRange && (response.code() == 400 || response.code() == 416)) {
+                response.close();
+                prepare(session, false);
+                return;
+            }
             if (!response.isSuccessful() || response.body() == null)
                 throw new IOException("投屏视频源暂不可用（HTTP " + response.code() + "）");
             session.mime = CastMediaType.detect(response, session.mime);

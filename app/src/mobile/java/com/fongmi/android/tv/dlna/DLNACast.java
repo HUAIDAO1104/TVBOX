@@ -128,6 +128,8 @@ public final class DLNACast {
                 // Play only acknowledges the command. Seek during TRANSITIONING can make
                 // receivers download up to the old position before showing their first frame.
                 App.post(() -> pollPlayback(control, service));
+                // The state query itself can hang on some built-in TV receivers.
+                App.post(() -> { if (active() && !finishing && session.hasMedia()) complete(); }, 15000);
             }
 
             @Override
@@ -141,6 +143,12 @@ public final class DLNACast {
 
     private void pollPlayback(ControlPoint control, RemoteService service) {
         if (!active() || finishing) return;
+        // Some renderers never report a useful playback clock/state. Keep their active
+        // stream alive and hand off without Seek instead of cancelling a valid transfer.
+        if ((System.nanoTime() - startTime) / 1_000_000L > 15_000 && session.hasMedia()) {
+            complete();
+            return;
+        }
         if ((System.nanoTime() - startTime) / 1_000_000L > 40_000) {
             fail(session.hasMedia() ? "电视已收到视频但尚未开始播放，请尝试兼容线路或电视版接收端"
                     : "电视未能读取视频，请检查网络或更换线路");

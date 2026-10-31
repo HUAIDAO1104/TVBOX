@@ -57,6 +57,19 @@ public class CastStreamFormatTest {
         assertTrue(session.url(), session.url().endsWith(".mkv"));
     }
 
+    @Test public void sourceRejectingRangeStillStartsWithoutAdvertisingSeek() throws Exception {
+        handler = request -> request.getHeaders().containsKey("range")
+                ? NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.RANGE_NOT_SATISFIABLE, "text/plain", "Unsupported range")
+                : bytes("video/x-matroska", new byte[]{0x1a,0x45,(byte)0xdf,(byte)0xa3,0,0,0,0});
+        CastMediaRelay.Session session = open("/opaque"); relay.prepare(session);
+        assertFalse(session.canSeek());
+        assertTrue(session.url().endsWith(".mkv"));
+        try (Response response = client.newCall(new Request.Builder().url(session.url()).build()).execute()) {
+            assertEquals(200, response.code());
+            assertEquals(8, response.body().bytes().length);
+        }
+    }
+
     @Test public void matroskaRangeRetainsVerifiedTypeWhenCdnAlwaysClaimsMp4() throws Exception {
         byte[] mkv = new byte[1000];
         mkv[0] = 0x1a; mkv[1] = 0x45; mkv[2] = (byte) 0xdf; mkv[3] = (byte) 0xa3;
