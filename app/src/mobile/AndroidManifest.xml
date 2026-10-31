@@ -7,6 +7,7 @@
 
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
 
     <supports-screens
         android:anyDensity="true"
@@ -134,6 +135,11 @@
         <receiver
             android:name=".receiver.ShortcutReceiver"
             android:exported="false" />
+
+        <service
+            android:name=".service.CastRelayService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
 
         <service
             android:name=".service.DLNACastService"

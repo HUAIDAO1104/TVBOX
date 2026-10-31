@@ -52,6 +52,7 @@ public class CastDialog extends MobileSheetDialog implements DeviceAdapter.OnCli
     private String historyJson;
     private boolean fm;
     private Call castCall;
+    private DLNACast dlnaCast;
     private final java.util.Map<String, Device> discovered = new java.util.LinkedHashMap<>();
     private String localUuid;
     private boolean connecting;
@@ -61,6 +62,7 @@ public class CastDialog extends MobileSheetDialog implements DeviceAdapter.OnCli
         if (binding == null || !connecting) return;
         castGeneration++; connecting = false;
         if (castCall != null) castCall.cancel();
+        if (dlnaCast != null) dlnaCast.cancel();
         binding.status.setText("连接超时，请重试或选择其他设备");
     };
     private final Runnable discoveryFinished = () -> {
@@ -169,6 +171,7 @@ public class CastDialog extends MobileSheetDialog implements DeviceAdapter.OnCli
     private void onRefresh() {
         if (binding == null) return;
         if (castCall != null) castCall.cancel();
+        if (dlnaCast != null) dlnaCast.cancel();
         connecting = false; discovering = true; castGeneration++;
         App.removeCallbacks(connectionTimeout);
         binding.status.setText("正在查找附近的设备…");
@@ -228,9 +231,13 @@ public class CastDialog extends MobileSheetDialog implements DeviceAdapter.OnCli
         if (castCall != null) castCall.cancel();
         App.removeCallbacks(discoveryFinished);
         binding.status.setText("正在连接 " + item.getName() + "…");
-        if (item.isDLNA()) new DLNACast(video, () -> { if (generation == castGeneration) onCasted(); }, message -> {
-            if (binding != null && generation == castGeneration) { connecting = false; App.removeCallbacks(connectionTimeout); binding.status.setText("投屏失败，请检查电视状态后重试"); }
-        }).cast(item);
+        if (item.isDLNA()) {
+            if (dlnaCast != null) dlnaCast.cancel();
+            dlnaCast = new DLNACast(video, () -> { if (generation == castGeneration) onCasted(); }, message -> {
+                if (binding != null && generation == castGeneration) { connecting = false; App.removeCallbacks(connectionTimeout); binding.status.setText(message); }
+            });
+            dlnaCast.cast(item);
+        }
         else { castCall = OkHttp.newCall(client, item.getIp().concat("/action?do=cast"), requestBody()); castCall.enqueue(this); }
     }
 
@@ -257,6 +264,7 @@ public class CastDialog extends MobileSheetDialog implements DeviceAdapter.OnCli
         App.removeCallbacks(discoveryFinished, connectionTimeout);
         if (castCall != null) castCall.cancel();
         binding = null;
+        if (dlnaCast != null) dlnaCast.cancel();
     }
 
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {

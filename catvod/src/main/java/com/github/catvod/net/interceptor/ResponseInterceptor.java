@@ -68,10 +68,12 @@ public class ResponseInterceptor implements Interceptor {
 
     private Response deflate(Response response) {
         InputStream is = new InflaterInputStream(response.body().byteStream(), new Inflater(true));
-        return response.newBuilder().headers(response.headers()).body(getBody(response, is)).build();
+        return response.newBuilder().removeHeader(HttpHeaders.CONTENT_ENCODING)
+                .removeHeader(HttpHeaders.CONTENT_LENGTH).body(getBody(response, is)).build();
     }
 
     private ResponseBody getBody(Response response, InputStream is) {
+        BufferedSource source = Okio.buffer(Okio.source(is));
         return new ResponseBody() {
             @Nullable
             @Override
@@ -87,7 +89,7 @@ public class ResponseInterceptor implements Interceptor {
             @NonNull
             @Override
             public BufferedSource source() {
-                return Okio.buffer(Okio.source(is));
+                return source;
             }
         };
     }
