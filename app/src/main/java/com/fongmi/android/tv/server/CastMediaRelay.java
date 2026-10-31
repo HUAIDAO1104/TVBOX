@@ -71,11 +71,12 @@ public final class CastMediaRelay {
             if (!response.isSuccessful() || response.body() == null)
                 throw new IOException("投屏视频源暂不可用（HTTP " + response.code() + "）");
             session.mime = CastMediaType.detect(response, session.mime);
-            session.byteSeek = response.code() == 206 && response.header("Content-Range", "").matches("bytes 0-[0-9]+/[0-9]+");
-            if (session.byteSeek) {
-                String range = response.header("Content-Range");
-                session.length = Long.parseLong(range.substring(range.lastIndexOf('/') + 1));
-            } else if (response.code() == 200) session.length = response.body().contentLength();
+            CastByteRange range = CastByteRange.response(response.header("Content-Range"));
+            session.byteSeek = response.code() == 206 && range != null && range.start == 0;
+            if (session.byteSeek) session.length = range.total;
+            else if (response.code() == 200) session.length = response.body().contentLength();
+            session.etag = response.header("ETag");
+            session.lastModified = response.header("Last-Modified");
             session.resource("0").mime = session.mime;
             if (session.mime.equals("text/html") || session.mime.contains("json"))
                 throw new IOException("视频源返回了错误页面，请更换线路后重试");
@@ -123,18 +124,45 @@ public final class CastMediaRelay {
         try {
             boolean head = method.equals("HEAD");
             boolean hls = resource.mime.contains("mpegurl");
-            call = request(session, source, head && hls ? "GET" : method, request.getHeaders());
+            boolean knownFile = path[3].equals("0") && !hls && session.length >= 0;
+            // Native TV players often HEAD before opening a demuxer. Plugin/CDN HEAD can
+            // return an empty successful response even though GET has a valid 2+ GiB file.
+            if (head && knownFile) return fileHead(session);
+            Map<String, String> incoming = new HashMap<>(request.getHeaders());
+            CastByteRange wanted = null;
+            if (knownFile && session.byteSeek) {
+                wanted = CastByteRange.request(incoming.get("range"), session.length);
+                if (wanted != null && !wanted.satisfiable()) {
+                    NanoHTTPD.Response unsatisfied = error(416, "Range not satisfiable");
+                    unsatisfied.addHeader("Content-Range", "bytes */" + session.length);
+                    return unsatisfied;
+                }
+                // Normalize suffix and open-ended requests for plugin servers that only
+                // implement explicit bounds. This also clamps a TV's overly large end.
+                if (wanted != null) incoming.put("range", wanted.header());
+                else incoming.remove("range");
+            }
+            call = request(session, source, head && hls ? "GET" : method, incoming);
             upstream = call.execute();
             // Some media CDNs reject HEAD although GET works. Never buffer the fallback body.
             if (method.equals("HEAD") && (upstream.code() == 405 || upstream.code() == 501)) {
                 upstream.close();
                 session.calls.remove(call);
-                call = request(session, source, "GET", request.getHeaders());
+                call = request(session, source, "GET", incoming);
                 upstream = call.execute();
             }
             if (session != current) throw new IOException("Cast cancelled");
             ResponseBody body = upstream.body();
             if (body == null) throw new IOException("Empty upstream response");
+            CastByteRange received = upstream.code() == 206 ? CastByteRange.response(upstream.header("Content-Range")) : null;
+            if (wanted != null && upstream.isSuccessful()) {
+                if (upstream.code() == 206 && (received == null || received.start != wanted.start
+                        || received.total != wanted.total)) throw new IOException("Invalid upstream range");
+                // Never scan gigabytes from byte zero to satisfy an ignored tail request.
+                // A valid If-Range mismatch may legitimately return the full representation.
+                if (upstream.code() == 200 && wanted.start > 0 && !incoming.containsKey("if-range"))
+                    throw new IOException("Upstream ignored range");
+            }
             boolean hasBody = upstream.request().method().equals("GET");
             String mime = resource.key ? CastMediaType.BINARY
                     : hasBody ? CastMediaType.detect(upstream, resource.mime) : CastMediaType.header(upstream, resource.mime);
@@ -170,6 +198,13 @@ public final class CastMediaRelay {
                     }
                 };
                 long length = body.contentLength();
+                // Content-Range proves the partial length even if the CDN sends chunks.
+                // Native DLNA demuxers may refuse a chunked MKV index response.
+                if (upstream.header("Content-Encoding", "identity").equalsIgnoreCase("identity")) {
+                    if (length < 0 && received != null) length = received.length();
+                    if (length < 0 && knownFile && upstream.code() == 200 && !incoming.containsKey("if-range"))
+                        length = session.length;
+                }
                 result = length >= 0 ? NanoHTTPD.newFixedLengthResponse(status(upstream.code()), mime, stream, length)
                         : NanoHTTPD.newChunkedResponse(status(upstream.code()), mime, stream);
                 copyHeaders(upstream, result);
@@ -181,7 +216,7 @@ public final class CastMediaRelay {
                 result.addHeader("Accept-Ranges", "bytes");
             result.addHeader("transferMode.dlna.org", "Streaming");
             boolean byteSeek = "bytes".equalsIgnoreCase(result.getHeader("Accept-Ranges")) || result.getHeader("Content-Range") != null;
-            result.addHeader("contentFeatures.dlna.org", "DLNA.ORG_OP=" + (byteSeek ? "01" : "00") + ";DLNA.ORG_CI=0");
+            result.addHeader("contentFeatures.dlna.org", features(byteSeek));
             return result;
         } catch (Exception e) {
             // Do not expose source URLs, cookies or authorization headers to LAN clients/logs.
@@ -216,6 +251,24 @@ public final class CastMediaRelay {
 
     private static boolean upstreamSuccess(NanoHTTPD.Response response) {
         return response.getStatus().getRequestStatus() >= 200 && response.getStatus().getRequestStatus() < 300;
+    }
+
+    /** One DLNA feature description for both DIDL and HTTP responses. */
+    public static String features(boolean byteSeek) {
+        // Streaming transfer mode, connection stalling and DLNA 1.5; no false time seek.
+        return "DLNA.ORG_OP=" + (byteSeek ? "01" : "00")
+                + ";DLNA.ORG_CI=0;DLNA.ORG_FLAGS=01300000000000000000000000000000";
+    }
+
+    private static NanoHTTPD.Response fileHead(Session session) {
+        NanoHTTPD.Response result = NanoHTTPD.newFixedLengthResponse(status(200), session.mime,
+                new ByteArrayInputStream(new byte[0]), session.length);
+        if (session.canByteSeek()) result.addHeader("Accept-Ranges", "bytes");
+        if (session.etag != null) result.addHeader("ETag", session.etag);
+        if (session.lastModified != null) result.addHeader("Last-Modified", session.lastModified);
+        result.addHeader("transferMode.dlna.org", "Streaming");
+        result.addHeader("contentFeatures.dlna.org", features(session.canByteSeek()));
+        return result;
     }
 
     private static NanoHTTPD.Response headResponse(Response response, String mime) {
@@ -327,6 +380,7 @@ public final class CastMediaRelay {
         private volatile String mime;
         private volatile boolean byteSeek;
         private volatile long length = -1;
+        private volatile String etag, lastModified;
         private int nextId;
 
         private Session(String address, HttpUrl source, Map<String, String> headers) {

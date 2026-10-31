@@ -74,7 +74,7 @@ public class CastStreamFormatTest {
         byte[] mkv = new byte[1000];
         mkv[0] = 0x1a; mkv[1] = 0x45; mkv[2] = (byte) 0xdf; mkv[3] = (byte) 0xa3;
         handler = request -> {
-            int start = request.getHeaders().getOrDefault("range", "").equals("bytes=500-") ? 500 : 0;
+            int start = request.getHeaders().getOrDefault("range", "").startsWith("bytes=500-") ? 500 : 0;
             NanoHTTPD.Response response = NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.PARTIAL_CONTENT,
                     "video/mp4", new ByteArrayInputStream(mkv, start, mkv.length - start), mkv.length - start);
             response.addHeader("Content-Range", "bytes " + start + "-999/1000");

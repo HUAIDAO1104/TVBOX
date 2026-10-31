@@ -116,6 +116,36 @@ public class CastDecoderIntegrationTest {
         assertEquals("First frame must not require the remaining movie", 0, tailRequests.get());
     }
 
+    @Test public void hevcTenBit4kAndEac3SurviveNativeStyleRangeProbes() throws Exception {
+        Path movie = directory.resolve("hdr.mkv");
+        run("-f", "lavfi", "-i", "color=c=blue:size=3840x2160:rate=2", "-f", "lavfi", "-i", "anullsrc=r=48000:cl=5.1",
+                "-t", "2", "-c:v", "libx265", "-preset", "ultrafast", "-pix_fmt", "yuv420p10le",
+                "-x265-params", "pools=2:frame-threads=2:log-level=error:colorprim=bt2020:transfer=smpte2084:colormatrix=bt2020nc",
+                "-c:a", "eac3", "-b:a", "384k", movie.toString());
+        handler = request -> {
+            if (request.getMethod() == NanoHTTPD.Method.HEAD)
+                return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "video/mp4", "");
+            String range = request.getHeaders().get("range");
+            if (range != null && !range.matches("bytes=[0-9]+-[0-9]+"))
+                return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.RANGE_NOT_SATISFIABLE, "text/plain", "Closed bounds required");
+            NanoHTTPD.Response original = file(request, movie, "video/mp4");
+            NanoHTTPD.Response chunked = NanoHTTPD.newChunkedResponse(original.getStatus(), "video/mp4", original.getData());
+            if (original.getHeader("Content-Range") != null) chunked.addHeader("Content-Range", original.getHeader("Content-Range"));
+            return chunked;
+        };
+        CastMediaRelay.Session session = open("/opaque-4k");
+        try (okhttp3.Response response = client.newCall(new okhttp3.Request.Builder().url(session.url()).build()).execute()) {
+            assertEquals(Long.toString(Files.size(movie)), response.header("Content-Length"));
+            assertNull(response.header("Transfer-Encoding"));
+            assertArrayEquals(Files.readAllBytes(movie), response.body().bytes());
+        }
+        String frame = run("-i", session.url(), "-map", "0:v:0", "-frames:v", "1", "-f", "framehash", "-");
+        assertTrue(frame, frame.contains("#dimensions 0: 3840x2160"));
+        assertTrue(frame, frame.lines().anyMatch(line -> line.startsWith("0,")));
+        String audio = run("-i", session.url(), "-map", "0:a:0", "-t", "0.2", "-f", "framehash", "-");
+        assertTrue(audio, audio.lines().anyMatch(line -> line.startsWith("0,")));
+    }
+
     @Test public void matroskaPreservesPictureRatioAndEmbeddedSubtitles() throws Exception {
         Path subtitles = directory.resolve("sub.srt"), movie = directory.resolve("movie.mkv");
         Files.writeString(subtitles, "1\n00:00:00,000 --> 00:00:03,000\nEmbedded subtitle survives casting\n", StandardCharsets.UTF_8);

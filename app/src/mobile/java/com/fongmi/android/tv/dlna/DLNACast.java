@@ -96,7 +96,7 @@ public final class DLNACast {
         try {
             DIDLContent content = new DIDLContent();
             Res resource = new Res(new ProtocolInfo("http-get:*:" + session.mimeType()
-                    + ":DLNA.ORG_OP=" + (session.canByteSeek() ? "01" : "00") + ";DLNA.ORG_CI=0"), session.length(), session.url());
+                    + ":" + CastMediaRelay.features(session.canByteSeek())), session.length(), session.url());
             if (video.width() > 0 && video.height() > 0) resource.setResolution(video.width(), video.height());
             VideoItem item = new VideoItem("0", "-1", video.name(), "", resource);
             content.addItem(item);
