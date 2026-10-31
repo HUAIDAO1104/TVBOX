@@ -1,0 +1,955 @@
+diff --git a/app/build.gradle b/app/build.gradle
+index 95dfa33..88d5ba6 100644
+--- a/app/build.gradle
++++ b/app/build.gradle
+@@ -19,8 +19,8 @@ android {
+         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+         // Keep compatibility fixes on a strictly newer version so TV installers do not retain
+         // the previous APK while preserving its database for the migration chain below.
+-        versionCode 638
+-        versionName "5.5.87"
++        versionCode 639
++        versionName "5.5.88"
+         javaCompileOptions {
+             annotationProcessorOptions {
+                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
+diff --git a/app/src/main/java/com/fongmi/android/tv/server/CastMediaRelay.java b/app/src/main/java/com/fongmi/android/tv/server/CastMediaRelay.java
+index d2fd18e..88bbe72 100644
+--- a/app/src/main/java/com/fongmi/android/tv/server/CastMediaRelay.java
++++ b/app/src/main/java/com/fongmi/android/tv/server/CastMediaRelay.java
+@@ -57,11 +57,17 @@ public final class CastMediaRelay {
+ 
+     /** Check the same authenticated source before telling the phone player to stop. */
+     public void prepare(Session session) throws IOException {
+-        Call call = request(session, session.source, "GET", Collections.emptyMap());
++        Call call = request(session, session.source, "GET", Map.of("range", "bytes=0-65535"));
+         try (Response response = call.execute()) {
+             if (!response.isSuccessful() || response.body() == null)
+                 throw new IOException("投屏视频源暂不可用（HTTP " + response.code() + "）");
+-            session.mime = contentType(response);
++            session.mime = CastMediaType.detect(response, session.mime);
++            session.byteSeek = response.code() == 206 && response.header("Content-Range", "").matches("bytes 0-[0-9]+/[0-9]+");
++            if (session.byteSeek) {
++                String range = response.header("Content-Range");
++                session.length = Long.parseLong(range.substring(range.lastIndexOf('/') + 1));
++            } else if (response.code() == 200) session.length = response.body().contentLength();
++            session.resource("0").mime = session.mime;
+             if (session.mime.equals("text/html") || session.mime.contains("json"))
+                 throw new IOException("视频源返回了错误页面，请更换线路后重试");
+             if (session != current) throw new IOException("投屏已取消");
+@@ -97,8 +103,9 @@ public final class CastMediaRelay {
+         Session session = current;
+         String[] path = request.getUri().split("/", 5);
+         if (session == null || path.length < 4 || !path[2].equals(session.token)) return error(404, "Cast session expired");
+-        HttpUrl source = session.resource(path[3]);
+-        if (source == null) return error(404, "Unknown media resource");
++        Resource resource = session.resource(path[3]);
++        if (resource == null) return error(404, "Unknown media resource");
++        HttpUrl source = resource.url;
+         String method = request.getMethod().name();
+         if (!method.equals("GET") && !method.equals("HEAD")) return error(405, "Method not allowed");
+         session.lastAccess = System.nanoTime();
+@@ -106,7 +113,7 @@ public final class CastMediaRelay {
+         Response upstream = null;
+         try {
+             boolean head = method.equals("HEAD");
+-            boolean hls = mimeFor(source).contains("mpegurl") || (path[3].equals("0") && session.mime.contains("mpegurl"));
++            boolean hls = resource.mime.contains("mpegurl");
+             call = request(session, source, head && hls ? "GET" : method, request.getHeaders());
+             upstream = call.execute();
+             // Some media CDNs reject HEAD although GET works. Never buffer the fallback body.
+@@ -120,7 +127,9 @@ public final class CastMediaRelay {
+             ResponseBody body = upstream.body();
+             if (body == null) throw new IOException("Empty upstream response");
+             boolean hasBody = upstream.request().method().equals("GET");
+-            String mime = hasBody ? contentType(upstream) : headerType(upstream);
++            String mime = resource.key ? CastMediaType.BINARY
++                    : hasBody ? CastMediaType.detect(upstream, resource.mime) : CastMediaType.header(upstream, resource.mime);
++            if (upstream.isSuccessful()) resource.mime = mime;
+             boolean playlist = hasBody && upstream.isSuccessful() && mime.equals("application/vnd.apple.mpegurl");
+             NanoHTTPD.Response result;
+             if (playlist) {
+@@ -138,7 +147,7 @@ public final class CastMediaRelay {
+                 InputStream stream = new FilterInputStream(body.byteStream()) {
+                     @Override public int read(byte[] b, int off, int len) throws IOException {
+                         int count = super.read(b, off, len);
+-                        if (count > 0 && ownedResponse.isSuccessful()) session.markMediaRead();
++                        if (count > 0 && !resource.key && ownedResponse.isSuccessful()) session.markMediaRead();
+                         return count;
+                     }
+                     @Override public void close() throws IOException {
+@@ -159,6 +168,8 @@ public final class CastMediaRelay {
+                 upstream = null;
+                 call = null;
+             }
++            if (path[3].equals("0") && session.byteSeek && !playlist && upstreamSuccess(result))
++                result.addHeader("Accept-Ranges", "bytes");
+             result.addHeader("transferMode.dlna.org", "Streaming");
+             boolean byteSeek = "bytes".equalsIgnoreCase(result.getHeader("Accept-Ranges")) || result.getHeader("Content-Range") != null;
+             result.addHeader("contentFeatures.dlna.org", "DLNA.ORG_OP=" + (byteSeek ? "01" : "00") + ";DLNA.ORG_CI=0");
+@@ -182,7 +193,7 @@ public final class CastMediaRelay {
+         // Plugin HTTP servers can incorrectly send a body on HEAD. Do not reuse that socket.
+         if (method.equals("HEAD")) request.header("Connection", "close");
+         // The receiver's range wins over the phone player's previous playback position.
+-        boolean playlist = mimeFor(url).contains("mpegurl") || (url.equals(session.source) && session.mime.contains("mpegurl"));
++        boolean playlist = session.isPlaylist(url);
+         for (String name : new String[]{"range", "if-range"}) {
+             String value = incoming.get(name);
+             // Rewritten manifests have different offsets/lengths from their upstream representation.
+@@ -194,13 +205,8 @@ public final class CastMediaRelay {
+         return call;
+     }
+ 
+-    private static String contentType(Response response) throws IOException {
+-        ResponseBody body = response.body();
+-        if (body != null && body.source().request(7)) {
+-            String prefix = body.source().buffer().clone().readUtf8(7);
+-            if (prefix.startsWith("#EXTM3U")) return "application/vnd.apple.mpegurl";
+-        }
+-        return headerType(response);
++    private static boolean upstreamSuccess(NanoHTTPD.Response response) {
++        return response.getStatus().getRequestStatus() >= 200 && response.getStatus().getRequestStatus() < 300;
+     }
+ 
+     private static NanoHTTPD.Response headResponse(Response response, String mime) {
+@@ -215,25 +221,6 @@ public final class CastMediaRelay {
+         };
+     }
+ 
+-    private static String headerType(Response response) {
+-        String type = response.header("Content-Type", "").split(";", 2)[0].trim().toLowerCase(Locale.ROOT);
+-        if (type.contains("mpegurl")) return "application/vnd.apple.mpegurl";
+-        if (!type.isEmpty() && !type.equals("application/octet-stream")) return type;
+-        return mimeFor(response.request().url());
+-    }
+-
+-    private static String mimeFor(HttpUrl url) {
+-        String path = url.encodedPath().toLowerCase(Locale.ROOT);
+-        if (path.endsWith(".m3u8") || path.endsWith(".m3u")) return "application/vnd.apple.mpegurl";
+-        if (path.endsWith(".ts")) return "video/mp2t";
+-        if (path.endsWith(".mkv")) return "video/x-matroska";
+-        if (path.endsWith(".webm")) return "video/webm";
+-        if (path.endsWith(".vtt")) return "text/vtt";
+-        if (path.endsWith(".aac")) return "audio/aac";
+-        if (path.endsWith(".key")) return "application/octet-stream";
+-        return "video/mp4";
+-    }
+-
+     private static byte[] readPlaylist(InputStream stream) throws IOException {
+         ByteArrayOutputStream out = new ByteArrayOutputStream();
+         byte[] buffer = new byte[8192];
+@@ -250,27 +237,39 @@ public final class CastMediaRelay {
+         if (text.startsWith("\uFEFF")) text = text.substring(1);
+         if (!text.trim().startsWith("#EXTM3U")) throw new IOException("Invalid HLS playlist");
+         StringBuilder output = new StringBuilder();
++        boolean variant = false;
++        boolean fragmented = text.contains("#EXT-X-MAP:");
+         for (String line : text.split("\\r?\\n", -1)) {
+             String trimmed = line.trim();
+             if (trimmed.startsWith("#")) {
++                variant = trimmed.startsWith("#EXT-X-STREAM-INF:") || variant;
++                boolean key = trimmed.startsWith("#EXT-X-KEY:") || trimmed.startsWith("#EXT-X-SESSION-KEY:");
++                String hint = key ? CastMediaType.BINARY
++                        : trimmed.startsWith("#EXT-X-MEDIA:") || trimmed.startsWith("#EXT-X-I-FRAME-STREAM-INF:")
++                        || trimmed.startsWith("#EXT-X-RENDITION-REPORT:") ? CastMediaType.HLS
++                        : trimmed.startsWith("#EXT-X-MAP:") || fragmented ? "video/mp4" : "video/mp2t";
+                 Matcher matcher = URI_ATTRIBUTE.matcher(line);
+                 StringBuffer replaced = new StringBuffer();
+                 while (matcher.find()) matcher.appendReplacement(replaced, Matcher.quoteReplacement(matcher.group(1)
+-                        + relayUri(session, base, matcher.group(2)) + matcher.group(3)));
++                        + relayUri(session, base, matcher.group(2), hint, key) + matcher.group(3)));
+                 matcher.appendTail(replaced);
+                 output.append(replaced);
+-            } else if (!trimmed.isEmpty()) output.append(relayUri(session, base, trimmed));
++            } else if (!trimmed.isEmpty()) {
++                output.append(relayUri(session, base, trimmed,
++                        variant ? CastMediaType.HLS : fragmented ? "video/mp4" : "video/mp2t", false));
++                variant = false;
++            }
+             output.append('\n');
+         }
+         return output.toString();
+     }
+ 
+-    private static String relayUri(Session session, HttpUrl base, String value) throws IOException {
++    private static String relayUri(Session session, HttpUrl base, String value, String hint, boolean key) throws IOException {
+         // Inline keys and DRM schemes are not HTTP resources and must retain their semantics.
+         if (value.matches("(?i)^[a-z][a-z0-9+.-]*:.*") && !value.startsWith("http://") && !value.startsWith("https://")) return value;
+         HttpUrl resolved = base.resolve(value);
+         if (resolved == null) throw new IOException("Invalid HLS resource");
+-        return session.register(resolved);
++        return session.register(resolved, hint, key);
+     }
+ 
+     private static void copyHeaders(Response from, NanoHTTPD.Response to) {
+@@ -293,49 +292,73 @@ public final class CastMediaRelay {
+         };
+     }
+ 
++    private static final class Resource {
++        final HttpUrl url;
++        final boolean key;
++        volatile String mime;
++        Resource(HttpUrl url, String hint, boolean key) {
++            this.url = url;
++            this.key = key;
++            String type = CastMediaType.fromPath(url);
++            mime = key || CastMediaType.BINARY.equals(type) ? hint : type;
++        }
++    }
++
+     public static final class Session {
+         private final String token = UUID.randomUUID().toString();
+         private final String address;
+         private final HttpUrl source;
+         private final Map<String, String> headers;
+-        private final Map<String, HttpUrl> resources = new LinkedHashMap<>();
++        private final Map<String, Resource> resources = new LinkedHashMap<>();
+         private final Map<HttpUrl, String> ids = new HashMap<>();
+         private final Set<Call> calls = ConcurrentHashMap.newKeySet();
+         private final CountDownLatch mediaRead = new CountDownLatch(1);
+         private volatile boolean receivedMedia;
+         private volatile long lastAccess = System.nanoTime();
+         private volatile String mime;
++        private volatile boolean byteSeek;
++        private volatile long length = -1;
+         private int nextId;
+ 
+         private Session(String address, HttpUrl source, Map<String, String> headers) {
+             this.address = address.replaceAll("/+$", "");
+             this.source = source;
+             this.headers = headers == null ? Collections.emptyMap() : new HashMap<>(headers);
+-            this.mime = mimeFor(source);
+-            register(source);
++            this.mime = CastMediaType.fromPath(source);
++            register(source, mime, false);
+         }
+ 
+-        public String url() { return address + PREFIX + token + "/0/" + (mime.contains("mpegurl") ? "video.m3u8" : "video.mp4"); }
++        public String url() { return address + PREFIX + token + "/0/video" + CastMediaType.extension(mime); }
++        public boolean hasMedia() { return receivedMedia; }
++        public boolean canSeek() { return byteSeek || mime.equals(CastMediaType.HLS); }
++        public boolean canByteSeek() { return byteSeek && !mime.equals(CastMediaType.HLS); }
++        public Long length() { return length >= 0 && !mime.equals(CastMediaType.HLS) ? length : null; }
+         public String mimeType() { return mime; }
+         public boolean awaitMedia(long timeoutMs) throws InterruptedException {
+             return mediaRead.await(timeoutMs, TimeUnit.MILLISECONDS) && receivedMedia;
+         }
+         private void markMediaRead() { receivedMedia = true; mediaRead.countDown(); }
+ 
+-        private synchronized HttpUrl resource(String id) { return resources.get(id); }
++        private synchronized Resource resource(String id) { return resources.get(id); }
++
++        private synchronized boolean isPlaylist(HttpUrl url) {
++            String id = ids.get(url);
++            Resource resource = id == null ? null : resources.get(id);
++            return resource != null && resource.mime.equals(CastMediaType.HLS);
++        }
+ 
+-        private synchronized String register(HttpUrl url) {
++        private synchronized String register(HttpUrl url, String hint, boolean key) {
+             String id = ids.get(url);
+             if (id == null) {
+                 if (resources.size() >= MAX_RESOURCES) {
+-                    String oldest = resources.keySet().stream().filter(key -> !key.equals("0")).findFirst().get();
+-                    ids.remove(resources.remove(oldest));
++                    String oldest = resources.keySet().stream().filter(resourceId -> !resourceId.equals("0")).findFirst().get();
++                    ids.remove(resources.remove(oldest).url);
+                 }
+                 id = Integer.toString(nextId++);
+-                resources.put(id, url);
++                resources.put(id, new Resource(url, hint, key));
+                 ids.put(url, id);
+             }
+-            String suffix = url.encodedPath().toLowerCase(Locale.ROOT).endsWith(".m3u8") ? "index.m3u8" : "media";
++            String suffix = CastMediaType.resourceName(url, resources.get(id).mime, key);
+             return address + PREFIX + token + "/" + id + "/" + suffix;
+         }
+ 
+diff --git a/app/src/main/java/com/fongmi/android/tv/server/CastMediaType.java b/app/src/main/java/com/fongmi/android/tv/server/CastMediaType.java
+new file mode 100644
+index 0000000..6b40fff
+--- /dev/null
++++ b/app/src/main/java/com/fongmi/android/tv/server/CastMediaType.java
+@@ -0,0 +1,86 @@
++package com.fongmi.android.tv.server;
++
++import java.io.IOException;
++import java.nio.charset.StandardCharsets;
++import java.util.Locale;
++import okhttp3.HttpUrl;
++import okhttp3.Response;
++import okhttp3.ResponseBody;
++
++/** Bounded, non-consuming format detection for receivers that trust MIME and file extensions. */
++final class CastMediaType {
++    static final String HLS = "application/vnd.apple.mpegurl";
++    static final String BINARY = "application/octet-stream";
++
++    static String fromPath(HttpUrl url) {
++        String path = url.encodedPath().toLowerCase(Locale.ROOT);
++        if (path.endsWith(".m3u8") || path.endsWith(".m3u")) return HLS;
++        if (path.endsWith(".ts") || path.endsWith(".m2ts")) return "video/mp2t";
++        if (path.endsWith(".mkv")) return "video/x-matroska";
++        if (path.endsWith(".webm")) return "video/webm";
++        if (path.endsWith(".mp4") || path.endsWith(".m4s") || path.endsWith(".m4v")) return "video/mp4";
++        if (path.endsWith(".vtt")) return "text/vtt";
++        if (path.endsWith(".aac")) return "audio/aac";
++        if (path.endsWith(".m4a")) return "audio/mp4";
++        if (path.endsWith(".mp3")) return "audio/mpeg";
++        return BINARY;
++    }
++
++    static String extension(String mime) {
++        return switch (mime) {
++            case HLS -> ".m3u8";
++            case "video/mp2t" -> ".ts";
++            case "video/x-matroska" -> ".mkv";
++            case "video/webm" -> ".webm";
++            case "video/mp4" -> ".mp4";
++            case "audio/mp4" -> ".m4a";
++            case "audio/aac" -> ".aac";
++            case "audio/mpeg" -> ".mp3";
++            case "text/vtt" -> ".vtt";
++            default -> ".bin";
++        };
++    }
++
++    static String header(Response response, String hint) {
++        if (response.isSuccessful() && response.request().method().equals("HEAD") && !BINARY.equals(hint)) return hint;
++        String type = response.header("Content-Type", "").split(";", 2)[0].trim().toLowerCase(Locale.ROOT);
++        if (type.contains("mpegurl")) return HLS;
++        if (type.equals("video/mkv") || type.equals("application/x-matroska")) return "video/x-matroska";
++        if (type.startsWith("video/") || type.startsWith("audio/") || type.equals("text/vtt")
++                || type.equals("text/html") || type.contains("json")) return type;
++        if (!BINARY.equals(hint)) return hint;
++        String pathType = fromPath(response.request().url());
++        return !BINARY.equals(pathType) ? pathType : type.isEmpty() ? BINARY : type;
++    }
++
++    static String detect(Response response, String hint) throws IOException {
++        ResponseBody body = response.body();
++        if (body == null) return header(response, hint);
++        // A range from the middle of a movie has no container header. Keep the type
++        // verified from byte zero, even when a CDN labels every response as MP4.
++        if (!BINARY.equals(hint) && response.header("Content-Range", "").matches("bytes [1-9][0-9]*-.*")) return hint;
++        // At most three TS packet headers; never read a whole segment or movie to identify it.
++        body.source().request(377);
++        byte[] prefix = body.source().buffer().clone().readByteArray(Math.min(377, body.source().buffer().size()));
++        String text = new String(prefix, StandardCharsets.UTF_8).replaceFirst("^\\uFEFF", "").trim();
++        if (text.startsWith("#EXTM3U")) return HLS;
++        if (text.startsWith("WEBVTT")) return "text/vtt";
++        if (prefix.length >= 377 && prefix[0] == 0x47 && prefix[188] == 0x47 && prefix[376] == 0x47) return "video/mp2t";
++        if (prefix.length >= 8) {
++            String box = new String(prefix, 4, 4, StandardCharsets.US_ASCII);
++            if (box.equals("ftyp") || box.equals("styp") || box.equals("moof")) return "audio/mp4".equals(hint) ? hint : "video/mp4";
++            if (prefix[0] == 0x1a && prefix[1] == 0x45 && prefix[2] == (byte) 0xdf && prefix[3] == (byte) 0xa3)
++                return "video/webm".equals(header(response, hint)) || text.contains("webm") ? "video/webm" : "video/x-matroska";
++        }
++        return header(response, hint);
++    }
++
++    static String resourceName(HttpUrl url, String hint, boolean key) {
++        if (key) return "key.bin";
++        String path = url.encodedPath().toLowerCase(Locale.ROOT);
++        String type = fromPath(url);
++        // Fragmented MP4 extensions are significant to strict HLS demuxers.
++        if (path.endsWith(".m4s")) return "segment.m4s";
++        return "media" + extension(BINARY.equals(type) ? hint : type);
++    }
++}
+diff --git a/app/src/main/java/com/fongmi/android/tv/server/CastStartupGate.java b/app/src/main/java/com/fongmi/android/tv/server/CastStartupGate.java
+new file mode 100644
+index 0000000..ccb159e
+--- /dev/null
++++ b/app/src/main/java/com/fongmi/android/tv/server/CastStartupGate.java
+@@ -0,0 +1,23 @@
++package com.fongmi.android.tv.server;
++
++/** A successful Play SOAP response or a file download does not mean the decoder is playing. */
++public final class CastStartupGate {
++    private long playingSince = -1;
++    private boolean ready;
++    private boolean clockKnown;
++
++    public boolean observe(long nowMs, boolean media, boolean playing, long positionSeconds) {
++        if (ready) return true;
++        if (!playing || !media) { playingSince = -1; return false; }
++        if (playingSince < 0) playingSince = nowMs;
++        clockKnown = positionSeconds >= 0;
++        // A real playback clock is preferable. Broken/unsupported position queries get a
++        // conservative state-only fallback, without sending an automatic Seek command.
++        ready = clockKnown ? positionSeconds > 0 : nowMs - playingSince >= 1500;
++        return ready;
++    }
++
++    public boolean shouldResume(boolean sourceSeekable, long requestedPositionMs) {
++        return ready && clockKnown && sourceSeekable && requestedPositionMs >= 2000;
++    }
++}
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/bean/CastVideo.java b/app/src/mobile/java/com/fongmi/android/tv/bean/CastVideo.java
+index 921f6fc..a080869 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/bean/CastVideo.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/bean/CastVideo.java
+@@ -5,7 +5,11 @@ import com.github.catvod.utils.Path;
+ 
+ import java.util.Map;
+ 
+-public record CastVideo(String name, String url, long position, Map<String, String> headers) {
++public record CastVideo(String name, String url, long position, Map<String, String> headers, int width, int height) {
++
++    public CastVideo(String name, String url, long position, Map<String, String> headers) {
++        this(name, url, position, headers, 0, 0);
++    }
+ 
+     public CastVideo {
+         if (url.startsWith("file")) url = Server.get().getAddress() + "/" + url.replace(Path.rootPath(), "").replace("://", "");
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/dlna/DLNACast.java b/app/src/mobile/java/com/fongmi/android/tv/dlna/DLNACast.java
+index 03bceeb..be5a378 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/dlna/DLNACast.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/dlna/DLNACast.java
+@@ -6,6 +6,7 @@ import com.fongmi.android.tv.bean.CastVideo;
+ import com.fongmi.android.tv.bean.Device;
+ import com.fongmi.android.tv.utils.Notify;
+ import com.fongmi.android.tv.server.CastMediaRelay;
++import com.fongmi.android.tv.server.CastStartupGate;
+ import com.fongmi.android.tv.server.Server;
+ import com.fongmi.android.tv.server.process.CastProxy;
+ import com.fongmi.android.tv.service.CastRelayService;
+@@ -16,6 +17,11 @@ import org.jupnp.model.action.ActionInvocation;
+ import org.jupnp.model.message.UpnpResponse;
+ import org.jupnp.model.meta.RemoteService;
+ import org.jupnp.support.avtransport.callback.Play;
++import org.jupnp.support.avtransport.callback.GetTransportInfo;
++import org.jupnp.support.avtransport.callback.GetPositionInfo;
++import org.jupnp.support.model.TransportInfo;
++import org.jupnp.support.model.TransportState;
++import org.jupnp.support.model.PositionInfo;
+ import org.jupnp.support.avtransport.callback.Seek;
+ import org.jupnp.support.avtransport.callback.SetAVTransportURI;
+ import org.jupnp.support.contentdirectory.DIDLParser;
+@@ -33,7 +39,11 @@ public final class DLNACast {
+     private final java.util.function.Consumer<String> failure;
+     private volatile CastMediaRelay.Session session;
+     private volatile boolean cancelled;
+-    private boolean completed;
++    private volatile boolean completed;
++    private volatile boolean failed;
++    private final CastStartupGate startup = new CastStartupGate();
++    private long startTime;
++    private boolean finishing;
+ 
+     public DLNACast(CastVideo video, Runnable runnable, java.util.function.Consumer<String> failure) {
+         this.video = video;
+@@ -43,6 +53,7 @@ public final class DLNACast {
+     public DLNACast(CastVideo video, Runnable runnable) { this(video, runnable, Notify::show); }
+ 
+     public void cast(Device item) {
++        startTime = System.nanoTime();
+         DLNACastManager mgr = DLNACastManager.get();
+         ControlPoint control = mgr.getControlPoint();
+         RemoteService service = mgr.findAVTransport(item);
+@@ -54,7 +65,7 @@ public final class DLNACast {
+                 Task.execute(() -> {
+                     try {
+                         CastProxy.relay().prepare(session);
+-                        if (!cancelled) control.execute(uriAction(control, service));
++                        if (active()) control.execute(uriAction(control, service));
+                     } catch (Exception e) {
+                         fail("视频转发准备失败，请更换线路或检查网络后重试");
+                     }
+@@ -75,7 +86,8 @@ public final class DLNACast {
+     }
+ 
+     private void fail(String message) {
+-        if (cancelled) return;
++        if (cancelled || failed || completed) return;
++        failed = true;
+         if (session != null) CastProxy.relay().close(session);
+         App.post(() -> { if (!cancelled) failure.accept(message); });
+     }
+@@ -83,7 +95,10 @@ public final class DLNACast {
+     private String buildMetaData() {
+         try {
+             DIDLContent content = new DIDLContent();
+-            VideoItem item = new VideoItem("0", "-1", video.name(), "", new Res(new ProtocolInfo("http-get:*:" + session.mimeType() + ":*"), null, session.url()));
++            Res resource = new Res(new ProtocolInfo("http-get:*:" + session.mimeType()
++                    + ":DLNA.ORG_OP=" + (session.canByteSeek() ? "01" : "00") + ";DLNA.ORG_CI=0"), session.length(), session.url());
++            if (video.width() > 0 && video.height() > 0) resource.setResolution(video.width(), video.height());
++            VideoItem item = new VideoItem("0", "-1", video.name(), "", resource);
+             content.addItem(item);
+             return new DIDLParser().generate(content);
+         } catch (Exception e) {
+@@ -95,7 +110,7 @@ public final class DLNACast {
+         return new SetAVTransportURI(service, session.url(), buildMetaData()) {
+             @Override
+             public void success(ActionInvocation i) {
+-                if (!cancelled) control.execute(playAction(control, service));
++                if (active()) control.execute(playAction(control, service));
+             }
+ 
+             @Override
+@@ -109,24 +124,10 @@ public final class DLNACast {
+         return new Play(service) {
+             @Override
+             public void success(ActionInvocation i) {
+-                if (cancelled) return;
+-                if (video.position() > 0) control.execute(seekAction(service));
+-                Task.execute(() -> {
+-                    try {
+-                        if (!session.awaitMedia(10_000)) {
+-                            fail("电视未能读取视频，请检查手机和电视是否在同一 Wi-Fi");
+-                            return;
+-                        }
+-                        App.post(() -> {
+-                            if (cancelled) return;
+-                            completed = true;
+-                            runnable.run();
+-                        });
+-                    } catch (InterruptedException e) {
+-                        Thread.currentThread().interrupt();
+-                        fail("投屏已中断，请重试");
+-                    }
+-                });
++                if (!active()) return;
++                // Play only acknowledges the command. Seek during TRANSITIONING can make
++                // receivers download up to the old position before showing their first frame.
++                App.post(() -> pollPlayback(control, service));
+             }
+ 
+             @Override
+@@ -136,16 +137,68 @@ public final class DLNACast {
+         };
+     }
+ 
+-    private Seek seekAction(RemoteService service) {
+-        return new Seek(service, SeekMode.REL_TIME, formatMs(video.position())) {
+-            @Override
+-            public void success(ActionInvocation i) {
++    private boolean active() { return !cancelled && !completed && !failed; }
++
++    private void pollPlayback(ControlPoint control, RemoteService service) {
++        if (!active() || finishing) return;
++        if ((System.nanoTime() - startTime) / 1_000_000L > 40_000) {
++            fail(session.hasMedia() ? "电视已收到视频但尚未开始播放，请尝试兼容线路或电视版接收端"
++                    : "电视未能读取视频，请检查网络或更换线路");
++            return;
++        }
++        control.execute(new GetTransportInfo(service) {
++            @Override public void received(ActionInvocation<?> invocation, TransportInfo info) {
++                boolean playing = info.getCurrentTransportState() == TransportState.PLAYING;
++                App.post(() -> {
++                    if (!active()) return;
++                    if (playing && service.getAction("GetPositionInfo") != null) readPosition(control, service);
++                    else observed(control, service, playing, -1);
++                });
++            }
++            @Override public void failure(ActionInvocation invocation, UpnpResponse response, String message) {
++                App.post(() -> { if (active()) App.post(() -> pollPlayback(control, service), 750); });
+             }
++        });
++    }
+ 
+-            @Override
+-            public void failure(ActionInvocation i, UpnpResponse r, String m) {
++    private void readPosition(ControlPoint control, RemoteService service) {
++        control.execute(new GetPositionInfo(service) {
++            @Override public void received(ActionInvocation<?> invocation, PositionInfo position) {
++                long seconds = -1;
++                try {
++                    if (position.getRelTime() != null && position.getRelTime().matches("[0-9]+:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?"))
++                        seconds = position.getTrackElapsedSeconds();
++                } catch (RuntimeException ignored) { }
++                long elapsed = seconds;
++                App.post(() -> observed(control, service, true, elapsed));
+             }
+-        };
++            @Override public void failure(ActionInvocation invocation, UpnpResponse response, String message) {
++                App.post(() -> observed(control, service, true, -1));
++            }
++        });
++    }
++
++    private void observed(ControlPoint control, RemoteService service, boolean playing, long seconds) {
++        if (!active() || finishing) return;
++        if (!startup.observe(System.nanoTime() / 1_000_000L, session.hasMedia(), playing, seconds)) {
++            App.post(() -> pollPlayback(control, service), 500);
++            return;
++        }
++        finishing = true;
++        if (startup.shouldResume(session.canSeek(), video.position()) && service.getAction("Seek") != null) {
++            control.execute(new Seek(service, SeekMode.REL_TIME, formatMs(video.position())) {
++                @Override public void success(ActionInvocation invocation) { App.post(DLNACast.this::complete); }
++                @Override public void failure(ActionInvocation invocation, UpnpResponse response, String message) { App.post(DLNACast.this::complete); }
++            });
++            // A receiver with a broken Seek implementation must not leave the sheet open forever.
++            App.post(this::complete, 3000);
++        } else complete();
++    }
++
++    private void complete() {
++        if (!active()) return;
++        completed = true;
++        runnable.run();
+     }
+ 
+     private String formatMs(long ms) {
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/activity/VideoActivity.java b/app/src/mobile/java/com/fongmi/android/tv/ui/activity/VideoActivity.java
+index 357ee51..b5b30a7 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/ui/activity/VideoActivity.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/activity/VideoActivity.java
+@@ -909,7 +909,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
+     }
+ 
+     @Override public CastVideo castVideo() {
+-        return !playbackReady || player().isEmpty() ? null : new CastVideo(mBinding.name.getText().toString(), player().getUrl(), player().getPosition(), player().getHeaders());
++        return !playbackReady || player().isEmpty() ? null : new CastVideo(mBinding.name.getText().toString(), player().getUrl(), player().getPosition(), player().getHeaders(), player().getVideoWidth(), player().getVideoHeight());
+     }
+     @Override public History castHistory() { return mHistory; }
+ 
+@@ -919,7 +919,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
+             return;
+         }
+         hideControl();
+-        CastDialog.create().history(mHistory).video(new CastVideo(mBinding.name.getText().toString(), player().getUrl(), player().getPosition(), player().getHeaders())).fm(true).show(this);
++        CastDialog.create().history(mHistory).video(new CastVideo(mBinding.name.getText().toString(), player().getUrl(), player().getPosition(), player().getHeaders(), player().getVideoWidth(), player().getVideoHeight())).fm(true).show(this);
+     }
+ 
+     private void onInfo() {
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/CastDialog.java b/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/CastDialog.java
+index 0b80d7f..f94bfcb 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/CastDialog.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/CastDialog.java
+@@ -227,7 +227,7 @@ public class CastDialog extends MobileSheetDialog implements DeviceAdapter.OnCli
+         if (connecting) return;
+         connecting = true; discovering = false;
+         int generation = ++castGeneration;
+-        App.post(connectionTimeout, 15000);
++        App.post(connectionTimeout, item.isDLNA() ? 45000 : 15000);
+         if (castCall != null) castCall.cancel();
+         App.removeCallbacks(discoveryFinished);
+         binding.status.setText("正在连接 " + item.getName() + "…");
+diff --git a/app/src/test/java/com/fongmi/android/tv/server/CastDecoderIntegrationTest.java b/app/src/test/java/com/fongmi/android/tv/server/CastDecoderIntegrationTest.java
+new file mode 100644
+index 0000000..31376e3
+--- /dev/null
++++ b/app/src/test/java/com/fongmi/android/tv/server/CastDecoderIntegrationTest.java
+@@ -0,0 +1,135 @@
++package com.fongmi.android.tv.server;
++
++import fi.iki.elonen.NanoHTTPD;
++import okhttp3.OkHttpClient;
++import org.junit.After;
++import org.junit.Before;
++import org.junit.Test;
++
++import java.io.ByteArrayInputStream;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.ArrayList;
++import java.util.Arrays;
++import java.util.Comparator;
++import java.util.List;
++import java.util.Map;
++import java.util.concurrent.CountDownLatch;
++import java.util.concurrent.TimeUnit;
++import java.util.concurrent.atomic.AtomicInteger;
++import java.util.function.Function;
++
++import static org.junit.Assert.*;
++import static org.junit.Assume.assumeTrue;
++
++/** Real demux/decode checks. CI sets CAST_FFMPEG; no external media or Android device is required. */
++public class CastDecoderIntegrationTest {
++    private String ffmpeg;
++    private Path directory;
++    private final OkHttpClient client = new OkHttpClient();
++    private final CastMediaRelay relay = new CastMediaRelay(client);
++    private NanoHTTPD upstream, phone;
++    private Function<NanoHTTPD.IHTTPSession, NanoHTTPD.Response> handler;
++    private final CountDownLatch blockedTail = new CountDownLatch(1);
++
++    @Before public void start() throws Exception {
++        ffmpeg = System.getenv("CAST_FFMPEG");
++        assumeTrue("Set CAST_FFMPEG to run real decoder integration tests", ffmpeg != null && !ffmpeg.isBlank());
++        directory = Files.createTempDirectory("cast-decoder-");
++        upstream = new NanoHTTPD("127.0.0.1", 0) {
++            @Override public Response serve(IHTTPSession request) { return handler.apply(request); }
++        };
++        phone = new NanoHTTPD("127.0.0.1", 0) {
++            @Override public Response serve(IHTTPSession request) { return relay.serve(request); }
++        };
++        upstream.start(); phone.start();
++    }
++
++    @After public void stop() throws Exception {
++        blockedTail.countDown(); relay.stop();
++        if (phone != null) phone.stop();
++        if (upstream != null) upstream.stop();
++        client.connectionPool().evictAll(); client.dispatcher().executorService().shutdownNow();
++        if (directory != null) try (var paths = Files.walk(directory)) {
++            for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) Files.deleteIfExists(path);
++        }
++    }
++
++    private String run(String... arguments) throws Exception {
++        List<String> command = new ArrayList<>(List.of(ffmpeg, "-hide_banner", "-loglevel", "error", "-nostdin", "-y"));
++        command.addAll(Arrays.asList(arguments));
++        Path log = Files.createTempFile(directory, "ffmpeg-", ".log");
++        Process process = new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(log.toFile()).start();
++        try {
++            assertTrue("Decoder waited for unavailable video tail: " + Files.readString(log), process.waitFor(15, TimeUnit.SECONDS));
++            String output = Files.readString(log);
++            assertEquals(output, 0, process.exitValue());
++            return output;
++        } finally { process.destroyForcibly(); }
++    }
++
++    private CastMediaRelay.Session open(String path) throws Exception {
++        CastMediaRelay.Session session = relay.open("http://127.0.0.1:" + phone.getListeningPort(),
++                "http://127.0.0.1:" + upstream.getListeningPort() + path, Map.of());
++        relay.prepare(session);
++        return session;
++    }
++
++    private NanoHTTPD.Response file(NanoHTTPD.IHTTPSession request, Path path, String mime) {
++        try {
++            byte[] data = Files.readAllBytes(path);
++            int start = 0, end = data.length - 1;
++            String range = request.getHeaders().get("range");
++            if (range != null && range.matches("bytes=[0-9]+-[0-9]*")) {
++                String[] bounds = range.substring(6).split("-", -1);
++                start = Integer.parseInt(bounds[0]);
++                if (!bounds[1].isEmpty()) end = Math.min(end, Integer.parseInt(bounds[1]));
++            }
++            if (start >= data.length) return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.RANGE_NOT_SATISFIABLE, "text/plain", "");
++            NanoHTTPD.Response response = NanoHTTPD.newFixedLengthResponse(range == null ? NanoHTTPD.Response.Status.OK
++                    : NanoHTTPD.Response.Status.PARTIAL_CONTENT, mime, new ByteArrayInputStream(data, start, end - start + 1), end - start + 1);
++            if (range != null) response.addHeader("Content-Range", "bytes " + start + "-" + end + "/" + data.length);
++            response.addHeader("Accept-Ranges", "bytes");
++            return response;
++        } catch (Exception e) { return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.INTERNAL_ERROR, "text/plain", e.toString()); }
++    }
++
++    @Test public void hlsDecodesFirstFrameWhileLaterSegmentsRemainUnavailable() throws Exception {
++        run("-f", "lavfi", "-i", "testsrc2=size=320x180:rate=20", "-t", "24", "-c:v", "libx264", "-preset", "ultrafast",
++                "-g", "40", "-sc_threshold", "0", "-f", "hls", "-hls_time", "2", "-hls_list_size", "0",
++                "-hls_segment_filename", directory.resolve("seg%02d.ts").toString(), directory.resolve("video.m3u8").toString());
++        AtomicInteger tailRequests = new AtomicInteger();
++        handler = request -> {
++            String name = request.getUri().substring(1);
++            if (name.matches("seg[0-9]+\\.ts") && Integer.parseInt(name.substring(3, 5)) >= 4) {
++                tailRequests.incrementAndGet();
++                try { blockedTail.await(20, TimeUnit.SECONDS); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
++            }
++            // The CDN labels segments as images. The relay must preserve and identify TS bytes.
++            return file(request, directory.resolve(name), name.endsWith("m3u8") ? "application/vnd.apple.mpegurl" : "image/jpeg");
++        };
++        CastMediaRelay.Session session = open("/video.m3u8");
++        String frame = run("-i", session.url(), "-map", "0:v:0", "-frames:v", "1", "-f", "framehash", "-");
++        assertTrue(frame, frame.contains("#dimensions 0: 320x180"));
++        assertTrue(frame, frame.lines().anyMatch(line -> line.startsWith("0,")));
++        assertEquals("First frame must not require the remaining movie", 0, tailRequests.get());
++    }
++
++    @Test public void matroskaPreservesPictureRatioAndEmbeddedSubtitles() throws Exception {
++        Path subtitles = directory.resolve("sub.srt"), movie = directory.resolve("movie.mkv");
++        Files.writeString(subtitles, "1\n00:00:00,000 --> 00:00:03,000\nEmbedded subtitle survives casting\n", StandardCharsets.UTF_8);
++        run("-f", "lavfi", "-i", "testsrc2=size=320x180:rate=20", "-i", subtitles.toString(), "-t", "8",
++                "-c:v", "libx264", "-preset", "ultrafast", "-c:s", "srt", "-metadata:s:s:0", "language=zho", movie.toString());
++        handler = request -> file(request, movie, "application/octet-stream");
++        CastMediaRelay.Session session = open("/opaque");
++        assertTrue(session.url(), session.url().endsWith(".mkv"));
++        assertTrue(session.canByteSeek());
++        assertEquals(Long.valueOf(Files.size(movie)), session.length());
++        String frame = run("-i", session.url(), "-map", "0:v:0", "-frames:v", "1", "-f", "framehash", "-");
++        assertTrue(frame, frame.contains("#dimensions 0: 320x180"));
++        assertTrue(frame, frame.contains("#sar 0: 1/1"));
++        String text = run("-i", session.url(), "-map", "0:s:0", "-f", "srt", "-");
++        assertTrue(text, text.contains("Embedded subtitle survives casting"));
++    }
++}
+diff --git a/app/src/test/java/com/fongmi/android/tv/server/CastStartupGateTest.java b/app/src/test/java/com/fongmi/android/tv/server/CastStartupGateTest.java
+new file mode 100644
+index 0000000..28eeac7
+--- /dev/null
++++ b/app/src/test/java/com/fongmi/android/tv/server/CastStartupGateTest.java
+@@ -0,0 +1,32 @@
++package com.fongmi.android.tv.server;
++
++import org.junit.Test;
++import static org.junit.Assert.*;
++
++public class CastStartupGateTest {
++    @Test public void downloadingAndTransitioningDoNotTriggerAnEarlySeek() {
++        CastStartupGate gate = new CastStartupGate();
++        assertFalse(gate.observe(0, true, false, 0));
++        assertFalse(gate.observe(10000, true, false, 0));
++        assertFalse(gate.shouldResume(true, 120000));
++        assertFalse(gate.observe(11000, true, true, 0));
++        assertTrue(gate.observe(12000, true, true, 1));
++        assertTrue(gate.shouldResume(true, 120000));
++        assertFalse(gate.shouldResume(false, 120000));
++    }
++
++    @Test public void unsupportedPositionQueryCannotForceUnseekableVideosToBufferToOldPosition() {
++        CastStartupGate gate = new CastStartupGate();
++        assertFalse(gate.observe(100, true, true, -1));
++        assertFalse(gate.observe(1000, true, true, -1));
++        assertTrue(gate.observe(1600, true, true, -1));
++        assertFalse(gate.shouldResume(true, 120000));
++    }
++
++    @Test public void metadataAndKeyRequestsCannotConfirmPlayback() {
++        CastStartupGate gate = new CastStartupGate();
++        assertFalse(gate.observe(0, false, true, 1));
++        assertFalse(gate.observe(10000, false, true, 2));
++        assertFalse(gate.shouldResume(true, 120000));
++    }
++}
+diff --git a/app/src/test/java/com/fongmi/android/tv/server/CastStreamFormatTest.java b/app/src/test/java/com/fongmi/android/tv/server/CastStreamFormatTest.java
+new file mode 100644
+index 0000000..a132c02
+--- /dev/null
++++ b/app/src/test/java/com/fongmi/android/tv/server/CastStreamFormatTest.java
+@@ -0,0 +1,139 @@
++package com.fongmi.android.tv.server;
++
++import fi.iki.elonen.NanoHTTPD;
++import okhttp3.OkHttpClient;
++import okhttp3.Request;
++import okhttp3.Response;
++import org.junit.After;
++import org.junit.Before;
++import org.junit.Test;
++
++import java.io.ByteArrayInputStream;
++import java.nio.charset.StandardCharsets;
++import java.util.Map;
++import java.util.function.Function;
++import java.util.regex.Matcher;
++import java.util.regex.Pattern;
++
++import static org.junit.Assert.*;
++
++/** Receiver-facing formats, not just successful byte downloads. */
++public class CastStreamFormatTest {
++    private final OkHttpClient client = new OkHttpClient();
++    private final CastMediaRelay relay = new CastMediaRelay(client);
++    private NanoHTTPD upstream, phone;
++    private Function<NanoHTTPD.IHTTPSession, NanoHTTPD.Response> handler;
++
++    @Before public void start() throws Exception {
++        upstream = new NanoHTTPD("127.0.0.1", 0) {
++            @Override public Response serve(IHTTPSession request) { return handler.apply(request); }
++        };
++        phone = new NanoHTTPD("127.0.0.1", 0) {
++            @Override public Response serve(IHTTPSession request) { return relay.serve(request); }
++        };
++        upstream.start(); phone.start();
++    }
++
++    @After public void stop() {
++        relay.stop(); phone.stop(); upstream.stop();
++        client.connectionPool().evictAll(); client.dispatcher().executorService().shutdownNow();
++    }
++
++    private CastMediaRelay.Session open(String path) {
++        return relay.open("http://127.0.0.1:" + phone.getListeningPort(),
++                "http://127.0.0.1:" + upstream.getListeningPort() + path, Map.of());
++    }
++
++    private static NanoHTTPD.Response bytes(String type, byte[] data) {
++        return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.OK, type, new ByteArrayInputStream(data), data.length);
++    }
++
++    private static NanoHTTPD.Response text(String type, String data) { return bytes(type, data.getBytes(StandardCharsets.UTF_8)); }
++
++    @Test public void matroskaIsNotAdvertisedAsAnMp4File() throws Exception {
++        handler = request -> bytes("video/x-matroska", new byte[]{0x1a,0x45,(byte)0xdf,(byte)0xa3,0,0,0,0});
++        CastMediaRelay.Session session = open("/proxy?file=opaque"); relay.prepare(session);
++        assertEquals("video/x-matroska", session.mimeType());
++        assertTrue(session.url(), session.url().endsWith(".mkv"));
++    }
++
++    @Test public void matroskaRangeRetainsVerifiedTypeWhenCdnAlwaysClaimsMp4() throws Exception {
++        byte[] mkv = new byte[1000];
++        mkv[0] = 0x1a; mkv[1] = 0x45; mkv[2] = (byte) 0xdf; mkv[3] = (byte) 0xa3;
++        handler = request -> {
++            int start = request.getHeaders().getOrDefault("range", "").equals("bytes=500-") ? 500 : 0;
++            NanoHTTPD.Response response = NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.PARTIAL_CONTENT,
++                    "video/mp4", new ByteArrayInputStream(mkv, start, mkv.length - start), mkv.length - start);
++            response.addHeader("Content-Range", "bytes " + start + "-999/1000");
++            return response;
++        };
++        CastMediaRelay.Session session = open("/proxy"); relay.prepare(session);
++        assertTrue(session.canByteSeek());
++        assertEquals(Long.valueOf(1000), session.length());
++        try (Response response = client.newCall(new Request.Builder().url(session.url()).head().build()).execute()) {
++            assertEquals("video/x-matroska", response.header("Content-Type"));
++        }
++        try (Response response = client.newCall(new Request.Builder().url(session.url()).header("Range", "bytes=500-").build()).execute()) {
++            assertEquals(206, response.code());
++            assertEquals("video/x-matroska", response.header("Content-Type"));
++            assertEquals(500, response.body().bytes().length);
++        }
++    }
++
++    @Test public void transportStreamWithAnImageHeaderIsSniffedWithoutLosingBytes() throws Exception {
++        byte[] ts = new byte[188 * 4];
++        for (int offset = 0; offset < ts.length; offset += 188) ts[offset] = 0x47;
++        handler = request -> bytes("image/jpeg", ts);
++        CastMediaRelay.Session session = open("/opaque.jpg"); relay.prepare(session);
++        assertEquals("video/mp2t", session.mimeType());
++        assertTrue(session.url().endsWith(".ts"));
++        try (Response response = client.newCall(new Request.Builder().url(session.url()).build()).execute()) {
++            assertEquals("video/mp2t", response.header("Content-Type"));
++            assertArrayEquals(ts, response.body().bytes());
++        }
++    }
++
++    @Test public void bomPlaylistIsRecognizedAndReturnedAsHls() throws Exception {
++        handler = request -> text("text/plain", "\uFEFF#EXTM3U\n#EXTINF:2,\na.ts\n#EXT-X-ENDLIST\n");
++        CastMediaRelay.Session session = open("/proxy"); relay.prepare(session);
++        assertEquals("application/vnd.apple.mpegurl", session.mimeType());
++        assertTrue(session.url().endsWith(".m3u8"));
++        try (Response response = client.newCall(new Request.Builder().url(session.url()).build()).execute()) {
++            assertTrue(response.body().string().startsWith("#EXTM3U"));
++        }
++    }
++
++    @Test public void hlsKeepsDecodableExtensionsForVariantsMapsAndFragments() throws Exception {
++        handler = request -> text("application/vnd.apple.mpegurl", "#EXTM3U\n"
++                + "#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"a\",URI=\"audio\"\n"
++                + "#EXT-X-MAP:URI=\"init.mp4\"\n#EXTINF:2,\nsegment.m4s\n#EXT-X-ENDLIST\n");
++        CastMediaRelay.Session session = open("/video.m3u8");
++        try (Response response = client.newCall(new Request.Builder().url(session.url()).build()).execute()) {
++            String playlist = response.body().string();
++            assertTrue(playlist, playlist.contains(".m3u8\""));
++            assertTrue(playlist, playlist.contains(".mp4\""));
++            assertTrue(playlist, playlist.contains(".m4s\n"));
++            assertFalse(playlist, playlist.contains("/media\n"));
++        }
++    }
++
++    @Test public void extensionlessHlsSegmentsGetTransportStreamNames() throws Exception {
++        handler = request -> text("application/vnd.apple.mpegurl", "#EXTM3U\n#EXTINF:2,\nopaque?id=123\n#EXT-X-ENDLIST\n");
++        CastMediaRelay.Session session = open("/video.m3u8");
++        try (Response response = client.newCall(new Request.Builder().url(session.url()).build()).execute()) {
++            assertTrue(response.body().string().contains(".ts\n"));
++        }
++    }
++
++    @Test public void encryptionKeyDownloadDoesNotCountAsVideoPlayback() throws Exception {
++        handler = request -> request.getUri().endsWith(".m3u8")
++                ? text("application/vnd.apple.mpegurl", "#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI=\"key\"\n#EXTINF:2,\na.ts\n")
++                : bytes("application/octet-stream", new byte[16]);
++        CastMediaRelay.Session session = open("/video.m3u8");
++        String playlist;
++        try (Response response = client.newCall(new Request.Builder().url(session.url()).build()).execute()) { playlist = response.body().string(); }
++        Matcher key = Pattern.compile("URI=\"([^\"]+)\"").matcher(playlist); assertTrue(key.find());
++        try (Response response = client.newCall(new Request.Builder().url(key.group(1)).build()).execute()) { assertEquals(16, response.body().bytes().length); }
++        assertFalse("Keys cannot confirm decoder startup", session.awaitMedia(20));
++    }
++}
