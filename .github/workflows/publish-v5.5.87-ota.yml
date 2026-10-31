@@ -1,0 +1,214 @@
+name: Publish v5.5.87 OTA update
+
+on:
+  push:
+    branches: [codex/fix/mobile-dlna-upgrade]
+    paths: [.github/workflows/publish-v5.5.87-ota.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: publish-v5.5.87-ota
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 765b63ef9abb3487113e126df5eb0bdd1f5e3b62
+
+      - name: Download verified original mobile build
+        uses: actions/download-artifact@v4
+        with:
+          name: TVBOX-Mobile-Original-Upgrade-v5.5.87
+          run-id: 41188935118
+          github-token: ${{ github.token }}
+          path: mobile-dist
+
+      - name: Check mobile build provenance
+        run: |
+          test "$(cat mobile-dist/source-commit.txt)" = 765b63ef9abb3487113e126df5eb0bdd1f5e3b62
+          echo 'be5c98812887a7a5193c3eca932182ce0b1006aee9b8eec5a23460210d707725  mobile-dist/pianduoduo-mobile-arm64_v8a-v5.5.87.apk' | sha256sum --check
+          echo '11e193afc457e14101ac016d79f2eea9025210458936e660c166103f81b2a96c  mobile-dist/pianduoduo-mobile-armeabi_v7a-v5.5.87.apk' | sha256sum --check
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Prepare Android build tools
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-37.0' 'build-tools;37.0.0'
+          # Use the JDK selected above; preserve the project's IDE-specific criteria.
+          mv gradle/gradle-daemon-jvm.properties "$RUNNER_TEMP/gradle-daemon-jvm.properties"
+          cat > "$RUNNER_TEMP/mobile-upgrade.init.gradle" <<'GRADLE'
+          allprojects {
+              plugins.withId('com.android.application') { android.buildToolsVersion = '37.0.0' }
+              plugins.withId('com.android.library') { android.buildToolsVersion = '37.0.0' }
+              plugins.withId('com.chaquo.python') {
+                  chaquopy.defaultConfig.pip.options '--index-url', 'https://pypi.org/simple'
+                  chaquopy.defaultConfig.pip.options '--extra-index-url', 'https://chaquo.com/pypi-13.1'
+                  chaquopy.defaultConfig.pip.options '--find-links', new File(System.getenv('RUNNER_TEMP'), 'android-python-wheels').absolutePath
+              }
+          }
+          GRADLE
+
+      - name: Fetch verified Android Python wheels
+        run: |
+          mkdir -p "$RUNNER_TEMP/android-python-wheels"
+          cd "$RUNNER_TEMP/android-python-wheels"
+          cat > SHA256SUMS <<'WHEELS'
+          811547210b01eefb0fb850fd35bd27b53a00a76b9466b8c03e049b7e8175004b  chaquopy_libcxx-180000-0-py3-none-android_24_arm64_v8a.whl
+          7082afa716eb1960852d432a73c90f40b017fbd83de7c427760a29f60b6169cc  chaquopy_libcxx-180000-0-py3-none-android_24_armeabi_v7a.whl
+          d4134ea2c0f632372a436ee54467f30d5f7744c2e9ea83ffc3edb9080ddff6c1  chaquopy_libxml2-2.9.8-2-py3-none-android_16_armeabi_v7a.whl
+          f8a7adf4f565e4cec6add811a9886be2191e8214913987dce24a3bb522dcb4e3  chaquopy_libxml2-2.9.8-2-py3-none-android_21_arm64_v8a.whl
+          a7b58f9627c68555a592d6295e8f79542035e358d0b35b14da7b0dc599ef1962  chaquopy_libxslt-1.1.32-2-py3-none-android_16_armeabi_v7a.whl
+          0526c414fc0af6f02b9e922042c79e3aa0e3c28fe093de3a38d834755ffc2a27  chaquopy_libxslt-1.1.32-2-py3-none-android_21_arm64_v8a.whl
+          3cd17d5b607accd9c6d92b79dd93388b9661da46e8bae6baed9f1dd4732f3076  lxml-5.3.0-0-cp310-cp310-android_24_arm64_v8a.whl
+          be03590d8aa1dca946375b646fa93d3a6ba5e2c89084abc35244d4c7c6e3ee31  lxml-5.3.0-0-cp310-cp310-android_24_armeabi_v7a.whl
+          8c9a9e983fee98565c305ac3f6a6d6e2ca90ccbc302eabd1ec5c521c047e5274  pycryptodome-3.21.0-0-cp310-cp310-android_24_arm64_v8a.whl
+          ae645325c2883ef84dd5dc7933760f889b06a8f8786facdf354a0c7f7d65c755  pycryptodome-3.21.0-0-cp310-cp310-android_24_armeabi_v7a.whl
+          6ec5eb9e25f4177257b2348d3a68708e2cba07fa3da4171d872979aca0fe969f  ujson-5.11.0-0-cp310-cp310-android_24_arm64_v8a.whl
+          8778731ebb168f94003cc8c202c80692ba64ad5e0c5775af4a9b309c8f4495fe  ujson-5.11.0-0-cp310-cp310-android_24_armeabi_v7a.whl
+          WHEELS
+          while read -r digest wheel; do
+            package="${wheel%%-*}"
+            package="${package//_/-}"
+            curl --fail --location --retry 3 --max-time 120 "https://chaquo.com/pypi-13.1/$package/$wheel" -o "$wheel"
+          done < SHA256SUMS
+          sha256sum --check SHA256SUMS
+
+      - name: Restore existing release signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_BASE64"
+          test -n "$KEY_ALIAS"
+          test -n "$STORE_PASSWORD"
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+          printf 'storeFile=%s\nkeyAlias=%s\nstorePassword=%s\nkeyPassword=%s\n' \
+            "$RUNNER_TEMP/release.keystore" "$KEY_ALIAS" "$STORE_PASSWORD" "$KEY_PASSWORD" > local.properties
+          keytool -exportcert -keystore "$RUNNER_TEMP/release.keystore" -alias "$KEY_ALIAS" \
+            -storepass:env STORE_PASSWORD -file "$RUNNER_TEMP/signing-public.der"
+          echo "b8ed9c579e8671d24f6d4d18b296528ca655c627fa437f57a217450c0b548aa7  $RUNNER_TEMP/signing-public.der" | sha256sum --check
+
+      - name: Build matching signed TV APKs
+        run: |
+          bash gradlew --no-daemon --max-workers=2 -I "$RUNNER_TEMP/mobile-upgrade.init.gradle" \
+            :app:assembleLeanbackArm64_v8aRelease :app:assembleLeanbackArmeabi_v7aRelease
+
+      - name: Verify all four original upgrade packages
+        run: |
+          set -euo pipefail
+          APKSIGNER="$ANDROID_SDK_ROOT/build-tools/37.0.0/apksigner"
+          AAPT="$ANDROID_SDK_ROOT/build-tools/37.0.0/aapt"
+          mkdir -p dist verification
+          cp mobile-dist/*.apk dist/
+          for abi in arm64_v8a armeabi_v7a; do
+            apk="$(find app/build/outputs/apk -path "*/release/leanback-$abi.apk" -print -quit)"
+            test -f "$apk"
+            cp "$apk" "dist/pianduoduo-leanback-$abi-v5.5.87.apk"
+          done
+          for apk in dist/*.apk; do
+            name="$(basename "$apk" .apk)"
+            "$APKSIGNER" verify --verbose --print-certs --min-sdk-version 23 "$apk" > "verification/$name-signature.txt"
+            actual="$(sed -n 's/.*certificate SHA-256 digest: //p' "verification/$name-signature.txt" | sort -u)"
+            test "$actual" = b8ed9c579e8671d24f6d4d18b296528ca655c627fa437f57a217450c0b548aa7
+            grep -q 'Verified using v1 scheme (JAR signing): true' "verification/$name-signature.txt"
+            grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' "verification/$name-signature.txt"
+            grep -q 'Verified using v3 scheme (APK Signature Scheme v3): true' "verification/$name-signature.txt"
+            "$AAPT" dump badging "$apk" > "verification/$name-metadata.txt"
+            grep -q "^package: name='com.fongmi.android.tv' versionCode='638' versionName='5.5.87'" "verification/$name-metadata.txt"
+            ! grep -q '^application-debuggable' "verification/$name-metadata.txt"
+            python3 scripts/check_android_io_compat.py "$apk"
+          done
+
+      - name: Generate the shared mobile and TV update manifest
+        run: |
+          python3 scripts/generate_update_manifest.py \
+            --repo "$GITHUB_REPOSITORY" --version-code 638 --version-name 5.5.87 --tag v5.5.87 \
+            --notes '修复手机版 DLNA 投屏的本地代理地址、请求头和 HLS 分片转发；改善投屏传输与后台连接稳定性。保留原版包名和签名，可直接覆盖更新并保留数据。' \
+            --asset leanback-armeabi_v7a=dist/pianduoduo-leanback-armeabi_v7a-v5.5.87.apk \
+            --asset leanback-arm64_v8a=dist/pianduoduo-leanback-arm64_v8a-v5.5.87.apk \
+            --asset mobile-armeabi_v7a=dist/pianduoduo-mobile-armeabi_v7a-v5.5.87.apk \
+            --asset mobile-arm64_v8a=dist/pianduoduo-mobile-arm64_v8a-v5.5.87.apk \
+            --output dist/latest.json
+          (cd dist && sha256sum *.apk latest.json > SHA256SUMS.txt)
+          cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
+          修复手机版 DLNA 投屏时，本地代理地址无法被电视访问、请求头丢失及 HLS 分片转发异常等问题，并改善后台投屏连接稳定性。
+
+          - 原版包名、原版签名，版本号 5.5.87（638），可覆盖安装并保留数据。
+          - 正式发布手机和电视的 ARM64 / ARMv7 安装包，附带应用内更新所需的 latest.json。
+          - 手机版复用已通过 19 项投屏回归测试的构建；全部安装包均校验签名、版本和 Android IO 兼容性。
+          - 创维电视与乐播投屏的实际播放效果仍需设备实测。
+
+          Source: 765b63ef9abb3487113e126df5eb0bdd1f5e3b62
+          Mobile build: https://github.com/HUAIDAO1104/TVBOX/actions/runs/41188935118
+          NOTES
+
+      - name: Upload verification records
+        uses: actions/upload-artifact@v4
+        with:
+          name: TVBOX-v5.5.87-OTA-verification
+          path: |
+            verification/
+            dist/latest.json
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+
+      - name: Stage and verify release assets before making latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v5.5.87 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo 'v5.5.87 already exists; refusing to replace published packages.' >&2
+            exit 1
+          fi
+          gh release create v5.5.87 dist/*.apk dist/latest.json dist/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" --draft \
+            --target 765b63ef9abb3487113e126df5eb0bdd1f5e3b62 \
+            --title 'v5.5.87 · 手机投屏修复与应用内更新' \
+            --notes-file "$RUNNER_TEMP/release-notes.md"
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/v5.5.87" > "$RUNNER_TEMP/staged-release.json"
+          python3 - <<'VERIFY'
+          import hashlib, json, os
+          from pathlib import Path
+          release = json.loads((Path(os.environ['RUNNER_TEMP']) / 'staged-release.json').read_text())
+          assert release['draft'] and not release['prerelease']
+          remote = {a['name']: a for a in release['assets']}
+          local = {p.name: p for p in Path('dist').iterdir() if p.is_file()}
+          assert remote.keys() == local.keys()
+          for name, path in local.items():
+              assert remote[name]['size'] == path.stat().st_size, name
+              assert remote[name]['digest'] == 'sha256:' + hashlib.sha256(path.read_bytes()).hexdigest(), name
+          manifest = json.loads(Path('dist/latest.json').read_text())
+          assert manifest['versionCode'] == 638 and manifest['versionName'] == '5.5.87'
+          assert len(manifest['apks']) == 4
+          for asset in manifest['apks'].values():
+              assert remote[asset['fileName']]['digest'] == 'sha256:' + asset['sha256']
+              assert remote[asset['fileName']]['size'] == asset['size']
+          print('All six release assets match; mobile and TV OTA manifest verified.')
+          VERIFY
+          gh release edit v5.5.87 --repo "$GITHUB_REPOSITORY" --draft=false --latest
+          echo '### Published v5.5.87 (638) with verified mobile and TV OTA assets' >> "$GITHUB_STEP_SUMMARY"
+          echo 'https://github.com/HUAIDAO1104/TVBOX/releases/tag/v5.5.87' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove signing material
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/release.keystore" local.properties
