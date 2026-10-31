@@ -1,9 +1,6 @@
 name: Publish v5.5.87 OTA update
 
 on:
-  push:
-    branches: [codex/fix/mobile-dlna-upgrade]
-    paths: [.github/workflows/publish-v5.5.87-ota.yml]
   workflow_dispatch:
 
 permissions:
@@ -184,7 +181,10 @@ jobs:
             --target 765b63ef9abb3487113e126df5eb0bdd1f5e3b62 \
             --title 'v5.5.87 · 手机投屏修复与应用内更新' \
             --notes-file "$RUNNER_TEMP/release-notes.md"
-          gh api "repos/$GITHUB_REPOSITORY/releases/tags/v5.5.87" > "$RUNNER_TEMP/staged-release.json"
+          # A draft does not have a public tag yet. Resolve it from the authenticated release list.
+          release_id="$(gh api "repos/$GITHUB_REPOSITORY/releases" --jq '.[] | select(.tag_name == "v5.5.87" and .draft == true) | .id')"
+          test -n "$release_id"
+          gh api "repos/$GITHUB_REPOSITORY/releases/$release_id" > "$RUNNER_TEMP/staged-release.json"
           python3 - <<'VERIFY'
           import hashlib, json, os
           from pathlib import Path
@@ -204,7 +204,7 @@ jobs:
               assert remote[asset['fileName']]['size'] == asset['size']
           print('All six release assets match; mobile and TV OTA manifest verified.')
           VERIFY
-          gh release edit v5.5.87 --repo "$GITHUB_REPOSITORY" --draft=false --latest
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$release_id" -F draft=false -f make_latest=true > /dev/null
           echo '### Published v5.5.87 (638) with verified mobile and TV OTA assets' >> "$GITHUB_STEP_SUMMARY"
           echo 'https://github.com/HUAIDAO1104/TVBOX/releases/tag/v5.5.87' >> "$GITHUB_STEP_SUMMARY"
 
