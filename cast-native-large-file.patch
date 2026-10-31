@@ -1,0 +1,444 @@
+diff --git a/app/build.gradle b/app/build.gradle
+index 88d5ba6..e05c8c5 100644
+--- a/app/build.gradle
++++ b/app/build.gradle
+@@ -19,8 +19,8 @@ android {
+         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+         // Keep compatibility fixes on a strictly newer version so TV installers do not retain
+         // the previous APK while preserving its database for the migration chain below.
+-        versionCode 639
+-        versionName "5.5.88"
++        versionCode 640
++        versionName "5.5.89"
+         javaCompileOptions {
+             annotationProcessorOptions {
+                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
+diff --git a/app/src/main/java/com/fongmi/android/tv/server/CastByteRange.java b/app/src/main/java/com/fongmi/android/tv/server/CastByteRange.java
+new file mode 100644
+index 0000000..2c169ac
+--- /dev/null
++++ b/app/src/main/java/com/fongmi/android/tv/server/CastByteRange.java
+@@ -0,0 +1,50 @@
++package com.fongmi.android.tv.server;
++
++import java.util.regex.Matcher;
++import java.util.regex.Pattern;
++
++/** HTTP byte offsets stay 64-bit, including MKV indexes beyond 2 GiB. */
++final class CastByteRange {
++    private static final Pattern REQUEST = Pattern.compile("(?i)bytes=([0-9]*)-([0-9]*)");
++    private static final Pattern RESPONSE = Pattern.compile("(?i)bytes ([0-9]+)-([0-9]+)/([0-9]+)");
++    final long start, end, total;
++
++    private CastByteRange(long start, long end, long total) {
++        this.start = start; this.end = end; this.total = total;
++    }
++
++    /** null means a malformed/multipart/unknown-unit range: RFC 9110 allows ignoring it. */
++    static CastByteRange request(String value, long total) {
++        if (value == null || total < 0) return null;
++        Matcher match = REQUEST.matcher(value.trim());
++        if (!match.matches() || (match.group(1).isEmpty() && match.group(2).isEmpty())) return null;
++        try {
++            long start, end;
++            if (match.group(1).isEmpty()) {
++                long suffix = Long.parseLong(match.group(2));
++                start = Math.max(0, total - suffix); end = total - 1;
++            } else {
++                start = Long.parseLong(match.group(1));
++                end = match.group(2).isEmpty() ? total - 1 : Long.parseLong(match.group(2));
++                if (!match.group(2).isEmpty() && end < start) return null;
++                end = Math.min(end, total - 1);
++            }
++            return new CastByteRange(start, end, total);
++        } catch (NumberFormatException invalid) { return null; }
++    }
++
++    static CastByteRange response(String value) {
++        if (value == null) return null;
++        Matcher match = RESPONSE.matcher(value.trim());
++        if (!match.matches()) return null;
++        try {
++            long start = Long.parseLong(match.group(1)), end = Long.parseLong(match.group(2)), total = Long.parseLong(match.group(3));
++            return start <= end && end < total ? new CastByteRange(start, end, total) : null;
++        } catch (NumberFormatException invalid) { return null; }
++    }
++
++    boolean satisfiable() { return start <= end && start < total; }
++    long length() { return end - start + 1; }
++    String header() { return "bytes=" + start + "-" + end; }
++    String contentRange() { return "bytes " + start + "-" + end + "/" + total; }
++}
+diff --git a/app/src/main/java/com/fongmi/android/tv/server/CastMediaRelay.java b/app/src/main/java/com/fongmi/android/tv/server/CastMediaRelay.java
+index 6fe19fa..b55ae64 100644
+--- a/app/src/main/java/com/fongmi/android/tv/server/CastMediaRelay.java
++++ b/app/src/main/java/com/fongmi/android/tv/server/CastMediaRelay.java
+@@ -71,11 +71,12 @@ public final class CastMediaRelay {
+             if (!response.isSuccessful() || response.body() == null)
+                 throw new IOException("投屏视频源暂不可用（HTTP " + response.code() + "）");
+             session.mime = CastMediaType.detect(response, session.mime);
+-            session.byteSeek = response.code() == 206 && response.header("Content-Range", "").matches("bytes 0-[0-9]+/[0-9]+");
+-            if (session.byteSeek) {
+-                String range = response.header("Content-Range");
+-                session.length = Long.parseLong(range.substring(range.lastIndexOf('/') + 1));
+-            } else if (response.code() == 200) session.length = response.body().contentLength();
++            CastByteRange range = CastByteRange.response(response.header("Content-Range"));
++            session.byteSeek = response.code() == 206 && range != null && range.start == 0;
++            if (session.byteSeek) session.length = range.total;
++            else if (response.code() == 200) session.length = response.body().contentLength();
++            session.etag = response.header("ETag");
++            session.lastModified = response.header("Last-Modified");
+             session.resource("0").mime = session.mime;
+             if (session.mime.equals("text/html") || session.mime.contains("json"))
+                 throw new IOException("视频源返回了错误页面，请更换线路后重试");
+@@ -123,18 +124,45 @@ public final class CastMediaRelay {
+         try {
+             boolean head = method.equals("HEAD");
+             boolean hls = resource.mime.contains("mpegurl");
+-            call = request(session, source, head && hls ? "GET" : method, request.getHeaders());
++            boolean knownFile = path[3].equals("0") && !hls && session.length >= 0;
++            // Native TV players often HEAD before opening a demuxer. Plugin/CDN HEAD can
++            // return an empty successful response even though GET has a valid 2+ GiB file.
++            if (head && knownFile) return fileHead(session);
++            Map<String, String> incoming = new HashMap<>(request.getHeaders());
++            CastByteRange wanted = null;
++            if (knownFile && session.byteSeek) {
++                wanted = CastByteRange.request(incoming.get("range"), session.length);
++                if (wanted != null && !wanted.satisfiable()) {
++                    NanoHTTPD.Response unsatisfied = error(416, "Range not satisfiable");
++                    unsatisfied.addHeader("Content-Range", "bytes */" + session.length);
++                    return unsatisfied;
++                }
++                // Normalize suffix and open-ended requests for plugin servers that only
++                // implement explicit bounds. This also clamps a TV's overly large end.
++                if (wanted != null) incoming.put("range", wanted.header());
++                else incoming.remove("range");
++            }
++            call = request(session, source, head && hls ? "GET" : method, incoming);
+             upstream = call.execute();
+             // Some media CDNs reject HEAD although GET works. Never buffer the fallback body.
+             if (method.equals("HEAD") && (upstream.code() == 405 || upstream.code() == 501)) {
+                 upstream.close();
+                 session.calls.remove(call);
+-                call = request(session, source, "GET", request.getHeaders());
++                call = request(session, source, "GET", incoming);
+                 upstream = call.execute();
+             }
+             if (session != current) throw new IOException("Cast cancelled");
+             ResponseBody body = upstream.body();
+             if (body == null) throw new IOException("Empty upstream response");
++            CastByteRange received = upstream.code() == 206 ? CastByteRange.response(upstream.header("Content-Range")) : null;
++            if (wanted != null && upstream.isSuccessful()) {
++                if (upstream.code() == 206 && (received == null || received.start != wanted.start
++                        || received.total != wanted.total)) throw new IOException("Invalid upstream range");
++                // Never scan gigabytes from byte zero to satisfy an ignored tail request.
++                // A valid If-Range mismatch may legitimately return the full representation.
++                if (upstream.code() == 200 && wanted.start > 0 && !incoming.containsKey("if-range"))
++                    throw new IOException("Upstream ignored range");
++            }
+             boolean hasBody = upstream.request().method().equals("GET");
+             String mime = resource.key ? CastMediaType.BINARY
+                     : hasBody ? CastMediaType.detect(upstream, resource.mime) : CastMediaType.header(upstream, resource.mime);
+@@ -170,6 +198,13 @@ public final class CastMediaRelay {
+                     }
+                 };
+                 long length = body.contentLength();
++                // Content-Range proves the partial length even if the CDN sends chunks.
++                // Native DLNA demuxers may refuse a chunked MKV index response.
++                if (upstream.header("Content-Encoding", "identity").equalsIgnoreCase("identity")) {
++                    if (length < 0 && received != null) length = received.length();
++                    if (length < 0 && knownFile && upstream.code() == 200 && !incoming.containsKey("if-range"))
++                        length = session.length;
++                }
+                 result = length >= 0 ? NanoHTTPD.newFixedLengthResponse(status(upstream.code()), mime, stream, length)
+                         : NanoHTTPD.newChunkedResponse(status(upstream.code()), mime, stream);
+                 copyHeaders(upstream, result);
+@@ -181,7 +216,7 @@ public final class CastMediaRelay {
+                 result.addHeader("Accept-Ranges", "bytes");
+             result.addHeader("transferMode.dlna.org", "Streaming");
+             boolean byteSeek = "bytes".equalsIgnoreCase(result.getHeader("Accept-Ranges")) || result.getHeader("Content-Range") != null;
+-            result.addHeader("contentFeatures.dlna.org", "DLNA.ORG_OP=" + (byteSeek ? "01" : "00") + ";DLNA.ORG_CI=0");
++            result.addHeader("contentFeatures.dlna.org", features(byteSeek));
+             return result;
+         } catch (Exception e) {
+             // Do not expose source URLs, cookies or authorization headers to LAN clients/logs.
+@@ -218,6 +253,24 @@ public final class CastMediaRelay {
+         return response.getStatus().getRequestStatus() >= 200 && response.getStatus().getRequestStatus() < 300;
+     }
+ 
++    /** One DLNA feature description for both DIDL and HTTP responses. */
++    public static String features(boolean byteSeek) {
++        // Streaming transfer mode, connection stalling and DLNA 1.5; no false time seek.
++        return "DLNA.ORG_OP=" + (byteSeek ? "01" : "00")
++                + ";DLNA.ORG_CI=0;DLNA.ORG_FLAGS=01300000000000000000000000000000";
++    }
++
++    private static NanoHTTPD.Response fileHead(Session session) {
++        NanoHTTPD.Response result = NanoHTTPD.newFixedLengthResponse(status(200), session.mime,
++                new ByteArrayInputStream(new byte[0]), session.length);
++        if (session.canByteSeek()) result.addHeader("Accept-Ranges", "bytes");
++        if (session.etag != null) result.addHeader("ETag", session.etag);
++        if (session.lastModified != null) result.addHeader("Last-Modified", session.lastModified);
++        result.addHeader("transferMode.dlna.org", "Streaming");
++        result.addHeader("contentFeatures.dlna.org", features(session.canByteSeek()));
++        return result;
++    }
++
+     private static NanoHTTPD.Response headResponse(Response response, String mime) {
+         long length = -1;
+         try { length = Long.parseLong(response.header("Content-Length", "-1")); }
+@@ -327,6 +380,7 @@ public final class CastMediaRelay {
+         private volatile String mime;
+         private volatile boolean byteSeek;
+         private volatile long length = -1;
++        private volatile String etag, lastModified;
+         private int nextId;
+ 
+         private Session(String address, HttpUrl source, Map<String, String> headers) {
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/dlna/DLNACast.java b/app/src/mobile/java/com/fongmi/android/tv/dlna/DLNACast.java
+index 265ab33..ff368a5 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/dlna/DLNACast.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/dlna/DLNACast.java
+@@ -96,7 +96,7 @@ public final class DLNACast {
+         try {
+             DIDLContent content = new DIDLContent();
+             Res resource = new Res(new ProtocolInfo("http-get:*:" + session.mimeType()
+-                    + ":DLNA.ORG_OP=" + (session.canByteSeek() ? "01" : "00") + ";DLNA.ORG_CI=0"), session.length(), session.url());
++                    + ":" + CastMediaRelay.features(session.canByteSeek())), session.length(), session.url());
+             if (video.width() > 0 && video.height() > 0) resource.setResolution(video.width(), video.height());
+             VideoItem item = new VideoItem("0", "-1", video.name(), "", resource);
+             content.addItem(item);
+diff --git a/app/src/test/java/com/fongmi/android/tv/server/CastByteRangeTest.java b/app/src/test/java/com/fongmi/android/tv/server/CastByteRangeTest.java
+new file mode 100644
+index 0000000..cf22891
+--- /dev/null
++++ b/app/src/test/java/com/fongmi/android/tv/server/CastByteRangeTest.java
+@@ -0,0 +1,30 @@
++package com.fongmi.android.tv.server;
++
++import org.junit.Test;
++import static org.junit.Assert.*;
++
++public class CastByteRangeTest {
++    @Test public void validRangesUseLongOffsets() {
++        assertEquals("bytes=2147483648-2999999999", CastByteRange.request("bytes=2147483648-", 3_000_000_000L).header());
++        assertEquals("bytes=2999999900-2999999999", CastByteRange.request("bytes=-100", 3_000_000_000L).header());
++        assertEquals("bytes=0-99", CastByteRange.request("bytes=-200", 100).header());
++        assertEquals("bytes=0-99", CastByteRange.request("bytes=0-9999999999999", 100).header());
++    }
++    @Test public void unsatisfiableRangesRemainDistinguishableFromMalformedOnes() {
++        assertFalse(CastByteRange.request("bytes=100-", 100).satisfiable());
++        assertFalse(CastByteRange.request("bytes=-0", 100).satisfiable());
++        assertFalse(CastByteRange.request("bytes=0-", 0).satisfiable());
++        assertNull(CastByteRange.request("bytes=80-70", 100));
++    }
++    @Test public void malformedAndUnsupportedRangesCanBeIgnored() {
++        for (String value : new String[]{"bytes=-", "bytes=0-1,5-6", "items=0-5", "bytes=9223372036854775808-", "bytes=x-y"})
++            assertNull(value, CastByteRange.request(value, 100));
++    }
++    @Test public void onlyConsistentContentRangesSupplyLengths() {
++        CastByteRange range = CastByteRange.response("bytes 2147483648-2999999999/3000000000");
++        assertNotNull(range);
++        assertEquals(852516352L, range.length());
++        for (String value : new String[]{"bytes 0-100/100", "bytes 5-2/100", "bytes 0-100/*", "bytes */100", "bytes 0-9223372036854775808/100"})
++            assertNull(value, CastByteRange.response(value));
++    }
++}
+diff --git a/app/src/test/java/com/fongmi/android/tv/server/CastDecoderIntegrationTest.java b/app/src/test/java/com/fongmi/android/tv/server/CastDecoderIntegrationTest.java
+index 31376e3..9695a85 100644
+--- a/app/src/test/java/com/fongmi/android/tv/server/CastDecoderIntegrationTest.java
++++ b/app/src/test/java/com/fongmi/android/tv/server/CastDecoderIntegrationTest.java
+@@ -116,6 +116,36 @@ public class CastDecoderIntegrationTest {
+         assertEquals("First frame must not require the remaining movie", 0, tailRequests.get());
+     }
+ 
++    @Test public void hevcTenBit4kAndEac3SurviveNativeStyleRangeProbes() throws Exception {
++        Path movie = directory.resolve("hdr.mkv");
++        run("-f", "lavfi", "-i", "color=c=blue:size=3840x2160:rate=2", "-f", "lavfi", "-i", "anullsrc=r=48000:cl=5.1",
++                "-t", "2", "-c:v", "libx265", "-preset", "ultrafast", "-pix_fmt", "yuv420p10le",
++                "-x265-params", "pools=2:frame-threads=2:log-level=error:colorprim=bt2020:transfer=smpte2084:colormatrix=bt2020nc",
++                "-c:a", "eac3", "-b:a", "384k", movie.toString());
++        handler = request -> {
++            if (request.getMethod() == NanoHTTPD.Method.HEAD)
++                return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "video/mp4", "");
++            String range = request.getHeaders().get("range");
++            if (range != null && !range.matches("bytes=[0-9]+-[0-9]+"))
++                return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.RANGE_NOT_SATISFIABLE, "text/plain", "Closed bounds required");
++            NanoHTTPD.Response original = file(request, movie, "video/mp4");
++            NanoHTTPD.Response chunked = NanoHTTPD.newChunkedResponse(original.getStatus(), "video/mp4", original.getData());
++            if (original.getHeader("Content-Range") != null) chunked.addHeader("Content-Range", original.getHeader("Content-Range"));
++            return chunked;
++        };
++        CastMediaRelay.Session session = open("/opaque-4k");
++        try (okhttp3.Response response = client.newCall(new okhttp3.Request.Builder().url(session.url()).build()).execute()) {
++            assertEquals(Long.toString(Files.size(movie)), response.header("Content-Length"));
++            assertNull(response.header("Transfer-Encoding"));
++            assertArrayEquals(Files.readAllBytes(movie), response.body().bytes());
++        }
++        String frame = run("-i", session.url(), "-map", "0:v:0", "-frames:v", "1", "-f", "framehash", "-");
++        assertTrue(frame, frame.contains("#dimensions 0: 3840x2160"));
++        assertTrue(frame, frame.lines().anyMatch(line -> line.startsWith("0,")));
++        String audio = run("-i", session.url(), "-map", "0:a:0", "-t", "0.2", "-f", "framehash", "-");
++        assertTrue(audio, audio.lines().anyMatch(line -> line.startsWith("0,")));
++    }
++
+     @Test public void matroskaPreservesPictureRatioAndEmbeddedSubtitles() throws Exception {
+         Path subtitles = directory.resolve("sub.srt"), movie = directory.resolve("movie.mkv");
+         Files.writeString(subtitles, "1\n00:00:00,000 --> 00:00:03,000\nEmbedded subtitle survives casting\n", StandardCharsets.UTF_8);
+diff --git a/app/src/test/java/com/fongmi/android/tv/server/CastLargeFileTest.java b/app/src/test/java/com/fongmi/android/tv/server/CastLargeFileTest.java
+new file mode 100644
+index 0000000..0caa468
+--- /dev/null
++++ b/app/src/test/java/com/fongmi/android/tv/server/CastLargeFileTest.java
+@@ -0,0 +1,138 @@
++package com.fongmi.android.tv.server;
++
++import fi.iki.elonen.NanoHTTPD;
++import okhttp3.OkHttpClient;
++import okhttp3.Request;
++import okhttp3.Response;
++import org.junit.After;
++import org.junit.Before;
++import org.junit.Test;
++
++import java.io.ByteArrayInputStream;
++import java.util.Map;
++import java.util.concurrent.atomic.AtomicInteger;
++import java.util.concurrent.atomic.AtomicReference;
++
++import static org.junit.Assert.*;
++
++/** Large-file index probes used by native TV demuxers; no multi-gigabyte allocation. */
++public class CastLargeFileTest {
++    private static final long SIZE = 2_700_000_123L;
++    private final OkHttpClient client = new OkHttpClient();
++    private final CastMediaRelay relay = new CastMediaRelay(client);
++    private final AtomicInteger headRequests = new AtomicInteger();
++    private final AtomicReference<String> lastRange = new AtomicReference<>();
++    private NanoHTTPD upstream, phone;
++    private boolean wrongOffset, ignoreRange;
++    private CastMediaRelay.Session session;
++
++    @Before public void start() throws Exception {
++        upstream = new NanoHTTPD("127.0.0.1", 0) {
++            @Override public Response serve(IHTTPSession request) {
++                if (request.getMethod() == Method.HEAD) {
++                    headRequests.incrementAndGet();
++                    // A plugin/CDN may return 200 with a zero length only for HEAD.
++                    return newFixedLengthResponse(Response.Status.OK, "video/mp4", "");
++                }
++                String range = request.getHeaders().get("range");
++                lastRange.set(range);
++                if (range == null || !range.matches("bytes=[0-9]+-[0-9]+"))
++                    return newFixedLengthResponse(Response.Status.RANGE_NOT_SATISFIABLE, "text/plain", "Explicit bounds required");
++                String[] bounds = range.substring(6).split("-");
++                long start = Long.parseLong(bounds[0]), end = Long.parseLong(bounds[1]);
++                if (end >= SIZE || start > end)
++                    return newFixedLengthResponse(Response.Status.RANGE_NOT_SATISFIABLE, "text/plain", "Out of bounds");
++                if (wrongOffset) start = 0;
++                byte[] data = new byte[(int) Math.min(end - start + 1, 65536)];
++                for (int i = 0; i < data.length; i++) data[i] = (byte) ((start + i) % 251);
++                if (start == 0 && data.length >= 4) {
++                    data[0] = 0x1a; data[1] = 0x45; data[2] = (byte) 0xdf; data[3] = (byte) 0xa3;
++                }
++                // Valid Content-Range but chunked framing: older renderers require Content-Length.
++                Response response = newChunkedResponse(ignoreRange ? Response.Status.OK : Response.Status.PARTIAL_CONTENT,
++                        "video/mp4", new ByteArrayInputStream(data));
++                if (!ignoreRange) response.addHeader("Content-Range", "bytes " + start + "-" + end + "/" + SIZE);
++                return response;
++            }
++        };
++        phone = new NanoHTTPD("127.0.0.1", 0) {
++            @Override public Response serve(IHTTPSession request) { return relay.serve(request); }
++        };
++        upstream.start(); phone.start();
++        session = relay.open("http://127.0.0.1:" + phone.getListeningPort(),
++                "http://127.0.0.1:" + upstream.getListeningPort() + "/opaque", Map.of());
++        relay.prepare(session);
++    }
++
++    @After public void stop() {
++        relay.stop(); phone.stop(); upstream.stop();
++        client.connectionPool().evictAll(); client.dispatcher().executorService().shutdownNow();
++    }
++
++    private Response get(String range) throws Exception {
++        return client.newCall(new Request.Builder().url(session.url()).header("Range", range).build()).execute();
++    }
++
++    @Test public void headUsesVerifiedFullSizeInsteadOfBrokenCdnHead() throws Exception {
++        try (Response response = client.newCall(new Request.Builder().url(session.url()).head().build()).execute()) {
++            assertEquals(200, response.code());
++            assertEquals(Long.toString(SIZE), response.header("Content-Length"));
++            assertEquals("video/x-matroska", response.header("Content-Type"));
++            assertEquals("bytes", response.header("Accept-Ranges"));
++            assertEquals(0, response.body().bytes().length);
++        }
++        assertEquals("HEAD must not re-probe an already verified movie", 0, headRequests.get());
++    }
++
++    @Test public void suffixIndexProbeReadsOnlyTailAboveTwoGigabytes() throws Exception {
++        try (Response response = get("bytes=-1024")) {
++            assertEquals(206, response.code());
++            assertEquals("bytes=" + (SIZE - 1024) + "-" + (SIZE - 1), lastRange.get());
++            assertEquals("1024", response.header("Content-Length"));
++            assertNull(response.header("Transfer-Encoding"));
++            assertEquals("bytes " + (SIZE - 1024) + "-" + (SIZE - 1) + "/" + SIZE, response.header("Content-Range"));
++            byte[] data = response.body().bytes();
++            assertEquals(1024, data.length);
++            assertEquals((byte) ((SIZE - 1024) % 251), data[0]);
++        }
++    }
++
++    @Test public void openEndedProbeGetsExplicitBoundsAndFixedLength() throws Exception {
++        try (Response response = get("bytes=" + (SIZE - 4096) + "-")) {
++            assertEquals(206, response.code());
++            assertEquals("4096", response.header("Content-Length"));
++            assertEquals(4096, response.body().bytes().length);
++        }
++    }
++
++    @Test public void rangePastEndIsClampedWithoutIntegerOverflow() throws Exception {
++        try (Response response = get("bytes=" + (SIZE - 1024) + "-9223372036854775807")) {
++            assertEquals(206, response.code());
++            assertEquals(1024, response.body().bytes().length);
++        }
++    }
++
++    @Test public void unsatisfiableRangeReportsKnownSizeWithoutTouchingSource() throws Exception {
++        String before = lastRange.get();
++        try (Response response = get("bytes=" + SIZE + "-")) {
++            assertEquals(416, response.code());
++            assertEquals("bytes */" + SIZE, response.header("Content-Range"));
++        }
++        assertEquals(before, lastRange.get());
++    }
++
++    @Test public void wrongUpstreamOffsetCannotMasqueradeAsRequestedIndex() throws Exception {
++        wrongOffset = true;
++        try (Response response = get("bytes=" + (SIZE - 1024) + "-" + (SIZE - 1))) {
++            assertEquals(502, response.code());
++        }
++    }
++
++    @Test public void ignoredTailRangeDoesNotDownloadTwoGigabytesToSkipForward() throws Exception {
++        ignoreRange = true;
++        try (Response response = get("bytes=" + (SIZE - 1024) + "-" + (SIZE - 1))) {
++            assertEquals(502, response.code());
++            assertTrue(response.body().contentLength() < 1024);
++        }
++    }
++}
+diff --git a/app/src/test/java/com/fongmi/android/tv/server/CastStreamFormatTest.java b/app/src/test/java/com/fongmi/android/tv/server/CastStreamFormatTest.java
+index 5467345..b4c11ef 100644
+--- a/app/src/test/java/com/fongmi/android/tv/server/CastStreamFormatTest.java
++++ b/app/src/test/java/com/fongmi/android/tv/server/CastStreamFormatTest.java
+@@ -74,7 +74,7 @@ public class CastStreamFormatTest {
+         byte[] mkv = new byte[1000];
+         mkv[0] = 0x1a; mkv[1] = 0x45; mkv[2] = (byte) 0xdf; mkv[3] = (byte) 0xa3;
+         handler = request -> {
+-            int start = request.getHeaders().getOrDefault("range", "").equals("bytes=500-") ? 500 : 0;
++            int start = request.getHeaders().getOrDefault("range", "").startsWith("bytes=500-") ? 500 : 0;
+             NanoHTTPD.Response response = NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.PARTIAL_CONTENT,
+                     "video/mp4", new ByteArrayInputStream(mkv, start, mkv.length - start), mkv.length - start);
+             response.addHeader("Content-Range", "bytes " + start + "-999/1000");
