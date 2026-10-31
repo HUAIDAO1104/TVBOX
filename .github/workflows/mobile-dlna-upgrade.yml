@@ -1,0 +1,142 @@
+name: Build original mobile cast upgrade
+
+on:
+  push:
+    branches: [codex/fix/mobile-dlna-upgrade]
+    paths:
+      - mobile-dlna-upgrade.patch
+      - .github/workflows/mobile-dlna-upgrade.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mobile-cast-upgrade-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply and record reviewed cast fix
+        run: |
+          if git apply --check mobile-dlna-upgrade.patch; then
+            git apply --index mobile-dlna-upgrade.patch
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Fix mobile DLNA relay and prepare original v5.5.87 upgrade'
+            git push origin HEAD:codex/fix/mobile-dlna-upgrade
+          else
+            git apply --reverse --check mobile-dlna-upgrade.patch
+          fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Prepare Android build tools
+        run: |
+          sdkmanager 'platforms;android-37.0' 'build-tools;37.0.0'
+          # Use the JDK selected above; preserve the project's IDE-specific criteria.
+          mv gradle/gradle-daemon-jvm.properties "$RUNNER_TEMP/gradle-daemon-jvm.properties"
+          cat > "$RUNNER_TEMP/mobile-upgrade.init.gradle" <<'GRADLE'
+          allprojects {
+              plugins.withId('com.android.application') { android.buildToolsVersion = '37.0.0' }
+              plugins.withId('com.android.library') { android.buildToolsVersion = '37.0.0' }
+              plugins.withId('com.chaquo.python') {
+                  chaquopy.defaultConfig.pip.options '--index-url', 'https://pypi.org/simple'
+              }
+          }
+          GRADLE
+
+      - name: Restore existing release signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_BASE64"
+          test -n "$KEY_ALIAS"
+          test -n "$STORE_PASSWORD"
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+          printf 'storeFile=%s\nkeyAlias=%s\nstorePassword=%s\nkeyPassword=%s\n' \
+            "$RUNNER_TEMP/release.keystore" "$KEY_ALIAS" "$STORE_PASSWORD" "$KEY_PASSWORD" > local.properties
+
+      - name: Run cast relay regressions
+        run: |
+          bash gradlew --no-daemon --max-workers=2 -I "$RUNNER_TEMP/mobile-upgrade.init.gradle" \
+            :app:testMobileArm64_v8aDebugUnitTest --tests 'com.fongmi.android.tv.server.Cast*Test'
+
+      - name: Build signed original mobile APKs
+        run: |
+          bash gradlew --no-daemon --max-workers=2 -I "$RUNNER_TEMP/mobile-upgrade.init.gradle" \
+            :app:assembleMobileArm64_v8aRelease :app:assembleMobileArmeabi_v7aRelease
+
+      - name: Verify direct-upgrade identity and collect packages
+        run: |
+          set -euo pipefail
+          APKSIGNER="$ANDROID_SDK_ROOT/build-tools/37.0.0/apksigner"
+          AAPT="$ANDROID_SDK_ROOT/build-tools/37.0.0/aapt"
+          ORIGINAL="$RUNNER_TEMP/original-mobile.apk"
+          curl --fail --location --retry 3 --max-time 300 \
+            'https://github.com/HUAIDAO1104/TVBOX/releases/download/v5.5.86/pianduoduo-mobile-arm64_v8a.apk' -o "$ORIGINAL"
+          echo "d8d89905bf21571f498cbfd899cf515d0fe87ef4598c0153aa295222e0bcb4c1  $ORIGINAL" | sha256sum --check
+          "$APKSIGNER" verify --verbose --print-certs "$ORIGINAL" > "$RUNNER_TEMP/original-signature.txt"
+          expected="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$RUNNER_TEMP/original-signature.txt")"
+          test -n "$expected"
+          "$AAPT" dump badging "$ORIGINAL" > "$RUNNER_TEMP/original-badging.txt"
+          grep -q "^package: name='com.fongmi.android.tv'" "$RUNNER_TEMP/original-badging.txt"
+          original_code="$(sed -n "s/^package:.*versionCode='\([0-9]*\)'.*/\1/p" "$RUNNER_TEMP/original-badging.txt")"
+          test 638 -gt "$original_code"
+          mkdir -p dist
+          for abi in arm64_v8a armeabi_v7a; do
+            apk="$(find app/build/outputs/apk -path "*/release/mobile-$abi.apk" -print -quit)"
+            test -f "$apk"
+            "$APKSIGNER" verify --verbose --print-certs --min-sdk-version 23 "$apk" > "dist/signature-$abi.txt"
+            actual="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "dist/signature-$abi.txt")"
+            test "$actual" = "$expected"
+            grep -q 'Verified using v1 scheme (JAR signing): true' "dist/signature-$abi.txt"
+            grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' "dist/signature-$abi.txt"
+            grep -q 'Verified using v3 scheme (APK Signature Scheme v3): true' "dist/signature-$abi.txt"
+            "$AAPT" dump badging "$apk" > "dist/metadata-$abi.txt"
+            grep -q "^package: name='com.fongmi.android.tv' versionCode='638' versionName='5.5.87'" "dist/metadata-$abi.txt"
+            python3 scripts/check_android_io_compat.py "$apk"
+            cp "$apk" "dist/pianduoduo-mobile-$abi-v5.5.87.apk"
+          done
+          cp "$RUNNER_TEMP/original-signature.txt" dist/
+          cp "$RUNNER_TEMP/original-badging.txt" dist/
+          git rev-parse HEAD > dist/source-commit.txt
+          (cd dist && sha256sum *.apk > SHA256SUMS.txt)
+          printf 'Original package and certificate match. Version 638 / 5.5.87.\nInstall over the original app without uninstalling. Physical Skyworth/Lebo testing remains required.\n' > dist/README.txt
+          echo '### Verified original mobile upgrade: 5.5.87 (638)' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Both architectures retain com.fongmi.android.tv and the v5.5.86 official signing certificate. No OTA release was published.' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload signed upgrade APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: TVBOX-Mobile-Original-Upgrade-v5.5.87
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload regression results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-cast-regression-results
+          path: app/build/test-results/testMobileArm64_v8aDebugUnitTest/
+          if-no-files-found: ignore
+
+      - name: Remove signing material
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/release.keystore" local.properties
