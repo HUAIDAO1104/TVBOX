@@ -28,14 +28,23 @@ jobs:
         run: |
           set -euo pipefail
           echo 'c013f4b38359a7a23589cca877ce79f0769386ead279d9edf353ac0c234b2e5b  mobile-stream-start.patch' | sha256sum --check
-          if git apply --reverse --check mobile-stream-start.patch 2>/dev/null; then
-            echo 'Streaming fix is already present.'
+          echo 'f6cfb05ca8532c0f58b3d45f8b51b1fdb56678aaa0bba25eb7cc7bfdc796607c  cast-receiver-compat.patch' | sha256sum --check
+          if git apply --reverse --check cast-receiver-compat.patch 2>/dev/null; then
+            echo 'Streaming and receiver compatibility fixes are already present.'
           else
-            git apply --check mobile-stream-start.patch
-            git apply --index mobile-stream-start.patch
+            for patch in mobile-stream-start.patch cast-receiver-compat.patch; do
+              if git apply --reverse --check "$patch" 2>/dev/null; then
+                echo "$patch is already present."
+              else
+                git apply --check "$patch"
+                git apply --index "$patch"
+              fi
+            done
+          fi
+          if ! git diff --cached --quiet; then
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git commit -m 'fix: preserve cast formats and wait for playback before seeking'
+            git commit -m 'fix: preserve streaming on receivers with incomplete state reports'
             git push origin "HEAD:${{ github.ref_name }}"
           fi
           git rev-parse HEAD > source-commit.txt
@@ -127,7 +136,7 @@ jobs:
           roots = [ET.parse(p).getroot() for p in Path('app/build/test-results').rglob('TEST-*Cast*.xml')]
           assert roots
           assert all(int(r.get('failures', 0)) == 0 and int(r.get('errors', 0)) == 0 and int(r.get('skipped', 0)) == 0 for r in roots)
-          assert sum(int(r.get('tests', 0)) for r in roots) >= 31
+          assert sum(int(r.get('tests', 0)) for r in roots) >= 32
           print('All casting regressions passed, including real FFmpeg decoding without the remaining HLS segments.')
           TESTS
 
@@ -181,7 +190,7 @@ jobs:
           - MKV 不再使用 MP4 文件名；保留 HLS 播放列表、TS、音频及 fMP4 分片类型。
           - 先检查电视播放状态，再恢复播放进度；不支持跳转的片源不再自动跳转。
           - 转发原始媒体字节，传递视频分辨率和经过验证的范围读取能力。
-          - 31 项回归测试通过，包括在后续 HLS 分片不可用时解码首帧，以及保留 MKV 画面比例和内嵌字幕的真实解码测试。
+          - 32 项回归测试通过，包括在后续 HLS 分片不可用时解码首帧，以及保留 MKV 画面比例和内嵌字幕的真实解码测试。
           - 手机、电视 ARM64 / ARMv7 均为版本 5.5.88（639），提供应用内更新清单。
 
           使用说明与验证边界：创维及乐播实际接收端尚未实测；第三方接收端的画面比例仍由电视设置决定，请选原始比例/适应屏幕。普通 DLNA 不传输手机上的弹幕叠层。若手机也没有可选字幕轨，需要检查对应集数的片源或提供外挂字幕；本次不宣称补齐片源中缺失的字幕。
