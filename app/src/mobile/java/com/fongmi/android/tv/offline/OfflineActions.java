@@ -44,6 +44,7 @@ public final class OfflineActions {
         MediaItem item = player.getCurrentMediaItem();
         MediaMetadata metadata = player.getMetadata();
         if (metadata != null) {
+            if (metadata.artworkUri != null) meta.poster = metadata.artworkUri.toString();
             if (metadata.title != null) meta.title = metadata.title.toString();
             if (metadata.artist != null) meta.episode = metadata.artist.toString();
         }
@@ -54,6 +55,7 @@ public final class OfflineActions {
             value.uri = sub.uri.toString(); value.mime = sub.mimeType; value.label = sub.label;
             value.language = sub.language; value.selectionFlags = sub.selectionFlags; meta.subtitles.add(value);
         }
+        meta.addedAt = System.currentTimeMillis();
         return meta;
     }
 }

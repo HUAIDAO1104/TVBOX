@@ -26,6 +26,9 @@ public class EpisodeHoriHolder extends BaseEpisodeHolder {
         binding.text.setMaxWidth(maxWidth);
         binding.text.setSelected(item.isSelected());
         binding.text.setText(item.getDesc().concat(item.getName()));
+        if(listener.isWatched(item))binding.text.append(" ✓");
+        binding.text.setContentDescription(item.getName()+(listener.isWatched(item)?"，已看":"，未看")+(item.isSelected()?"，正在播放":""));
+        binding.text.setOnLongClickListener(v->listener.onItemLongClick(item));
         binding.text.setOnClickListener(v -> listener.onItemClick(item));
     }
 }

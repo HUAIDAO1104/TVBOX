@@ -40,6 +40,8 @@ public class MobileExperienceTest {
     private androidx.core.os.LocaleListCompat previousLocales;
     @Before public void setup() throws Exception {
         context=ApplicationProvider.getApplicationContext();
+        context.getSharedPreferences("mobile-watchlist-v1",0).edit().clear().commit();
+        java.lang.reflect.Field watchInstance=com.fongmi.android.tv.watch.WatchlistStore.class.getDeclaredField("instance");watchInstance.setAccessible(true);watchInstance.set(null,null);
         previousDanmaku=com.fongmi.android.tv.setting.DanmakuSetting.isLoad();
         previousSpeed=com.fongmi.android.tv.setting.PlayerSetting.getSpeed();
         previousLocales=androidx.appcompat.app.AppCompatDelegate.getApplicationLocales();
@@ -121,6 +123,66 @@ public class MobileExperienceTest {
         android.view.accessibility.AccessibilityNodeInfo root=InstrumentationRegistry.getInstrumentation().getUiAutomation().getRootInActiveWindow();
         if(root!=null)for(android.view.accessibility.AccessibilityNodeInfo node:root.findAccessibilityNodeInfosByText("Got it"))node.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK);
         activity.onActivity(a->{if(a.playbackBinding().control.getRoot().getVisibility()!=View.VISIBLE)a.onSingleTap();});screenshot("player-landscape");
+    }
+    @Test public void realScrubPreviewAndUnifiedCaptionPanelWork()throws Exception{
+        Intent intent=new Intent(context,VideoActivity.class).putExtra("key","mobile-ui-fixture").putExtra("id","mobile-ui-fixture").putExtra("name","星河旅途");
+        ActivityScenario<VideoActivity> activity=ActivityScenario.launch(intent);screen=activity;AtomicReference<VideoActivity> ref=new AtomicReference<>();activity.onActivity(ref::set);
+        waitFor(()->onMain(()->ref.get().playbackPlayer()!=null&&ref.get().playbackPlayer().getDuration()>0&&ref.get().offlineFlag()!=null),30000);
+        activity.onActivity(a->{a.playbackPlayer().pause();if(a.playbackBinding().control.getRoot().getVisibility()!=View.VISIBLE)a.onSingleTap();a.onSeeking(2000);});
+        waitFor(()->onMain(()->ref.get().playbackBinding().control.previewImage.getDrawable()!=null),12000);screenshot("scrub-real-frame");
+        activity.onActivity(a->{a.onSeekEnd(2000);assertEquals(View.GONE,a.playbackBinding().control.scrubPreview.getVisibility());PreciseSeekDialog.show(a,a.playbackPlayer().getPlayer());});
+        screenshot("precise-seek");InstrumentationRegistry.getInstrumentation().getUiAutomation().performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK);Thread.sleep(300);
+        activity.onActivity(PlaybackAccessDialog::show);
+        waitFor(()->onMain(()->ref.get().getSupportFragmentManager().findFragmentByTag("playback-access")!=null&&ref.get().getSupportFragmentManager().findFragmentByTag("playback-access").getView()!=null),5000);
+        activity.onActivity(a->{View panel=a.getSupportFragmentManager().findFragmentByTag("playback-access").requireView();assertTrue(((android.widget.TextView)panel.findViewById(R.id.subtitleStatus)).getText().toString().contains("未检测到"));assertTrue(panel.findViewById(R.id.subtitleChoose).isEnabled());});
+        screenshot("subtitles-and-danmaku");
+    }
+    @Test public void watchlistPersistsWatchedEpisodesAndShowsNewEpisodes()throws Exception{
+        var watch=com.fongmi.android.tv.watch.WatchlistStore.get(context);String id=com.fongmi.android.tv.watch.WatchlistStore.id(VodConfig.getCid(),"mobile-ui-fixture","watch-fixture");
+        var vod=new com.fongmi.android.tv.bean.Vod();vod.setName("星河旅途");vod.setFlags(new ArrayList<>(List.of(com.fongmi.android.tv.bean.Flag.create("高清线路","第1集$https://example.invalid/1#第2集$https://example.invalid/2"))));
+        main(()->{watch.observe(VodConfig.getCid(),"mobile-ui-fixture","watch-fixture","本地测试片库",vod);watch.follow(id,true);watch.watched(id,"第1集",true);
+            vod.setFlags(new ArrayList<>(List.of(com.fongmi.android.tv.bean.Flag.create("高清线路","第1集$https://example.invalid/1#第2集$https://example.invalid/2#第3集$https://example.invalid/3"))));assertEquals(1,watch.refresh(id,vod));});
+        ActivityScenario<WatchlistActivity> activity=ActivityScenario.launch(WatchlistActivity.class);screen=activity;
+        waitFor(()->onMain(()->!com.fongmi.android.tv.watch.WatchlistChecker.running()),20000);
+        screenshot("watchlist-updates");activity.recreate();
+        activity.onActivity(a->{assertEquals(1,watch.find(id).watchedCount());assertTrue(watch.find(id).fresh.contains("第3集"));assertTrue(a.findViewById(R.id.reminders).isShown());});
+        main(()->watch.follow(id,false));
+    }
+    @Test public void groupedDownloadsKeepSelectionAcrossCollapseAndDoNotSelectOtherFilm()throws Exception{
+        download(1);download(2);
+        main(()->{OfflineBatchQueue.Job other=new OfflineBatchQueue.Job();other.id=OfflineBatchQueue.identity("fixture","other","line","1");other.meta.title="海边日记";other.meta.episode="第1集";other.site="mobile-ui-fixture";other.flag="高清线路";other.sourceUrl="https://example.invalid/other";other.state=OfflineBatchQueue.PAUSED;OfflineBatchQueue.get(context).add(List.of(other),Set.of());});
+        ActivityScenario<OfflineDownloadsActivity> activity=ActivityScenario.launch(OfflineDownloadsActivity.class);screen=activity;Thread.sleep(500);
+        activity.onActivity(a->{androidx.recyclerview.widget.RecyclerView list=a.findViewById(R.id.list);assertEquals(2,list.getAdapter().getItemCount());list.findViewHolderForAdapterPosition(0).itemView.performClick();});
+        Thread.sleep(200);screenshot("downloads-group-expanded");
+        activity.onActivity(a->{androidx.recyclerview.widget.RecyclerView list=a.findViewById(R.id.list);assertEquals(4,list.getAdapter().getItemCount());list.findViewHolderForAdapterPosition(0).itemView.performLongClick();assertEquals("已选 2 项",((android.widget.TextView)a.findViewById(R.id.selectionCount)).getText().toString());assertFalse(a.findViewById(R.id.resumeSelected).isEnabled());});
+        screenshot("downloads-group-selection");
+    }
+    @Test public void libraryAndAggregatedSearchRemainUsableWithLargeText()throws Exception{
+        var keep=new com.fongmi.android.tv.bean.Keep();keep.setKey("mobile-ui-fixture"+com.fongmi.android.tv.db.AppDatabase.SYMBOL+"large-font-fixture");keep.setVodName("星河旅途：一场漫长的远行");keep.setSiteName("本地测试片库");keep.setCid(VodConfig.getCid());
+        String searchScope=MobileSearchSources.scope(),previousSources=com.fongmi.android.tv.setting.Setting.getSearchSources(searchScope);
+        float previous=android.provider.Settings.System.getFloat(context.getContentResolver(),android.provider.Settings.System.FONT_SCALE,1f);
+        try{
+            InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand("settings put system font_scale 1.8").close();Thread.sleep(800);
+            main(keep::save);ActivityScenario<KeepActivity> library=ActivityScenario.launch(KeepActivity.class);screen=library;Thread.sleep(500);screenshot("library-large-text");
+            library.onActivity(a->{assertTrue(a.getResources().getConfiguration().fontScale>1.7);((android.widget.EditText)a.findViewById(R.id.search)).setText("不存在的记录");});Thread.sleep(300);
+            library.onActivity(a->assertEquals(View.VISIBLE,a.findViewById(R.id.empty).getVisibility()));screenshot("library-empty-large-text");library.close();screen=null;
+            // Two real search providers return the same fixture; the actual results route must group them.
+            Site second=new Gson().fromJson("{\"key\":\"mobile-ui-fixture-2\",\"name\":\"备用测试来源\",\"type\":1,\"api\":\""+server.url("/api")+"\"}",Site.class);
+            var sources=new ArrayList<Site>((List<Site>)sitesField.get(VodConfig.get()));sources.add(second);sitesField.set(VodConfig.get(),sources);
+            com.fongmi.android.tv.setting.Setting.putSearchSources(searchScope,com.fongmi.android.tv.ui.search.SearchSourcePreference.serialize(new LinkedHashSet<>(com.fongmi.android.tv.ui.search.SearchSourcePreference.choices(sources))));
+            ActivityScenario<SearchActivity> search=ActivityScenario.launch(new Intent(context,SearchActivity.class).putExtra("keyword","星河旅途"));screen=search;AtomicReference<SearchActivity> ref=new AtomicReference<>();search.onActivity(ref::set);
+            waitFor(()->onMain(()->{for(androidx.fragment.app.Fragment f:ref.get().getSupportFragmentManager().getFragments())if(f instanceof com.fongmi.android.tv.ui.fragment.CollectFragment&&f.getView()!=null){androidx.recyclerview.widget.RecyclerView list=f.requireView().findViewById(R.id.recycler);return list!=null&&list.getAdapter()!=null&&list.getAdapter().getItemCount()==1&&((com.fongmi.android.tv.ui.adapter.SearchAdapter)list.getAdapter()).getItem(0).sources.size()==2;}return false;}),30000);
+            screenshot("search-merged-large-text");
+            search.onActivity(a->{for(androidx.fragment.app.Fragment f:a.getSupportFragmentManager().getFragments())if(f instanceof com.fongmi.android.tv.ui.fragment.CollectFragment&&f.getView()!=null){androidx.recyclerview.widget.RecyclerView list=f.requireView().findViewById(R.id.recycler);list.findViewHolderForAdapterPosition(0).itemView.performClick();}});screenshot("search-source-choice");
+        }finally{com.fongmi.android.tv.setting.Setting.putSearchSources(searchScope,previousSources);if(screen!=null){screen.close();screen=null;}main(keep::delete);InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand("settings put system font_scale "+previous).close();Thread.sleep(500);}
+    }
+    @Test public void offlinePreviewAndCaptionPanelUseOnlyLocalFiles()throws Exception{
+        String id=download(1);server.shutdown();server=null;
+        ActivityScenario<OfflinePlayerActivity> activity=ActivityScenario.launch(new Intent(context,OfflinePlayerActivity.class).putExtra("id",id));screen=activity;AtomicReference<OfflinePlayerActivity> ref=new AtomicReference<>();activity.onActivity(ref::set);
+        waitFor(()->onMain(()->{androidx.media3.ui.PlayerView view=ref.get().findViewById(R.id.player);return view.getPlayer()!=null&&view.getPlayer().getDuration()>0;}),20000);
+        activity.onActivity(a->{try{androidx.media3.ui.PlayerView view=a.findViewById(R.id.player);view.getPlayer().pause();view.showController();var method=OfflinePlayerActivity.class.getDeclaredMethod("preview",long.class);method.setAccessible(true);method.invoke(a,2000L);}catch(Exception e){throw new AssertionError(e);}});
+        waitFor(()->onMain(()->((android.widget.ImageView)ref.get().findViewById(R.id.previewImage)).getDrawable()!=null),10000);screenshot("offline-cached-preview");
+        activity.onActivity(a->a.findViewById(R.id.access).performClick());Thread.sleep(300);screenshot("offline-subtitles-and-danmaku");
     }
     @Test public void batchServiceResolvesAndDownloadsEpisodesOnAndroid() throws Exception {
         ActivityScenario<OfflineDownloadsActivity> activity=ActivityScenario.launch(OfflineDownloadsActivity.class);screen=activity;

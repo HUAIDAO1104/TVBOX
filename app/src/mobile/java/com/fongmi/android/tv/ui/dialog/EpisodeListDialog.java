@@ -148,6 +148,8 @@ public class EpisodeListDialog extends MobileSheetDialog implements FlagAdapter.
         // Selection may advance automatically while the picker is open. Keep the user's page/scroll.
         episodeAdapter.notifyItemRangeChanged(0, episodeAdapter.getItemCount());
     }
+    @Override public boolean isWatched(Episode item) { return requireActivity() instanceof EpisodeAdapter.OnClickListener host && host.isWatched(item); }
+    @Override public boolean onItemLongClick(Episode item) { return requireActivity() instanceof EpisodeAdapter.OnClickListener host && host.onItemLongClick(item); }
     private void locateCurrent() {
         int page = Math.max(0, EpisodePickerPolicy.selectedEpisodePosition(episodes)) / PAGE_SIZE;
         updatingRanges = true;

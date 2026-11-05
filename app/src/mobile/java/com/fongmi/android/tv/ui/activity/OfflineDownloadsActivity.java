@@ -32,7 +32,16 @@ public final class OfflineDownloadsActivity extends BaseActivity {
     private final Map<String,long[]> samples = new HashMap<>();
     private final Map<String,Long> rates = new HashMap<>();
     private final Adapter adapter = new Adapter();
-    private int filter;
+    private int filter, sorting;
+    private final Set<String> expanded = new HashSet<>();
+    private final List<Object> display = new ArrayList<>();
+    private static final String[] SORTS = {"最近添加", "影片名称", "占用空间"};
+    private static final class Group {
+        final String key; final List<Row> rows=new ArrayList<>();
+        Group(String key) { this.key=key; }
+        long bytes(){long result=0;for(Row row:rows)if(row.download!=null)result+=row.download.getBytesDownloaded();return result;}
+        long recent(){long result=0;for(Row row:rows)result=Math.max(result,row.meta.addedAt>0?row.meta.addedAt:row.download!=null?row.download.startTimeMs:0);return result;}
+    }
     private String importId;
     private boolean editing;
     private final Runnable tick = new Runnable() { public void run() { refresh(); handler.postDelayed(this, 1000); } };
@@ -54,7 +63,9 @@ public final class OfflineDownloadsActivity extends BaseActivity {
     @Override protected ViewBinding getBinding() { return binding = ActivityOfflineDownloadsBinding.inflate(getLayoutInflater()); }
     @Override protected void initView(Bundle state) {
         store = OfflineStore.get(this); queue=OfflineBatchQueue.get(this);
+        sorting=getPreferences(0).getInt("sorting",0); if(sorting<0||sorting>=SORTS.length)sorting=0;
         if (state != null) {
+            ArrayList<String> open=state.getStringArrayList("expanded");if(open!=null)expanded.addAll(open);
             importId=state.getString("importId"); filter=state.getInt("filter"); editing=state.getBoolean("editing");
             ArrayList<String> saved=state.getStringArrayList("selected"); if(saved!=null) selected.addAll(saved);
             binding.search.setText(state.getString("search", ""));
@@ -63,6 +74,9 @@ public final class OfflineDownloadsActivity extends BaseActivity {
         DownloadService.start(this, OfflineDownloadService.class); OfflineBatchService.kick(this);
     }
     @Override protected void initEvent() {
+        binding.sort.setOnClickListener(v->new MaterialAlertDialogBuilder(this).setTitle("下载排序").setSingleChoiceItems(SORTS,sorting,(d,which)->{
+            sorting=which;getPreferences(0).edit().putInt("sorting",which).apply();refresh();d.dismiss();
+        }).setNegativeButton("取消",null).show());
         binding.wifi.setOnCheckedChangeListener((button, checked) -> { store.setWifiOnly(checked); OfflineBatchService.kick(this); });
         binding.all.setOnClickListener(v -> filter(0)); binding.active.setOnClickListener(v -> filter(1));
         binding.completed.setOnClickListener(v -> filter(2)); binding.failed.setOnClickListener(v -> filter(3));
@@ -85,7 +99,7 @@ public final class OfflineDownloadsActivity extends BaseActivity {
     @Override protected void onStop() { handler.removeCallbacks(tick); super.onStop(); }
     @Override protected void onBackInvoked() { if(editing){editing=false;selected.clear();refresh();}else super.onBackInvoked(); }
     @Override protected void onSaveInstanceState(Bundle state) {
-        state.putString("importId",importId);state.putInt("filter",filter);state.putBoolean("editing",editing);
+        state.putStringArrayList("expanded",new ArrayList<>(expanded));state.putString("importId",importId);state.putInt("filter",filter);state.putBoolean("editing",editing);
         state.putStringArrayList("selected",new ArrayList<>(selected));state.putString("search",binding.search.getText().toString());super.onSaveInstanceState(state);
     }
     private void toast(String text) { if (!isDestroyed()) Toast.makeText(this,text,Toast.LENGTH_LONG).show(); }
@@ -118,10 +132,35 @@ public final class OfflineDownloadsActivity extends BaseActivity {
         binding.storage.setText(size(used)+"  已下载");binding.storageHint.setText(completed+" 集可离线观看 · 设备可用 "+size(free));
         binding.storageProgress.setProgress(total>0?(int)Math.min(100,used*100/total):0);
         binding.manage.setText(editing?"完成":"管理");binding.manage.setEnabled(editing||!all.isEmpty());
-        binding.overview.setVisibility(editing?View.GONE:View.VISIBLE);binding.selectionBar.setVisibility(editing?View.VISIBLE:View.GONE);binding.batchBar.setVisibility(editing?View.VISIBLE:View.GONE);
+        binding.overview.setVisibility(editing||getResources().getConfiguration().screenHeightDp<500?View.GONE:View.VISIBLE);binding.selectionBar.setVisibility(editing?View.VISIBLE:View.GONE);binding.batchBar.setVisibility(editing?View.VISIBLE:View.GONE);
         binding.selectionCount.setText("已选 "+selected.size()+" 项");binding.selectAll.setText(!visible.isEmpty()&&selected.containsAll(visible)?"取消全选":"全选当前列表");
         boolean pause=false,resume=false;for(Row r:items)if(selected.contains(r.id)){pause|=!r.complete()&&!r.paused()&&!r.failed()&&!r.removing();resume|=r.paused()||r.failed();}
-        binding.pauseSelected.setEnabled(pause);binding.resumeSelected.setEnabled(resume);binding.deleteSelected.setEnabled(!selected.isEmpty());adapter.notifyDataSetChanged();
+        binding.pauseSelected.setEnabled(pause);binding.resumeSelected.setEnabled(resume);binding.deleteSelected.setEnabled(!selected.isEmpty());rebuildGroups();adapter.notifyDataSetChanged();
+    }
+    private void rebuildGroups() {
+        Map<String,Group> groups=new LinkedHashMap<>();
+        for(Row row:items)groups.computeIfAbsent(row.meta.groupKey(),Group::new).rows.add(row);
+        List<Group> ordered=new ArrayList<>(groups.values());
+        if(sorting==1)ordered.sort(Comparator.comparing(g->g.rows.get(0).meta.title,java.text.Collator.getInstance(Locale.CHINA)));
+        else if(sorting==2)ordered.sort(Comparator.comparingLong(Group::bytes).reversed());
+        else ordered.sort(Comparator.comparingLong(Group::recent).reversed());
+        display.clear();
+        for(Group group:ordered){
+            group.rows.sort(Comparator.comparingInt(this::episodeOrder));
+            display.add(group);if(expanded.contains(group.key))display.addAll(group.rows);
+        }
+        binding.sort.setText(ordered.size()+" 部 · "+SORTS[sorting]+" ↕");
+    }
+    private int episodeOrder(Row row){
+        if(!row.meta.showId.isEmpty())return row.meta.episodeOrder;
+        java.util.regex.Matcher number=java.util.regex.Pattern.compile("\\d+").matcher(row.meta.episode);
+        try{return number.find()?Integer.parseInt(number.group()):Integer.MAX_VALUE;}catch(NumberFormatException e){return Integer.MAX_VALUE;}
+    }
+    private void groupClick(Group group){
+        if(editing){Set<String> ids=new HashSet<>();for(Row r:group.rows)if(!r.removing())ids.add(r.id);
+            if(selected.containsAll(ids))selected.removeAll(ids);else selected.addAll(ids);
+        }else if(!expanded.add(group.key))expanded.remove(group.key);
+        refresh();
     }
     private String state(Row row) {
         if(row.job!=null){switch(row.job.state){case OfflineBatchQueue.PREPARING:return "正在获取下载信息";case OfflineBatchQueue.PAUSED:return "已暂停 · 尚未下载";case OfflineBatchQueue.FAILED:return row.job.error;default:return "等待准备下载";}}
@@ -169,12 +208,25 @@ public final class OfflineDownloadsActivity extends BaseActivity {
         new MaterialAlertDialogBuilder(this).setTitle(OfflineMetadata.decode(item.request.data).title)
                 .setItems(labels.toArray(new String[0]), (dialog, which) -> actions.get(which).run()).show();
     }
-    private final class Adapter extends RecyclerView.Adapter<Holder> {
-        Adapter(){setHasStableIds(true);}
-        @Override public long getItemId(int p){Row r=items.get(p);return Long.parseLong(r.id.substring(2,17),16)+(r.job==null?0:Long.MIN_VALUE);}
-        @NonNull public Holder onCreateViewHolder(@NonNull ViewGroup parent,int type){return new Holder(AdapterOfflineDownloadBinding.inflate(LayoutInflater.from(parent.getContext()),parent,false));}
-        public void onBindViewHolder(@NonNull Holder h,int position){
-            Row r=items.get(position);h.view.title.setText(r.meta.title);h.view.episode.setText(r.meta.episode);h.view.status.setText(state(r));
+    private final class Adapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+        @Override public int getItemViewType(int position){return display.get(position) instanceof Group?1:0;}
+        @NonNull public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent,int type){
+            return type==1?new GroupHolder(AdapterOfflineGroupBinding.inflate(LayoutInflater.from(parent.getContext()),parent,false)):new Holder(AdapterOfflineDownloadBinding.inflate(LayoutInflater.from(parent.getContext()),parent,false));
+        }
+        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder,int position){
+            if(holder instanceof GroupHolder h){
+                Group group=(Group)display.get(position);OfflineMetadata meta=group.rows.get(0).meta;
+                h.view.title.setText(meta.title);long completed=group.rows.stream().filter(Row::complete).count();
+                h.view.summary.setText(group.rows.size()+" 集 · "+completed+" 集可播放 · "+size(group.bytes()));
+                long chosen=group.rows.stream().filter(row->selected.contains(row.id)).count();
+                h.view.check.setVisibility(editing?View.VISIBLE:View.GONE);h.view.check.setChecked(chosen>0&&chosen==group.rows.stream().filter(row->!row.removing()).count());
+                h.view.expand.setText(editing?"已选 "+chosen+" 集 · 点击整组选取":expanded.contains(group.key)?"收起剧集 ⌃":"查看剧集 ⌄");
+                com.fongmi.android.tv.utils.ImgUtil.load(meta.title,meta.poster,h.view.poster);
+                h.view.getRoot().setContentDescription(meta.title+"，"+h.view.summary.getText()+"，"+h.view.expand.getText());
+                h.view.getRoot().setOnClickListener(v->groupClick(group));
+                h.view.getRoot().setOnLongClickListener(v->{editing=true;for(Row row:group.rows)if(!row.removing())selected.add(row.id);refresh();return true;});return;
+            }
+            Holder h=(Holder)holder;Row r=(Row)display.get(position);h.view.title.setText(r.meta.episode.isEmpty()?r.meta.title:r.meta.episode);h.view.episode.setText(r.meta.sourceName);h.view.episode.setVisibility(r.meta.sourceName.isEmpty()?View.GONE:View.VISIBLE);h.view.cover.setVisibility(View.GONE);h.view.status.setText(state(r));
             h.view.status.setTextColor(r.failed()?ResUtil.getColor(R.color.mobile_accent):r.complete()?android.graphics.Color.parseColor("#71D5B0"):ResUtil.getColor(R.color.mobile_muted));
             h.view.cover.setText(r.meta.title.isEmpty()?"影片":r.meta.title.substring(0,r.meta.title.offsetByCodePoints(0,Math.min(2,r.meta.title.codePointCount(0,r.meta.title.length())))));
             h.view.check.setVisibility(editing?View.VISIBLE:View.GONE);h.view.check.setChecked(selected.contains(r.id));
@@ -197,7 +249,8 @@ public final class OfflineDownloadsActivity extends BaseActivity {
             h.view.getRoot().setOnLongClickListener(v->{editing=true;selected.add(r.id);refresh();return true;});
             h.view.action.setOnClickListener(v->action(r));h.view.more.setOnClickListener(v->manage(r));
         }
-        public int getItemCount(){return items.size();}
+        public int getItemCount(){return display.size();}
     }
+    private static final class GroupHolder extends RecyclerView.ViewHolder { final AdapterOfflineGroupBinding view;GroupHolder(AdapterOfflineGroupBinding view){super(view.getRoot());this.view=view;} }
     private static final class Holder extends RecyclerView.ViewHolder{final AdapterOfflineDownloadBinding view;Holder(AdapterOfflineDownloadBinding view){super(view.getRoot());this.view=view;}}
 }

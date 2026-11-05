@@ -42,7 +42,7 @@ public class LibraryFragment extends BaseFragment {
         keeps.setStateRestorationPolicy(androidx.recyclerview.widget.RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY);
         history.setSize(Product.getSpec(requireContext()));
         keeps.setSize(Product.getSpec(requireContext()));
-        binding.recycler.setLayoutManager(new GridLayoutManager(requireContext(), Product.getColumn(requireContext())));
+        binding.recycler.setLayoutManager(new GridLayoutManager(requireContext(), getResources().getConfiguration().screenWidthDp / getResources().getConfiguration().fontScale >= 700 ? 2 : 1));
         binding.recycler.setItemAnimator(null);
         binding.tabs.addTab(binding.tabs.newTab().setText(R.string.mobile_history));
         binding.tabs.addTab(binding.tabs.newTab().setText(R.string.mobile_keep));
@@ -52,6 +52,8 @@ public class LibraryFragment extends BaseFragment {
             public void onTabReselected(TabLayout.Tab tab) { }
         });
         binding.tabs.selectTab(binding.tabs.getTabAt(selected));
+        binding.watchlist.setOnClickListener(v->WatchlistActivity.start(requireContext()));
+        com.fongmi.android.tv.watch.WatchlistJob.schedule(requireContext());
         binding.browse.setOnClickListener(v -> ((HomeActivity) requireActivity()).change(0));
         binding.manage.setOnClickListener(v -> { if (selected == 0) HistoryActivity.start(requireActivity()); else KeepActivity.start(requireActivity()); });
         reload();
@@ -91,7 +93,7 @@ public class LibraryFragment extends BaseFragment {
     @Override public void onConfigurationChanged(@NonNull android.content.res.Configuration config) {
         super.onConfigurationChanged(config);
         if (binding == null) return;
-        ((GridLayoutManager) binding.recycler.getLayoutManager()).setSpanCount(Product.getColumn(requireContext()));
+        ((GridLayoutManager) binding.recycler.getLayoutManager()).setSpanCount(getResources().getConfiguration().screenWidthDp / getResources().getConfiguration().fontScale >= 700 ? 2 : 1);
         history.setSize(Product.getSpec(requireContext())); keeps.setSize(Product.getSpec(requireContext()));
         android.os.Parcelable position = binding.recycler.getLayoutManager().onSaveInstanceState();
         binding.recycler.setAdapter(selected == 0 ? history : keeps);

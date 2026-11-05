@@ -13,6 +13,10 @@ import java.util.TreeMap;
 public final class OfflineMetadata {
     public String title = "视频";
     public String episode = "";
+    public String showId = "", poster = "", sourceName = "";
+    public long addedAt;
+    public int episodeOrder;
+    public String groupKey() { return showId == null || showId.isEmpty() ? "legacy:" + title : showId; }
     public String sourceId = "";
     public String danmaku = "";
     public Map<String, String> headers = new TreeMap<>();
@@ -36,6 +40,9 @@ public final class OfflineMetadata {
                 if (value.episode == null) value.episode = "";
                 if (value.danmaku == null) value.danmaku = "";
                 if (value.sourceId == null) value.sourceId = "";
+                if (value.showId == null) value.showId = "";
+                if (value.poster == null) value.poster = "";
+                if (value.sourceName == null) value.sourceName = "";
                 return value;
             }
         } catch (RuntimeException ignored) { }

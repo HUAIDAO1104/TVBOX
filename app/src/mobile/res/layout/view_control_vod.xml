@@ -18,6 +18,10 @@
     <androidx.appcompat.widget.AppCompatImageView android:id="@+id/next" android:layout_width="48dp" android:layout_height="48dp" android:background="@drawable/shape_control" android:src="@drawable/exo_icon_next" android:visibility="gone" tools:visibility="visible" android:contentDescription="下一集" android:focusable="true" android:clickable="true" />
   </androidx.appcompat.widget.LinearLayoutCompat>
   <include android:id="@+id/right" layout="@layout/view_control_right" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:layout_marginEnd="4dp" />
+  <LinearLayout android:id="@+id/scrubPreview" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_centerHorizontal="true" android:layout_above="@+id/bottom" android:layout_marginBottom="4dp" android:padding="6dp" android:background="@drawable/shape_control" android:orientation="vertical" android:gravity="center" android:visibility="gone">
+    <ImageView android:id="@+id/previewImage" android:layout_width="128dp" android:layout_height="72dp" android:scaleType="fitCenter" android:importantForAccessibility="no"/>
+    <TextView android:id="@+id/previewTime" android:layout_width="wrap_content" android:layout_height="wrap_content" android:maxWidth="260dp" android:gravity="center" android:textSize="12sp" android:textColor="@android:color/white"/>
+  </LinearLayout>
   <androidx.appcompat.widget.LinearLayoutCompat android:id="@+id/bottom" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_alignParentBottom="true" android:orientation="vertical" android:paddingBottom="0dp">
     <androidx.media3.ui.PlayerSeekView android:id="@+id/seek" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="16dp" android:paddingEnd="16dp" />
     <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:paddingHorizontal="4dp">

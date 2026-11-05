@@ -136,6 +136,7 @@ public class ControlDialog extends MobileSheetDialog implements ParseAdapter.OnC
     protected void initEvent() {
         if (player == null || history == null) return;
         binding.close.setOnClickListener(v -> dismiss());
+        binding.preciseSeek.setOnClickListener(v->{PreciseSeekDialog.show(requireActivity(),player.getPlayer());dismiss();});
         binding.mediaInfo.setOnClickListener(v -> dismiss(parent.control.info));
         binding.advancedToggle.setOnClickListener(v -> {
             boolean expanded = binding.advanced.getVisibility() != View.VISIBLE;
@@ -238,7 +239,8 @@ public class ControlDialog extends MobileSheetDialog implements ParseAdapter.OnC
         updateSpeed(player.getSpeed());
         binding.player.setText(parent.control.action.player.getText());
         binding.decode.setVisibility(parent.control.action.decode.getVisibility());
-        binding.danmaku.setVisibility(parent.control.action.danmaku.getVisibility());
+        binding.danmaku.setVisibility(View.VISIBLE);
+        binding.danmaku.setText("字幕与弹幕");
     }
 
     public void setParseVisible(boolean visible) {

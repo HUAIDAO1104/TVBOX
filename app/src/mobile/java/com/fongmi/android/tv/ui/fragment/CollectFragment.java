@@ -56,7 +56,7 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
         });
         adapter = new SearchAdapter(this);
         adapter.setStateRestorationPolicy(androidx.recyclerview.widget.RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY);
-        binding.recycler.setLayoutManager(new GridLayoutManager(requireContext(), getResources().getConfiguration().screenWidthDp >= 600 ? 2 : 1));
+        binding.recycler.setLayoutManager(new GridLayoutManager(requireContext(), getResources().getConfiguration().screenWidthDp / getResources().getConfiguration().fontScale >= 600 ? 2 : 1));
         binding.recycler.setAdapter(adapter);
         binding.recycler.setItemAnimator(null);
         binding.tabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
@@ -159,7 +159,7 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
     private void renderRows(boolean restore) {
         if (binding == null) return;
         String key = active; int generation = ++renderGeneration;
-        adapter.setItems(new ArrayList<>(rows.getOrDefault(key, List.of())), () -> {
+        adapter.setItems(com.fongmi.android.tv.ui.search.SearchGroup.of(rows.getOrDefault(key, List.of()), key.isEmpty()), () -> {
             if (binding == null || generation != renderGeneration || !active.equals(key)) return;
             if (restore) {
                 Parcelable position = positions.get(key);
@@ -172,7 +172,7 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
     private void renderStatus() {
         if (binding == null || model == null) return;
         int count = rows.getOrDefault("", List.of()).size();
-        binding.status.setText(getString(R.string.mobile_results_progress, progress.completed(), progress.total(), count));
+        binding.status.setText(getString(R.string.mobile_results_progress, progress.completed(), progress.total(), count) + (active.isEmpty() ? " · 合并为 " + adapter.getItemCount() + " 部" : ""));
         binding.progress.setVisibility(progress.running() ? View.VISIBLE : View.INVISIBLE);
         binding.stop.setVisibility(progress.running() ? View.VISIBLE : View.GONE);
         boolean failed = sites.stream().anyMatch(s -> (active.isEmpty() || active.equals(s.getKey())) && model.sourceState(s) != null && model.sourceState(s).failed());

@@ -57,6 +57,8 @@ public class PlayerManager implements ParseCallback {
     private Player player;
 
     private DanmakuConfig danmakuConfig;
+    private volatile DanmakuStatus lastDanmakuStatus = DanmakuStatus.hidden();
+    public DanmakuStatus getDanmakuStatus() { return lastDanmakuStatus; }
     private long pendingStartPositionMs;
     private boolean danmakuEnabled;
     private boolean initTrack;
@@ -290,6 +292,7 @@ public class PlayerManager implements ParseCallback {
 
     public void notifyDanmakuStatus(DanmakuStatus status) {
         if (status == null) return;
+        lastDanmakuStatus = status;
         App.post(() -> callback.onDanmakuStatusChanged(status));
     }
 

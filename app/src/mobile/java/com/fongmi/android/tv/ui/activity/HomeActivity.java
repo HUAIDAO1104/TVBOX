@@ -141,6 +141,8 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
         return new Callback() {
             @Override
             public void success() {
+                com.fongmi.android.tv.watch.WatchlistJob.schedule(HomeActivity.this);
+                com.fongmi.android.tv.watch.WatchlistChecker.check(HomeActivity.this,false,()->{});
                 checkAction(getIntent());
             }
 

@@ -119,6 +119,15 @@ public class SiteApi {
 
     @NonNull
     public static Result detailContent(@NonNull String key, @NonNull String id) throws Exception {
+        return detailContent(key, id, true);
+    }
+
+    /** Read-only catalog query for mobile watch reminders; no active source extraction. */
+    public static Result catalogContent(@NonNull String key, @NonNull String id) throws Exception {
+        return detailContent(key, id, false);
+    }
+
+    private static Result detailContent(@NonNull String key, @NonNull String id, boolean extract) throws Exception {
         SpiderDebug.log("detail", "key=%s,id=%s", key, id);
         Site site = VodConfig.get().getSite(key);
         if (site.isEmpty() && PUSH.equals(key)) {
@@ -128,13 +137,15 @@ public class SiteApi {
             vod.setPlayUrl(id);
             vod.setPlayFrom(ResUtil.getString(R.string.push));
             vod.setPic(ResUtil.getString(R.string.push_image));
-            Source.get().parse(vod.setFlags());
+            vod.setFlags();
+            if (extract) Source.get().parse(vod);
             return Result.vod(vod);
         } else if (isSpider(site)) {
             String detailContent = site.recent().spider().detailContent(Arrays.asList(id));
             SpiderDebug.log("detail", detailContent);
             Result result = Result.fromJson(detailContent);
-            Source.get().parse(result.getVod().setFlags());
+            result.getVod().setFlags();
+            if (extract) Source.get().parse(result.getVod());
             return result;
         } else {
             ArrayMap<String, String> params = new ArrayMap<>();
@@ -143,7 +154,8 @@ public class SiteApi {
             String detailContent = call(site, params);
             SpiderDebug.log("detail", detailContent);
             Result result = Result.fromType(site.getType(), detailContent);
-            Source.get().parse(result.getVod().setFlags());
+            result.getVod().setFlags();
+            if (extract) Source.get().parse(result.getVod());
             return result;
         }
     }

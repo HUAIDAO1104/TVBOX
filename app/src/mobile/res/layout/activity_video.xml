@@ -20,6 +20,7 @@
         <androidx.appcompat.widget.LinearLayoutCompat android:layout_width="match_parent" android:layout_height="wrap_content" android:clipChildren="false" android:clipToPadding="false" android:orientation="vertical" android:paddingTop="16dp" android:paddingBottom="24dp">
           <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="16dp" android:gravity="center_vertical">
             <TextView android:id="@+id/name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:ellipsize="end" android:maxLines="2" android:textColor="@color/mobile_text" android:textSize="22sp" android:fontFamily="sans-serif-medium" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/detailFollow" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="追剧" android:paddingHorizontal="8dp" />
             <com.google.android.material.button.MaterialButton android:id="@+id/detailKeep" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="收藏" app:icon="@drawable/ic_mobile_bookmark" android:paddingHorizontal="8dp" />
           </LinearLayout>
           <TextView android:id="@+id/other" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="16dp" android:layout_marginTop="4dp" android:maxLines="2" android:textColor="@color/mobile_muted" android:textSize="12sp" />

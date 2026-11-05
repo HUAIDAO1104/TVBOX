@@ -57,7 +57,8 @@
           <com.google.android.material.button.MaterialButton android:id="@+id/replay" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:text="从头播放" app:icon="@drawable/ic_mobile_play" />
         </com.google.android.flexbox.FlexboxLayout>
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="点击片头或片尾，将当前播放位置设为跳过位置。" android:textSize="12sp" android:textColor="@color/mobile_muted" />
-        <com.google.android.material.button.MaterialButton android:id="@+id/mediaInfo" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="48dp" android:text="查看视频信息" app:icon="@drawable/ic_control_info" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/preciseSeek" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:text="精确定位 · 输入时间"/>
+<com.google.android.material.button.MaterialButton android:id="@+id/mediaInfo" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="48dp" android:text="查看视频信息" app:icon="@drawable/ic_control_info" />
       </LinearLayout>
     </LinearLayout>
   </androidx.core.widget.NestedScrollView>

@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.ui.activity;
 
 import android.content.Context;
+import android.view.View;
 import androidx.media3.common.AudioAttributes;
 import androidx.media3.common.MimeTypes;
 import androidx.media3.exoplayer.audio.AudioSink;
@@ -42,6 +43,8 @@ public final class OfflinePlayerActivity extends BaseActivity {
     private ExoPlayer player;
     private DanmakuPlaybackSync sync;
     private String id;
+    private com.google.android.material.bottomsheet.BottomSheetDialog accessDialog;
+    private com.fongmi.android.tv.player.preview.ScrubPreview scrubPreview;
     private boolean showDanmaku = true;
     public static void start(Context context, String id) { context.startActivity(new Intent(context, OfflinePlayerActivity.class).putExtra("id", id)); }
     @Override protected ViewBinding getBinding() { return binding = ActivityOfflinePlayerBinding.inflate(getLayoutInflater()); }
@@ -61,6 +64,16 @@ public final class OfflinePlayerActivity extends BaseActivity {
         });
     }
     @Override protected void initEvent() {
+        scrubPreview=new com.fongmi.android.tv.player.preview.ScrubPreview(binding.scrubPreview,binding.previewImage,binding.previewTime);
+        View timeBar=binding.player.findViewById(androidx.media3.ui.R.id.exo_progress);
+        if(timeBar instanceof androidx.media3.ui.TimeBar bar)bar.addListener(new androidx.media3.ui.TimeBar.OnScrubListener(){
+            public void onScrubStart(androidx.media3.ui.TimeBar view,long position){preview(position);}
+            public void onScrubMove(androidx.media3.ui.TimeBar view,long position){preview(position);}
+            public void onScrubStop(androidx.media3.ui.TimeBar view,long position,boolean canceled){scrubPreview.hide();}
+        });
+        binding.preciseSeek.setOnClickListener(v->com.fongmi.android.tv.ui.dialog.PreciseSeekDialog.show(this,player));
+        binding.access.setOnClickListener(v->binding.danmaku.performLongClick());
+        binding.danmaku.setOnLongClickListener(v->{Download d=store.download(id);if(d!=null&&player!=null)accessDialog=com.fongmi.android.tv.ui.dialog.OfflineAccessDialog.show(this,player,binding.player,store,d,showDanmaku,value->{showDanmaku=value;binding.player.setDanmakuEnabled(value);binding.danmaku.setContentDescription(value?"弹幕已开启":"弹幕已关闭");binding.danmaku.setIconResource(value?com.fongmi.android.tv.R.drawable.ic_control_danmaku_on:com.fongmi.android.tv.R.drawable.ic_control_danmaku_off);});return true;});
         binding.danmaku.setOnClickListener(v -> {
             showDanmaku = !showDanmaku; binding.player.setDanmakuEnabled(showDanmaku);
             binding.danmaku.setContentDescription(showDanmaku ? "弹幕已开启" : "弹幕已关闭");
@@ -117,7 +130,13 @@ public final class OfflinePlayerActivity extends BaseActivity {
             binding.danmaku.setIconResource(showDanmaku ? com.fongmi.android.tv.R.drawable.ic_control_danmaku_on : com.fongmi.android.tv.R.drawable.ic_control_danmaku_off);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
+    private void preview(long position){
+        Download d=store.download(id);if(d==null||player==null)return;
+        scrubPreview.show(d.request.uri,java.util.Map.of(),d.request.mimeType,position,store.playbackFactory(id),d.contentLength);
+    }
     @Override protected void onStop() {
+        if(accessDialog!=null){accessDialog.dismiss();accessDialog=null;}
+        if(scrubPreview!=null)scrubPreview.hide();
         if (player != null) {
             store.position(id, player.getPlaybackState() == Player.STATE_ENDED ? 0 : player.getCurrentPosition());
             sync.bind(null); binding.player.setPlayer(null); player.release(); player = null;
@@ -125,6 +144,6 @@ public final class OfflinePlayerActivity extends BaseActivity {
         binding.player.onPause(); getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         super.onStop();
     }
-    @Override protected void onDestroy() { binding.player.setDanmakuSource(null); binding.player.getDanmakuController().setListener(null); binding.player.getDanmakuController().release(); super.onDestroy(); }
+    @Override protected void onDestroy() { if(scrubPreview!=null)scrubPreview.close(); binding.player.setDanmakuSource(null); binding.player.getDanmakuController().setListener(null); binding.player.getDanmakuController().release(); super.onDestroy(); }
     @Override protected void onSaveInstanceState(Bundle state) { state.putBoolean("danmaku", showDanmaku); super.onSaveInstanceState(state); }
 }

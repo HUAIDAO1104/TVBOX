@@ -22,6 +22,7 @@ import java.util.*;
 public final class OfflineBatchDialog extends MobileSheetDialog {
     public interface Host {
         String offlineSite(); String offlineVideo(); String offlineTitle();
+        default String offlinePoster() { return ""; }
         Flag offlineFlag(); PlayerManager offlinePlayer();
     }
     private DialogOfflineBatchBinding binding;
@@ -110,6 +111,8 @@ public final class OfflineBatchDialog extends MobileSheetDialog {
                 job.meta=OfflineActions.metadata(player); job.meta.title=title; job.meta.episode=e.getName(); job.meta.sourceId=job.id;
                 job.resolvedUrl=current.localConfiguration.uri.toString(); job.mime=current.localConfiguration.mimeType;
             }
+            job.meta.showId=OfflineMetadata.id(com.fongmi.android.tv.api.config.VodConfig.getCid()+"\n"+site+"\n"+video,java.util.Collections.emptyMap());
+            job.meta.poster=host.offlinePoster();job.meta.sourceName=flag.getFlag();job.meta.episodeOrder=e.getIndex();job.meta.addedAt=System.currentTimeMillis();
             jobs.add(job);
         }
         OfflineActions.requestNotification(requireActivity());
