@@ -1,14 +1,29 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
-    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/mobileToolbar" android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" app:title="下载管理" app:titleTextColor="@color/mobile_text" />
-    <TextView android:id="@+id/storage" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="20dp" android:paddingVertical="8dp" android:textColor="@color/mobile_muted" android:textSize="13sp" />
-    <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/wifi" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="20dp" android:minHeight="48dp" android:text="仅非计费网络下载（通常为 Wi-Fi）" android:textColor="@color/mobile_text" android:textSize="13sp" />
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="12dp">
-        <com.google.android.material.button.MaterialButton android:id="@+id/all" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="全部" />
-        <com.google.android.material.button.MaterialButton android:id="@+id/active" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="下载中" />
-        <com.google.android.material.button.MaterialButton android:id="@+id/completed" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="已完成" />
-    </LinearLayout>
-    <TextView android:id="@+id/empty" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="28dp" android:gravity="center" android:text="还没有下载\n在视频播放页点击“下载”，即可保存当前集和弹幕。" android:textColor="@color/mobile_muted" android:textSize="15sp" />
-    <androidx.recyclerview.widget.RecyclerView android:id="@+id/list" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:paddingHorizontal="16dp" android:clipToPadding="false" app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@color/mobile_background">
+  <com.google.android.material.appbar.MaterialToolbar android:id="@+id/mobileToolbar" android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" app:title="我的下载" app:titleTextColor="@color/mobile_text">
+    <com.google.android.material.button.MaterialButton android:id="@+id/manage" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:layout_gravity="end" android:text="管理" />
+  </com.google.android.material.appbar.MaterialToolbar>
+  <LinearLayout android:id="@+id/overview" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="16dp" android:layout_marginBottom="12dp" android:padding="16dp" android:orientation="vertical" android:background="@drawable/mobile_panel">
+    <TextView android:id="@+id/storage" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="离线空间" android:textSize="20sp" android:textColor="@color/mobile_text" android:fontFamily="sans-serif-medium" />
+    <TextView android:id="@+id/storageHint" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="正在读取存储空间" android:textSize="12sp" android:textColor="@color/mobile_text" android:layout_marginTop="6dp" />
+    <com.google.android.material.progressindicator.LinearProgressIndicator android:id="@+id/storageProgress" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" app:trackCornerRadius="2dp" app:trackThickness="3dp" app:trackStopIndicatorSize="0dp" app:trackColor="#38414E" />
+    <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/wifi" android:layout_width="match_parent" android:layout_height="48dp" android:text="仅 Wi-Fi / 非计费网络下载" android:textSize="13sp" android:textColor="@color/mobile_muted" />
+  </LinearLayout>
+  <EditText android:id="@+id/search" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginHorizontal="16dp" android:layout_marginBottom="8dp" android:background="@drawable/mobile_panel" android:paddingHorizontal="16dp" android:hint="搜索已下载的影片或集数" android:textSize="14sp" android:textColor="@color/mobile_text" android:textColorHint="@color/mobile_muted" android:inputType="text" android:singleLine="true" android:imeOptions="actionSearch" />
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="12dp">
+    <com.google.android.material.button.MaterialButton android:id="@+id/all" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="全部" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/active" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="下载中" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/completed" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="已完成" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/failed" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="失败" />
+  </LinearLayout>
+  <LinearLayout android:id="@+id/selectionBar" android:layout_width="match_parent" android:layout_height="48dp" android:paddingHorizontal="16dp" android:gravity="center_vertical" android:visibility="gone">
+    <TextView android:id="@+id/selectionCount" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textColor="@color/mobile_accent" android:textSize="14sp" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/selectAll" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:text="全选当前列表" />
+  </LinearLayout>
+  <TextView android:id="@+id/empty" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="32dp" android:gravity="center" android:drawableTop="@drawable/ic_mobile_download" android:drawablePadding="16dp" android:textColor="@color/mobile_muted" android:textSize="15sp" android:lineSpacingExtra="8dp" />
+  <androidx.recyclerview.widget.RecyclerView android:id="@+id/list" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:paddingHorizontal="16dp" android:paddingBottom="12dp" android:clipToPadding="false" app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+  <LinearLayout android:id="@+id/batchBar" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="8dp" android:background="@color/mobile_surface" android:visibility="gone">
+    <com.google.android.material.button.MaterialButton android:id="@+id/pauseSelected" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="暂停" app:icon="@drawable/ic_offline_pause" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/resumeSelected" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="继续" app:icon="@drawable/ic_mobile_play" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/deleteSelected" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="删除" app:icon="@drawable/ic_offline_delete" android:textColor="@color/mobile_accent" />
+  </LinearLayout>
 </LinearLayout>

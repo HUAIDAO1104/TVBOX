@@ -13,6 +13,7 @@ import java.util.TreeMap;
 public final class OfflineMetadata {
     public String title = "视频";
     public String episode = "";
+    public String sourceId = "";
     public String danmaku = "";
     public Map<String, String> headers = new TreeMap<>();
     public List<Subtitle> subtitles = new ArrayList<>();
@@ -30,7 +31,13 @@ public final class OfflineMetadata {
     public static OfflineMetadata decode(byte[] data) {
         try {
             OfflineMetadata value = new Gson().fromJson(new String(data, StandardCharsets.UTF_8), OfflineMetadata.class);
-            if (value != null && value.headers != null && value.subtitles != null) return value;
+            if (value != null && value.headers != null && value.subtitles != null) {
+                if (value.title == null) value.title = "视频";
+                if (value.episode == null) value.episode = "";
+                if (value.danmaku == null) value.danmaku = "";
+                if (value.sourceId == null) value.sourceId = "";
+                return value;
+            }
         } catch (RuntimeException ignored) { }
         return new OfflineMetadata();
     }

@@ -127,6 +127,11 @@ public final class OfflineStore {
     public interface Callback { void done(String error); }
 
     public void enqueue(MediaItem media, OfflineMetadata meta, Callback callback) {
+        enqueue(media, meta, () -> true, callback);
+    }
+
+    public void enqueue(MediaItem media, OfflineMetadata meta, java.util.function.BooleanSupplier active, Callback callback) {
+        if (!active.getAsBoolean()) return;
         // Manifest preparation may read a media segment; obey the same network policy
         // before probing, not just once the background download is in the queue.
         if (wifiOnly() && (requirements(true).getNotMetRequirements(context)
@@ -148,7 +153,7 @@ public final class OfflineStore {
             try {
                 String mime = sniffMime(media, meta);
                 MediaItem item = media.buildUpon().setMimeType(mime).setSubtitleConfigurations(Collections.emptyList()).build();
-                main.post(() -> prepare(item, meta, id, callback));
+                main.post(() -> { if (active.getAsBoolean()) prepare(item, meta, id, active, callback); });
             } catch (Exception e) { main.post(() -> callback.done("无法读取视频，请重新播放后再下载，或尝试其他线路")); }
         });
     }
@@ -177,7 +182,7 @@ public final class OfflineStore {
         }
     }
 
-    private void prepare(MediaItem item, OfflineMetadata meta, String id, Callback callback) {
+    private void prepare(MediaItem item, OfflineMetadata meta, String id, java.util.function.BooleanSupplier active, Callback callback) {
         String mime = item.localConfiguration.mimeType;
         if (!MimeTypes.APPLICATION_M3U8.equals(mime) && !MimeTypes.APPLICATION_MPD.equals(mime)) {
             try {
@@ -199,6 +204,7 @@ public final class OfflineStore {
                 if (!finished.compareAndSet(false, true)) { ready.release(); return; }
                 main.removeCallbacks(timeout);
                 try {
+                    if (!active.getAsBoolean()) return;
                     // Reject encrypted tracks even if the source omitted a top-level DRM config.
                     for (int period = 0; period < ready.getPeriodCount(); period++) {
                         for (androidx.media3.common.Tracks.Group group : ready.getTracks(period).getGroups()) {

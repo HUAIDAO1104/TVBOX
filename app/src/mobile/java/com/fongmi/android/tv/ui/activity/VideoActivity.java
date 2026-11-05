@@ -113,7 +113,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Objects;
 
-public class VideoActivity extends PlaybackActivity implements Clock.Callback, CustomKeyDown.Listener, TrackDialog.Listener, ControlDialog.Listener, ControlDialog.Host, ParseDialog.Listener, VodPlaybackHost, FlagAdapter.OnClickListener, EpisodeAdapter.OnClickListener, EpisodeListDialog.Listener, QualityAdapter.OnClickListener, QuickAdapter.OnClickListener, CastDialog.Listener, CastDialog.Host, InfoDialog.Listener {
+public class VideoActivity extends PlaybackActivity implements Clock.Callback, CustomKeyDown.Listener, TrackDialog.Listener, ControlDialog.Listener, ControlDialog.Host, com.fongmi.android.tv.ui.dialog.OfflineBatchDialog.Host, ParseDialog.Listener, VodPlaybackHost, FlagAdapter.OnClickListener, EpisodeAdapter.OnClickListener, EpisodeListDialog.Listener, QualityAdapter.OnClickListener, QuickAdapter.OnClickListener, CastDialog.Listener, CastDialog.Host, InfoDialog.Listener {
 
     private ActivityVideoBinding mBinding;
     private ViewGroup.LayoutParams mFrameParams;
@@ -339,7 +339,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     @SuppressLint("ClickableViewAccessibility")
     protected void initEvent() {
         mBinding.detailCast.setOnClickListener(v -> onCast());
-        mBinding.detailDownload.setOnClickListener(v -> { if (mHistory != null && playbackReady) com.fongmi.android.tv.offline.OfflineActions.download(this, player()); });
+        mBinding.detailDownload.setOnClickListener(v -> onDownload());
+        mBinding.control.download.setOnClickListener(v -> onDownload());
+        mBinding.control.fullscreen.setOnClickListener(v -> { if (playbackReady) { if (isFullscreen()) exitFullscreen(); else enterFullscreen(); } });
         mBinding.contentToggle.setOnClickListener(v -> toggleSynopsis());
         mBinding.detailSettings.setOnClickListener(v -> { if (mHistory != null && playbackReady) onSetting(); });
         mBinding.detailKeep.setOnClickListener(v -> { if (mHistory != null) onKeep(); });
@@ -363,7 +365,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.control.title.setOnLongClickListener(view -> onChange());
         mBinding.control.right.lock.setOnClickListener(view -> onLock());
         mBinding.control.right.rotate.setOnClickListener(view -> onRotate());
-        mBinding.control.danmaku.setOnClickListener(view -> onDanmakuShow());
+        mBinding.control.danmaku.setOnClickListener(view -> { if (player().haveDanmaku()) onDanmakuShow(); else onDanmaku(); });
+        mBinding.control.danmaku.setOnLongClickListener(view -> { onDanmaku(); return true; });
         mBinding.control.action.text.setOnClickListener(this::onTrack);
         mBinding.control.action.audio.setOnClickListener(this::onTrack);
         mBinding.control.action.video.setOnClickListener(this::onTrack);
@@ -964,6 +967,18 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     @Override public String playbackSiteKey() { return getKey(); }
     @Override public boolean playbackUsesParse() { return isUseParse(); }
 
+    @Override public String offlineSite() { return getKey(); }
+    @Override public String offlineVideo() { return getId(); }
+    @Override public String offlineTitle() { return mBinding.name.getText().toString(); }
+    @Override public PlayerManager offlinePlayer() { return player(); }
+    @Override public Flag offlineFlag() { return mFlagAdapter == null || mFlagAdapter.isEmpty() ? null : mFlagAdapter.get(mFlagAdapter.getPosition()); }
+    private void onDownload() {
+        if (mHistory == null || !playbackReady) return;
+        hideControl();
+        if (offlineFlag() == null) com.fongmi.android.tv.offline.OfflineActions.download(this, player());
+        else com.fongmi.android.tv.ui.dialog.OfflineBatchDialog.show(this);
+    }
+
     private void onSetting() {
         ControlDialog.create().parent(mBinding).history(mHistory).siteKey(getKey()).parse(isUseParse()).player(player()).show(this);
     }
@@ -1221,15 +1236,18 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void showControl() {
         if (service() == null || isInPictureInPictureMode()) return;
-        mBinding.control.danmaku.setVisibility(isLock() || !player().haveDanmaku() ? View.GONE : View.VISIBLE);
-        mBinding.control.setting.setVisibility(!isFullscreen() || mHistory == null || isLock() ? View.GONE : View.VISIBLE);
+        mBinding.control.danmaku.setVisibility(isLock() ? View.GONE : View.VISIBLE);
+        mBinding.control.setting.setVisibility(mHistory == null || isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.right.rotate.setVisibility(isFullscreen() && !isLock() ? View.VISIBLE : View.GONE);
         mBinding.control.keep.setVisibility(View.GONE);
-        mBinding.control.action.getRoot().setVisibility(isFullscreen() ? View.VISIBLE : View.GONE);
+        mBinding.control.action.getRoot().setVisibility(isLock() ? View.GONE : View.VISIBLE);
+        mBinding.control.action.scale.setVisibility(isFullscreen() ? View.VISIBLE : View.GONE);
+        mBinding.control.download.setVisibility(isLock() || mHistory == null ? View.GONE : View.VISIBLE);
+        mBinding.control.fullscreen.setContentDescription(isFullscreen() ? "退出全屏" : "全屏播放");
         mBinding.control.right.lock.setVisibility(isFullscreen() ? View.VISIBLE : View.GONE);
         mBinding.control.action.parse.setVisibility(isUseParse() ? View.VISIBLE : View.GONE);
-        mBinding.control.info.setVisibility(player().isEmpty() ? View.GONE : View.VISIBLE);
-        mBinding.control.cast.setVisibility(isFullscreen() && !player().isEmpty() ? View.VISIBLE : View.GONE);
+        mBinding.control.info.setVisibility(player().isEmpty() || !isFullscreen() ? View.GONE : View.VISIBLE);
+        mBinding.control.cast.setVisibility(!player().isEmpty() ? View.VISIBLE : View.GONE);
         mBinding.control.center.setVisibility(isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.bottom.setVisibility(isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.back.setVisibility(isLock() ? View.GONE : View.VISIBLE);

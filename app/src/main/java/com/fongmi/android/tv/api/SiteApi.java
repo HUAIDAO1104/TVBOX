@@ -150,12 +150,21 @@ public class SiteApi {
 
     @NonNull
     public static Result playerContent(@NonNull String key, @NonNull String flag, @NonNull String id) throws Exception {
+        return playerContent(key, flag, id, false);
+    }
+
+    /** Offline preparation must never stop the extractor serving the active player. */
+    public static Result downloadContent(@NonNull String key, @NonNull String flag, @NonNull String id) throws Exception {
+        return playerContent(key, flag, id, true);
+    }
+
+    private static Result playerContent(String key, String flag, String id, boolean download) throws Exception {
         SpiderDebug.log("player", "key=%s,flag=%s,id=%s", key, flag, id);
         Site site = VodConfig.get().getSite(key);
         if (RepositorySiteKey.isScoped(key) && site.isEmpty()) {
             throw new IOException("Repository site is not resolved");
         }
-        Source.get().stop();
+        if (!download) Source.get().stop();
         if (site.getType() == 3) {
             String playerContent = site.recent().spider().playerContent(flag, id,
                     VodConfig.get().getPlaybackFlags(key));
@@ -163,7 +172,7 @@ public class SiteApi {
             Result result = Result.fromJson(playerContent);
             result.setKey(key);
             if (result.getFlag().isEmpty()) result.setFlag(flag);
-            result.setUrl(Source.get().fetch(result));
+            if (!download) result.setUrl(Source.get().fetch(result));
             result.setHeader(site.getHeader());
             return result;
         } else if (site.getType() == 4) {
@@ -175,7 +184,7 @@ public class SiteApi {
             Result result = Result.fromJson(playerContent);
             result.setKey(key);
             if (result.getFlag().isEmpty()) result.setFlag(flag);
-            result.setUrl(Source.get().fetch(result));
+            if (!download) result.setUrl(Source.get().fetch(result));
             result.setHeader(site.getHeader());
             return result;
         } else if (site.isEmpty() && "push_agent".equals(key)) {
@@ -184,7 +193,7 @@ public class SiteApi {
             result.setUrl(id);
             result.setParse(0);
             result.setFlag(flag);
-            result.setUrl(Source.get().fetch(result));
+            if (!download) result.setUrl(Source.get().fetch(result));
             SpiderDebug.log("player", result.toString());
             return result;
         } else {
@@ -195,7 +204,7 @@ public class SiteApi {
             result.setHeader(site.getHeader());
             result.setPlayUrl(site.getPlayUrl());
             result.setParse(Sniffer.isVideoFormat(id) && result.getPlayUrl().isEmpty() ? 0 : 1);
-            result.setUrl(Source.get().fetch(result));
+            if (!download) result.setUrl(Source.get().fetch(result));
             SpiderDebug.log("player", result.toString());
             return result;
         }

@@ -1,0 +1,13 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:paddingHorizontal="16dp">
+<LinearLayout android:layout_width="match_parent" android:layout_height="64dp" android:gravity="center_vertical"><TextView style="@style/Mobile.Section" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="选集下载"/><ImageButton android:id="@+id/close" style="@style/Mobile.Icon" android:src="@drawable/ic_mobile_close" android:contentDescription="关闭选集下载"/></LinearLayout>
+<TextView android:id="@+id/title" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="15sp" android:textColor="@color/mobile_text" android:maxLines="2"/>
+<TextView android:id="@+id/subtitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:textSize="12sp" android:textColor="@color/mobile_muted"/>
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginVertical="8dp">
+<com.google.android.material.button.MaterialButton android:id="@+id/all" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="全选"/>
+<com.google.android.material.button.MaterialButton android:id="@+id/next" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="从当前集起 5 集"/>
+<com.google.android.material.button.MaterialButton android:id="@+id/manager" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="下载管理"/>
+</LinearLayout>
+<androidx.recyclerview.widget.RecyclerView android:id="@+id/list" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:clipToPadding="false" android:paddingBottom="8dp"/>
+<TextView android:id="@+id/hint" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingVertical="10dp" android:text="保存当前集已选弹幕，以及其他集已匹配的弹幕。未匹配的集数可下载后导入 XML。" android:textSize="12sp" android:textColor="@color/mobile_muted"/>
+<com.google.android.material.button.MaterialButton android:id="@+id/download" android:layout_width="match_parent" android:layout_height="56dp" android:layout_marginBottom="16dp" android:text="下载所选" app:icon="@drawable/ic_mobile_download" app:iconGravity="textStart"/>
+</LinearLayout>

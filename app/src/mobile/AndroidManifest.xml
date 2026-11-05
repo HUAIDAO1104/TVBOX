@@ -20,6 +20,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application>
+        <service android:name=".offline.OfflineBatchService" android:exported="false" android:foregroundServiceType="dataSync" />
         <activity android:name=".ui.activity.OfflineDownloadsActivity" android:exported="false" />
         <activity android:name=".ui.activity.OfflinePlayerActivity" android:exported="false" android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation" />
         <service android:name=".offline.OfflineDownloadService" android:exported="false" android:foregroundServiceType="dataSync">

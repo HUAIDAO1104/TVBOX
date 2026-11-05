@@ -58,6 +58,8 @@ public class OfflineRuntimeTest {
     @Before public void setup() throws Exception {
         System.out.println("offline: app ready");
         context = RuntimeEnvironment.getApplication();
+        context.getSharedPreferences("offline-batch-v1",0).edit().clear().commit();
+        org.robolectric.util.ReflectionHelpers.setStaticField(OfflineBatchQueue.class, "instance", null);
         context.getSharedPreferences("offline", 0).edit().putBoolean("wifi", false).commit();
         main(() -> store = OfflineStore.get(context));
         System.out.println("offline: store ready");
@@ -133,8 +135,8 @@ public class OfflineRuntimeTest {
         }
     }
     private static void await(Callable<Boolean> condition, long timeout) throws Exception {
-        long end = android.os.SystemClock.elapsedRealtime() + timeout;
-        while (android.os.SystemClock.elapsedRealtime() < end) { pump(); if (condition.call()) return; Thread.sleep(100); }
+        long end = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout);
+        while (System.nanoTime() < end) { pump(); if (condition.call()) return; Thread.sleep(100); }
         fail("Condition timed out after " + timeout + " ms");
     }
     private OfflineMetadata metadata() {
@@ -274,7 +276,7 @@ public class OfflineRuntimeTest {
                 return comments != null && comments.length == 2;
             }, 10000);
             activity.get().findViewById(R.id.danmaku).performClick();
-            assertEquals("弹幕：关", ((android.widget.TextView)activity.get().findViewById(R.id.danmaku)).getText().toString());
+            assertEquals("弹幕已关闭", activity.get().findViewById(R.id.danmaku).getContentDescription().toString());
         } finally { activity.pause().stop().destroy(); }
         assertEquals(before, requests.get());
     }
@@ -358,5 +360,90 @@ public class OfflineRuntimeTest {
         CountDownLatch done = new CountDownLatch(1); AtomicReference<String> error = new AtomicReference<>();
         main(() -> store.enqueue(MediaItem.fromUri(server.url("/live.m3u8").toString()), metadata(), message -> { error.set(message); done.countDown(); }));
         await(() -> done.getCount() == 0, 55000); assertNotNull(error.get()); assertTrue(onMain(() -> store.downloads().isEmpty()));
+    }
+
+    @Test public void batchQueueSurvivesRestartWithoutDuplicatingEpisodes() {
+        OfflineBatchQueue queue = OfflineBatchQueue.get(context);
+        OfflineBatchQueue.Job first = batchJob("/clip.mp4", "第 1 集");
+        OfflineBatchQueue.Job second = batchJob("/clip.mkv", "第 2 集");
+        assertEquals(2, queue.add(java.util.Arrays.asList(first, second, first), java.util.Collections.emptySet()));
+        OfflineBatchQueue.Job claimed = queue.claim();
+        queue.pause(second.id);
+        org.robolectric.util.ReflectionHelpers.setStaticField(OfflineBatchQueue.class, "instance", null);
+        OfflineBatchQueue restored = OfflineBatchQueue.get(context);
+        assertEquals(2, restored.jobs().size());
+        assertEquals(OfflineBatchQueue.PENDING, restored.jobs().get(0).state);
+        assertEquals(OfflineBatchQueue.PAUSED, restored.jobs().get(1).state);
+        assertEquals(0, restored.add(java.util.List.of(first), java.util.Collections.emptySet()));
+        assertNotNull(claimed);
+    }
+
+    @Test public void pausedAndDeletedPreparationRejectLateCallbacks() {
+        OfflineBatchQueue queue = OfflineBatchQueue.get(context);
+        OfflineBatchQueue.Job job = batchJob("/clip.mp4", "第 1 集");
+        queue.add(java.util.List.of(job), java.util.Collections.emptySet());
+        OfflineBatchQueue.Job old = queue.claim(); queue.pause(job.id);
+        assertFalse(queue.active(old)); queue.finish(old, null);
+        assertEquals(1, queue.jobs().size());
+        queue.resume(job.id); OfflineBatchQueue.Job newer=queue.claim();
+        assertFalse(queue.active(old)); assertTrue(queue.active(newer));
+        queue.remove(job.id); queue.finish(newer,"late failure");
+        assertTrue(queue.jobs().isEmpty());
+    }
+
+    @Test public void cancelledManifestPreparationCannotCreateDownload() throws Exception {
+        AtomicBoolean active = new AtomicBoolean(true);
+        store.enqueue(MediaItem.fromUri(server.url("/plain.m3u8").toString()), metadata(), active::get, error -> {});
+        active.set(false);
+        for(int i=0;i<15;i++){pump();Thread.sleep(50);}
+        assertTrue(store.downloads().isEmpty());
+    }
+
+    @Test public void batchServicePreparesTwoVideosWithAuthAndOwnDanmaku() throws Exception {
+        android.net.ConnectivityManager connectivity = (android.net.ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        org.robolectric.shadows.ShadowConnectivityManager network = Shadows.shadowOf(connectivity);
+        network.setActiveNetworkInfo(org.robolectric.shadows.ShadowNetworkInfo.newInstance(android.net.NetworkInfo.DetailedState.CONNECTED, android.net.ConnectivityManager.TYPE_WIFI, 0, true, true));
+        android.net.Network active = connectivity.getActiveNetwork();
+        android.net.NetworkCapabilities capabilities=org.robolectric.shadows.ShadowNetworkCapabilities.newInstance();
+        Shadows.shadowOf(capabilities).addCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET);
+        Shadows.shadowOf(capabilities).addCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+        Shadows.shadowOf(capabilities).addCapability(android.net.NetworkCapabilities.NET_CAPABILITY_NOT_METERED);
+        network.setNetworkCapabilities(active,capabilities);
+        assertEquals("Fixture must have a validated network",0,store.requirements(false).getNotMetRequirements(context));
+        OfflineBatchQueue queue = OfflineBatchQueue.get(context);
+        OfflineBatchQueue.Job one=batchJob("/clip.mp4","第 1 集"),two=batchJob("/clip.mkv","第 2 集");
+        queue.add(java.util.List.of(one,two),java.util.Collections.emptySet());
+        ServiceController<OfflineBatchService> batch = Robolectric.buildService(OfflineBatchService.class).create();
+        try {
+            batch.get().onStartCommand(new Intent(context,OfflineBatchService.class),0,1);
+            String first=OfflineMetadata.id(one.resolvedUrl,one.meta.headers), second=OfflineMetadata.id(two.resolvedUrl,two.meta.headers);
+            complete(first); complete(second);
+            assertTrue(queue.jobs().isEmpty()); assertEquals(0,rejected.get());
+            assertTrue(store.danmaku(first).isFile()); assertTrue(store.danmaku(second).isFile());
+            assertEquals(one.id,OfflineMetadata.decode(store.download(first).request.data).sourceId);
+        } finally { batch.destroy(); }
+    }
+
+    @Test public void managementSelectionSearchAndBatchPauseAreIsolated() throws Exception {
+        OfflineBatchQueue queue=OfflineBatchQueue.get(context);
+        OfflineBatchQueue.Job one=batchJob("/clip.mp4","第 1 集"),two=batchJob("/clip.mkv","第 2 集");
+        queue.add(java.util.List.of(one,two),java.util.Collections.emptySet());
+        org.robolectric.android.controller.ActivityController<OfflineDownloadsActivity> screen=Robolectric.buildActivity(OfflineDownloadsActivity.class).setup();
+        try {
+            pump(); screen.get().findViewById(R.id.manage).performClick();
+            ((android.widget.EditText)screen.get().findViewById(R.id.search)).setText("第 1 集");
+            screen.get().findViewById(R.id.selectAll).performClick();
+            screen.get().findViewById(R.id.pauseSelected).performClick();
+            assertEquals(OfflineBatchQueue.PAUSED,queue.jobs().get(0).state);
+            assertEquals(OfflineBatchQueue.PENDING,queue.jobs().get(1).state);
+            screen.get().findViewById(R.id.resumeSelected).performClick();
+            assertEquals(OfflineBatchQueue.PENDING,queue.jobs().get(0).state);
+        } finally { screen.pause().stop().destroy(); }
+    }
+
+    private OfflineBatchQueue.Job batchJob(String path,String episode) {
+        OfflineBatchQueue.Job job=new OfflineBatchQueue.Job(); job.site="push_agent";job.flag="test";job.sourceUrl=server.url(path).toString();
+        job.id=OfflineBatchQueue.identity(job.site,"fixture",job.flag,job.sourceUrl);job.resolvedUrl=job.sourceUrl;
+        job.meta=metadata();job.meta.episode=episode;job.meta.sourceId=job.id; return job;
     }
 }

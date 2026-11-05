@@ -63,8 +63,10 @@ public final class OfflinePlayerActivity extends BaseActivity {
     @Override protected void initEvent() {
         binding.danmaku.setOnClickListener(v -> {
             showDanmaku = !showDanmaku; binding.player.setDanmakuEnabled(showDanmaku);
-            binding.danmaku.setText(showDanmaku ? "弹幕：开" : "弹幕：关"); if (sync != null) sync.sync();
+            binding.danmaku.setContentDescription(showDanmaku ? "弹幕已开启" : "弹幕已关闭");
+            binding.danmaku.setIconResource(showDanmaku ? com.fongmi.android.tv.R.drawable.ic_control_danmaku_on : com.fongmi.android.tv.R.drawable.ic_control_danmaku_off); if (sync != null) sync.sync();
         });
+        binding.player.setControllerVisibilityListener((androidx.media3.ui.PlayerView.ControllerVisibilityListener) visibility -> binding.quickControls.setVisibility(visibility));
         binding.rotate.setOnClickListener(v -> setRequestedOrientation(getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT : ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE));
     }
     @Override protected void onStart() {
@@ -111,7 +113,8 @@ public final class OfflinePlayerActivity extends BaseActivity {
         binding.player.onResume();
         if (store.danmaku(id).isFile()) binding.player.setDanmakuSource(Uri.fromFile(store.danmaku(id)));
         player.setMediaItem(store.mediaItem(download)); player.seekTo(store.position(id)); player.prepare(); player.play();
-        binding.danmaku.setText(showDanmaku ? "弹幕：开" : "弹幕：关");
+        binding.danmaku.setContentDescription(showDanmaku ? "弹幕已开启" : "弹幕已关闭");
+            binding.danmaku.setIconResource(showDanmaku ? com.fongmi.android.tv.R.drawable.ic_control_danmaku_on : com.fongmi.android.tv.R.drawable.ic_control_danmaku_off);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
     @Override protected void onStop() {

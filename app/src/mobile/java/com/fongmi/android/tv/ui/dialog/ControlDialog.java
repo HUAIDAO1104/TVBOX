@@ -113,7 +113,7 @@ public class ControlDialog extends MobileSheetDialog implements ParseAdapter.OnC
             preset.setMinWidth(0); preset.setMinimumWidth(0); preset.setTextSize(14);
             preset.setPadding(8, 0, 8, 0); preset.setCornerRadius(com.fongmi.android.tv.utils.ResUtil.dp2px(10));
             float fontScale = getResources().getConfiguration().fontScale;
-            int width = Math.round(Math.max(64 * fontScale, (getResources().getConfiguration().screenWidthDp - 40) / 5f - 8));
+            int width = (int) Math.floor(Math.max(52 * fontScale, (getResources().getConfiguration().screenWidthDp - 64) / 5f - 8));
             com.google.android.flexbox.FlexboxLayout.LayoutParams params = new com.google.android.flexbox.FlexboxLayout.LayoutParams(com.fongmi.android.tv.utils.ResUtil.dp2px(width), com.fongmi.android.tv.utils.ResUtil.dp2px(52));
             params.setMargins(0, 0, com.fongmi.android.tv.utils.ResUtil.dp2px(8), 0); preset.setLayoutParams(params);
             preset.setOnClickListener(v -> binding.speed.setValue(speed));
@@ -136,10 +136,11 @@ public class ControlDialog extends MobileSheetDialog implements ParseAdapter.OnC
     protected void initEvent() {
         if (player == null || history == null) return;
         binding.close.setOnClickListener(v -> dismiss());
+        binding.mediaInfo.setOnClickListener(v -> dismiss(parent.control.info));
         binding.advancedToggle.setOnClickListener(v -> {
             boolean expanded = binding.advanced.getVisibility() != View.VISIBLE;
             binding.advanced.setVisibility(expanded ? View.VISIBLE : View.GONE);
-            binding.advancedToggle.setText(expanded ? "收起高级选项" : "高级播放选项");
+            binding.advancedToggle.setText(expanded ? "收起高级选项" : "更多播放设置");
         });
         binding.resetSkip.setOnClickListener(v -> {
             parent.control.action.opening.performLongClick(); parent.control.action.ending.performLongClick();
@@ -250,6 +251,7 @@ public class ControlDialog extends MobileSheetDialog implements ParseAdapter.OnC
         binding.audio.setVisibility(parent.control.action.audio.getVisibility());
         binding.video.setVisibility(parent.control.action.video.getVisibility());
         binding.track.setVisibility(binding.text.getVisibility() == View.GONE && binding.audio.getVisibility() == View.GONE && binding.video.getVisibility() == View.GONE ? View.GONE : View.VISIBLE);
+        binding.tracksCard.setVisibility(binding.track.getVisibility());
     }
 
     public void setMediaOptionVisible() {
