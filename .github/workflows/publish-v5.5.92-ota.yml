@@ -1,0 +1,289 @@
+name: Publish v5.5.92 mobile experience update
+
+on:
+  push:
+    branches: [codex/fix/mobile-dlna-upgrade]
+    paths: [.github/workflows/publish-v5.5.92-ota.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: publish-v5.5.92-ota
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Apply and verify reviewed mobile improvements
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor 56629353397cf643600c4f044c04d971052ebaf8 HEAD
+          echo '2a59ff476af661353f6cfdf6034099709f59827b1c6a43281611b7f0bc209fa6  mobile-experience-v592.patch' | sha256sum --check
+          if git apply --reverse --check mobile-experience-v592.patch 2>/dev/null; then
+            echo 'Reviewed patch is already applied.'
+          else
+            git apply --check mobile-experience-v592.patch
+            git apply mobile-experience-v592.patch
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add app
+            git commit -m 'Add mobile watchlist, source grouping, preview and caption hub'
+            git push origin HEAD:codex/fix/mobile-dlna-upgrade
+          fi
+          test -f app/src/mobile/java/com/fongmi/android/tv/offline/OfflineBatchService.java
+          grep -q 'versionCode 643' app/build.gradle
+          git rev-parse HEAD > source-commit.txt
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Prepare Android build tools
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-37.0' 'build-tools;37.0.0'
+          # Use the JDK selected above; preserve the project's IDE-specific criteria.
+          mv gradle/gradle-daemon-jvm.properties "$RUNNER_TEMP/gradle-daemon-jvm.properties"
+          cat > "$RUNNER_TEMP/mobile-upgrade.init.gradle" <<'GRADLE'
+          allprojects {
+              plugins.withId('com.android.application') { android.buildToolsVersion = '37.0.0' }
+              plugins.withId('com.android.library') { android.buildToolsVersion = '37.0.0' }
+              plugins.withId('com.chaquo.python') {
+                  chaquopy.defaultConfig.pip.options '--index-url', 'https://pypi.org/simple'
+                  chaquopy.defaultConfig.pip.options '--extra-index-url', 'https://chaquo.com/pypi-13.1'
+                  chaquopy.defaultConfig.pip.options '--find-links', new File(System.getenv('RUNNER_TEMP'), 'android-python-wheels').absolutePath
+              }
+          }
+          GRADLE
+
+      - name: Fetch verified Android Python wheels
+        run: |
+          mkdir -p "$RUNNER_TEMP/android-python-wheels"
+          cd "$RUNNER_TEMP/android-python-wheels"
+          cat > SHA256SUMS <<'WHEELS'
+          811547210b01eefb0fb850fd35bd27b53a00a76b9466b8c03e049b7e8175004b  chaquopy_libcxx-180000-0-py3-none-android_24_arm64_v8a.whl
+          7082afa716eb1960852d432a73c90f40b017fbd83de7c427760a29f60b6169cc  chaquopy_libcxx-180000-0-py3-none-android_24_armeabi_v7a.whl
+          d4134ea2c0f632372a436ee54467f30d5f7744c2e9ea83ffc3edb9080ddff6c1  chaquopy_libxml2-2.9.8-2-py3-none-android_16_armeabi_v7a.whl
+          f8a7adf4f565e4cec6add811a9886be2191e8214913987dce24a3bb522dcb4e3  chaquopy_libxml2-2.9.8-2-py3-none-android_21_arm64_v8a.whl
+          a7b58f9627c68555a592d6295e8f79542035e358d0b35b14da7b0dc599ef1962  chaquopy_libxslt-1.1.32-2-py3-none-android_16_armeabi_v7a.whl
+          0526c414fc0af6f02b9e922042c79e3aa0e3c28fe093de3a38d834755ffc2a27  chaquopy_libxslt-1.1.32-2-py3-none-android_21_arm64_v8a.whl
+          3cd17d5b607accd9c6d92b79dd93388b9661da46e8bae6baed9f1dd4732f3076  lxml-5.3.0-0-cp310-cp310-android_24_arm64_v8a.whl
+          be03590d8aa1dca946375b646fa93d3a6ba5e2c89084abc35244d4c7c6e3ee31  lxml-5.3.0-0-cp310-cp310-android_24_armeabi_v7a.whl
+          8c9a9e983fee98565c305ac3f6a6d6e2ca90ccbc302eabd1ec5c521c047e5274  pycryptodome-3.21.0-0-cp310-cp310-android_24_arm64_v8a.whl
+          ae645325c2883ef84dd5dc7933760f889b06a8f8786facdf354a0c7f7d65c755  pycryptodome-3.21.0-0-cp310-cp310-android_24_armeabi_v7a.whl
+          6ec5eb9e25f4177257b2348d3a68708e2cba07fa3da4171d872979aca0fe969f  ujson-5.11.0-0-cp310-cp310-android_24_arm64_v8a.whl
+          8778731ebb168f94003cc8c202c80692ba64ad5e0c5775af4a9b309c8f4495fe  ujson-5.11.0-0-cp310-cp310-android_24_armeabi_v7a.whl
+          WHEELS
+          while read -r digest wheel; do
+            package="${wheel%%-*}"
+            package="${package//_/-}"
+            curl --fail --location --retry 3 --max-time 120 "https://chaquo.com/pypi-13.1/$package/$wheel" -o "$wheel"
+          done < SHA256SUMS
+          sha256sum --check SHA256SUMS
+
+      - name: Restore existing release signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_BASE64"
+          test -n "$KEY_ALIAS"
+          test -n "$STORE_PASSWORD"
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+          printf 'storeFile=%s\nkeyAlias=%s\nstorePassword=%s\nkeyPassword=%s\n' \
+            "$RUNNER_TEMP/release.keystore" "$KEY_ALIAS" "$STORE_PASSWORD" "$KEY_PASSWORD" > local.properties
+          keytool -exportcert -keystore "$RUNNER_TEMP/release.keystore" -alias "$KEY_ALIAS" \
+            -storepass:env STORE_PASSWORD -file "$RUNNER_TEMP/signing-public.der"
+          echo "b8ed9c579e8671d24f6d4d18b296528ca655c627fa437f57a217450c0b548aa7  $RUNNER_TEMP/signing-public.der" | sha256sum --check
+
+      - name: Install decoder used by integration tests
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version
+
+      - name: Verify full mobile regression suite
+        env:
+          CAST_FFMPEG: /usr/bin/ffmpeg
+        run: |
+          bash gradlew --no-daemon --max-workers=2 -I "$RUNNER_TEMP/mobile-upgrade.init.gradle" \
+            :app:testMobileArm64_v8aDebugUnitTest 
+          python3 - <<'TESTS'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          roots = [ET.parse(p).getroot() for p in Path('app/build/test-results').rglob('TEST-*.xml')]
+          assert roots
+          assert all(int(r.get('failures', 0)) == 0 and int(r.get('errors', 0)) == 0 and int(r.get('skipped', 0)) == 0 for r in roots)
+          assert sum(int(r.get('tests', 0)) for r in roots) >= 421
+          print('Full mobile unit and integration suite passed.')
+          TESTS
+
+      - name: Enable hardware virtualization for Android tests
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Verify offline playback and seeking on Android
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot
+          script: |
+            adb shell getprop ro.product.cpu.abilist | grep arm64-v8a
+            bash gradlew --no-daemon --max-workers=2 -I "$RUNNER_TEMP/mobile-upgrade.init.gradle" :app:connectedMobileArm64_v8aDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.fongmi.android.tv.offline.OfflineDownloadTest,com.fongmi.android.tv.offline.MobileExperienceTest
+
+      - name: Check Android device test results
+        run: |
+          python3 - <<'TESTS'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          roots = [ET.parse(p).getroot() for p in Path('app/build/outputs/androidTest-results').rglob('TEST-*.xml')]
+          assert roots and sum(int(r.get('tests', 0)) for r in roots) >= 19
+          assert all(int(r.get('failures', 0)) == 0 and int(r.get('errors', 0)) == 0 and int(r.get('skipped', 0)) == 0 for r in roots)
+          print('Android download, offline video/danmaku/subtitle, seek, pause/resume and removal tests passed.')
+          TESTS
+
+      - name: Build all four original signed APKs
+        run: |
+          bash gradlew --no-daemon --max-workers=2 -I "$RUNNER_TEMP/mobile-upgrade.init.gradle" \
+            :app:assembleMobileArm64_v8aRelease :app:assembleMobileArmeabi_v7aRelease \
+            :app:assembleLeanbackArm64_v8aRelease :app:assembleLeanbackArmeabi_v7aRelease
+          bash gradlew --no-daemon --max-workers=2 -I "$RUNNER_TEMP/mobile-upgrade.init.gradle" -PandroidApiCheck :app:lintMobileArm64_v8aRelease
+
+      - name: Verify all four original upgrade packages
+        run: |
+          set -euo pipefail
+          APKSIGNER="$ANDROID_SDK_ROOT/build-tools/37.0.0/apksigner"
+          AAPT="$ANDROID_SDK_ROOT/build-tools/37.0.0/aapt"
+          mkdir -p dist verification
+          for product in mobile leanback; do
+            for abi in arm64_v8a armeabi_v7a; do
+              apk="$(find app/build/outputs/apk -path "*/release/$product-$abi.apk" -print -quit)"
+              test -f "$apk"
+              cp "$apk" "dist/pianduoduo-$product-$abi-v5.5.92.apk"
+            done
+          done
+          for apk in dist/*.apk; do
+            name="$(basename "$apk" .apk)"
+            "$APKSIGNER" verify --verbose --print-certs --min-sdk-version 23 "$apk" > "verification/$name-signature.txt"
+            actual="$(sed -n 's/.*certificate SHA-256 digest: //p' "verification/$name-signature.txt" | sort -u)"
+            test "$actual" = b8ed9c579e8671d24f6d4d18b296528ca655c627fa437f57a217450c0b548aa7
+            grep -q 'Verified using v1 scheme (JAR signing): true' "verification/$name-signature.txt"
+            grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' "verification/$name-signature.txt"
+            grep -q 'Verified using v3 scheme (APK Signature Scheme v3): true' "verification/$name-signature.txt"
+            "$AAPT" dump badging "$apk" > "verification/$name-metadata.txt"
+            grep -q "^package: name='com.fongmi.android.tv' versionCode='643' versionName='5.5.92'" "verification/$name-metadata.txt"
+            ! grep -q '^application-debuggable' "verification/$name-metadata.txt"
+            python3 scripts/check_android_io_compat.py "$apk"
+          done
+
+      - name: Generate the shared mobile and TV update manifest
+        run: |
+          python3 scripts/generate_update_manifest.py \
+            --repo "$GITHUB_REPOSITORY" --version-code 643 --version-name 5.5.92 --tag v5.5.92 \
+            --notes '手机版增加统一字幕弹幕面板、影片分组下载、拖动预览与精确定位、追剧与更新提醒、多源搜索聚合，并优化片库与大字体布局；原签名覆盖更新。' \
+            --asset leanback-armeabi_v7a=dist/pianduoduo-leanback-armeabi_v7a-v5.5.92.apk \
+            --asset leanback-arm64_v8a=dist/pianduoduo-leanback-arm64_v8a-v5.5.92.apk \
+            --asset mobile-armeabi_v7a=dist/pianduoduo-mobile-armeabi_v7a-v5.5.92.apk \
+            --asset mobile-arm64_v8a=dist/pianduoduo-mobile-arm64_v8a-v5.5.92.apk \
+            --output dist/latest.json
+          (cd dist && sha256sum *.apk latest.json > SHA256SUMS.txt)
+          cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
+          按选定的 3、4、6、7、8、9 项优化手机版。保留原包名和原签名，可在应用内检查更新并覆盖安装。
+
+          - 字幕与弹幕：统一显示来源、加载状态和缺失原因，集中选择、导入、重新匹配及同步偏移；离线播放器也可选择本地字幕、管理弹幕显示与同步。
+          - 下载分组：按影片显示海报、集数和已完成数量，展开剧集，整组选取，按添加时间、片名或占用空间排序；旧版下载仍可管理。
+          - 进度预览：拖动时显示真实视频关键帧，离线视频从本地缓存取帧；新增输入时间及 ±1 / ±10 秒精确定位。不支持随机读取、分段清单或无法取帧的片源保留时间定位，不整片下载来生成预览。
+          - 追剧管理：详情页添加追剧，片库进入追剧列表；支持已看/未看标记、播放至约 90% 自动标记、有更新筛选和新集通知。通知需要手动开启；后台检查当前订阅，约每 6 小时由系统调度，受网络及省电策略影响。
+          - 多源搜索：相同片名、年份及分类信息的结果合并展示，可展开选择来源；保留不同年份、季数和版本的区别，各来源分页和重试继续可用。
+          - 片库视觉：收藏、历史与追剧统一卡片样式，增加收藏/历史搜索、记录数量和空状态，优化大字体布局和操作说明。
+
+          本次界面优化针对手机版，电视版界面不变。缩略图是否可用仍取决于片源的随机读取能力和设备解码支持；字幕面板不会凭空生成片源未提供的字幕。
+
+          验证：421 项自动测试、19 项 Android 模拟器流程测试、180% 字体界面、发布构建与 Android API 兼容性检查；发布流程再次核验四个原签名安装包和 OTA 清单。
+
+          NOTES
+          printf '\nSource: %s\n' "$(cat source-commit.txt)" >> "$RUNNER_TEMP/release-notes.md"
+
+      - name: Upload verification records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TVBOX-v5.5.92-OTA-verification
+          path: |
+            verification/
+            source-commit.txt
+            app/build/test-results/
+            app/build/outputs/androidTest-results/
+            app/build/reports/lint-results-mobileArm64_v8aRelease.*
+            dist/latest.json
+            dist/SHA256SUMS.txt
+          if-no-files-found: warn
+
+      - name: Stage and verify release assets before making latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v5.5.92 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo 'v5.5.92 already exists; refusing to replace published packages.' >&2
+            exit 1
+          fi
+          gh release create v5.5.92 dist/*.apk dist/latest.json dist/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" --draft \
+            --target "$(cat source-commit.txt)" \
+            --title 'v5.5.92 · 手机追剧、预览与片库体验升级' \
+            --notes-file "$RUNNER_TEMP/release-notes.md"
+          # A draft does not have a public tag yet. Resolve it from the authenticated release list.
+          release_id="$(gh api "repos/$GITHUB_REPOSITORY/releases" --jq '.[] | select(.tag_name == "v5.5.92" and .draft == true) | .id')"
+          test -n "$release_id"
+          gh api "repos/$GITHUB_REPOSITORY/releases/$release_id" > "$RUNNER_TEMP/staged-release.json"
+          python3 - <<'VERIFY'
+          import hashlib, json, os
+          from pathlib import Path
+          release = json.loads((Path(os.environ['RUNNER_TEMP']) / 'staged-release.json').read_text())
+          assert release['draft'] and not release['prerelease']
+          remote = {a['name']: a for a in release['assets']}
+          local = {p.name: p for p in Path('dist').iterdir() if p.is_file()}
+          assert remote.keys() == local.keys()
+          for name, path in local.items():
+              assert remote[name]['size'] == path.stat().st_size, name
+              assert remote[name]['digest'] == 'sha256:' + hashlib.sha256(path.read_bytes()).hexdigest(), name
+          manifest = json.loads(Path('dist/latest.json').read_text())
+          assert manifest['versionCode'] == 643 and manifest['versionName'] == '5.5.92'
+          assert len(manifest['apks']) == 4
+          for asset in manifest['apks'].values():
+              assert remote[asset['fileName']]['digest'] == 'sha256:' + asset['sha256']
+              assert remote[asset['fileName']]['size'] == asset['size']
+          print('All six release assets match; mobile and TV OTA manifest verified.')
+          VERIFY
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$release_id" -F draft=false -f make_latest=true > /dev/null
+          echo '### Published v5.5.92 (643) with verified mobile and TV OTA assets' >> "$GITHUB_STEP_SUMMARY"
+          echo 'https://github.com/HUAIDAO1104/TVBOX/releases/tag/v5.5.92' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove signing material
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/release.keystore" local.properties
