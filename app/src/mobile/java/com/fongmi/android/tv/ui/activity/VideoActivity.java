@@ -279,6 +279,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     protected void onServiceConnected() {
         playbackReady = true;
         mBinding.detailFull.setEnabled(true);
+        mBinding.detailDownload.setEnabled(true);
         checkLand();
         checkId();
     }
@@ -311,6 +312,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         ViewCompat.setOnApplyWindowInsetsListener(mBinding.getRoot(), (v, insets) -> setStatusBar(insets));
         mKeyDown = CustomKeyDown.create(this, mBinding.player);
         mBinding.detailFull.setEnabled(false);
+        mBinding.detailDownload.setEnabled(false);
         mFrameParams = mBinding.video.getLayoutParams();
         mFrameParams.height = Math.round(getResources().getDisplayMetrics().widthPixels * 9f / 16f);
         mBinding.video.setLayoutParams(mFrameParams);
@@ -337,6 +339,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     @SuppressLint("ClickableViewAccessibility")
     protected void initEvent() {
         mBinding.detailCast.setOnClickListener(v -> onCast());
+        mBinding.detailDownload.setOnClickListener(v -> { if (mHistory != null && playbackReady) com.fongmi.android.tv.offline.OfflineActions.download(this, player()); });
         mBinding.contentToggle.setOnClickListener(v -> toggleSynopsis());
         mBinding.detailSettings.setOnClickListener(v -> { if (mHistory != null && playbackReady) onSetting(); });
         mBinding.detailKeep.setOnClickListener(v -> { if (mHistory != null) onKeep(); });

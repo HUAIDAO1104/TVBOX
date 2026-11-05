@@ -4,6 +4,13 @@
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingHorizontal="16dp" android:paddingBottom="24dp">
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:layout_marginBottom="8dp" android:text="内容与账号" android:textColor="@color/mobile_muted" android:textSize="12sp" android:paddingStart="14dp" />
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="@drawable/mobile_surface">
+                <LinearLayout android:id="@+id/downloads" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="60dp" android:layout_marginBottom="2dp" android:orientation="horizontal" android:gravity="center_vertical" android:padding="14dp" android:background="?attr/selectableItemBackground" android:foreground="?attr/selectableItemBackground">
+                    <ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_marginEnd="14dp" android:src="@drawable/ic_mobile_folder" android:importantForAccessibility="no" />
+                    <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/offline_downloads" android:textColor="@color/mobile_text" android:textSize="15sp" />
+                    </LinearLayout>
+                    <ImageView android:layout_width="18dp" android:layout_height="18dp" android:layout_marginStart="8dp" android:src="@drawable/ic_mobile_chevron" android:importantForAccessibility="no" />
+                </LinearLayout>
                 <LinearLayout android:id="@+id/repository" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="60dp" android:layout_marginBottom="2dp" android:orientation="horizontal" android:gravity="center_vertical" android:padding="14dp" android:background="?attr/selectableItemBackground" android:foreground="?attr/selectableItemBackground">
                     <ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_marginEnd="14dp" android:src="@drawable/ic_mobile_folder" android:importantForAccessibility="no" />
                     <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">

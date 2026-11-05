@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@android:color/black">
+    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/mobileToolbar" android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" app:title="离线播放" app:titleTextColor="@android:color/white" />
+    <androidx.media3.ui.PlayerView android:id="@+id/player" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" app:use_controller="true" app:resize_mode="fit" app:show_buffering="when_playing" />
+    <TextView android:id="@+id/status" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="16dp" android:paddingTop="8dp" android:textColor="@android:color/white" android:textSize="13sp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center">
+        <com.google.android.material.button.MaterialButton android:id="@+id/danmaku" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="弹幕：开" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/rotate" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="横屏／竖屏" />
+    </LinearLayout>
+</LinearLayout>

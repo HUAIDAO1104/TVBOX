@@ -17,7 +17,14 @@
         android:largeScreens="true"
         android:xlargeScreens="true" />
 
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
     <application>
+        <activity android:name=".ui.activity.OfflineDownloadsActivity" android:exported="false" />
+        <activity android:name=".ui.activity.OfflinePlayerActivity" android:exported="false" android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation" />
+        <service android:name=".offline.OfflineDownloadService" android:exported="false" android:foregroundServiceType="dataSync">
+            <intent-filter><action android:name="androidx.media3.exoplayer.downloadService.action.RESTART" /><category android:name="android.intent.category.DEFAULT" /></intent-filter>
+        </service>
         <activity android:name=".ui.activity.CloudAccountActivity" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ui.activity.RepositoryActivity" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ui.activity.RepositoryDetailActivity" />

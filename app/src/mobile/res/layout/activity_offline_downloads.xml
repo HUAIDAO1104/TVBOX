@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/mobileToolbar" android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" app:title="下载管理" app:titleTextColor="@color/mobile_text" />
+    <TextView android:id="@+id/storage" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="20dp" android:paddingVertical="8dp" android:textColor="@color/mobile_muted" android:textSize="13sp" />
+    <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/wifi" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="20dp" android:minHeight="48dp" android:text="仅非计费网络下载（通常为 Wi-Fi）" android:textColor="@color/mobile_text" android:textSize="13sp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="12dp">
+        <com.google.android.material.button.MaterialButton android:id="@+id/all" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="全部" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/active" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="下载中" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/completed" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="已完成" />
+    </LinearLayout>
+    <TextView android:id="@+id/empty" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="28dp" android:gravity="center" android:text="还没有下载\n在视频播放页点击“下载”，即可保存当前集和弹幕。" android:textColor="@color/mobile_muted" android:textSize="15sp" />
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/list" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:paddingHorizontal="16dp" android:clipToPadding="false" app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+</LinearLayout>
