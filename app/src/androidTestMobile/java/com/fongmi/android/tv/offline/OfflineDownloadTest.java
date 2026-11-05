@@ -182,7 +182,15 @@ public class OfflineDownloadTest {
             String dependency = path.contains("encrypted") ? "/key.bin" : "/init.mp4";
             assertArrayEquals(content.get(dependency), cached(id, dependency, 0, -1));
             try (ActivityScenario<OfflinePlayerActivity> playback = ActivityScenario.launch(new Intent(context, OfflinePlayerActivity.class).putExtra("id", id))) {
-                await(() -> { AtomicBoolean playing = new AtomicBoolean(); playback.onActivity(a -> { Player p = ((PlayerView)a.findViewById(R.id.player)).getPlayer(); playing.set(p != null && p.isPlaying() && p.getCurrentPosition() > 2500); }); return playing.get(); }, 20000);
+                AtomicReference<String> state = new AtomicReference<>("not started");
+                playback.onActivity(a -> ((androidx.media3.exoplayer.ExoPlayer)((PlayerView)a.findViewById(R.id.player)).getPlayer()).addAnalyticsListener(new androidx.media3.exoplayer.util.EventLogger()));
+                try {
+                    await(() -> { AtomicBoolean playing = new AtomicBoolean(); playback.onActivity(a -> {
+                        Player p = ((PlayerView)a.findViewById(R.id.player)).getPlayer();
+                        if (p != null) state.set("state=" + p.getPlaybackState() + ", position=" + p.getCurrentPosition() + ", buffered=" + p.getBufferedPosition() + ", playWhenReady=" + p.getPlayWhenReady() + ", suppression=" + p.getPlaybackSuppressionReason() + ", error=" + p.getPlayerError());
+                        playing.set(p != null && p.isPlaying() && p.getCurrentPosition() > 2500);
+                    }); return playing.get(); }, 20000);
+                } catch (AssertionError e) { throw new AssertionError(path + ": " + state.get(), e); }
             }
             assertEquals("Playback fetched an HLS dependency", before, requests.get());
         }
