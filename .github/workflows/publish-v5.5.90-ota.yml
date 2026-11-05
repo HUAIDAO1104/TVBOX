@@ -24,22 +24,12 @@ jobs:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
 
-      - name: Apply reviewed mobile offline feature
+      - name: Verify reviewed mobile offline source
         run: |
           set -euo pipefail
-          echo 'fb06d6a58131bc7b1ab3158ad16af99830fc22d4037ba465a28f3eff5dff565d  mobile-offline-downloads.patch' | sha256sum --check
-          if git apply --reverse --check mobile-offline-downloads.patch 2>/dev/null; then
-            echo 'Mobile offline feature is already present.'
-          else
-            git apply --check mobile-offline-downloads.patch
-            git apply --index mobile-offline-downloads.patch
-          fi
-          if ! git diff --cached --quiet; then
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git commit -m 'feat(mobile): download videos and danmaku for offline playback'
-            git push origin "HEAD:${{ github.ref_name }}"
-          fi
+          git merge-base --is-ancestor 463c599e69145c65e32e6568e2a5fd82a585a50f HEAD
+          test -f app/src/mobile/java/com/fongmi/android/tv/offline/OfflineStore.java
+          grep -q 'versionCode 641' app/build.gradle
           git rev-parse HEAD > source-commit.txt
 
       - uses: actions/setup-java@v4
@@ -224,6 +214,7 @@ jobs:
           printf '\nSource: %s\n' "$(cat source-commit.txt)" >> "$RUNNER_TEMP/release-notes.md"
 
       - name: Upload verification records
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: TVBOX-v5.5.90-OTA-verification
@@ -234,7 +225,7 @@ jobs:
             app/build/outputs/androidTest-results/
             dist/latest.json
             dist/SHA256SUMS.txt
-          if-no-files-found: error
+          if-no-files-found: warn
 
       - name: Stage and verify release assets before making latest
         env:
