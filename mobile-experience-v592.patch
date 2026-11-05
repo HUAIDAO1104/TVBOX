@@ -1,0 +1,1982 @@
+diff --git a/app/build.gradle b/app/build.gradle
+index 74356e7..5caad51 100644
+--- a/app/build.gradle
++++ b/app/build.gradle
+@@ -19,8 +19,8 @@ android {
+         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+         // Keep compatibility fixes on a strictly newer version so TV installers do not retain
+         // the previous APK while preserving its database for the migration chain below.
+-        versionCode 642
+-        versionName "5.5.91"
++        versionCode 643
++        versionName "5.5.92"
+         javaCompileOptions {
+             annotationProcessorOptions {
+                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
+diff --git a/app/src/androidTestMobile/java/com/fongmi/android/tv/offline/MobileExperienceTest.java b/app/src/androidTestMobile/java/com/fongmi/android/tv/offline/MobileExperienceTest.java
+index 3feb0aa..d59bbeb 100644
+--- a/app/src/androidTestMobile/java/com/fongmi/android/tv/offline/MobileExperienceTest.java
++++ b/app/src/androidTestMobile/java/com/fongmi/android/tv/offline/MobileExperienceTest.java
+@@ -40,6 +40,8 @@ public class MobileExperienceTest {
+     private androidx.core.os.LocaleListCompat previousLocales;
+     @Before public void setup() throws Exception {
+         context=ApplicationProvider.getApplicationContext();
++        context.getSharedPreferences("mobile-watchlist-v1",0).edit().clear().commit();
++        java.lang.reflect.Field watchInstance=com.fongmi.android.tv.watch.WatchlistStore.class.getDeclaredField("instance");watchInstance.setAccessible(true);watchInstance.set(null,null);
+         previousDanmaku=com.fongmi.android.tv.setting.DanmakuSetting.isLoad();
+         previousSpeed=com.fongmi.android.tv.setting.PlayerSetting.getSpeed();
+         previousLocales=androidx.appcompat.app.AppCompatDelegate.getApplicationLocales();
+@@ -122,6 +124,66 @@ public class MobileExperienceTest {
+         if(root!=null)for(android.view.accessibility.AccessibilityNodeInfo node:root.findAccessibilityNodeInfosByText("Got it"))node.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK);
+         activity.onActivity(a->{if(a.playbackBinding().control.getRoot().getVisibility()!=View.VISIBLE)a.onSingleTap();});screenshot("player-landscape");
+     }
++    @Test public void realScrubPreviewAndUnifiedCaptionPanelWork()throws Exception{
++        Intent intent=new Intent(context,VideoActivity.class).putExtra("key","mobile-ui-fixture").putExtra("id","mobile-ui-fixture").putExtra("name","星河旅途");
++        ActivityScenario<VideoActivity> activity=ActivityScenario.launch(intent);screen=activity;AtomicReference<VideoActivity> ref=new AtomicReference<>();activity.onActivity(ref::set);
++        waitFor(()->onMain(()->ref.get().playbackPlayer()!=null&&ref.get().playbackPlayer().getDuration()>0&&ref.get().offlineFlag()!=null),30000);
++        activity.onActivity(a->{a.playbackPlayer().pause();if(a.playbackBinding().control.getRoot().getVisibility()!=View.VISIBLE)a.onSingleTap();a.onSeeking(2000);});
++        waitFor(()->onMain(()->ref.get().playbackBinding().control.previewImage.getDrawable()!=null),12000);screenshot("scrub-real-frame");
++        activity.onActivity(a->{a.onSeekEnd(2000);assertEquals(View.GONE,a.playbackBinding().control.scrubPreview.getVisibility());PreciseSeekDialog.show(a,a.playbackPlayer().getPlayer());});
++        screenshot("precise-seek");InstrumentationRegistry.getInstrumentation().getUiAutomation().performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK);Thread.sleep(300);
++        activity.onActivity(PlaybackAccessDialog::show);
++        waitFor(()->onMain(()->ref.get().getSupportFragmentManager().findFragmentByTag("playback-access")!=null&&ref.get().getSupportFragmentManager().findFragmentByTag("playback-access").getView()!=null),5000);
++        activity.onActivity(a->{View panel=a.getSupportFragmentManager().findFragmentByTag("playback-access").requireView();assertTrue(((android.widget.TextView)panel.findViewById(R.id.subtitleStatus)).getText().toString().contains("未检测到"));assertTrue(panel.findViewById(R.id.subtitleChoose).isEnabled());});
++        screenshot("subtitles-and-danmaku");
++    }
++    @Test public void watchlistPersistsWatchedEpisodesAndShowsNewEpisodes()throws Exception{
++        var watch=com.fongmi.android.tv.watch.WatchlistStore.get(context);String id=com.fongmi.android.tv.watch.WatchlistStore.id(VodConfig.getCid(),"mobile-ui-fixture","watch-fixture");
++        var vod=new com.fongmi.android.tv.bean.Vod();vod.setName("星河旅途");vod.setFlags(new ArrayList<>(List.of(com.fongmi.android.tv.bean.Flag.create("高清线路","第1集$https://example.invalid/1#第2集$https://example.invalid/2"))));
++        main(()->{watch.observe(VodConfig.getCid(),"mobile-ui-fixture","watch-fixture","本地测试片库",vod);watch.follow(id,true);watch.watched(id,"第1集",true);
++            vod.setFlags(new ArrayList<>(List.of(com.fongmi.android.tv.bean.Flag.create("高清线路","第1集$https://example.invalid/1#第2集$https://example.invalid/2#第3集$https://example.invalid/3"))));assertEquals(1,watch.refresh(id,vod));});
++        ActivityScenario<WatchlistActivity> activity=ActivityScenario.launch(WatchlistActivity.class);screen=activity;
++        waitFor(()->onMain(()->!com.fongmi.android.tv.watch.WatchlistChecker.running()),20000);
++        screenshot("watchlist-updates");activity.recreate();
++        activity.onActivity(a->{assertEquals(1,watch.find(id).watchedCount());assertTrue(watch.find(id).fresh.contains("第3集"));assertTrue(a.findViewById(R.id.reminders).isShown());});
++        main(()->watch.follow(id,false));
++    }
++    @Test public void groupedDownloadsKeepSelectionAcrossCollapseAndDoNotSelectOtherFilm()throws Exception{
++        download(1);download(2);
++        main(()->{OfflineBatchQueue.Job other=new OfflineBatchQueue.Job();other.id=OfflineBatchQueue.identity("fixture","other","line","1");other.meta.title="海边日记";other.meta.episode="第1集";other.site="mobile-ui-fixture";other.flag="高清线路";other.sourceUrl="https://example.invalid/other";other.state=OfflineBatchQueue.PAUSED;OfflineBatchQueue.get(context).add(List.of(other),Set.of());});
++        ActivityScenario<OfflineDownloadsActivity> activity=ActivityScenario.launch(OfflineDownloadsActivity.class);screen=activity;Thread.sleep(500);
++        activity.onActivity(a->{androidx.recyclerview.widget.RecyclerView list=a.findViewById(R.id.list);assertEquals(2,list.getAdapter().getItemCount());list.findViewHolderForAdapterPosition(0).itemView.performClick();});
++        Thread.sleep(200);screenshot("downloads-group-expanded");
++        activity.onActivity(a->{androidx.recyclerview.widget.RecyclerView list=a.findViewById(R.id.list);assertEquals(4,list.getAdapter().getItemCount());list.findViewHolderForAdapterPosition(0).itemView.performLongClick();assertEquals("已选 2 项",((android.widget.TextView)a.findViewById(R.id.selectionCount)).getText().toString());assertFalse(a.findViewById(R.id.resumeSelected).isEnabled());});
++        screenshot("downloads-group-selection");
++    }
++    @Test public void libraryAndAggregatedSearchRemainUsableWithLargeText()throws Exception{
++        var keep=new com.fongmi.android.tv.bean.Keep();keep.setKey("mobile-ui-fixture"+com.fongmi.android.tv.db.AppDatabase.SYMBOL+"large-font-fixture");keep.setVodName("星河旅途：一场漫长的远行");keep.setSiteName("本地测试片库");keep.setCid(VodConfig.getCid());
++        String searchScope=MobileSearchSources.scope(),previousSources=com.fongmi.android.tv.setting.Setting.getSearchSources(searchScope);
++        float previous=android.provider.Settings.System.getFloat(context.getContentResolver(),android.provider.Settings.System.FONT_SCALE,1f);
++        try{
++            InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand("settings put system font_scale 1.8").close();Thread.sleep(800);
++            main(keep::save);ActivityScenario<KeepActivity> library=ActivityScenario.launch(KeepActivity.class);screen=library;Thread.sleep(500);screenshot("library-large-text");
++            library.onActivity(a->{assertTrue(a.getResources().getConfiguration().fontScale>1.7);((android.widget.EditText)a.findViewById(R.id.search)).setText("不存在的记录");});Thread.sleep(300);
++            library.onActivity(a->assertEquals(View.VISIBLE,a.findViewById(R.id.empty).getVisibility()));screenshot("library-empty-large-text");library.close();screen=null;
++            // Two real search providers return the same fixture; the actual results route must group them.
++            Site second=new Gson().fromJson("{\"key\":\"mobile-ui-fixture-2\",\"name\":\"备用测试来源\",\"type\":1,\"api\":\""+server.url("/api")+"\"}",Site.class);
++            var sources=new ArrayList<Site>((List<Site>)sitesField.get(VodConfig.get()));sources.add(second);sitesField.set(VodConfig.get(),sources);
++            com.fongmi.android.tv.setting.Setting.putSearchSources(searchScope,com.fongmi.android.tv.ui.search.SearchSourcePreference.serialize(new LinkedHashSet<>(com.fongmi.android.tv.ui.search.SearchSourcePreference.choices(sources))));
++            ActivityScenario<SearchActivity> search=ActivityScenario.launch(new Intent(context,SearchActivity.class).putExtra("keyword","星河旅途"));screen=search;AtomicReference<SearchActivity> ref=new AtomicReference<>();search.onActivity(ref::set);
++            waitFor(()->onMain(()->{for(androidx.fragment.app.Fragment f:ref.get().getSupportFragmentManager().getFragments())if(f instanceof com.fongmi.android.tv.ui.fragment.CollectFragment&&f.getView()!=null){androidx.recyclerview.widget.RecyclerView list=f.requireView().findViewById(R.id.recycler);return list!=null&&list.getAdapter()!=null&&list.getAdapter().getItemCount()==1&&((com.fongmi.android.tv.ui.adapter.SearchAdapter)list.getAdapter()).getItem(0).sources.size()==2;}return false;}),30000);
++            screenshot("search-merged-large-text");
++            search.onActivity(a->{for(androidx.fragment.app.Fragment f:a.getSupportFragmentManager().getFragments())if(f instanceof com.fongmi.android.tv.ui.fragment.CollectFragment&&f.getView()!=null){androidx.recyclerview.widget.RecyclerView list=f.requireView().findViewById(R.id.recycler);list.findViewHolderForAdapterPosition(0).itemView.performClick();}});screenshot("search-source-choice");
++        }finally{com.fongmi.android.tv.setting.Setting.putSearchSources(searchScope,previousSources);if(screen!=null){screen.close();screen=null;}main(keep::delete);InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand("settings put system font_scale "+previous).close();Thread.sleep(500);}
++    }
++    @Test public void offlinePreviewAndCaptionPanelUseOnlyLocalFiles()throws Exception{
++        String id=download(1);server.shutdown();server=null;
++        ActivityScenario<OfflinePlayerActivity> activity=ActivityScenario.launch(new Intent(context,OfflinePlayerActivity.class).putExtra("id",id));screen=activity;AtomicReference<OfflinePlayerActivity> ref=new AtomicReference<>();activity.onActivity(ref::set);
++        waitFor(()->onMain(()->{androidx.media3.ui.PlayerView view=ref.get().findViewById(R.id.player);return view.getPlayer()!=null&&view.getPlayer().getDuration()>0;}),20000);
++        activity.onActivity(a->{try{androidx.media3.ui.PlayerView view=a.findViewById(R.id.player);view.getPlayer().pause();view.showController();var method=OfflinePlayerActivity.class.getDeclaredMethod("preview",long.class);method.setAccessible(true);method.invoke(a,2000L);}catch(Exception e){throw new AssertionError(e);}});
++        waitFor(()->onMain(()->((android.widget.ImageView)ref.get().findViewById(R.id.previewImage)).getDrawable()!=null),10000);screenshot("offline-cached-preview");
++        activity.onActivity(a->a.findViewById(R.id.access).performClick());Thread.sleep(300);screenshot("offline-subtitles-and-danmaku");
++    }
+     @Test public void batchServiceResolvesAndDownloadsEpisodesOnAndroid() throws Exception {
+         ActivityScenario<OfflineDownloadsActivity> activity=ActivityScenario.launch(OfflineDownloadsActivity.class);screen=activity;
+         main(()->{
+diff --git a/app/src/main/java/com/fongmi/android/tv/api/SiteApi.java b/app/src/main/java/com/fongmi/android/tv/api/SiteApi.java
+index 6f7df8f..fc60cf0 100644
+--- a/app/src/main/java/com/fongmi/android/tv/api/SiteApi.java
++++ b/app/src/main/java/com/fongmi/android/tv/api/SiteApi.java
+@@ -119,6 +119,15 @@ public class SiteApi {
+ 
+     @NonNull
+     public static Result detailContent(@NonNull String key, @NonNull String id) throws Exception {
++        return detailContent(key, id, true);
++    }
++
++    /** Read-only catalog query for mobile watch reminders; no active source extraction. */
++    public static Result catalogContent(@NonNull String key, @NonNull String id) throws Exception {
++        return detailContent(key, id, false);
++    }
++
++    private static Result detailContent(@NonNull String key, @NonNull String id, boolean extract) throws Exception {
+         SpiderDebug.log("detail", "key=%s,id=%s", key, id);
+         Site site = VodConfig.get().getSite(key);
+         if (site.isEmpty() && PUSH.equals(key)) {
+@@ -128,13 +137,15 @@ public class SiteApi {
+             vod.setPlayUrl(id);
+             vod.setPlayFrom(ResUtil.getString(R.string.push));
+             vod.setPic(ResUtil.getString(R.string.push_image));
+-            Source.get().parse(vod.setFlags());
++            vod.setFlags();
++            if (extract) Source.get().parse(vod);
+             return Result.vod(vod);
+         } else if (isSpider(site)) {
+             String detailContent = site.recent().spider().detailContent(Arrays.asList(id));
+             SpiderDebug.log("detail", detailContent);
+             Result result = Result.fromJson(detailContent);
+-            Source.get().parse(result.getVod().setFlags());
++            result.getVod().setFlags();
++            if (extract) Source.get().parse(result.getVod());
+             return result;
+         } else {
+             ArrayMap<String, String> params = new ArrayMap<>();
+@@ -143,7 +154,8 @@ public class SiteApi {
+             String detailContent = call(site, params);
+             SpiderDebug.log("detail", detailContent);
+             Result result = Result.fromType(site.getType(), detailContent);
+-            Source.get().parse(result.getVod().setFlags());
++            result.getVod().setFlags();
++            if (extract) Source.get().parse(result.getVod());
+             return result;
+         }
+     }
+diff --git a/app/src/main/java/com/fongmi/android/tv/player/PlayerManager.java b/app/src/main/java/com/fongmi/android/tv/player/PlayerManager.java
+index 1e6be65..62e26f6 100644
+--- a/app/src/main/java/com/fongmi/android/tv/player/PlayerManager.java
++++ b/app/src/main/java/com/fongmi/android/tv/player/PlayerManager.java
+@@ -57,6 +57,8 @@ public class PlayerManager implements ParseCallback {
+     private Player player;
+ 
+     private DanmakuConfig danmakuConfig;
++    private volatile DanmakuStatus lastDanmakuStatus = DanmakuStatus.hidden();
++    public DanmakuStatus getDanmakuStatus() { return lastDanmakuStatus; }
+     private long pendingStartPositionMs;
+     private boolean danmakuEnabled;
+     private boolean initTrack;
+@@ -290,6 +292,7 @@ public class PlayerManager implements ParseCallback {
+ 
+     public void notifyDanmakuStatus(DanmakuStatus status) {
+         if (status == null) return;
++        lastDanmakuStatus = status;
+         App.post(() -> callback.onDanmakuStatusChanged(status));
+     }
+ 
+diff --git a/app/src/mobile/AndroidManifest.xml b/app/src/mobile/AndroidManifest.xml
+index df2250b..76f1db7 100644
+--- a/app/src/mobile/AndroidManifest.xml
++++ b/app/src/mobile/AndroidManifest.xml
+@@ -19,7 +19,10 @@
+ 
+     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+ 
++    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+     <application>
++        <activity android:name=".ui.activity.WatchlistActivity" android:exported="false" />
++        <service android:name=".watch.WatchlistJob" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="false" />
+         <service android:name=".offline.OfflineBatchService" android:exported="false" android:foregroundServiceType="dataSync" />
+         <activity android:name=".ui.activity.OfflineDownloadsActivity" android:exported="false" />
+         <activity android:name=".ui.activity.OfflinePlayerActivity" android:exported="false" android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation" />
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/offline/OfflineActions.java b/app/src/mobile/java/com/fongmi/android/tv/offline/OfflineActions.java
+index 46c4c1d..783706f 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/offline/OfflineActions.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/offline/OfflineActions.java
+@@ -44,6 +44,7 @@ public final class OfflineActions {
+         MediaItem item = player.getCurrentMediaItem();
+         MediaMetadata metadata = player.getMetadata();
+         if (metadata != null) {
++            if (metadata.artworkUri != null) meta.poster = metadata.artworkUri.toString();
+             if (metadata.title != null) meta.title = metadata.title.toString();
+             if (metadata.artist != null) meta.episode = metadata.artist.toString();
+         }
+@@ -54,6 +55,7 @@ public final class OfflineActions {
+             value.uri = sub.uri.toString(); value.mime = sub.mimeType; value.label = sub.label;
+             value.language = sub.language; value.selectionFlags = sub.selectionFlags; meta.subtitles.add(value);
+         }
++        meta.addedAt = System.currentTimeMillis();
+         return meta;
+     }
+ }
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/offline/OfflineMetadata.java b/app/src/mobile/java/com/fongmi/android/tv/offline/OfflineMetadata.java
+index 3534abd..4b32ba1 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/offline/OfflineMetadata.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/offline/OfflineMetadata.java
+@@ -13,6 +13,10 @@ import java.util.TreeMap;
+ public final class OfflineMetadata {
+     public String title = "视频";
+     public String episode = "";
++    public String showId = "", poster = "", sourceName = "";
++    public long addedAt;
++    public int episodeOrder;
++    public String groupKey() { return showId == null || showId.isEmpty() ? "legacy:" + title : showId; }
+     public String sourceId = "";
+     public String danmaku = "";
+     public Map<String, String> headers = new TreeMap<>();
+@@ -36,6 +40,9 @@ public final class OfflineMetadata {
+                 if (value.episode == null) value.episode = "";
+                 if (value.danmaku == null) value.danmaku = "";
+                 if (value.sourceId == null) value.sourceId = "";
++                if (value.showId == null) value.showId = "";
++                if (value.poster == null) value.poster = "";
++                if (value.sourceName == null) value.sourceName = "";
+                 return value;
+             }
+         } catch (RuntimeException ignored) { }
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/player/preview/PreviewDataSource.java b/app/src/mobile/java/com/fongmi/android/tv/player/preview/PreviewDataSource.java
+new file mode 100644
+index 0000000..153d542
+--- /dev/null
++++ b/app/src/mobile/java/com/fongmi/android/tv/player/preview/PreviewDataSource.java
+@@ -0,0 +1,56 @@
++package com.fongmi.android.tv.player.preview;
++
++import android.media.MediaDataSource;
++import android.net.Uri;
++import android.os.SystemClock;
++import androidx.media3.datasource.*;
++import java.io.IOException;
++import java.util.*;
++import java.util.concurrent.TimeUnit;
++import okhttp3.*;
++
++/** Random access only: never skip/download a movie when an origin ignores Range. */
++public final class PreviewDataSource extends MediaDataSource {
++    private static final int PAGE=128*1024, MAX_BYTES=8*1024*1024;
++    private static final OkHttpClient HTTP=new OkHttpClient.Builder().connectTimeout(2,TimeUnit.SECONDS).readTimeout(2,TimeUnit.SECONDS).callTimeout(3,TimeUnit.SECONDS).build();
++    private final Uri uri;private final Map<String,String> headers;private final DataSource.Factory local;
++    private final LinkedHashMap<Long,byte[]> pages=new LinkedHashMap<>(16,.75f,true);
++    private final long deadline=SystemClock.elapsedRealtime()+6000;
++    private volatile boolean cancelled;private volatile Call call;private long size;private int bytes,requests;
++    public PreviewDataSource(Uri uri,Map<String,String> headers,DataSource.Factory local,long size){this.uri=uri;this.headers=new HashMap<>(headers);this.local=local;this.size=size>0?size:-1;}
++    private void check()throws IOException{if(cancelled||SystemClock.elapsedRealtime()>deadline||bytes>=MAX_BYTES||requests>=40)throw new IOException("Preview budget exhausted");}
++    @Override public synchronized int readAt(long position,byte[] buffer,int offset,int length)throws IOException{
++        check();if(position<0||offset<0||length<0||offset>buffer.length-length)throw new IOException("Invalid read");if(length==0)return 0;if(size>=0&&position>=size)return -1;
++        long start=position/PAGE*PAGE;byte[] page=pages.get(start);
++        if(page==null){page=fetch(start);pages.put(start,page);while(pages.size()>16)pages.remove(pages.keySet().iterator().next());}
++        int within=(int)(position-start);if(within>=page.length)return -1;int count=Math.min(length,page.length-within);System.arraycopy(page,within,buffer,offset,count);return count;
++    }
++    private byte[] fetch(long position)throws IOException{
++        check();requests++;int amount=(int)(size>0?Math.min(PAGE,size-position):PAGE);if(amount<=0)return new byte[0];
++        byte[] result=new byte[amount];int count=0;
++        if(local!=null){
++            DataSource source=local.createDataSource();
++            try{long remaining=source.open(new DataSpec.Builder().setUri(uri).setPosition(position).setLength(size>0?amount:androidx.media3.common.C.LENGTH_UNSET).build());if(size<0&&remaining>=0)size=position+remaining;
++                while(count<amount){check();int n=source.read(result,count,amount-count);if(n<0)break;if(n==0)throw new IOException("Empty read");count+=n;bytes+=n;}
++            }finally{source.close();}
++        }else{
++            Request.Builder builder=new Request.Builder().url(uri.toString());headers.forEach((k,v)->{if(!k.equalsIgnoreCase("Range")&&!k.equalsIgnoreCase("Accept-Encoding"))builder.header(k,v);});
++            builder.header("Range","bytes="+position+"-"+(position+amount-1)).header("Accept-Encoding","identity");
++            call=HTTP.newCall(builder.build());
++            try(Response response=call.execute()){
++                if(response.body()==null)throw new IOException("No preview data");
++                if(response.code()==206){
++                    String range=response.header("Content-Range","");java.util.regex.Matcher matcher=java.util.regex.Pattern.compile("bytes (\\d+)-(\\d+)/(\\d+)").matcher(range);
++                    if(!matcher.matches()||Long.parseLong(matcher.group(1))!=position)throw new IOException("Invalid range");
++                    long end=Long.parseLong(matcher.group(2)),total=Long.parseLong(matcher.group(3));if(end<position||total<=end)throw new IOException("Invalid range");size=total;
++                }else if(response.code()==200&&position==0&&response.body().contentLength()>0&&response.body().contentLength()<=PAGE){size=response.body().contentLength();}
++                else throw new IOException("Random access unavailable");
++                var stream=response.body().byteStream();while(count<amount){check();int n=stream.read(result,count,amount-count);if(n<0)break;count+=n;bytes+=n;}
++            }finally{call=null;}
++        }
++        return Arrays.copyOf(result,count);
++    }
++    @Override public synchronized long getSize()throws IOException{if(size<0){byte[] first=fetch(0);pages.put(0L,first);}return size;}
++    public void cancel(){cancelled=true;Call current=call;if(current!=null)current.cancel();}
++    @Override public void close(){cancel();}
++}
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/player/preview/ScrubPreview.java b/app/src/mobile/java/com/fongmi/android/tv/player/preview/ScrubPreview.java
+new file mode 100644
+index 0000000..bda683e
+--- /dev/null
++++ b/app/src/mobile/java/com/fongmi/android/tv/player/preview/ScrubPreview.java
+@@ -0,0 +1,49 @@
++package com.fongmi.android.tv.player.preview;
++
++import android.graphics.Bitmap;
++import android.media.MediaMetadataRetriever;
++import android.net.Uri;
++import android.os.*;
++import android.view.View;
++import android.widget.*;
++import androidx.media3.datasource.DataSource;
++import java.util.*;
++import java.util.concurrent.*;
++
++/** One worker, one pending target; stale frames can never overwrite the latest seek position. */
++public final class ScrubPreview implements AutoCloseable {
++    private final View root;private final ImageView image;private final TextView label;
++    private final Handler main=new Handler(Looper.getMainLooper());
++    private final ThreadPoolExecutor worker=new ThreadPoolExecutor(1,1,0,TimeUnit.SECONDS,new ArrayBlockingQueue<>(1),new ThreadPoolExecutor.DiscardOldestPolicy());
++    private final android.util.LruCache<String,Bitmap> cache=new android.util.LruCache<>(8);
++    private volatile PreviewDataSource active;private volatile int generation;private volatile boolean closed;private Runnable pending;
++    public ScrubPreview(View root,ImageView image,TextView label){this.root=root;this.image=image;this.label=label;}
++    public static boolean supported(Uri uri,String mime){String path=Objects.toString(uri.getPath(),"").toLowerCase(Locale.ROOT);String type=Objects.toString(mime,"").toLowerCase(Locale.ROOT);
++        return !path.endsWith(".m3u8")&&!path.endsWith(".mpd")&&!type.contains("mpegurl")&&!type.contains("dash")&&List.of("http","https","file","content").contains(uri.getScheme());}
++    public void show(Uri uri,Map<String,String> headers,String mime,long position,DataSource.Factory local,long size){
++        if(closed)return;int token=++generation;cancelRequest();root.setVisibility(View.VISIBLE);image.setImageDrawable(null);image.setVisibility(View.GONE);
++        long target=Math.max(0,position);String time=time(target);label.setText(time+" · 正在取预览画面");
++        if(uri==null||!supported(uri,mime)){label.setText(time+" · 此片源仅支持时间定位");return;}
++        String key=com.fongmi.android.tv.offline.OfflineMetadata.id(uri.toString(),headers)+":"+(target/5000);
++        Bitmap cached=cache.get(key);if(cached!=null){display(cached,time);return;}
++        Map<String,String> auth=new HashMap<>(headers);
++        DataSource.Factory factory=local!=null?local:List.of("file","content").contains(uri.getScheme())?new androidx.media3.datasource.DefaultDataSource.Factory(root.getContext()):null;
++        pending=()->worker.execute(()->{
++            Bitmap frame=null;PreviewDataSource data=new PreviewDataSource(uri,auth,factory,size);active=data;
++            MediaMetadataRetriever retriever=new MediaMetadataRetriever();
++            try{
++                if(closed||token!=generation)return;
++                retriever.setDataSource(data);
++                if(Build.VERSION.SDK_INT>=27)frame=retriever.getScaledFrameAtTime(target*1000,MediaMetadataRetriever.OPTION_CLOSEST_SYNC,320,180);
++                else {Bitmap full=retriever.getFrameAtTime(target*1000,MediaMetadataRetriever.OPTION_CLOSEST_SYNC);if(full!=null){frame=Bitmap.createScaledBitmap(full,320,Math.max(1,full.getHeight()*320/full.getWidth()),true);if(frame!=full)full.recycle();}}
++            }catch(Exception|OutOfMemoryError ignored){}finally{try{retriever.release();}catch(Exception ignored){}data.close();if(active==data)active=null;}
++            Bitmap result=frame;
++            main.post(()->{if(closed||token!=generation){if(result!=null)result.recycle();return;}if(result!=null){cache.put(key,result);display(result,time);}else label.setText(time+" · 暂无预览，松手即可跳转");});
++        });main.postDelayed(pending,250);
++    }
++    private void display(Bitmap bitmap,String time){image.setImageBitmap(bitmap);image.setVisibility(View.VISIBLE);label.setText(time+" · 附近关键帧");}
++    public static String time(long ms){long sec=Math.max(0,ms)/1000;return sec>=3600?String.format(Locale.ROOT,"%d:%02d:%02d",sec/3600,sec/60%60,sec%60):String.format(Locale.ROOT,"%02d:%02d",sec/60,sec%60);}
++    private void cancelRequest(){if(pending!=null)main.removeCallbacks(pending);worker.getQueue().clear();PreviewDataSource current=active;if(current!=null)current.cancel();}
++    public void hide(){generation++;cancelRequest();root.setVisibility(View.GONE);image.setImageDrawable(null);}
++    @Override public void close(){closed=true;hide();worker.shutdownNow();cache.evictAll();}
++}
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/activity/HistoryActivity.java b/app/src/mobile/java/com/fongmi/android/tv/ui/activity/HistoryActivity.java
+index 6fb2895..b5fdbb8 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/ui/activity/HistoryActivity.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/activity/HistoryActivity.java
+@@ -51,19 +51,29 @@ public class HistoryActivity extends BaseActivity implements HistoryAdapter.OnCl
+         setSupportActionBar(mBinding.toolbar);
+         setRecyclerView();
+         getHistory();
++        mBinding.search.addTextChangedListener(new android.text.TextWatcher() {
++            public void beforeTextChanged(CharSequence s,int st,int c,int a){}
++            public void onTextChanged(CharSequence s,int st,int b,int c){getHistory();}
++            public void afterTextChanged(android.text.Editable e){}
++        });
+     }
+ 
+     private void setRecyclerView() {
+-        mBinding.recycler.setHasFixedSize(true);
+-        mBinding.recycler.setLayoutManager(new GridLayoutManager(this, Product.getColumn(this)));
++        mBinding.recycler.setItemAnimator(null);
++        mBinding.recycler.setLayoutManager(new GridLayoutManager(this, getResources().getConfiguration().screenWidthDp / getResources().getConfiguration().fontScale >= 700 ? 2 : 1));
+         mBinding.recycler.setAdapter(mAdapter = new HistoryAdapter(this));
+         mAdapter.setSize(Product.getSpec(this));
+     }
+ 
+     private void getHistory() {
+-        mAdapter.setItems(History.get(), (hasChange) -> {
+-            mBinding.progressLayout.showContent(true, mAdapter.getItemCount());
+-            if (hasChange) mBinding.recycler.scrollToPosition(0);
++        String query=mBinding.search.getText().toString().trim().toLowerCase(java.util.Locale.ROOT);
++        var all=History.get();
++        var visible=all.stream().filter(item -> (item.getVodName()+" "+item.getSiteName()).toLowerCase(java.util.Locale.ROOT).contains(query)).toList();
++        mAdapter.setItems(visible, () -> {
++            mBinding.progressLayout.showContent();
++            mBinding.empty.setVisibility(visible.isEmpty()?android.view.View.VISIBLE:android.view.View.GONE);
++            mBinding.empty.setText(query.isEmpty()?"还没有观看记录\n播放影片后，会在这里保留上次看到的位置。":"没有找到匹配记录\n试试其他片名或来源名称。");
++            mBinding.summary.setText("共 "+all.size()+" 部"+(query.isEmpty()?" · 点击继续观看，长按管理":" · 找到 "+visible.size()+" 部"));
+         });
+     }
+ 
+@@ -73,7 +83,7 @@ public class HistoryActivity extends BaseActivity implements HistoryAdapter.OnCl
+ 
+     private void onDelete() {
+         if (mAdapter.isDelete()) {
+-            DialogGlass.show(new MaterialAlertDialogBuilder(this).setTitle(R.string.dialog_delete_record).setMessage(R.string.dialog_delete_history).setNegativeButton(R.string.dialog_negative, null).setPositiveButton(R.string.dialog_positive, (dialog, which) -> mAdapter.clear()));
++            DialogGlass.show(new MaterialAlertDialogBuilder(this).setTitle(R.string.dialog_delete_record).setMessage(R.string.dialog_delete_history).setNegativeButton(R.string.dialog_negative, null).setPositiveButton(R.string.dialog_positive, (dialog, which) -> { mAdapter.clear(); getHistory(); }));
+         } else if (mAdapter.getItemCount() > 0) {
+             mAdapter.setDelete(true);
+         }
+@@ -91,9 +101,8 @@ public class HistoryActivity extends BaseActivity implements HistoryAdapter.OnCl
+ 
+     @Override
+     public void onItemDelete(History item) {
+-        mAdapter.remove(item.delete(), () -> {
+-            if (mAdapter.getItemCount() == 0) mAdapter.setDelete(false);
+-        });
++        new MaterialAlertDialogBuilder(this).setTitle("移除这条历史？").setMessage(item.getVodName())
++            .setNegativeButton("取消",null).setPositiveButton("移除",(d,w)->{item.delete();getHistory();}).show();
+     }
+ 
+     @Override
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/activity/HomeActivity.java b/app/src/mobile/java/com/fongmi/android/tv/ui/activity/HomeActivity.java
+index ceb7e6b..71db683 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/ui/activity/HomeActivity.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/activity/HomeActivity.java
+@@ -141,6 +141,8 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
+         return new Callback() {
+             @Override
+             public void success() {
++                com.fongmi.android.tv.watch.WatchlistJob.schedule(HomeActivity.this);
++                com.fongmi.android.tv.watch.WatchlistChecker.check(HomeActivity.this,false,()->{});
+                 checkAction(getIntent());
+             }
+ 
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/activity/KeepActivity.java b/app/src/mobile/java/com/fongmi/android/tv/ui/activity/KeepActivity.java
+index c008ae4..dd67ade 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/ui/activity/KeepActivity.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/activity/KeepActivity.java
+@@ -55,17 +55,30 @@ public class KeepActivity extends BaseActivity implements KeepAdapter.OnClickLis
+         setSupportActionBar(mBinding.toolbar);
+         setRecyclerView();
+         getKeep();
++        mBinding.search.addTextChangedListener(new android.text.TextWatcher() {
++            public void beforeTextChanged(CharSequence s,int st,int c,int a){}
++            public void onTextChanged(CharSequence s,int st,int b,int c){getKeep();}
++            public void afterTextChanged(android.text.Editable e){}
++        });
+     }
+ 
+     private void setRecyclerView() {
+-        mBinding.recycler.setHasFixedSize(true);
+-        mBinding.recycler.setLayoutManager(new GridLayoutManager(this, Product.getColumn(this)));
++        mBinding.recycler.setItemAnimator(null);
++        mBinding.recycler.setLayoutManager(new GridLayoutManager(this, getResources().getConfiguration().screenWidthDp / getResources().getConfiguration().fontScale >= 700 ? 2 : 1));
+         mBinding.recycler.setAdapter(mAdapter = new KeepAdapter(this));
+         mAdapter.setSize(Product.getSpec(this));
+     }
+ 
+     private void getKeep() {
+-        mAdapter.setItems(Keep.getVod(), () -> mBinding.progressLayout.showContent(true, mAdapter.getItemCount()));
++        String query=mBinding.search.getText().toString().trim().toLowerCase(java.util.Locale.ROOT);
++        var all=Keep.getVod();
++        var visible=all.stream().filter(item -> (item.getVodName()+" "+item.getSiteName()).toLowerCase(java.util.Locale.ROOT).contains(query)).toList();
++        mAdapter.setItems(visible, () -> {
++            mBinding.progressLayout.showContent();
++            mBinding.empty.setVisibility(visible.isEmpty()?android.view.View.VISIBLE:android.view.View.GONE);
++            mBinding.empty.setText(query.isEmpty()?"还没有收藏的影片\n在播放页点击收藏，想看的影片就会出现在这里。":"没有找到匹配记录\n试试其他片名或来源名称。");
++            mBinding.summary.setText("共 "+all.size()+" 部"+(query.isEmpty()?" · 点击播放，长按管理":" · 找到 "+visible.size()+" 部"));
++        });
+     }
+ 
+     private void onSync() {
+@@ -74,7 +87,7 @@ public class KeepActivity extends BaseActivity implements KeepAdapter.OnClickLis
+ 
+     private void onDelete() {
+         if (mAdapter.isDelete()) {
+-            DialogGlass.show(new MaterialAlertDialogBuilder(this).setTitle(R.string.dialog_delete_record).setMessage(R.string.dialog_delete_keep).setNegativeButton(R.string.dialog_negative, null).setPositiveButton(R.string.dialog_positive, (dialog, which) -> mAdapter.clear()));
++            DialogGlass.show(new MaterialAlertDialogBuilder(this).setTitle(R.string.dialog_delete_record).setMessage(R.string.dialog_delete_keep).setNegativeButton(R.string.dialog_negative, null).setPositiveButton(R.string.dialog_positive, (dialog, which) -> { mAdapter.clear(); getKeep(); }));
+         } else if (mAdapter.getItemCount() > 0) {
+             mAdapter.setDelete(true);
+         }
+@@ -109,9 +122,8 @@ public class KeepActivity extends BaseActivity implements KeepAdapter.OnClickLis
+ 
+     @Override
+     public void onItemDelete(Keep item) {
+-        mAdapter.remove(item.delete(), () -> {
+-            if (mAdapter.getItemCount() == 0) mAdapter.setDelete(false);
+-        });
++        new MaterialAlertDialogBuilder(this).setTitle("移除这条收藏？").setMessage(item.getVodName())
++            .setNegativeButton("取消",null).setPositiveButton("移除",(d,w)->{item.delete();getKeep();}).show();
+     }
+ 
+     @Override
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/activity/OfflineDownloadsActivity.java b/app/src/mobile/java/com/fongmi/android/tv/ui/activity/OfflineDownloadsActivity.java
+index c07816a..46a4780 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/ui/activity/OfflineDownloadsActivity.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/activity/OfflineDownloadsActivity.java
+@@ -32,7 +32,16 @@ public final class OfflineDownloadsActivity extends BaseActivity {
+     private final Map<String,long[]> samples = new HashMap<>();
+     private final Map<String,Long> rates = new HashMap<>();
+     private final Adapter adapter = new Adapter();
+-    private int filter;
++    private int filter, sorting;
++    private final Set<String> expanded = new HashSet<>();
++    private final List<Object> display = new ArrayList<>();
++    private static final String[] SORTS = {"最近添加", "影片名称", "占用空间"};
++    private static final class Group {
++        final String key; final List<Row> rows=new ArrayList<>();
++        Group(String key) { this.key=key; }
++        long bytes(){long result=0;for(Row row:rows)if(row.download!=null)result+=row.download.getBytesDownloaded();return result;}
++        long recent(){long result=0;for(Row row:rows)result=Math.max(result,row.meta.addedAt>0?row.meta.addedAt:row.download!=null?row.download.startTimeMs:0);return result;}
++    }
+     private String importId;
+     private boolean editing;
+     private final Runnable tick = new Runnable() { public void run() { refresh(); handler.postDelayed(this, 1000); } };
+@@ -54,7 +63,9 @@ public final class OfflineDownloadsActivity extends BaseActivity {
+     @Override protected ViewBinding getBinding() { return binding = ActivityOfflineDownloadsBinding.inflate(getLayoutInflater()); }
+     @Override protected void initView(Bundle state) {
+         store = OfflineStore.get(this); queue=OfflineBatchQueue.get(this);
++        sorting=getPreferences(0).getInt("sorting",0); if(sorting<0||sorting>=SORTS.length)sorting=0;
+         if (state != null) {
++            ArrayList<String> open=state.getStringArrayList("expanded");if(open!=null)expanded.addAll(open);
+             importId=state.getString("importId"); filter=state.getInt("filter"); editing=state.getBoolean("editing");
+             ArrayList<String> saved=state.getStringArrayList("selected"); if(saved!=null) selected.addAll(saved);
+             binding.search.setText(state.getString("search", ""));
+@@ -63,6 +74,9 @@ public final class OfflineDownloadsActivity extends BaseActivity {
+         DownloadService.start(this, OfflineDownloadService.class); OfflineBatchService.kick(this);
+     }
+     @Override protected void initEvent() {
++        binding.sort.setOnClickListener(v->new MaterialAlertDialogBuilder(this).setTitle("下载排序").setSingleChoiceItems(SORTS,sorting,(d,which)->{
++            sorting=which;getPreferences(0).edit().putInt("sorting",which).apply();refresh();d.dismiss();
++        }).setNegativeButton("取消",null).show());
+         binding.wifi.setOnCheckedChangeListener((button, checked) -> { store.setWifiOnly(checked); OfflineBatchService.kick(this); });
+         binding.all.setOnClickListener(v -> filter(0)); binding.active.setOnClickListener(v -> filter(1));
+         binding.completed.setOnClickListener(v -> filter(2)); binding.failed.setOnClickListener(v -> filter(3));
+@@ -85,7 +99,7 @@ public final class OfflineDownloadsActivity extends BaseActivity {
+     @Override protected void onStop() { handler.removeCallbacks(tick); super.onStop(); }
+     @Override protected void onBackInvoked() { if(editing){editing=false;selected.clear();refresh();}else super.onBackInvoked(); }
+     @Override protected void onSaveInstanceState(Bundle state) {
+-        state.putString("importId",importId);state.putInt("filter",filter);state.putBoolean("editing",editing);
++        state.putStringArrayList("expanded",new ArrayList<>(expanded));state.putString("importId",importId);state.putInt("filter",filter);state.putBoolean("editing",editing);
+         state.putStringArrayList("selected",new ArrayList<>(selected));state.putString("search",binding.search.getText().toString());super.onSaveInstanceState(state);
+     }
+     private void toast(String text) { if (!isDestroyed()) Toast.makeText(this,text,Toast.LENGTH_LONG).show(); }
+@@ -118,10 +132,35 @@ public final class OfflineDownloadsActivity extends BaseActivity {
+         binding.storage.setText(size(used)+"  已下载");binding.storageHint.setText(completed+" 集可离线观看 · 设备可用 "+size(free));
+         binding.storageProgress.setProgress(total>0?(int)Math.min(100,used*100/total):0);
+         binding.manage.setText(editing?"完成":"管理");binding.manage.setEnabled(editing||!all.isEmpty());
+-        binding.overview.setVisibility(editing?View.GONE:View.VISIBLE);binding.selectionBar.setVisibility(editing?View.VISIBLE:View.GONE);binding.batchBar.setVisibility(editing?View.VISIBLE:View.GONE);
++        binding.overview.setVisibility(editing||getResources().getConfiguration().screenHeightDp<500?View.GONE:View.VISIBLE);binding.selectionBar.setVisibility(editing?View.VISIBLE:View.GONE);binding.batchBar.setVisibility(editing?View.VISIBLE:View.GONE);
+         binding.selectionCount.setText("已选 "+selected.size()+" 项");binding.selectAll.setText(!visible.isEmpty()&&selected.containsAll(visible)?"取消全选":"全选当前列表");
+         boolean pause=false,resume=false;for(Row r:items)if(selected.contains(r.id)){pause|=!r.complete()&&!r.paused()&&!r.failed()&&!r.removing();resume|=r.paused()||r.failed();}
+-        binding.pauseSelected.setEnabled(pause);binding.resumeSelected.setEnabled(resume);binding.deleteSelected.setEnabled(!selected.isEmpty());adapter.notifyDataSetChanged();
++        binding.pauseSelected.setEnabled(pause);binding.resumeSelected.setEnabled(resume);binding.deleteSelected.setEnabled(!selected.isEmpty());rebuildGroups();adapter.notifyDataSetChanged();
++    }
++    private void rebuildGroups() {
++        Map<String,Group> groups=new LinkedHashMap<>();
++        for(Row row:items)groups.computeIfAbsent(row.meta.groupKey(),Group::new).rows.add(row);
++        List<Group> ordered=new ArrayList<>(groups.values());
++        if(sorting==1)ordered.sort(Comparator.comparing(g->g.rows.get(0).meta.title,java.text.Collator.getInstance(Locale.CHINA)));
++        else if(sorting==2)ordered.sort(Comparator.comparingLong(Group::bytes).reversed());
++        else ordered.sort(Comparator.comparingLong(Group::recent).reversed());
++        display.clear();
++        for(Group group:ordered){
++            group.rows.sort(Comparator.comparingInt(this::episodeOrder));
++            display.add(group);if(expanded.contains(group.key))display.addAll(group.rows);
++        }
++        binding.sort.setText(ordered.size()+" 部 · "+SORTS[sorting]+" ↕");
++    }
++    private int episodeOrder(Row row){
++        if(!row.meta.showId.isEmpty())return row.meta.episodeOrder;
++        java.util.regex.Matcher number=java.util.regex.Pattern.compile("\\d+").matcher(row.meta.episode);
++        try{return number.find()?Integer.parseInt(number.group()):Integer.MAX_VALUE;}catch(NumberFormatException e){return Integer.MAX_VALUE;}
++    }
++    private void groupClick(Group group){
++        if(editing){Set<String> ids=new HashSet<>();for(Row r:group.rows)if(!r.removing())ids.add(r.id);
++            if(selected.containsAll(ids))selected.removeAll(ids);else selected.addAll(ids);
++        }else if(!expanded.add(group.key))expanded.remove(group.key);
++        refresh();
+     }
+     private String state(Row row) {
+         if(row.job!=null){switch(row.job.state){case OfflineBatchQueue.PREPARING:return "正在获取下载信息";case OfflineBatchQueue.PAUSED:return "已暂停 · 尚未下载";case OfflineBatchQueue.FAILED:return row.job.error;default:return "等待准备下载";}}
+@@ -169,12 +208,25 @@ public final class OfflineDownloadsActivity extends BaseActivity {
+         new MaterialAlertDialogBuilder(this).setTitle(OfflineMetadata.decode(item.request.data).title)
+                 .setItems(labels.toArray(new String[0]), (dialog, which) -> actions.get(which).run()).show();
+     }
+-    private final class Adapter extends RecyclerView.Adapter<Holder> {
+-        Adapter(){setHasStableIds(true);}
+-        @Override public long getItemId(int p){Row r=items.get(p);return Long.parseLong(r.id.substring(2,17),16)+(r.job==null?0:Long.MIN_VALUE);}
+-        @NonNull public Holder onCreateViewHolder(@NonNull ViewGroup parent,int type){return new Holder(AdapterOfflineDownloadBinding.inflate(LayoutInflater.from(parent.getContext()),parent,false));}
+-        public void onBindViewHolder(@NonNull Holder h,int position){
+-            Row r=items.get(position);h.view.title.setText(r.meta.title);h.view.episode.setText(r.meta.episode);h.view.status.setText(state(r));
++    private final class Adapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
++        @Override public int getItemViewType(int position){return display.get(position) instanceof Group?1:0;}
++        @NonNull public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent,int type){
++            return type==1?new GroupHolder(AdapterOfflineGroupBinding.inflate(LayoutInflater.from(parent.getContext()),parent,false)):new Holder(AdapterOfflineDownloadBinding.inflate(LayoutInflater.from(parent.getContext()),parent,false));
++        }
++        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder,int position){
++            if(holder instanceof GroupHolder h){
++                Group group=(Group)display.get(position);OfflineMetadata meta=group.rows.get(0).meta;
++                h.view.title.setText(meta.title);long completed=group.rows.stream().filter(Row::complete).count();
++                h.view.summary.setText(group.rows.size()+" 集 · "+completed+" 集可播放 · "+size(group.bytes()));
++                long chosen=group.rows.stream().filter(row->selected.contains(row.id)).count();
++                h.view.check.setVisibility(editing?View.VISIBLE:View.GONE);h.view.check.setChecked(chosen>0&&chosen==group.rows.stream().filter(row->!row.removing()).count());
++                h.view.expand.setText(editing?"已选 "+chosen+" 集 · 点击整组选取":expanded.contains(group.key)?"收起剧集 ⌃":"查看剧集 ⌄");
++                com.fongmi.android.tv.utils.ImgUtil.load(meta.title,meta.poster,h.view.poster);
++                h.view.getRoot().setContentDescription(meta.title+"，"+h.view.summary.getText()+"，"+h.view.expand.getText());
++                h.view.getRoot().setOnClickListener(v->groupClick(group));
++                h.view.getRoot().setOnLongClickListener(v->{editing=true;for(Row row:group.rows)if(!row.removing())selected.add(row.id);refresh();return true;});return;
++            }
++            Holder h=(Holder)holder;Row r=(Row)display.get(position);h.view.title.setText(r.meta.episode.isEmpty()?r.meta.title:r.meta.episode);h.view.episode.setText(r.meta.sourceName);h.view.episode.setVisibility(r.meta.sourceName.isEmpty()?View.GONE:View.VISIBLE);h.view.cover.setVisibility(View.GONE);h.view.status.setText(state(r));
+             h.view.status.setTextColor(r.failed()?ResUtil.getColor(R.color.mobile_accent):r.complete()?android.graphics.Color.parseColor("#71D5B0"):ResUtil.getColor(R.color.mobile_muted));
+             h.view.cover.setText(r.meta.title.isEmpty()?"影片":r.meta.title.substring(0,r.meta.title.offsetByCodePoints(0,Math.min(2,r.meta.title.codePointCount(0,r.meta.title.length())))));
+             h.view.check.setVisibility(editing?View.VISIBLE:View.GONE);h.view.check.setChecked(selected.contains(r.id));
+@@ -197,7 +249,8 @@ public final class OfflineDownloadsActivity extends BaseActivity {
+             h.view.getRoot().setOnLongClickListener(v->{editing=true;selected.add(r.id);refresh();return true;});
+             h.view.action.setOnClickListener(v->action(r));h.view.more.setOnClickListener(v->manage(r));
+         }
+-        public int getItemCount(){return items.size();}
++        public int getItemCount(){return display.size();}
+     }
++    private static final class GroupHolder extends RecyclerView.ViewHolder { final AdapterOfflineGroupBinding view;GroupHolder(AdapterOfflineGroupBinding view){super(view.getRoot());this.view=view;} }
+     private static final class Holder extends RecyclerView.ViewHolder{final AdapterOfflineDownloadBinding view;Holder(AdapterOfflineDownloadBinding view){super(view.getRoot());this.view=view;}}
+ }
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/activity/OfflinePlayerActivity.java b/app/src/mobile/java/com/fongmi/android/tv/ui/activity/OfflinePlayerActivity.java
+index 0f220d0..5a07031 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/ui/activity/OfflinePlayerActivity.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/activity/OfflinePlayerActivity.java
+@@ -1,6 +1,7 @@
+ package com.fongmi.android.tv.ui.activity;
+ 
+ import android.content.Context;
++import android.view.View;
+ import androidx.media3.common.AudioAttributes;
+ import androidx.media3.common.MimeTypes;
+ import androidx.media3.exoplayer.audio.AudioSink;
+@@ -42,6 +43,8 @@ public final class OfflinePlayerActivity extends BaseActivity {
+     private ExoPlayer player;
+     private DanmakuPlaybackSync sync;
+     private String id;
++    private com.google.android.material.bottomsheet.BottomSheetDialog accessDialog;
++    private com.fongmi.android.tv.player.preview.ScrubPreview scrubPreview;
+     private boolean showDanmaku = true;
+     public static void start(Context context, String id) { context.startActivity(new Intent(context, OfflinePlayerActivity.class).putExtra("id", id)); }
+     @Override protected ViewBinding getBinding() { return binding = ActivityOfflinePlayerBinding.inflate(getLayoutInflater()); }
+@@ -61,6 +64,16 @@ public final class OfflinePlayerActivity extends BaseActivity {
+         });
+     }
+     @Override protected void initEvent() {
++        scrubPreview=new com.fongmi.android.tv.player.preview.ScrubPreview(binding.scrubPreview,binding.previewImage,binding.previewTime);
++        View timeBar=binding.player.findViewById(androidx.media3.ui.R.id.exo_progress);
++        if(timeBar instanceof androidx.media3.ui.TimeBar bar)bar.addListener(new androidx.media3.ui.TimeBar.OnScrubListener(){
++            public void onScrubStart(androidx.media3.ui.TimeBar view,long position){preview(position);}
++            public void onScrubMove(androidx.media3.ui.TimeBar view,long position){preview(position);}
++            public void onScrubStop(androidx.media3.ui.TimeBar view,long position,boolean canceled){scrubPreview.hide();}
++        });
++        binding.preciseSeek.setOnClickListener(v->com.fongmi.android.tv.ui.dialog.PreciseSeekDialog.show(this,player));
++        binding.access.setOnClickListener(v->binding.danmaku.performLongClick());
++        binding.danmaku.setOnLongClickListener(v->{Download d=store.download(id);if(d!=null&&player!=null)accessDialog=com.fongmi.android.tv.ui.dialog.OfflineAccessDialog.show(this,player,binding.player,store,d,showDanmaku,value->{showDanmaku=value;binding.player.setDanmakuEnabled(value);binding.danmaku.setContentDescription(value?"弹幕已开启":"弹幕已关闭");binding.danmaku.setIconResource(value?com.fongmi.android.tv.R.drawable.ic_control_danmaku_on:com.fongmi.android.tv.R.drawable.ic_control_danmaku_off);});return true;});
+         binding.danmaku.setOnClickListener(v -> {
+             showDanmaku = !showDanmaku; binding.player.setDanmakuEnabled(showDanmaku);
+             binding.danmaku.setContentDescription(showDanmaku ? "弹幕已开启" : "弹幕已关闭");
+@@ -117,7 +130,13 @@ public final class OfflinePlayerActivity extends BaseActivity {
+             binding.danmaku.setIconResource(showDanmaku ? com.fongmi.android.tv.R.drawable.ic_control_danmaku_on : com.fongmi.android.tv.R.drawable.ic_control_danmaku_off);
+         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+     }
++    private void preview(long position){
++        Download d=store.download(id);if(d==null||player==null)return;
++        scrubPreview.show(d.request.uri,java.util.Map.of(),d.request.mimeType,position,store.playbackFactory(id),d.contentLength);
++    }
+     @Override protected void onStop() {
++        if(accessDialog!=null){accessDialog.dismiss();accessDialog=null;}
++        if(scrubPreview!=null)scrubPreview.hide();
+         if (player != null) {
+             store.position(id, player.getPlaybackState() == Player.STATE_ENDED ? 0 : player.getCurrentPosition());
+             sync.bind(null); binding.player.setPlayer(null); player.release(); player = null;
+@@ -125,6 +144,6 @@ public final class OfflinePlayerActivity extends BaseActivity {
+         binding.player.onPause(); getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+         super.onStop();
+     }
+-    @Override protected void onDestroy() { binding.player.setDanmakuSource(null); binding.player.getDanmakuController().setListener(null); binding.player.getDanmakuController().release(); super.onDestroy(); }
++    @Override protected void onDestroy() { if(scrubPreview!=null)scrubPreview.close(); binding.player.setDanmakuSource(null); binding.player.getDanmakuController().setListener(null); binding.player.getDanmakuController().release(); super.onDestroy(); }
+     @Override protected void onSaveInstanceState(Bundle state) { state.putBoolean("danmaku", showDanmaku); super.onSaveInstanceState(state); }
+ }
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/activity/VideoActivity.java b/app/src/mobile/java/com/fongmi/android/tv/ui/activity/VideoActivity.java
+index 7924bc3..792fac8 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/ui/activity/VideoActivity.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/activity/VideoActivity.java
+@@ -338,12 +338,21 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
+     @Override
+     @SuppressLint("ClickableViewAccessibility")
+     protected void initEvent() {
++        scrubPreview=new com.fongmi.android.tv.player.preview.ScrubPreview(mBinding.control.scrubPreview,mBinding.control.previewImage,mBinding.control.previewTime);
++        getSeekView().getTimeBar().addListener(new androidx.media3.ui.TimeBar.OnScrubListener(){
++            public void onScrubStart(androidx.media3.ui.TimeBar bar,long position){showScrubPreview(position);}
++            public void onScrubMove(androidx.media3.ui.TimeBar bar,long position){showScrubPreview(position);}
++            public void onScrubStop(androidx.media3.ui.TimeBar bar,long position,boolean canceled){scrubPreview.hide();mBinding.control.center.setVisibility(View.VISIBLE);}
++        });
++        getSeekView().setOnLongClickListener(v->{if(playbackReady)com.fongmi.android.tv.ui.dialog.PreciseSeekDialog.show(this,player().getPlayer());return true;});
+         mBinding.detailCast.setOnClickListener(v -> onCast());
+         mBinding.detailDownload.setOnClickListener(v -> onDownload());
+         mBinding.control.download.setOnClickListener(v -> onDownload());
+         mBinding.control.fullscreen.setOnClickListener(v -> { if (playbackReady) { if (isFullscreen()) exitFullscreen(); else enterFullscreen(); } });
+         mBinding.contentToggle.setOnClickListener(v -> toggleSynopsis());
+         mBinding.detailSettings.setOnClickListener(v -> { if (mHistory != null && playbackReady) onSetting(); });
++        mBinding.detailFollow.setOnClickListener(v->followShow());
++        mBinding.detailFollow.setOnLongClickListener(v->{WatchlistActivity.start(this);return true;});
+         mBinding.detailKeep.setOnClickListener(v -> { if (mHistory != null) onKeep(); });
+         mBinding.detailSource.setOnClickListener(v -> { if (mVod != null && mHistory != null) onChange(); });
+         mBinding.detailFull.setOnClickListener(v -> { if (mVod != null && playbackReady) enterFullscreen(); });
+@@ -539,6 +548,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
+ 
+     @Override
+     public void requestPlayer(VodPlayRequest request) {
++        if(scrubPreview!=null)scrubPreview.hide();
++        mBinding.control.center.setVisibility(View.VISIBLE);
+         mBinding.control.title.setText(getString(R.string.detail_title, mBinding.name.getText(), request.getTitle()));
+         mViewModel.playerContent(request.getKey(), request.getFlag(), request.getId());
+         mBinding.control.title.setSelected(true);
+@@ -607,9 +618,42 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
+         setArtwork(item.getPic());
+         checkKeepImg();
+         setText(item);
++        if(!com.fongmi.android.tv.setting.Setting.isIncognito())watchId=com.fongmi.android.tv.watch.WatchlistStore.get(this).observe(com.fongmi.android.tv.api.config.VodConfig.getCid(),getKey(),getId(),getSite().getName(),item).id;
++        else watchId=null;
++        updateWatchButton();
+         updateKeep();
+     }
+ 
++    private com.fongmi.android.tv.player.preview.ScrubPreview scrubPreview;
++    private void showScrubPreview(long position){
++        if(scrubPreview==null||!playbackReady||player().getCurrentMediaItem()==null)return;
++        var item=player().getCurrentMediaItem();var config=item.localConfiguration;
++        mBinding.control.center.setVisibility(View.INVISIBLE);
++        scrubPreview.show(config==null||config.drmConfiguration!=null?null:config.uri,player().getHeaders(),config==null?null:config.mimeType,position,null,-1);
++    }
++    private String watchId;
++    private void updateWatchButton(){
++        var entry=watchId==null?null:com.fongmi.android.tv.watch.WatchlistStore.get(this).find(watchId);
++        mBinding.detailFollow.setText(entry!=null&&entry.followed?"已追剧":"追剧");mBinding.detailFollow.setSelected(entry!=null&&entry.followed);
++    }
++    private void followShow(){
++        if(watchId==null){android.widget.Toast.makeText(this,"无痕播放不保存追剧记录，请关闭无痕模式后重试",android.widget.Toast.LENGTH_LONG).show();return;}var store=com.fongmi.android.tv.watch.WatchlistStore.get(this);var entry=store.find(watchId);if(entry==null)return;
++        store.follow(watchId,!entry.followed);updateWatchButton();android.widget.Toast.makeText(this,entry.followed?"已取消追剧":"已加入追剧，可在片库管理已看集数与更新提醒",android.widget.Toast.LENGTH_LONG).show();
++    }
++    @Override public boolean isWatched(Episode item){
++        var entry=watchId==null?null:com.fongmi.android.tv.watch.WatchlistStore.get(this).find(watchId);return entry!=null&&entry.watched.contains(item.getName());
++    }
++    @Override public boolean onItemLongClick(Episode item){
++        if(watchId==null)return false;boolean watched=isWatched(item);
++        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this).setTitle(item.getName()).setItems(new String[]{watched?"标记为未看":"标记为已看"},(d,w)->{
++            com.fongmi.android.tv.watch.WatchlistStore.get(this).watched(watchId,item.getName(),!watched);mEpisodeAdapter.notifyDataSetChanged();
++        }).setNegativeButton("取消",null).show();return true;
++    }
++    private void markWatched(){
++        if(watchId==null||com.fongmi.android.tv.setting.Setting.isIncognito()||mHistory==null)return;
++        var store=com.fongmi.android.tv.watch.WatchlistStore.get(this);var entry=store.find(watchId);
++        if(entry!=null&&!entry.watched.contains(mHistory.getVodRemarks())){store.watched(watchId,mHistory.getVodRemarks(),true);mEpisodeAdapter.notifyDataSetChanged();}
++    }
+     private String displayName(String value) {
+         if (!value.startsWith("http://") && !value.startsWith("https://")) return value;
+         String supplied = getName();
+@@ -640,6 +684,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
+     @Override
+     public void renderFlagSelection(Flag item) {
+         if (item == null || item.isBlockedPlaybackSource()) return;
++        if(watchId!=null&&watchId.equals(com.fongmi.android.tv.watch.WatchlistStore.id(com.fongmi.android.tv.api.config.VodConfig.getCid(),getKey(),getId())))com.fongmi.android.tv.watch.WatchlistStore.get(this).useFlag(watchId,item);
+         notifyItemChanged(mBinding.flag, mFlagAdapter);
+         scrollToPosition(mBinding.flag, mFlagAdapter.getPosition());
+     }
+@@ -969,6 +1014,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
+ 
+     @Override public String offlineSite() { return getKey(); }
+     @Override public String offlineVideo() { return getId(); }
++    @Override public String offlinePoster() { return getPic(); }
+     @Override public String offlineTitle() { return mBinding.name.getText().toString(); }
+     @Override public PlayerManager offlinePlayer() { return player(); }
+     @Override public Flag offlineFlag() { return mFlagAdapter == null || mFlagAdapter.isEmpty() ? null : mFlagAdapter.get(mFlagAdapter.getPosition()); }
+@@ -998,7 +1044,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
+     }
+ 
+     private void onTrack(View view) {
+-        TrackDialog.create().type(Integer.parseInt(view.getTag().toString())).player(player()).show(this);
++        if (Integer.parseInt(view.getTag().toString()) == C.TRACK_TYPE_TEXT) com.fongmi.android.tv.ui.dialog.PlaybackAccessDialog.show(this);
++        else TrackDialog.create().type(Integer.parseInt(view.getTag().toString())).player(player()).show(this);
+         hideControl();
+     }
+ 
+@@ -1013,7 +1060,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
+     }
+ 
+     private void onDanmaku() {
+-        DanmakuDialog.create().player(player()).show(this);
++        com.fongmi.android.tv.ui.dialog.PlaybackAccessDialog.show(this);
+         hideControl();
+     }
+ 
+@@ -1455,6 +1502,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
+                 mClock.setCallback(this);
+                 break;
+             case Player.STATE_ENDED:
++                markWatched();
+                 hideProgress();
+                 setR1Callback();
+                 mVod.playbackEnded();
+@@ -1492,6 +1540,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
+         long position = player().getPosition();
+         long duration = player().getDuration();
+         if (position < 0 || duration <= 0) return;
++        if(position>=duration*0.9)markWatched();
+         mVod.onTimeChanged(time, position, duration);
+     }
+ 
+@@ -1657,6 +1706,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
+ 
+     @Override
+     public void onSeeking(long time) {
++        showScrubPreview(Math.max(0,Math.min(player().getDuration(),player().getPosition()+time)));
+         mBinding.widget.action.setImageResource(time > 0 ? R.drawable.ic_widget_forward : R.drawable.ic_widget_rewind);
+         mBinding.widget.time.setText(player().getPositionTime(time));
+         mBinding.widget.seek.setVisibility(View.VISIBLE);
+@@ -1665,6 +1715,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
+ 
+     @Override
+     public void onSeekEnd(long time) {
++        if(scrubPreview!=null)scrubPreview.hide();
++        mBinding.control.center.setVisibility(View.VISIBLE);
+         seekTo(time);
+     }
+ 
+@@ -1690,6 +1742,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
+ 
+     @Override
+     public void onTouchEnd() {
++        if(scrubPreview!=null)scrubPreview.hide();
++        mBinding.control.center.setVisibility(View.VISIBLE);
+         mBinding.widget.seek.setVisibility(View.GONE);
+         mBinding.widget.speed.setVisibility(View.GONE);
+         mBinding.widget.bright.setVisibility(View.GONE);
+@@ -1775,6 +1829,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
+ 
+     @Override
+     protected void onDestroy() {
++        if(scrubPreview!=null)scrubPreview.close();
+         if (mClock != null) mClock.release();
+         saveHistory(true);
+         Timer.get().reset();
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/activity/WatchlistActivity.java b/app/src/mobile/java/com/fongmi/android/tv/ui/activity/WatchlistActivity.java
+new file mode 100644
+index 0000000..aacfbc0
+--- /dev/null
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/activity/WatchlistActivity.java
+@@ -0,0 +1,69 @@
++package com.fongmi.android.tv.ui.activity;
++
++import android.content.*;
++import android.os.Bundle;
++import android.view.*;
++import androidx.annotation.NonNull;
++import androidx.viewbinding.ViewBinding;
++import androidx.recyclerview.widget.RecyclerView;
++import com.fongmi.android.tv.databinding.*;
++import com.fongmi.android.tv.ui.base.BaseActivity;
++import com.fongmi.android.tv.watch.*;
++import com.fongmi.android.tv.api.config.VodConfig;
++import com.fongmi.android.tv.bean.Config;
++import com.fongmi.android.tv.utils.ImgUtil;
++import com.google.android.material.dialog.MaterialAlertDialogBuilder;
++import com.google.android.material.tabs.TabLayout;
++import java.util.*;
++
++public final class WatchlistActivity extends BaseActivity {
++    private ActivityWatchlistBinding binding;private WatchlistStore store;private List<WatchlistStore.Entry> rows=List.of();private int filter;private final Adapter adapter=new Adapter();
++    public static void start(Context context){context.startActivity(new Intent(context,WatchlistActivity.class));}
++    @Override protected ViewBinding getBinding(){return binding=ActivityWatchlistBinding.inflate(getLayoutInflater());}
++    @Override protected void initView(Bundle state){
++        store=WatchlistStore.get(this);binding.list.setAdapter(adapter);binding.list.setItemAnimator(null);binding.reminders.setChecked(store.reminders());
++        for(String tab:new String[]{"全部","未看完","有更新","已看完"})binding.tabs.addTab(binding.tabs.newTab().setText(tab));
++        if(state!=null){filter=state.getInt("filter");binding.search.setText(state.getString("search",""));binding.tabs.selectTab(binding.tabs.getTabAt(filter));}
++        binding.tabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener(){public void onTabSelected(TabLayout.Tab tab){filter=tab.getPosition();reload();}public void onTabUnselected(TabLayout.Tab tab){}public void onTabReselected(TabLayout.Tab tab){}});
++    }
++    @Override protected void initEvent(){
++        binding.checkUpdates.setOnClickListener(v->check(true));
++        binding.reminders.setOnCheckedChangeListener((v,on)->{store.reminders(on);if(on)com.fongmi.android.tv.offline.OfflineActions.requestNotification(this);WatchlistJob.schedule(this);reload();});
++        binding.search.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int f){}public void onTextChanged(CharSequence s,int a,int b,int c){reload();}public void afterTextChanged(android.text.Editable e){}});
++    }
++    @Override protected void onResume(){super.onResume();reload();check(false);}
++    private void check(boolean force){binding.checkUpdates.setEnabled(false);binding.checkUpdates.setText("检查中…");WatchlistChecker.check(this,force,()->{if(!isDestroyed()){binding.checkUpdates.setEnabled(true);binding.checkUpdates.setText("检查更新");reload();}});}
++    private void reload(){
++        String query=binding.search.getText().toString().trim().toLowerCase(Locale.ROOT);List<WatchlistStore.Entry> all=store.followed();
++        rows=all.stream().filter(e->(filter!=1||!e.finished())&&(filter!=2||!e.fresh.isEmpty())&&(filter!=3||e.finished())).filter(e->e.title.toLowerCase(Locale.ROOT).contains(query)).toList();
++        binding.empty.setVisibility(rows.isEmpty()?View.VISIBLE:View.GONE);binding.empty.setText(all.isEmpty()?"追更，从一部喜欢的剧开始\n在影片详情点击「追剧」，即可记录已看集数。":"当前分类暂无匹配影片\n切换分类或试试其他片名。");
++        binding.status.setText(all.size()+" 部追剧 · "+all.stream().filter(e->!e.fresh.isEmpty()).count()+" 部有更新\n仅检查当前订阅；后台约每 6 小时由系统安排，省电模式或片源不可用时可能延迟。"+(store.reminders()&&!androidx.core.app.NotificationManagerCompat.from(this).areNotificationsEnabled()?"\n系统通知未允许，更新仍会显示在列表中。":""));
++        adapter.notifyDataSetChanged();
++    }
++    private void open(WatchlistStore.Entry entry){
++        Config config=Config.find(entry.cid);store.opened(entry.id);
++        if(config==null){SearchActivity.start(this,entry.title);return;}
++        if(entry.cid==VodConfig.getCid())VideoActivity.start(this,entry.site,entry.video,entry.title,entry.poster);
++        else VodConfig.load(config,new com.fongmi.android.tv.impl.Callback(){@Override public void success(){if(!isDestroyed())VideoActivity.start(WatchlistActivity.this,entry.site,entry.video,entry.title,entry.poster);}});
++    }
++    private void manage(WatchlistStore.Entry entry){
++        new MaterialAlertDialogBuilder(this).setTitle(entry.title).setItems(new String[]{"管理已看 / 未看","取消追剧"},(d,which)->{
++            if(which==1)new MaterialAlertDialogBuilder(this).setTitle("取消追剧？").setMessage("保留已看记录，停止此片的新剧集提醒。").setNegativeButton("取消",null).setPositiveButton("取消追剧",(dialog,w)->{store.follow(entry.id,false);reload();}).show();
++            else {boolean[] checked=new boolean[entry.episodes.size()];for(int i=0;i<checked.length;i++)checked[i]=entry.watched.contains(entry.episodes.get(i));
++                new MaterialAlertDialogBuilder(this).setTitle("勾选已看剧集").setMultiChoiceItems(entry.episodes.toArray(new String[0]),checked,(dialog,i,value)->checked[i]=value)
++                    .setNegativeButton("取消",null).setPositiveButton("保存",(dialog,w)->{for(int i=0;i<checked.length;i++)store.watched(entry.id,entry.episodes.get(i),checked[i]);reload();}).show();}
++        }).show();
++    }
++    @Override protected void onSaveInstanceState(Bundle state){state.putInt("filter",filter);state.putString("search",binding.search.getText().toString());super.onSaveInstanceState(state);}
++    private final class Adapter extends RecyclerView.Adapter<Holder>{
++        @NonNull public Holder onCreateViewHolder(@NonNull ViewGroup parent,int type){return new Holder(AdapterLibraryBinding.inflate(getLayoutInflater(),parent,false));}
++        public int getItemCount(){return rows.size();}
++        public void onBindViewHolder(@NonNull Holder h,int position){WatchlistStore.Entry e=rows.get(position);h.v.name.setText(e.title);h.v.site.setText(e.source);
++            h.v.remark.setText((e.fresh.isEmpty()?"":"更新 "+e.fresh.size()+" 集 · ")+"已看 "+e.watchedCount()+" / "+e.episodes.size()+" 集"+(e.error.isEmpty()?"":"\n"+e.error)+(e.cid==VodConfig.getCid()?"":"\n切换至此片源后可检查更新"));
++            h.v.progress.setMax(100);h.v.progress.setProgress(e.episodes.isEmpty()?0:(int)(e.watchedCount()*100/e.episodes.size()));
++            h.v.delete.setVisibility(View.VISIBLE);h.v.delete.setText("管理剧集与追更 ›");h.v.delete.setOnClickListener(v->manage(e));
++            ImgUtil.load(e.title,e.poster,h.v.image);h.v.getRoot().setOnClickListener(v->open(e));h.v.getRoot().setOnLongClickListener(v->{manage(e);return true;});
++        }
++    }
++    private static final class Holder extends RecyclerView.ViewHolder{final AdapterLibraryBinding v;Holder(AdapterLibraryBinding v){super(v.getRoot());this.v=v;}}
++}
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/adapter/EpisodeAdapter.java b/app/src/mobile/java/com/fongmi/android/tv/ui/adapter/EpisodeAdapter.java
+index bc44dfc..38f4828 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/ui/adapter/EpisodeAdapter.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/adapter/EpisodeAdapter.java
+@@ -44,6 +44,8 @@ public class EpisodeAdapter extends RecyclerView.Adapter<BaseEpisodeHolder> {
+     public interface OnClickListener {
+ 
+         void onItemClick(Episode item);
++        default boolean isWatched(Episode item){return false;}
++        default boolean onItemLongClick(Episode item){return false;}
+     }
+ 
+     public void addAll(List<Episode> items) {
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/adapter/HistoryAdapter.java b/app/src/mobile/java/com/fongmi/android/tv/ui/adapter/HistoryAdapter.java
+index 7d6fe6d..c158c1f 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/ui/adapter/HistoryAdapter.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/adapter/HistoryAdapter.java
+@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView;
+ 
+ import com.fongmi.android.tv.api.config.VodConfig;
+ import com.fongmi.android.tv.bean.History;
+-import com.fongmi.android.tv.databinding.AdapterVodBinding;
++import com.fongmi.android.tv.databinding.AdapterLibraryBinding;
+ import com.fongmi.android.tv.utils.ImgUtil;
+ 
+ public class HistoryAdapter extends BaseDiffAdapter<History, HistoryAdapter.ViewHolder> {
+@@ -58,9 +58,9 @@ public class HistoryAdapter extends BaseDiffAdapter<History, HistoryAdapter.View
+     @NonNull
+     @Override
+     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+-        ViewHolder holder = new ViewHolder(AdapterVodBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
+-        holder.binding.getRoot().getLayoutParams().width = width;
+-        holder.binding.image.getLayoutParams().height = height;
++        ViewHolder holder = new ViewHolder(AdapterLibraryBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
++
++
+         return holder;
+     }
+ 
+@@ -70,12 +70,12 @@ public class HistoryAdapter extends BaseDiffAdapter<History, HistoryAdapter.View
+         boolean same = item.getVodName().equals(item.getVodRemarks());
+         holder.binding.name.setText(item.getVodName());
+         holder.binding.site.setText(item.getSiteName());
+-        holder.binding.remark.setText(item.getVodRemarks());
++        holder.binding.remark.setText((same ? "" : item.getVodRemarks()+" · ")+(item.getDuration()>0 ? "已看 "+Math.min(100,item.getPosition()*100/item.getDuration())+"%" : "继续观看"));
+         holder.binding.site.setVisibility(item.getSiteVisible());
+-        holder.binding.progress.setMax((int) item.getDuration());
+-        holder.binding.progress.setProgress((int) item.getPosition(), animate);
++        holder.binding.progress.setMax(100);
++        holder.binding.progress.setProgress(item.getDuration()>0?(int)Math.min(100,item.getPosition()*100/item.getDuration()):0, animate);
+         holder.binding.delete.setVisibility(!delete ? View.GONE : View.VISIBLE);
+-        holder.binding.remark.setVisibility(delete || same ? View.GONE : View.VISIBLE);
++        holder.binding.remark.setVisibility(delete ? View.GONE : View.VISIBLE);
+         ImgUtil.load(item.getVodName(), item.getVodPic(), holder.binding.image);
+         setClickListener(holder.binding.getRoot(), item);
+     }
+@@ -90,9 +90,9 @@ public class HistoryAdapter extends BaseDiffAdapter<History, HistoryAdapter.View
+ 
+     public class ViewHolder extends RecyclerView.ViewHolder {
+ 
+-        private final AdapterVodBinding binding;
++        private final AdapterLibraryBinding binding;
+ 
+-        ViewHolder(@NonNull AdapterVodBinding binding) {
++        ViewHolder(@NonNull AdapterLibraryBinding binding) {
+             super(binding.getRoot());
+             this.binding = binding;
+         }
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/adapter/KeepAdapter.java b/app/src/mobile/java/com/fongmi/android/tv/ui/adapter/KeepAdapter.java
+index abf7007..d73bc8c 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/ui/adapter/KeepAdapter.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/adapter/KeepAdapter.java
+@@ -8,7 +8,7 @@ import androidx.annotation.NonNull;
+ import androidx.recyclerview.widget.RecyclerView;
+ 
+ import com.fongmi.android.tv.bean.Keep;
+-import com.fongmi.android.tv.databinding.AdapterVodBinding;
++import com.fongmi.android.tv.databinding.AdapterLibraryBinding;
+ import com.fongmi.android.tv.utils.ImgUtil;
+ 
+ public class KeepAdapter extends BaseDiffAdapter<Keep, KeepAdapter.ViewHolder> {
+@@ -54,9 +54,9 @@ public class KeepAdapter extends BaseDiffAdapter<Keep, KeepAdapter.ViewHolder> {
+     @NonNull
+     @Override
+     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+-        ViewHolder holder = new ViewHolder(AdapterVodBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
+-        holder.binding.getRoot().getLayoutParams().width = width;
+-        holder.binding.image.getLayoutParams().height = height;
++        ViewHolder holder = new ViewHolder(AdapterLibraryBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
++
++
+         return holder;
+     }
+ 
+@@ -64,7 +64,8 @@ public class KeepAdapter extends BaseDiffAdapter<Keep, KeepAdapter.ViewHolder> {
+     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+         Keep item = getItem(position);
+         holder.binding.name.setText(item.getVodName());
+-        holder.binding.remark.setVisibility(View.GONE);
++        holder.binding.remark.setVisibility(View.VISIBLE);
++        holder.binding.remark.setText("已收藏 · 点击播放");
+         holder.binding.site.setVisibility(View.VISIBLE);
+         holder.binding.site.setText(item.getSiteName());
+         holder.binding.progress.setVisibility(View.GONE);
+@@ -83,9 +84,9 @@ public class KeepAdapter extends BaseDiffAdapter<Keep, KeepAdapter.ViewHolder> {
+ 
+     public class ViewHolder extends RecyclerView.ViewHolder {
+ 
+-        private final AdapterVodBinding binding;
++        private final AdapterLibraryBinding binding;
+ 
+-        ViewHolder(@NonNull AdapterVodBinding binding) {
++        ViewHolder(@NonNull AdapterLibraryBinding binding) {
+             super(binding.getRoot());
+             this.binding = binding;
+         }
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/adapter/SearchAdapter.java b/app/src/mobile/java/com/fongmi/android/tv/ui/adapter/SearchAdapter.java
+index 8cd451a..cbaa120 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/ui/adapter/SearchAdapter.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/adapter/SearchAdapter.java
+@@ -12,7 +12,7 @@ import com.fongmi.android.tv.bean.Vod;
+ import com.fongmi.android.tv.databinding.AdapterSearchBinding;
+ import com.fongmi.android.tv.utils.ImgUtil;
+ 
+-public class SearchAdapter extends BaseDiffAdapter<Vod, SearchAdapter.ViewHolder> {
++public class SearchAdapter extends BaseDiffAdapter<com.fongmi.android.tv.ui.search.SearchGroup, SearchAdapter.ViewHolder> {
+ 
+     private final OnClickListener listener;
+ 
+@@ -33,17 +33,28 @@ public class SearchAdapter extends BaseDiffAdapter<Vod, SearchAdapter.ViewHolder
+ 
+     @Override
+     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+-        Vod item = getItem(position);
++        com.fongmi.android.tv.ui.search.SearchGroup group = getItem(position);
++        Vod item = group.first();
++        boolean large=holder.itemView.getResources().getConfiguration().fontScale>=1.4f;
++        holder.binding.resultActions.setOrientation(large?android.widget.LinearLayout.VERTICAL:android.widget.LinearLayout.HORIZONTAL);
++        holder.binding.site.setLayoutParams(new android.widget.LinearLayout.LayoutParams(large?ViewGroup.LayoutParams.MATCH_PARENT:0,ViewGroup.LayoutParams.WRAP_CONTENT,large?0:1));
+         holder.binding.name.setText(item.getName());
+         holder.binding.site.setText(com.fongmi.android.tv.ui.search.SearchDisplayName.clean(item.getSiteName()));
+         String metadata = java.util.stream.Stream.of(item.getYear(), item.getArea(), item.getTypeName()).filter(v -> v != null && !v.isEmpty()).collect(java.util.stream.Collectors.joining(" · "));
+         holder.binding.metadata.setText(metadata);
+         holder.binding.metadata.setVisibility(metadata.isEmpty() ? View.GONE : View.VISIBLE);
+-        holder.binding.watch.setText(item.isFolder() ? "打开" : "播放");
++        holder.binding.watch.setText(group.sources.size()>1 ? "选择来源" : item.isFolder() ? "打开" : "播放");
+         holder.binding.remark.setText(item.getRemarks());
+         holder.binding.site.setVisibility(item.getSiteVisible());
++        if(group.sources.size()>1){holder.binding.site.setVisibility(View.VISIBLE);holder.binding.site.setText(group.sources.size()+" 个播放选项");}
+         holder.binding.remark.setVisibility(item.getRemarkVisible());
+-        holder.binding.getRoot().setOnClickListener(v -> listener.onItemClick(item));
++        holder.binding.getRoot().setContentDescription(item.getName()+"，"+metadata+"，"+holder.binding.site.getText()+"，"+holder.binding.watch.getText());
++        holder.binding.getRoot().setOnClickListener(v -> {
++            if(group.sources.size()==1){listener.onItemClick(item);return;}
++            String[] labels=group.sources.stream().map(source->com.fongmi.android.tv.ui.search.SearchDisplayName.clean(source.getSiteName())+" · "+source.getName()+"\n"+source.getYear()+" "+source.getRemarks()).toArray(String[]::new);
++            new com.google.android.material.dialog.MaterialAlertDialogBuilder(v.getContext()).setTitle(item.getName()+" · 选择来源")
++                .setItems(labels,(dialog,which)->listener.onItemClick(group.sources.get(which))).setNegativeButton("取消",null).show();
++        });
+         ImgUtil.load(item.getName(), item.getPic(), holder.binding.image);
+     }
+ 
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/ControlDialog.java b/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/ControlDialog.java
+index ab0ae03..f94d4bf 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/ControlDialog.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/ControlDialog.java
+@@ -136,6 +136,7 @@ public class ControlDialog extends MobileSheetDialog implements ParseAdapter.OnC
+     protected void initEvent() {
+         if (player == null || history == null) return;
+         binding.close.setOnClickListener(v -> dismiss());
++        binding.preciseSeek.setOnClickListener(v->{PreciseSeekDialog.show(requireActivity(),player.getPlayer());dismiss();});
+         binding.mediaInfo.setOnClickListener(v -> dismiss(parent.control.info));
+         binding.advancedToggle.setOnClickListener(v -> {
+             boolean expanded = binding.advanced.getVisibility() != View.VISIBLE;
+@@ -238,7 +239,8 @@ public class ControlDialog extends MobileSheetDialog implements ParseAdapter.OnC
+         updateSpeed(player.getSpeed());
+         binding.player.setText(parent.control.action.player.getText());
+         binding.decode.setVisibility(parent.control.action.decode.getVisibility());
+-        binding.danmaku.setVisibility(parent.control.action.danmaku.getVisibility());
++        binding.danmaku.setVisibility(View.VISIBLE);
++        binding.danmaku.setText("字幕与弹幕");
+     }
+ 
+     public void setParseVisible(boolean visible) {
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/EpisodeListDialog.java b/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/EpisodeListDialog.java
+index e3fbc78..59d6bd7 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/EpisodeListDialog.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/EpisodeListDialog.java
+@@ -148,6 +148,8 @@ public class EpisodeListDialog extends MobileSheetDialog implements FlagAdapter.
+         // Selection may advance automatically while the picker is open. Keep the user's page/scroll.
+         episodeAdapter.notifyItemRangeChanged(0, episodeAdapter.getItemCount());
+     }
++    @Override public boolean isWatched(Episode item) { return requireActivity() instanceof EpisodeAdapter.OnClickListener host && host.isWatched(item); }
++    @Override public boolean onItemLongClick(Episode item) { return requireActivity() instanceof EpisodeAdapter.OnClickListener host && host.onItemLongClick(item); }
+     private void locateCurrent() {
+         int page = Math.max(0, EpisodePickerPolicy.selectedEpisodePosition(episodes)) / PAGE_SIZE;
+         updatingRanges = true;
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/OfflineAccessDialog.java b/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/OfflineAccessDialog.java
+new file mode 100644
+index 0000000..2699b8e
+--- /dev/null
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/OfflineAccessDialog.java
+@@ -0,0 +1,44 @@
++package com.fongmi.android.tv.ui.dialog;
++
++import android.view.View;
++import androidx.fragment.app.FragmentActivity;
++import androidx.media3.common.*;
++import androidx.media3.ui.PlayerView;
++import androidx.media3.exoplayer.offline.Download;
++import com.fongmi.android.tv.databinding.DialogPlaybackAccessBinding;
++import com.fongmi.android.tv.offline.*;
++import com.fongmi.android.tv.setting.DanmakuSetting;
++import com.fongmi.android.tv.ui.activity.OfflineDownloadsActivity;
++import com.google.android.material.bottomsheet.*;
++import com.google.android.material.dialog.MaterialAlertDialogBuilder;
++import java.util.*;
++
++/** Same mobile panel for cache-only playback; matching never makes an offline network request. */
++public final class OfflineAccessDialog {
++    public static BottomSheetDialog show(FragmentActivity activity,Player player,PlayerView view,OfflineStore store,Download download,boolean enabled,java.util.function.Consumer<Boolean> toggle){
++        var binding=DialogPlaybackAccessBinding.inflate(activity.getLayoutInflater());
++        BottomSheetDialog dialog=new BottomSheetDialog(activity);dialog.setContentView(binding.getRoot());
++        binding.close.setOnClickListener(v->dialog.dismiss());binding.danmakuSearch.setVisibility(View.GONE);binding.danmakuStyle.setVisibility(View.GONE);
++        binding.danmakuStatus.setText(store.danmaku(download.request.id).isFile()?"来源：已保存的本地 XML\n断网时也可显示":"此下载尚无本地弹幕，可到下载管理导入 XML");
++        binding.danmakuChoose.setText("管理离线弹幕与字幕");binding.danmakuChoose.setOnClickListener(v->{dialog.dismiss();OfflineDownloadsActivity.start(activity);});
++        boolean[] visible={enabled};binding.danmakuToggle.setText(enabled?"弹幕已开启 · 点击隐藏":"弹幕已隐藏 · 点击显示");
++        binding.danmakuToggle.setOnClickListener(v->{visible[0]=!visible[0];toggle.accept(visible[0]);binding.danmakuToggle.setText(visible[0]?"弹幕已开启 · 点击隐藏":"弹幕已隐藏 · 点击显示");});
++        List<TrackSelectionOverride> overrides=new ArrayList<>();List<String> labels=new ArrayList<>();labels.add("关闭字幕");int selected=0;
++        for(Tracks.Group group:player.getCurrentTracks().getGroups())if(group.getType()==C.TRACK_TYPE_TEXT)for(int i=0;i<group.length;i++){
++            Format format=group.getTrackFormat(i);labels.add(format.label!=null?format.label:format.language!=null?format.language:"字幕 "+labels.size());
++            overrides.add(new TrackSelectionOverride(group.getMediaTrackGroup(),i));if(group.isTrackSelected(i))selected=labels.size()-1;
++        }
++        binding.subtitleStatus.setText(overrides.isEmpty()?"本地视频未检测到字幕轨\n可到下载管理补存此片源提供的外挂字幕。":"本地字幕："+overrides.size()+" 条\n当前："+labels.get(selected));
++        binding.subtitleChoose.setText("选择本地字幕轨");binding.subtitleChoose.setEnabled(!overrides.isEmpty());int selection=selected;
++        binding.subtitleChoose.setOnClickListener(v->new MaterialAlertDialogBuilder(activity).setTitle("本地字幕").setSingleChoiceItems(labels.toArray(new String[0]),selection,(d,which)->{
++            var parameters=player.getTrackSelectionParameters().buildUpon().clearOverridesOfType(C.TRACK_TYPE_TEXT).setTrackTypeDisabled(C.TRACK_TYPE_TEXT,which==0);
++            if(which>0)parameters.setOverrideForType(overrides.get(which-1));player.setTrackSelectionParameters(parameters.build());binding.subtitleStatus.setText("本地字幕："+overrides.size()+" 条\n当前："+labels.get(which));d.dismiss();
++        }).setNegativeButton("关闭",null).show());
++        Runnable refresh=()->{binding.subtitleOffset.setText(String.format(Locale.ROOT,"字幕同步：%+.1f 秒",player.getTextOffsetMs()/1000f));binding.danmakuOffset.setText(String.format(Locale.ROOT,"弹幕同步：%+.1f 秒",DanmakuSetting.getTimeOffsetMs()/1000f));};
++        boolean canText=!overrides.isEmpty()&&player.isCommandAvailable(Player.COMMAND_SET_TEXT_OFFSET);
++        for(View button:List.of(binding.subtitleEarlier,binding.subtitleLater,binding.subtitleReset,binding.subtitleOffset))button.setVisibility(canText?View.VISIBLE:View.GONE);
++        binding.subtitleEarlier.setOnClickListener(v->{player.setTextOffsetMs(Math.max(-600000,player.getTextOffsetMs()-500));refresh.run();});binding.subtitleLater.setOnClickListener(v->{player.setTextOffsetMs(Math.min(600000,player.getTextOffsetMs()+500));refresh.run();});binding.subtitleReset.setOnClickListener(v->{player.setTextOffsetMs(0);refresh.run();});
++        binding.danmakuEarlier.setOnClickListener(v->{DanmakuSetting.putTimeOffsetMs(DanmakuSetting.getTimeOffsetMs()-500);view.setDanmakuConfig(DanmakuSetting.getConfig());refresh.run();});binding.danmakuLater.setOnClickListener(v->{DanmakuSetting.putTimeOffsetMs(DanmakuSetting.getTimeOffsetMs()+500);view.setDanmakuConfig(DanmakuSetting.getConfig());refresh.run();});binding.danmakuReset.setOnClickListener(v->{DanmakuSetting.putTimeOffsetMs(0);view.setDanmakuConfig(DanmakuSetting.getConfig());refresh.run();});refresh.run();
++        dialog.setOnShowListener(d->{android.widget.FrameLayout sheet=dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);if(sheet!=null){sheet.getLayoutParams().height=(int)(activity.getResources().getDisplayMetrics().heightPixels*.82);sheet.requestLayout();BottomSheetBehavior.from(sheet).setState(BottomSheetBehavior.STATE_EXPANDED);}});dialog.show();return dialog;
++    }
++}
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/OfflineBatchDialog.java b/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/OfflineBatchDialog.java
+index aeee193..1d59687 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/OfflineBatchDialog.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/OfflineBatchDialog.java
+@@ -22,6 +22,7 @@ import java.util.*;
+ public final class OfflineBatchDialog extends MobileSheetDialog {
+     public interface Host {
+         String offlineSite(); String offlineVideo(); String offlineTitle();
++        default String offlinePoster() { return ""; }
+         Flag offlineFlag(); PlayerManager offlinePlayer();
+     }
+     private DialogOfflineBatchBinding binding;
+@@ -110,6 +111,8 @@ public final class OfflineBatchDialog extends MobileSheetDialog {
+                 job.meta=OfflineActions.metadata(player); job.meta.title=title; job.meta.episode=e.getName(); job.meta.sourceId=job.id;
+                 job.resolvedUrl=current.localConfiguration.uri.toString(); job.mime=current.localConfiguration.mimeType;
+             }
++            job.meta.showId=OfflineMetadata.id(com.fongmi.android.tv.api.config.VodConfig.getCid()+"\n"+site+"\n"+video,java.util.Collections.emptyMap());
++            job.meta.poster=host.offlinePoster();job.meta.sourceName=flag.getFlag();job.meta.episodeOrder=e.getIndex();job.meta.addedAt=System.currentTimeMillis();
+             jobs.add(job);
+         }
+         OfflineActions.requestNotification(requireActivity());
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/PlaybackAccessDialog.java b/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/PlaybackAccessDialog.java
+new file mode 100644
+index 0000000..1f81a14
+--- /dev/null
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/PlaybackAccessDialog.java
+@@ -0,0 +1,82 @@
++package com.fongmi.android.tv.ui.dialog;
++
++import android.os.Handler;
++import android.os.Looper;
++import android.view.*;
++import androidx.annotation.*;
++import androidx.fragment.app.FragmentActivity;
++import androidx.media3.common.*;
++import androidx.viewbinding.ViewBinding;
++import com.fongmi.android.tv.databinding.DialogPlaybackAccessBinding;
++import com.fongmi.android.tv.player.PlayerManager;
++import com.fongmi.android.tv.player.danmaku.DanmakuStatus;
++import com.fongmi.android.tv.setting.DanmakuSetting;
++import java.util.*;
++
++/** Mobile-only hub. All source selection continues through the existing playback pipeline. */
++public final class PlaybackAccessDialog extends MobileSheetDialog {
++    private DialogPlaybackAccessBinding binding;
++    private PlayerManager player;
++    private final Handler handler=new Handler(Looper.getMainLooper());
++    private final Runnable refresh=new Runnable(){public void run(){render();handler.postDelayed(this,500);}};
++    public static void show(FragmentActivity activity){
++        if(activity.getSupportFragmentManager().findFragmentByTag("playback-access")==null)new PlaybackAccessDialog().show(activity.getSupportFragmentManager(),"playback-access");
++    }
++    @Override protected ViewBinding getBinding(@NonNull LayoutInflater inflater,@Nullable ViewGroup container){return binding=DialogPlaybackAccessBinding.inflate(inflater,container,false);}
++    @Override protected void initView(){binding.close.setOnClickListener(v->dismiss());}
++    private boolean ready(){
++        if(requireActivity() instanceof ControlDialog.Host host)player=host.playbackPlayer();
++        return player!=null&&!player.isReleased();
++    }
++    @Override protected void initEvent(){
++        binding.subtitleChoose.setOnClickListener(v->open(()->TrackDialog.create().player(player).type(C.TRACK_TYPE_TEXT).show(requireActivity())));
++        binding.danmakuChoose.setOnClickListener(v->open(()->DanmakuDialog.create().player(player).show(requireActivity())));
++        binding.danmakuSearch.setOnClickListener(v->open(()->DanmakuSettingDialog.create().player(player).search(true).show(requireActivity())));
++        binding.danmakuStyle.setOnClickListener(v->open(()->DanmakuSettingDialog.create().player(player).show(requireActivity())));
++        binding.subtitleEarlier.setOnClickListener(v->subtitle(-500,false));binding.subtitleLater.setOnClickListener(v->subtitle(500,false));binding.subtitleReset.setOnClickListener(v->subtitle(0,true));
++        binding.danmakuEarlier.setOnClickListener(v->offset(-500,false));binding.danmakuLater.setOnClickListener(v->offset(500,false));binding.danmakuReset.setOnClickListener(v->offset(0,true));
++        binding.danmakuToggle.setOnClickListener(v->{if(ready()){boolean enabled=!player.isDanmakuEnabled();DanmakuSetting.putShow(enabled);player.setDanmakuEnabled(enabled);render();}});
++    }
++    private void open(Runnable action){if(ready()){action.run();dismiss();}}
++    private void subtitle(long delta,boolean reset){if(ready()){player.setTextOffsetMs(reset?0:Math.max(-600000,Math.min(600000,player.getTextOffsetMs()+delta)));render();}}
++    private void offset(long delta,boolean reset){if(ready()){DanmakuSetting.putTimeOffsetMs(reset?0:Math.max(-600000,Math.min(600000,DanmakuSetting.getTimeOffsetMs()+delta)));player.setDanmakuConfig(DanmakuSetting.getConfig());render();}}
++    public static String statusText(DanmakuStatus status){return switch(status.stage()){
++        case MATCHING -> "正在匹配影片与集数";case AI_MATCHING -> "正在智能匹配";case RESTORING -> "正在恢复已选弹幕";
++        case DOWNLOADING -> "正在加载弹幕"+(status.progress()>=0?" · "+status.progress()+"%":"");
++        case READY -> "已加载 "+status.itemCount()+" 条弹幕";
++        case FAILED -> switch(status.failure()){
++            case DISABLED -> "自动加载已关闭，可手动选择来源";case NO_MATCH -> "未找到匹配结果，请核对影片和集数";
++            case NETWORK, AI_NETWORK -> "网络连接失败，可重试匹配或导入本地弹幕";
++            case ACCESS_DENIED, AI_ACCESS_DENIED -> "弹幕服务拒绝访问，请检查服务设置";
++            case EMPTY_DOCUMENT -> "来源返回空弹幕，可更换来源";
++            case INVALID_RESPONSE, AI_INVALID_RESPONSE -> "返回内容无法识别，可更换来源";
++            default -> "弹幕加载失败，可重新选择来源或导入本地 XML";
++        };
++        default -> "尚未加载弹幕，可匹配影片或导入本地 XML";
++    };}
++    private void render(){
++        if(binding==null||!isAdded()||!ready())return;
++        int count=0;List<String> selected=new ArrayList<>();
++        for(Tracks.Group group:player.getCurrentTracks().getGroups())if(group.getType()==C.TRACK_TYPE_TEXT){
++            count+=group.length;
++            for(int i=0;i<group.length;i++)if(group.isTrackSelected(i)){Format f=group.getTrackFormat(i);selected.add(f.label!=null?f.label:f.language!=null?f.language:"字幕 "+(i+1));}
++        }
++        MediaItem item=player.getCurrentMediaItem();int external=item==null||item.localConfiguration==null?0:item.localConfiguration.subtitleConfigurations.size();
++        binding.subtitleStatus.setText(count==0?"当前播放器未检测到字幕轨。片源可能未附字幕，或此内核未能识别。可导入字幕或尝试其他播放内核。":
++                "检测到 "+count+" 条字幕轨"+(external>0?" · 含 "+external+" 条外挂字幕":" · 视频文件内的字幕")+"\n"+(selected.isEmpty()?"字幕已关闭，点击下方选择":"当前："+String.join("、",selected)));
++        boolean canOffset=player.getPlayer().isCommandAvailable(Player.COMMAND_SET_TEXT_OFFSET);
++        binding.subtitleEarlier.setEnabled(canOffset&&count>0);binding.subtitleLater.setEnabled(canOffset&&count>0);binding.subtitleReset.setEnabled(canOffset&&count>0);
++        binding.subtitleEarlier.setVisibility(count>0&&canOffset?View.VISIBLE:View.GONE);binding.subtitleLater.setVisibility(count>0&&canOffset?View.VISIBLE:View.GONE);binding.subtitleReset.setVisibility(count>0&&canOffset?View.VISIBLE:View.GONE);
++        binding.subtitleOffset.setVisibility(count>0?View.VISIBLE:View.GONE);
++        binding.subtitleOffset.setText(canOffset?"字幕同步："+seconds(player.getTextOffsetMs()):"当前内核不支持字幕同步调整");
++        String source=player.getSelectedDanmaku().getName();
++        if(source.contains("://")||source.startsWith("/"))source=player.getSelectedDanmakuUri()!=null&&"file".equals(player.getSelectedDanmakuUri().getScheme())?"本地 XML":"已选弹幕来源";
++        binding.danmakuStatus.setText(statusText(player.getDanmakuStatus())+(source.isEmpty()?"":"\n来源："+source));
++        binding.danmakuToggle.setText(player.isDanmakuEnabled()?"弹幕已开启 · 点击隐藏":"弹幕已隐藏 · 点击显示");
++        binding.danmakuOffset.setText("弹幕同步："+seconds(DanmakuSetting.getTimeOffsetMs()));
++    }
++    private String seconds(long value){return String.format(Locale.ROOT,"%+.1f 秒",value/1000f);}
++    @Override public void onStart(){super.onStart();handler.post(refresh);}
++    @Override public void onStop(){handler.removeCallbacks(refresh);super.onStop();}
++    @Override public void onDestroyView(){handler.removeCallbacks(refresh);binding=null;player=null;super.onDestroyView();}
++}
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/PreciseSeekDialog.java b/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/PreciseSeekDialog.java
+new file mode 100644
+index 0000000..56ef6dc
+--- /dev/null
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/dialog/PreciseSeekDialog.java
+@@ -0,0 +1,26 @@
++package com.fongmi.android.tv.ui.dialog;
++
++import android.app.Activity;
++import android.text.InputType;
++import android.widget.*;
++import androidx.media3.common.Player;
++import com.fongmi.android.tv.player.preview.ScrubPreview;
++import com.google.android.material.dialog.MaterialAlertDialogBuilder;
++
++public final class PreciseSeekDialog {
++    public static long parse(String text,long duration){
++        String[] parts=text.trim().split(":",-1);if(parts.length<1||parts.length>3)throw new IllegalArgumentException();
++        long seconds=0;for(int i=0;i<parts.length;i++){if(!parts[i].matches("[0-9]{1,8}"))throw new IllegalArgumentException();long number=Long.parseLong(parts[i]);if(i>0&&number>=60)throw new IllegalArgumentException();seconds=seconds*60+number;}
++        long result=seconds*1000;if(duration<=0||result<0||result>duration)throw new IllegalArgumentException();return result;
++    }
++    public static void show(Activity activity,Player player){
++        if(player==null||player.getDuration()<=0||!player.isCurrentMediaItemSeekable()){Toast.makeText(activity,"当前视频暂不支持定位",Toast.LENGTH_SHORT).show();return;}
++        long duration=player.getDuration();androidx.media3.common.MediaItem item=player.getCurrentMediaItem();
++        LinearLayout content=new LinearLayout(activity);content.setOrientation(LinearLayout.VERTICAL);int pad=(int)(24*activity.getResources().getDisplayMetrics().density);content.setPadding(pad,0,pad,0);
++        TextView hint=new TextView(activity);hint.setText("输入 分:秒 或 时:分:秒，最长 "+ScrubPreview.time(duration));hint.setTextSize(14);content.addView(hint);
++        EditText input=new EditText(activity);input.setSingleLine(true);input.setInputType(InputType.TYPE_CLASS_DATETIME|InputType.TYPE_DATETIME_VARIATION_TIME);input.setText(ScrubPreview.time(player.getCurrentPosition()));input.setContentDescription("跳转时间");content.addView(input);
++        LinearLayout steps=new LinearLayout(activity);for(int delta:new int[]{-10,-1,1,10}){com.google.android.material.button.MaterialButton b=new com.google.android.material.button.MaterialButton(activity,null,com.google.android.material.R.attr.materialButtonOutlinedStyle);b.setText((delta>0?"+":"")+delta+"秒");b.setTextSize(12);b.setMinWidth(0);b.setMinimumWidth(0);steps.addView(b,new LinearLayout.LayoutParams(0,-2,1));b.setOnClickListener(v->{try{long value=parse(input.getText().toString(),duration);input.setText(ScrubPreview.time(Math.max(0,Math.min(duration,value+delta*1000L))));input.setError(null);}catch(IllegalArgumentException e){input.setError("请输入有效时间");}});}content.addView(steps);
++        var dialog=new MaterialAlertDialogBuilder(activity).setTitle("精确定位").setView(content).setNegativeButton("取消",null).setPositiveButton("跳转",null).create();
++        dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(v->{try{long value=parse(input.getText().toString(),duration);if(!java.util.Objects.equals(item,player.getCurrentMediaItem())){dialog.dismiss();return;}player.seekTo(value);dialog.dismiss();}catch(IllegalArgumentException e){input.setError("时间须在 00:00 到 "+ScrubPreview.time(duration)+" 之间");}}));dialog.show();
++    }
++}
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/fragment/CollectFragment.java b/app/src/mobile/java/com/fongmi/android/tv/ui/fragment/CollectFragment.java
+index 5af39bd..731d30a 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/ui/fragment/CollectFragment.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/fragment/CollectFragment.java
+@@ -56,7 +56,7 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
+         });
+         adapter = new SearchAdapter(this);
+         adapter.setStateRestorationPolicy(androidx.recyclerview.widget.RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY);
+-        binding.recycler.setLayoutManager(new GridLayoutManager(requireContext(), getResources().getConfiguration().screenWidthDp >= 600 ? 2 : 1));
++        binding.recycler.setLayoutManager(new GridLayoutManager(requireContext(), getResources().getConfiguration().screenWidthDp / getResources().getConfiguration().fontScale >= 600 ? 2 : 1));
+         binding.recycler.setAdapter(adapter);
+         binding.recycler.setItemAnimator(null);
+         binding.tabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+@@ -159,7 +159,7 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
+     private void renderRows(boolean restore) {
+         if (binding == null) return;
+         String key = active; int generation = ++renderGeneration;
+-        adapter.setItems(new ArrayList<>(rows.getOrDefault(key, List.of())), () -> {
++        adapter.setItems(com.fongmi.android.tv.ui.search.SearchGroup.of(rows.getOrDefault(key, List.of()), key.isEmpty()), () -> {
+             if (binding == null || generation != renderGeneration || !active.equals(key)) return;
+             if (restore) {
+                 Parcelable position = positions.get(key);
+@@ -172,7 +172,7 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
+     private void renderStatus() {
+         if (binding == null || model == null) return;
+         int count = rows.getOrDefault("", List.of()).size();
+-        binding.status.setText(getString(R.string.mobile_results_progress, progress.completed(), progress.total(), count));
++        binding.status.setText(getString(R.string.mobile_results_progress, progress.completed(), progress.total(), count) + (active.isEmpty() ? " · 合并为 " + adapter.getItemCount() + " 部" : ""));
+         binding.progress.setVisibility(progress.running() ? View.VISIBLE : View.INVISIBLE);
+         binding.stop.setVisibility(progress.running() ? View.VISIBLE : View.GONE);
+         boolean failed = sites.stream().anyMatch(s -> (active.isEmpty() || active.equals(s.getKey())) && model.sourceState(s) != null && model.sourceState(s).failed());
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/fragment/LibraryFragment.java b/app/src/mobile/java/com/fongmi/android/tv/ui/fragment/LibraryFragment.java
+index 94cee7a..ec8cc48 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/ui/fragment/LibraryFragment.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/fragment/LibraryFragment.java
+@@ -42,7 +42,7 @@ public class LibraryFragment extends BaseFragment {
+         keeps.setStateRestorationPolicy(androidx.recyclerview.widget.RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY);
+         history.setSize(Product.getSpec(requireContext()));
+         keeps.setSize(Product.getSpec(requireContext()));
+-        binding.recycler.setLayoutManager(new GridLayoutManager(requireContext(), Product.getColumn(requireContext())));
++        binding.recycler.setLayoutManager(new GridLayoutManager(requireContext(), getResources().getConfiguration().screenWidthDp / getResources().getConfiguration().fontScale >= 700 ? 2 : 1));
+         binding.recycler.setItemAnimator(null);
+         binding.tabs.addTab(binding.tabs.newTab().setText(R.string.mobile_history));
+         binding.tabs.addTab(binding.tabs.newTab().setText(R.string.mobile_keep));
+@@ -52,6 +52,8 @@ public class LibraryFragment extends BaseFragment {
+             public void onTabReselected(TabLayout.Tab tab) { }
+         });
+         binding.tabs.selectTab(binding.tabs.getTabAt(selected));
++        binding.watchlist.setOnClickListener(v->WatchlistActivity.start(requireContext()));
++        com.fongmi.android.tv.watch.WatchlistJob.schedule(requireContext());
+         binding.browse.setOnClickListener(v -> ((HomeActivity) requireActivity()).change(0));
+         binding.manage.setOnClickListener(v -> { if (selected == 0) HistoryActivity.start(requireActivity()); else KeepActivity.start(requireActivity()); });
+         reload();
+@@ -91,7 +93,7 @@ public class LibraryFragment extends BaseFragment {
+     @Override public void onConfigurationChanged(@NonNull android.content.res.Configuration config) {
+         super.onConfigurationChanged(config);
+         if (binding == null) return;
+-        ((GridLayoutManager) binding.recycler.getLayoutManager()).setSpanCount(Product.getColumn(requireContext()));
++        ((GridLayoutManager) binding.recycler.getLayoutManager()).setSpanCount(getResources().getConfiguration().screenWidthDp / getResources().getConfiguration().fontScale >= 700 ? 2 : 1);
+         history.setSize(Product.getSpec(requireContext())); keeps.setSize(Product.getSpec(requireContext()));
+         android.os.Parcelable position = binding.recycler.getLayoutManager().onSaveInstanceState();
+         binding.recycler.setAdapter(selected == 0 ? history : keeps);
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/holder/EpisodeGridHolder.java b/app/src/mobile/java/com/fongmi/android/tv/ui/holder/EpisodeGridHolder.java
+index a019b66..7ae168f 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/ui/holder/EpisodeGridHolder.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/holder/EpisodeGridHolder.java
+@@ -23,6 +23,9 @@ public class EpisodeGridHolder extends BaseEpisodeHolder {
+         binding.text.setSelected(item.isSelected());
+         binding.text.setText(EpisodeAdapter.displayName(item));
+         binding.text.setContentDescription(item.getDesc().concat(item.getName()) + (item.isSelected() ? "，正在播放" : ""));
++        if(listener.isWatched(item))binding.text.append(" ✓");
++        binding.text.setContentDescription(item.getName()+(listener.isWatched(item)?"，已看":"，未看")+(item.isSelected()?"，正在播放":""));
++        binding.text.setOnLongClickListener(v->listener.onItemLongClick(item));
+         binding.text.setOnClickListener(v -> listener.onItemClick(item));
+     }
+ }
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/holder/EpisodeHoriHolder.java b/app/src/mobile/java/com/fongmi/android/tv/ui/holder/EpisodeHoriHolder.java
+index b1165e9..b59dac5 100644
+--- a/app/src/mobile/java/com/fongmi/android/tv/ui/holder/EpisodeHoriHolder.java
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/holder/EpisodeHoriHolder.java
+@@ -26,6 +26,9 @@ public class EpisodeHoriHolder extends BaseEpisodeHolder {
+         binding.text.setMaxWidth(maxWidth);
+         binding.text.setSelected(item.isSelected());
+         binding.text.setText(item.getDesc().concat(item.getName()));
++        if(listener.isWatched(item))binding.text.append(" ✓");
++        binding.text.setContentDescription(item.getName()+(listener.isWatched(item)?"，已看":"，未看")+(item.isSelected()?"，正在播放":""));
++        binding.text.setOnLongClickListener(v->listener.onItemLongClick(item));
+         binding.text.setOnClickListener(v -> listener.onItemClick(item));
+     }
+ }
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/ui/search/SearchGroup.java b/app/src/mobile/java/com/fongmi/android/tv/ui/search/SearchGroup.java
+new file mode 100644
+index 0000000..816d372
+--- /dev/null
++++ b/app/src/mobile/java/com/fongmi/android/tv/ui/search/SearchGroup.java
+@@ -0,0 +1,32 @@
++package com.fongmi.android.tv.ui.search;
++
++import com.fongmi.android.tv.bean.Vod;
++import com.fongmi.android.tv.impl.Diffable;
++import java.text.Normalizer;
++import java.util.*;
++
++/** Only exact normalized titles with the same year/type/area are grouped. Season and edition words remain significant. */
++public final class SearchGroup implements Diffable<SearchGroup> {
++    public final String id;
++    public final List<Vod> sources;
++    private SearchGroup(String id, List<Vod> sources) { this.id=id; this.sources=List.copyOf(sources); }
++    public Vod first() { return sources.get(0); }
++    static String normalize(String s) { return Normalizer.normalize(s == null ? "" : s, Normalizer.Form.NFKC).toLowerCase(Locale.ROOT).replaceAll("[\\s\\p{Z}]+", ""); }
++    public static List<SearchGroup> of(List<Vod> items, boolean aggregate) {
++        Map<String,List<Vod>> groups=new LinkedHashMap<>(); Set<String> seen=new HashSet<>();
++        for(Vod v:items) {
++            String unique=v.getSiteKey()+"\u0000"+(v.getId().isEmpty()?v.getName():v.getId());
++            if(!seen.add(unique))continue;
++            String key=!aggregate||v.isFolder()||v.getName().isBlank()?unique:
++                    normalize(v.getName())+"\u0000"+normalize(v.getYear())+"\u0000"+normalize(v.getTypeName())+"\u0000"+normalize(v.getArea());
++            groups.computeIfAbsent(key,k->new ArrayList<>()).add(v);
++        }
++        List<SearchGroup> result=new ArrayList<>();groups.forEach((key,list)->result.add(new SearchGroup(key,list)));return result;
++    }
++    @Override public boolean isSameItem(SearchGroup other) { return id.equals(other.id); }
++    @Override public boolean isSameContent(SearchGroup other) {
++        if(sources.size()!=other.sources.size())return false;
++        for(int i=0;i<sources.size();i++)if(!sources.get(i).isSameItem(other.sources.get(i))||!sources.get(i).isSameContent(other.sources.get(i)))return false;
++        return true;
++    }
++}
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/watch/WatchlistChecker.java b/app/src/mobile/java/com/fongmi/android/tv/watch/WatchlistChecker.java
+new file mode 100644
+index 0000000..ed8c2f6
+--- /dev/null
++++ b/app/src/mobile/java/com/fongmi/android/tv/watch/WatchlistChecker.java
+@@ -0,0 +1,56 @@
++package com.fongmi.android.tv.watch;
++
++import android.app.*;
++import android.content.*;
++import android.os.*;
++import androidx.core.app.NotificationCompat;
++import androidx.core.app.NotificationManagerCompat;
++import com.fongmi.android.tv.R;
++import com.fongmi.android.tv.api.SiteApi;
++import com.fongmi.android.tv.api.config.VodConfig;
++import com.fongmi.android.tv.ui.activity.WatchlistActivity;
++import java.util.*;
++import java.util.concurrent.*;
++import java.util.concurrent.atomic.AtomicBoolean;
++
++public final class WatchlistChecker {
++    private static final AtomicBoolean busy=new AtomicBoolean();
++    private static final ExecutorService coordinator=Executors.newSingleThreadExecutor();
++    private static final ThreadPoolExecutor queries=new ThreadPoolExecutor(0,2,30,TimeUnit.SECONDS,new SynchronousQueue<>());
++    public static boolean running(){return busy.get();}
++    private static final List<Runnable> waiting=new ArrayList<>();
++    public static void check(Context context,boolean force,Runnable done){check(context,force,()->true,done);}
++    public static void check(Context context,boolean force,java.util.function.BooleanSupplier active,Runnable done){
++        Context app=context.getApplicationContext();Handler main=new Handler(Looper.getMainLooper());
++        synchronized(waiting){waiting.add(done);if(!busy.compareAndSet(false,true))return;}
++        coordinator.execute(()->{
++            try{
++                WatchlistStore store=WatchlistStore.get(app);int cid=VodConfig.getCid();long deadline=SystemClock.elapsedRealtime()+90000;
++                List<WatchlistStore.Entry> records=new ArrayList<>(store.followed());records.sort(Comparator.comparingLong(e->e.checked));
++                for(WatchlistStore.Entry e:records){
++                    if(!active.getAsBoolean()||SystemClock.elapsedRealtime()>deadline||Thread.currentThread().isInterrupted())break;
++                    if(e.cid!=cid||VodConfig.get().getSite(e.site).isEmpty())continue;
++                    if(!force&&System.currentTimeMillis()-e.checked<6*60*60*1000L)continue;
++                    Future<com.fongmi.android.tv.bean.Result> request=null;
++                    try{
++                        request=queries.submit(()->SiteApi.catalogContent(e.site,e.video));
++                        var result=request.get(15,TimeUnit.SECONDS);
++                        if(!active.getAsBoolean()||VodConfig.getCid()!=cid)break;
++                        if(result.getVod().getFlags().isEmpty()){store.failed(e.id,"片源暂未返回剧集，已保留原记录");continue;}
++                        int count=store.refresh(e.id,result.getVod());
++                        if(count>0&&store.reminders())notifyUpdate(app,e,count);
++                    }catch(Exception error){store.failed(e.id,"更新检查未完成，请稍后重试");}
++                    finally{if(request!=null)request.cancel(true);}
++                }
++            }finally{List<Runnable> callbacks;synchronized(waiting){busy.set(false);callbacks=new ArrayList<>(waiting);waiting.clear();}for(Runnable callback:callbacks)main.post(callback);}
++        });
++    }
++    private static void notifyUpdate(Context context,WatchlistStore.Entry entry,int count){
++        NotificationManager manager=context.getSystemService(NotificationManager.class);
++        if(Build.VERSION.SDK_INT>=26)manager.createNotificationChannel(new NotificationChannel("watch-updates","追剧更新",NotificationManager.IMPORTANCE_DEFAULT));
++        if(!NotificationManagerCompat.from(context).areNotificationsEnabled())return;
++        PendingIntent intent=PendingIntent.getActivity(context,0,new Intent(context,WatchlistActivity.class),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
++        try{NotificationManagerCompat.from(context).notify(entry.id.hashCode(),new NotificationCompat.Builder(context,"watch-updates").setSmallIcon(R.drawable.ic_mobile_play)
++                .setContentTitle(entry.title+" 有新剧集").setContentText("新增 "+count+" 集，点击查看追剧列表").setContentIntent(intent).setAutoCancel(true).build());}catch(SecurityException ignored){}
++    }
++}
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/watch/WatchlistJob.java b/app/src/mobile/java/com/fongmi/android/tv/watch/WatchlistJob.java
+new file mode 100644
+index 0000000..9badafb
+--- /dev/null
++++ b/app/src/mobile/java/com/fongmi/android/tv/watch/WatchlistJob.java
+@@ -0,0 +1,31 @@
++package com.fongmi.android.tv.watch;
++
++import android.app.job.*;
++import android.content.*;
++
++/** System-managed best-effort checks. Only the currently loaded subscription is queried. */
++public final class WatchlistJob extends JobService {
++    private static final int ID=59207;
++    private volatile int generation;
++    private final android.os.Handler handler=new android.os.Handler(android.os.Looper.getMainLooper());
++    public static void schedule(Context context){
++        JobScheduler scheduler=context.getSystemService(JobScheduler.class);
++        if(!WatchlistStore.get(context).reminders()){scheduler.cancel(ID);return;}
++        if(android.os.Build.VERSION.SDK_INT>=24 && scheduler.getPendingJob(ID)!=null)return;
++        scheduler.schedule(new JobInfo.Builder(ID,new ComponentName(context,WatchlistJob.class)).setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
++                .setPeriodic(6*60*60*1000L).setPersisted(true).build());
++    }
++    @Override public boolean onStartJob(JobParameters params){
++        if(!WatchlistStore.get(this).reminders())return false;
++        int token=++generation;
++        Runnable finish=()->{if(token==generation){generation++;handler.removeCallbacksAndMessages(null);jobFinished(params,false);}};
++        handler.postDelayed(finish,120000);
++        com.fongmi.android.tv.utils.Task.execute(()->{
++            // Reuse the saved current subscription after process death; never switch to another one.
++            if(com.fongmi.android.tv.api.config.VodConfig.get().getSites().isEmpty())com.fongmi.android.tv.api.config.VodConfig.get().ensureLoaded();
++            handler.post(()->{if(token==generation)WatchlistChecker.check(this,false,()->token==generation,finish);});
++        });return true;
++    }
++    @Override public boolean onStopJob(JobParameters params){generation++;handler.removeCallbacksAndMessages(null);return true;}
++    @Override public void onDestroy(){generation++;handler.removeCallbacksAndMessages(null);super.onDestroy();}
++}
+diff --git a/app/src/mobile/java/com/fongmi/android/tv/watch/WatchlistStore.java b/app/src/mobile/java/com/fongmi/android/tv/watch/WatchlistStore.java
+new file mode 100644
+index 0000000..8d022d1
+--- /dev/null
++++ b/app/src/mobile/java/com/fongmi/android/tv/watch/WatchlistStore.java
+@@ -0,0 +1,74 @@
++package com.fongmi.android.tv.watch;
++
++import android.content.Context;
++import androidx.annotation.Keep;
++import com.fongmi.android.tv.bean.*;
++import com.google.gson.Gson;
++import java.util.*;
++
++/** Local, source-scoped watch state. Signed/expiring episode URLs are deliberately not stored. */
++public final class WatchlistStore {
++    private static WatchlistStore instance;
++    public static synchronized WatchlistStore get(Context context){if(instance==null)instance=new WatchlistStore(context.getApplicationContext());return instance;}
++    @Keep public static final class Entry {
++        public String id="",site="",video="",title="",poster="",source="",flag="",error="";
++        public int cid; public boolean followed; public long checked, updated;
++        public List<String> episodes=new ArrayList<>();
++        public Set<String> known=new LinkedHashSet<>(),watched=new LinkedHashSet<>(),fresh=new LinkedHashSet<>();
++        public long watchedCount(){return episodes.stream().filter(watched::contains).count();}
++        public boolean finished(){return !episodes.isEmpty()&&watchedCount()==episodes.size();}
++    }
++    private final android.content.SharedPreferences prefs;
++    private final LinkedHashMap<String,Entry> entries=new LinkedHashMap<>();
++    private WatchlistStore(Context context){
++        prefs=context.getSharedPreferences("mobile-watchlist-v1",0);
++        try{Entry[] saved=new Gson().fromJson(prefs.getString("entries","[]"),Entry[].class);
++            if(saved!=null)for(Entry e:saved)if(e!=null&&e.id!=null&&e.site!=null&&e.video!=null&&e.title!=null&&e.episodes!=null&&e.known!=null&&e.watched!=null&&e.fresh!=null){
++                if(e.flag==null)e.flag="";if(e.error==null)e.error="";if(e.poster==null)e.poster="";if(e.source==null)e.source="";entries.put(e.id,e);
++            }
++        }catch(RuntimeException ignored){}
++    }
++    public static String id(int cid,String site,String video){return com.fongmi.android.tv.offline.OfflineMetadata.id(cid+"\n"+site+"\n"+video,Map.of());}
++    private Entry copy(Entry e){return e==null?null:new Gson().fromJson(new Gson().toJson(e),Entry.class);}
++    private void save(){prefs.edit().putString("entries",new Gson().toJson(entries.values())).apply();}
++    public synchronized Entry find(String id){return copy(entries.get(id));}
++    public synchronized List<Entry> followed(){return entries.values().stream().filter(e->e.followed).sorted(Comparator.comparingLong((Entry e)->e.updated).reversed()).map(this::copy).toList();}
++    public synchronized Entry observe(int cid,String site,String video,String source,Vod vod){
++        String id=id(cid,site,video);Entry e=entries.get(id);
++        if(e==null){e=new Entry();e.id=id;e.cid=cid;e.site=site;e.video=video;entries.put(id,e);}
++        e.title=vod.getName();e.poster=vod.getPic();e.source=source;
++        applyCatalog(e,vod);e.checked=System.currentTimeMillis();e.updated=Math.max(e.updated,e.checked);e.error="";
++        // Keep followed records; evict old, unfollowed playback state first.
++        if(entries.size()>500){Entry oldest=entries.values().stream().filter(v->!v.followed&&!v.id.equals(id)).min(Comparator.comparingLong(v->v.updated)).orElse(null);if(oldest!=null)entries.remove(oldest.id);}
++        save();return copy(e);
++    }
++    public static Set<String> applyCatalog(Entry e,Vod vod){
++        Flag chosen=null;
++        for(Flag flag:vod.getFlags())if(!flag.isBlockedPlaybackSource()&&!flag.getEpisodes().isEmpty()){
++            if(flag.getFlag().equals(e.flag)){chosen=flag;break;}
++            if(chosen==null||flag.getEpisodes().size()>chosen.getEpisodes().size())chosen=flag;
++        }
++        if(chosen==null)return Set.of();
++        List<String> names=chosen.getEpisodes().stream().filter(ep->!ep.isBlockedPlaybackEntry()).map(Episode::getName).filter(name->!name.isBlank()).distinct().toList();
++        if(names.isEmpty())return Set.of();
++        boolean sameFlag=e.flag.equals(chosen.getFlag());
++        long overlap=names.stream().filter(e.known::contains).count();
++        boolean baseline=e.known.isEmpty()||!sameFlag||(!e.episodes.isEmpty()&&overlap<Math.min(e.episodes.size(),names.size())/2.0);
++        Set<String> added=new LinkedHashSet<>(names);added.removeAll(e.known);
++        if(baseline){added.clear();e.known.clear();e.fresh.clear();}
++        e.flag=chosen.getFlag();e.episodes=new ArrayList<>(names);e.known.addAll(names);e.fresh.retainAll(names);
++        if(e.followed)e.fresh.addAll(added);else added.clear();
++        return added;
++    }
++    public synchronized void useFlag(String id,Flag flag){
++        Entry e=entries.get(id);if(e==null||flag==null||flag.getEpisodes().isEmpty()||e.flag.equals(flag.getFlag()))return;
++        Vod vod=new Vod();vod.setFlags(new ArrayList<>(List.of(flag)));applyCatalog(e,vod);save();
++    }
++    public synchronized int refresh(String id,Vod vod){Entry e=entries.get(id);if(e==null||!e.followed)return 0;int added=applyCatalog(e,vod).size();e.checked=System.currentTimeMillis();e.error="";if(added>0)e.updated=e.checked;save();return added;}
++    public synchronized void failed(String id,String reason){Entry e=entries.get(id);if(e!=null){e.checked=System.currentTimeMillis();e.error=reason;save();}}
++    public synchronized void follow(String id,boolean value){Entry e=entries.get(id);if(e!=null){e.followed=value;e.fresh.clear();e.updated=System.currentTimeMillis();save();}}
++    public synchronized void watched(String id,String episode,boolean value){Entry e=entries.get(id);if(e==null||!e.episodes.contains(episode))return;boolean changed=value?e.watched.add(episode):e.watched.remove(episode);if(value)e.fresh.remove(episode);if(changed){e.updated=System.currentTimeMillis();save();}}
++    public synchronized void opened(String id){Entry e=entries.get(id);if(e!=null){e.fresh.clear();save();}}
++    public boolean reminders(){return prefs.getBoolean("reminders",false);}
++    public void reminders(boolean value){prefs.edit().putBoolean("reminders",value).apply();}
++}
+diff --git a/app/src/mobile/res/layout/activity_history.xml b/app/src/mobile/res/layout/activity_history.xml
+index 553147a..27e8d82 100644
+--- a/app/src/mobile/res/layout/activity_history.xml
++++ b/app/src/mobile/res/layout/activity_history.xml
+@@ -1,37 +1,10 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+-    xmlns:app="http://schemas.android.com/apk/res-auto"
+-    xmlns:tools="http://schemas.android.com/tools"
+-    android:layout_width="match_parent"
+-    android:layout_height="match_parent"
+-    android:fitsSystemWindows="true"
+-    android:orientation="vertical">
+-
+-    <com.google.android.material.appbar.MaterialToolbar
+-        android:id="@+id/toolbar"
+-        android:layout_width="match_parent"
+-        android:layout_height="?attr/actionBarSize"
+-        app:menu="@menu/menu_history"
+-        app:navigationIconTint="@android:color/white"
+-        app:title="@string/app_history"
+-        app:titleTextAppearance="@style/ToolbarTextAppearance" />
+-
+-    <com.fongmi.android.tv.ui.custom.ProgressLayout
+-        android:id="@+id/progressLayout"
+-        android:layout_width="match_parent"
+-        android:layout_height="match_parent">
+-
+-        <androidx.recyclerview.widget.RecyclerView
+-            android:id="@+id/recycler"
+-            android:layout_width="match_parent"
+-            android:layout_height="match_parent"
+-            android:layout_marginTop="-8dp"
+-            android:clipChildren="false"
+-            android:clipToPadding="false"
+-            android:paddingStart="8dp"
+-            android:paddingEnd="8dp"
+-            android:paddingBottom="8dp"
+-            tools:listitem="@layout/adapter_vod" />
+-
+-    </com.fongmi.android.tv.ui.custom.ProgressLayout>
+-</androidx.appcompat.widget.LinearLayoutCompat>
+\ No newline at end of file
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:fitsSystemWindows="true" android:background="@color/mobile_background">
++<com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" app:title="观看历史" app:titleTextColor="@color/mobile_text"/>
++<TextView android:id="@+id/summary" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="20dp" android:paddingBottom="12dp" android:text="继续上次的精彩" android:textSize="14sp" android:textColor="@color/mobile_muted"/>
++<EditText android:id="@+id/search" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:layout_marginHorizontal="16dp" android:layout_marginBottom="16dp" android:paddingHorizontal="16dp" android:background="@drawable/mobile_panel" android:hint="搜索影片或来源" android:textColor="@color/mobile_text" android:textColorHint="@color/mobile_muted" android:textSize="15sp" android:singleLine="true" android:inputType="text"/>
++<FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
++<com.fongmi.android.tv.ui.custom.ProgressLayout android:id="@+id/progressLayout" android:layout_width="match_parent" android:layout_height="match_parent">
++<androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler" android:layout_width="match_parent" android:layout_height="match_parent" android:paddingHorizontal="8dp" android:clipToPadding="false" android:paddingBottom="16dp"/>
++</com.fongmi.android.tv.ui.custom.ProgressLayout>
++<TextView android:id="@+id/empty" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:padding="32dp" android:lineSpacingExtra="8dp" android:textSize="17sp" android:textColor="@color/mobile_muted" android:visibility="gone"/>
++</FrameLayout></LinearLayout>
+\ No newline at end of file
+diff --git a/app/src/mobile/res/layout/activity_keep.xml b/app/src/mobile/res/layout/activity_keep.xml
+index 85ab816..1fe78f3 100644
+--- a/app/src/mobile/res/layout/activity_keep.xml
++++ b/app/src/mobile/res/layout/activity_keep.xml
+@@ -1,37 +1,10 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+-    xmlns:app="http://schemas.android.com/apk/res-auto"
+-    xmlns:tools="http://schemas.android.com/tools"
+-    android:layout_width="match_parent"
+-    android:layout_height="match_parent"
+-    android:fitsSystemWindows="true"
+-    android:orientation="vertical">
+-
+-    <com.google.android.material.appbar.MaterialToolbar
+-        android:id="@+id/toolbar"
+-        android:layout_width="match_parent"
+-        android:layout_height="?attr/actionBarSize"
+-        app:menu="@menu/menu_keep"
+-        app:navigationIconTint="@android:color/white"
+-        app:title="@string/app_keep"
+-        app:titleTextAppearance="@style/ToolbarTextAppearance" />
+-
+-    <com.fongmi.android.tv.ui.custom.ProgressLayout
+-        android:id="@+id/progressLayout"
+-        android:layout_width="match_parent"
+-        android:layout_height="match_parent">
+-
+-        <androidx.recyclerview.widget.RecyclerView
+-            android:id="@+id/recycler"
+-            android:layout_width="match_parent"
+-            android:layout_height="match_parent"
+-            android:layout_marginTop="-8dp"
+-            android:clipChildren="false"
+-            android:clipToPadding="false"
+-            android:paddingStart="8dp"
+-            android:paddingEnd="8dp"
+-            android:paddingBottom="8dp"
+-            tools:listitem="@layout/adapter_vod" />
+-
+-    </com.fongmi.android.tv.ui.custom.ProgressLayout>
+-</androidx.appcompat.widget.LinearLayoutCompat>
+\ No newline at end of file
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:fitsSystemWindows="true" android:background="@color/mobile_background">
++<com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" app:title="我的收藏" app:titleTextColor="@color/mobile_text"/>
++<TextView android:id="@+id/summary" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="20dp" android:paddingBottom="12dp" android:text="把想看的影片留在这里" android:textSize="14sp" android:textColor="@color/mobile_muted"/>
++<EditText android:id="@+id/search" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:layout_marginHorizontal="16dp" android:layout_marginBottom="16dp" android:paddingHorizontal="16dp" android:background="@drawable/mobile_panel" android:hint="搜索影片或来源" android:textColor="@color/mobile_text" android:textColorHint="@color/mobile_muted" android:textSize="15sp" android:singleLine="true" android:inputType="text"/>
++<FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
++<com.fongmi.android.tv.ui.custom.ProgressLayout android:id="@+id/progressLayout" android:layout_width="match_parent" android:layout_height="match_parent">
++<androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler" android:layout_width="match_parent" android:layout_height="match_parent" android:paddingHorizontal="8dp" android:clipToPadding="false" android:paddingBottom="16dp"/>
++</com.fongmi.android.tv.ui.custom.ProgressLayout>
++<TextView android:id="@+id/empty" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:padding="32dp" android:lineSpacingExtra="8dp" android:textSize="17sp" android:textColor="@color/mobile_muted" android:visibility="gone"/>
++</FrameLayout></LinearLayout>
+\ No newline at end of file
+diff --git a/app/src/mobile/res/layout/activity_offline_downloads.xml b/app/src/mobile/res/layout/activity_offline_downloads.xml
+index d16ecf7..fc46fbd 100644
+--- a/app/src/mobile/res/layout/activity_offline_downloads.xml
++++ b/app/src/mobile/res/layout/activity_offline_downloads.xml
+@@ -6,15 +6,16 @@
+     <TextView android:id="@+id/storage" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="离线空间" android:textSize="20sp" android:textColor="@color/mobile_text" android:fontFamily="sans-serif-medium" />
+     <TextView android:id="@+id/storageHint" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="正在读取存储空间" android:textSize="12sp" android:textColor="@color/mobile_text" android:layout_marginTop="6dp" />
+     <com.google.android.material.progressindicator.LinearProgressIndicator android:id="@+id/storageProgress" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" app:trackCornerRadius="2dp" app:trackThickness="3dp" app:trackStopIndicatorSize="0dp" app:trackColor="#38414E" />
+-    <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/wifi" android:layout_width="match_parent" android:layout_height="48dp" android:text="仅 Wi-Fi / 非计费网络下载" android:textSize="13sp" android:textColor="@color/mobile_muted" />
++    <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/wifi" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:text="仅 Wi-Fi / 非计费网络下载" android:textSize="13sp" android:textColor="@color/mobile_muted" />
+   </LinearLayout>
+   <EditText android:id="@+id/search" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginHorizontal="16dp" android:layout_marginBottom="8dp" android:background="@drawable/mobile_panel" android:paddingHorizontal="16dp" android:hint="搜索已下载的影片或集数" android:textSize="14sp" android:textColor="@color/mobile_text" android:textColorHint="@color/mobile_muted" android:inputType="text" android:singleLine="true" android:imeOptions="actionSearch" />
+-  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="12dp">
+-    <com.google.android.material.button.MaterialButton android:id="@+id/all" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="全部" />
+-    <com.google.android.material.button.MaterialButton android:id="@+id/active" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="下载中" />
+-    <com.google.android.material.button.MaterialButton android:id="@+id/completed" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="已完成" />
+-    <com.google.android.material.button.MaterialButton android:id="@+id/failed" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="失败" />
+-  </LinearLayout>
++  <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content" android:fillViewport="true" android:scrollbars="none"><LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingHorizontal="12dp">
++    <com.google.android.material.button.MaterialButton android:id="@+id/all" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:text="全部" />
++    <com.google.android.material.button.MaterialButton android:id="@+id/active" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:text="下载中" />
++    <com.google.android.material.button.MaterialButton android:id="@+id/completed" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:text="已完成" />
++    <com.google.android.material.button.MaterialButton android:id="@+id/failed" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:text="失败" />
++  </LinearLayout></HorizontalScrollView>
++  <com.google.android.material.button.MaterialButton android:id="@+id/sort" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:layout_gravity="end" android:layout_marginEnd="12dp" android:text="最近添加 · 排序" />
+   <LinearLayout android:id="@+id/selectionBar" android:layout_width="match_parent" android:layout_height="48dp" android:paddingHorizontal="16dp" android:gravity="center_vertical" android:visibility="gone">
+     <TextView android:id="@+id/selectionCount" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textColor="@color/mobile_accent" android:textSize="14sp" />
+     <com.google.android.material.button.MaterialButton android:id="@+id/selectAll" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:text="全选当前列表" />
+diff --git a/app/src/mobile/res/layout/activity_offline_player.xml b/app/src/mobile/res/layout/activity_offline_player.xml
+index 4763403..8ad8bad 100644
+--- a/app/src/mobile/res/layout/activity_offline_player.xml
++++ b/app/src/mobile/res/layout/activity_offline_player.xml
+@@ -2,8 +2,11 @@
+   <com.google.android.material.appbar.MaterialToolbar android:id="@+id/mobileToolbar" android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" app:title="离线播放" app:titleTextColor="@android:color/white" />
+   <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+     <androidx.media3.ui.PlayerView android:id="@+id/player" android:layout_width="match_parent" android:layout_height="match_parent" app:use_controller="true" app:resize_mode="fit" app:show_buffering="when_playing" />
++    <LinearLayout android:id="@+id/scrubPreview" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:padding="8dp" android:background="@drawable/shape_control" android:orientation="vertical" android:gravity="center" android:visibility="gone"><ImageView android:id="@+id/previewImage" android:layout_width="160dp" android:layout_height="90dp" android:scaleType="fitCenter" android:importantForAccessibility="no"/><TextView android:id="@+id/previewTime" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@android:color/white" android:textSize="13sp"/></LinearLayout>
+     <LinearLayout android:layout_width="wrap_content" android:layout_height="48dp" android:gravity="center" android:id="@+id/quickControls" android:layout_gravity="top|end" android:background="@drawable/shape_control">
+       <com.google.android.material.button.MaterialButton android:id="@+id/danmaku" style="@style/Mobile.Action" android:layout_width="48dp" android:layout_height="48dp" android:text="" android:padding="12dp" app:iconPadding="0dp" app:iconGravity="textStart" app:icon="@drawable/ic_control_danmaku_on" android:contentDescription="弹幕已开启" />
++      <com.google.android.material.button.MaterialButton android:id="@+id/access" style="@style/Mobile.Action" android:layout_width="48dp" android:layout_height="48dp" android:padding="12dp" android:text="" app:iconPadding="0dp" app:icon="@drawable/ic_mobile_settings" android:contentDescription="字幕与弹幕"/>
++      <com.google.android.material.button.MaterialButton android:id="@+id/preciseSeek" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:text="定位" android:contentDescription="精确定位"/>
+       <com.google.android.material.button.MaterialButton android:id="@+id/rotate" style="@style/Mobile.Action" android:layout_width="48dp" android:layout_height="48dp" android:text="" android:padding="12dp" app:iconPadding="0dp" app:iconGravity="textStart" app:icon="@drawable/ic_mobile_full" android:contentDescription="横屏或竖屏播放" />
+     </LinearLayout>
+   </FrameLayout>
+diff --git a/app/src/mobile/res/layout/activity_video.xml b/app/src/mobile/res/layout/activity_video.xml
+index 8295ae7..6bc7ab7 100644
+--- a/app/src/mobile/res/layout/activity_video.xml
++++ b/app/src/mobile/res/layout/activity_video.xml
+@@ -20,6 +20,7 @@
+         <androidx.appcompat.widget.LinearLayoutCompat android:layout_width="match_parent" android:layout_height="wrap_content" android:clipChildren="false" android:clipToPadding="false" android:orientation="vertical" android:paddingTop="16dp" android:paddingBottom="24dp">
+           <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="16dp" android:gravity="center_vertical">
+             <TextView android:id="@+id/name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:ellipsize="end" android:maxLines="2" android:textColor="@color/mobile_text" android:textSize="22sp" android:fontFamily="sans-serif-medium" />
++            <com.google.android.material.button.MaterialButton android:id="@+id/detailFollow" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="追剧" android:paddingHorizontal="8dp" />
+             <com.google.android.material.button.MaterialButton android:id="@+id/detailKeep" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="收藏" app:icon="@drawable/ic_mobile_bookmark" android:paddingHorizontal="8dp" />
+           </LinearLayout>
+           <TextView android:id="@+id/other" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="16dp" android:layout_marginTop="4dp" android:maxLines="2" android:textColor="@color/mobile_muted" android:textSize="12sp" />
+diff --git a/app/src/mobile/res/layout/activity_watchlist.xml b/app/src/mobile/res/layout/activity_watchlist.xml
+new file mode 100644
+index 0000000..b27cb9f
+--- /dev/null
++++ b/app/src/mobile/res/layout/activity_watchlist.xml
+@@ -0,0 +1,11 @@
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@color/mobile_background">
++<com.google.android.material.appbar.MaterialToolbar android:id="@+id/mobileToolbar" android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" app:title="我的追剧" app:titleTextColor="@color/mobile_text"><com.google.android.material.button.MaterialButton android:id="@+id/checkUpdates" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:layout_gravity="end" android:text="检查更新"/></com.google.android.material.appbar.MaterialToolbar>
++<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp" android:layout_marginHorizontal="16dp" android:background="@drawable/mobile_panel">
++<com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/reminders" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:text="新剧集通知" android:textColor="@color/mobile_text" android:textSize="16sp"/>
++<TextView android:id="@+id/status" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="当前订阅载入后检查更新；后台检查由系统安排。" android:textSize="12sp" android:textColor="@color/mobile_muted" android:lineSpacingExtra="4dp"/>
++</LinearLayout>
++<EditText android:id="@+id/search" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:layout_margin="16dp" android:paddingHorizontal="16dp" android:background="@drawable/mobile_panel" android:hint="搜索追剧" android:singleLine="true" android:inputType="text" android:textColor="@color/mobile_text" android:textColorHint="@color/mobile_muted" android:textSize="15sp"/>
++<com.google.android.material.tabs.TabLayout android:id="@+id/tabs" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@color/mobile_background" app:tabMode="scrollable" app:tabSelectedTextColor="@color/mobile_accent" app:tabTextColor="@color/mobile_muted"/>
++<TextView android:id="@+id/empty" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="32dp" android:gravity="center" android:lineSpacingExtra="8dp" android:textSize="16sp" android:textColor="@color/mobile_muted"/>
++<androidx.recyclerview.widget.RecyclerView android:id="@+id/list" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:padding="8dp" android:clipToPadding="false" app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
++</LinearLayout>
+\ No newline at end of file
+diff --git a/app/src/mobile/res/layout/adapter_library.xml b/app/src/mobile/res/layout/adapter_library.xml
+new file mode 100644
+index 0000000..aeac127
+--- /dev/null
++++ b/app/src/mobile/res/layout/adapter_library.xml
+@@ -0,0 +1,9 @@
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="8dp" android:layout_marginBottom="12dp" android:background="@drawable/mobile_panel" android:padding="12dp" android:orientation="horizontal" android:gravity="center_vertical" android:focusable="true">
++<com.google.android.material.imageview.ShapeableImageView android:id="@+id/image" android:layout_width="80dp" android:layout_height="112dp" android:scaleType="centerCrop" android:background="@drawable/mobile_cover" android:importantForAccessibility="no" app:shapeAppearanceOverlay="@style/Vod.Grid.Large"/>
++<LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:paddingStart="14dp">
++<TextView android:id="@+id/name" android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="3" android:ellipsize="end" android:textSize="17sp" android:textColor="@color/mobile_text" android:fontFamily="sans-serif-medium"/>
++<TextView android:id="@+id/site" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:textSize="12sp" android:textColor="@color/mobile_muted"/>
++<TextView android:id="@+id/remark" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:textSize="13sp" android:textColor="@color/mobile_text"/>
++<com.google.android.material.progressindicator.LinearProgressIndicator android:id="@+id/progress" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" app:trackThickness="3dp" app:trackStopIndicatorSize="0dp" app:trackCornerRadius="2dp"/>
++<TextView android:id="@+id/delete" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:gravity="center_vertical" android:text="移除此记录" android:textSize="14sp" android:textColor="@color/mobile_accent" android:visibility="gone"/>
++</LinearLayout></LinearLayout>
+\ No newline at end of file
+diff --git a/app/src/mobile/res/layout/adapter_offline_group.xml b/app/src/mobile/res/layout/adapter_offline_group.xml
+new file mode 100644
+index 0000000..f322840
+--- /dev/null
++++ b/app/src/mobile/res/layout/adapter_offline_group.xml
+@@ -0,0 +1,8 @@
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp" android:layout_marginTop="8dp" android:orientation="horizontal" android:padding="14dp" android:gravity="center_vertical" android:background="@drawable/mobile_panel" android:focusable="true">
++<CheckBox android:id="@+id/check" android:layout_width="48dp" android:layout_height="48dp" android:clickable="false" android:focusable="false" android:importantForAccessibility="no" android:visibility="gone"/>
++<com.google.android.material.imageview.ShapeableImageView android:id="@+id/poster" android:layout_width="62dp" android:layout_height="86dp" android:scaleType="centerCrop" android:background="@drawable/mobile_cover" android:importantForAccessibility="no" app:shapeAppearanceOverlay="@style/Vod.Grid.Large"/>
++<LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:paddingStart="12dp" android:orientation="vertical">
++<TextView android:id="@+id/title" android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="3" android:ellipsize="end" android:textSize="18sp" android:fontFamily="sans-serif-medium" android:textColor="@color/mobile_text"/>
++<TextView android:id="@+id/summary" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:textSize="12sp" android:textColor="@color/mobile_muted"/>
++<TextView android:id="@+id/expand" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="36dp" android:gravity="center_vertical" android:layout_marginTop="2dp" android:textSize="13sp" android:textColor="@color/mobile_accent"/>
++</LinearLayout></LinearLayout>
+\ No newline at end of file
+diff --git a/app/src/mobile/res/layout/adapter_search.xml b/app/src/mobile/res/layout/adapter_search.xml
+index 3a3d020..04a584c 100644
+--- a/app/src/mobile/res/layout/adapter_search.xml
++++ b/app/src/mobile/res/layout/adapter_search.xml
+@@ -2,9 +2,9 @@
+ <com.google.android.material.imageview.ShapeableImageView android:id="@+id/image" android:layout_width="94dp" android:layout_height="132dp" android:background="@color/mobile_surface" android:scaleType="centerCrop" app:shapeAppearanceOverlay="@style/Vod.Grid.Large"/>
+ <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:minHeight="132dp" android:orientation="vertical" android:paddingStart="16dp" android:gravity="center_vertical">
+ <TextView android:id="@+id/name" android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="2" android:ellipsize="end" android:textColor="@color/mobile_text" android:fontFamily="sans-serif-medium" android:textSize="17sp"/>
+-<TextView android:id="@+id/metadata" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:maxLines="1" android:ellipsize="end" android:textColor="@color/mobile_muted" android:textSize="12sp"/>
+-<TextView android:id="@+id/remark" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:maxLines="1" android:ellipsize="end" android:textColor="@color/mobile_muted" android:textSize="12sp"/>
+-<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:gravity="center_vertical">
+-<TextView android:id="@+id/site" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:ellipsize="end" android:maxLines="1" android:textColor="@color/mobile_muted" android:textSize="12sp"/>
+-<TextView android:id="@+id/watch" android:layout_width="wrap_content" android:layout_height="32dp" android:gravity="center_vertical" android:drawableStart="@drawable/ic_mobile_play" android:drawablePadding="4dp" android:text="播放" android:textColor="@color/mobile_text" android:textSize="13sp" android:importantForAccessibility="no"/>
++<TextView android:id="@+id/metadata" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:maxLines="2" android:ellipsize="end" android:textColor="@color/mobile_muted" android:textSize="12sp"/>
++<TextView android:id="@+id/remark" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:maxLines="2" android:ellipsize="end" android:textColor="@color/mobile_muted" android:textSize="12sp"/>
++<LinearLayout android:id="@+id/resultActions" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:gravity="center_vertical">
++<TextView android:id="@+id/site" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:ellipsize="end" android:maxLines="2" android:textColor="@color/mobile_muted" android:textSize="12sp"/>
++<TextView android:id="@+id/watch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:gravity="center_vertical" android:drawableStart="@drawable/ic_mobile_play" android:drawablePadding="4dp" android:text="播放" android:textColor="@color/mobile_text" android:textSize="13sp" android:importantForAccessibility="no"/>
+ </LinearLayout></LinearLayout></LinearLayout>
+diff --git a/app/src/mobile/res/layout/dialog_control.xml b/app/src/mobile/res/layout/dialog_control.xml
+index 77cce19..a62e5fe 100644
+--- a/app/src/mobile/res/layout/dialog_control.xml
++++ b/app/src/mobile/res/layout/dialog_control.xml
+@@ -57,7 +57,8 @@
+           <com.google.android.material.button.MaterialButton android:id="@+id/replay" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:text="从头播放" app:icon="@drawable/ic_mobile_play" />
+         </com.google.android.flexbox.FlexboxLayout>
+         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="点击片头或片尾，将当前播放位置设为跳过位置。" android:textSize="12sp" android:textColor="@color/mobile_muted" />
+-        <com.google.android.material.button.MaterialButton android:id="@+id/mediaInfo" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="48dp" android:text="查看视频信息" app:icon="@drawable/ic_control_info" />
++        <com.google.android.material.button.MaterialButton android:id="@+id/preciseSeek" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:text="精确定位 · 输入时间"/>
++<com.google.android.material.button.MaterialButton android:id="@+id/mediaInfo" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="48dp" android:text="查看视频信息" app:icon="@drawable/ic_control_info" />
+       </LinearLayout>
+     </LinearLayout>
+   </androidx.core.widget.NestedScrollView>
+diff --git a/app/src/mobile/res/layout/dialog_playback_access.xml b/app/src/mobile/res/layout/dialog_playback_access.xml
+new file mode 100644
+index 0000000..8501740
+--- /dev/null
++++ b/app/src/mobile/res/layout/dialog_playback_access.xml
+@@ -0,0 +1,21 @@
++<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="16dp" android:background="@color/mobile_background">
++<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
++<TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="字幕与弹幕" android:textSize="22sp" android:fontFamily="sans-serif-medium" android:textColor="@color/mobile_text"/>
++<ImageButton android:id="@+id/close" style="@style/Mobile.Icon" android:layout_width="48dp" android:layout_height="48dp" android:src="@drawable/ic_mobile_close" android:contentDescription="关闭字幕与弹幕"/>
++</LinearLayout><androidx.core.widget.NestedScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="false"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
++<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="16dp" android:padding="16dp" android:background="@drawable/mobile_panel"><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="字幕" android:textSize="18sp" android:textColor="@color/mobile_text" android:fontFamily="sans-serif-medium"/><TextView android:id="@+id/subtitleStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textSize="14sp" android:textColor="@color/mobile_muted" android:lineSpacingExtra="4dp"/><TextView android:id="@+id/subtitleOffset" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textSize="13sp" android:textColor="@color/mobile_accent"/>
++<com.google.android.material.button.MaterialButton android:id="@+id/subtitleChoose" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:gravity="start|center_vertical" android:text="选择 / 导入字幕"/>
++<com.google.android.material.button.MaterialButton android:id="@+id/subtitleEarlier" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:gravity="start|center_vertical" android:text="字幕提前 0.5 秒"/>
++<com.google.android.material.button.MaterialButton android:id="@+id/subtitleLater" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:gravity="start|center_vertical" android:text="字幕延后 0.5 秒"/>
++<com.google.android.material.button.MaterialButton android:id="@+id/subtitleReset" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:gravity="start|center_vertical" android:text="重置字幕同步"/>
++</LinearLayout>
++<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="16dp" android:padding="16dp" android:background="@drawable/mobile_panel"><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="弹幕" android:textSize="18sp" android:textColor="@color/mobile_text" android:fontFamily="sans-serif-medium"/><TextView android:id="@+id/danmakuStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textSize="14sp" android:textColor="@color/mobile_muted" android:lineSpacingExtra="4dp"/><TextView android:id="@+id/danmakuOffset" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textSize="13sp" android:textColor="@color/mobile_accent"/>
++<com.google.android.material.button.MaterialButton android:id="@+id/danmakuToggle" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:gravity="start|center_vertical" android:text="显示弹幕"/>
++<com.google.android.material.button.MaterialButton android:id="@+id/danmakuSearch" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:gravity="start|center_vertical" android:text="重新匹配影片与集数"/>
++<com.google.android.material.button.MaterialButton android:id="@+id/danmakuChoose" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:gravity="start|center_vertical" android:text="选择来源 / 导入本地 XML"/>
++<com.google.android.material.button.MaterialButton android:id="@+id/danmakuEarlier" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:gravity="start|center_vertical" android:text="弹幕提前 0.5 秒"/>
++<com.google.android.material.button.MaterialButton android:id="@+id/danmakuLater" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:gravity="start|center_vertical" android:text="弹幕延后 0.5 秒"/>
++<com.google.android.material.button.MaterialButton android:id="@+id/danmakuReset" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:gravity="start|center_vertical" android:text="重置弹幕同步"/>
++<com.google.android.material.button.MaterialButton android:id="@+id/danmakuStyle" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:gravity="start|center_vertical" android:text="弹幕外观与高级设置"/>
++</LinearLayout>
++<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp" android:text="正数表示延后显示，负数表示提前显示。投屏到电视时，字幕与弹幕是否显示取决于接收端的支持。" android:textSize="12sp" android:textColor="@color/mobile_muted"/></LinearLayout></androidx.core.widget.NestedScrollView></LinearLayout>
+\ No newline at end of file
+diff --git a/app/src/mobile/res/layout/fragment_library.xml b/app/src/mobile/res/layout/fragment_library.xml
+index a9adad1..fbed761 100644
+--- a/app/src/mobile/res/layout/fragment_library.xml
++++ b/app/src/mobile/res/layout/fragment_library.xml
+@@ -3,6 +3,7 @@
+     <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" android:layout_width="match_parent" android:layout_height="56dp" app:title="@string/mobile_library" app:titleTextAppearance="@style/ToolbarTextAppearance">
+         <com.google.android.material.button.MaterialButton android:id="@+id/manage" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:layout_gravity="end" android:layout_marginEnd="0dp" android:text="@string/mobile_manage" app:icon="@drawable/ic_mobile_settings" />
+     </com.google.android.material.appbar.MaterialToolbar>
++    <com.google.android.material.button.MaterialButton android:id="@+id/watchlist" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:layout_marginHorizontal="16dp" android:gravity="start|center_vertical" android:text="我的追剧 · 已看记录与更新提醒 ›" />
+     <com.google.android.material.tabs.TabLayout android:id="@+id/tabs" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@color/mobile_background" app:tabMode="fixed" app:tabSelectedTextColor="@color/mobile_text" app:tabTextColor="@color/mobile_muted" style="@style/Mobile.Tabs" />
+     <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+         <androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler" android:layout_width="match_parent" android:layout_height="match_parent" android:paddingHorizontal="8dp" android:paddingBottom="16dp" android:clipToPadding="false" />
+diff --git a/app/src/mobile/res/layout/view_control_vod.xml b/app/src/mobile/res/layout/view_control_vod.xml
+index eb4034c..217279b 100644
+--- a/app/src/mobile/res/layout/view_control_vod.xml
++++ b/app/src/mobile/res/layout/view_control_vod.xml
+@@ -18,6 +18,10 @@
+     <androidx.appcompat.widget.AppCompatImageView android:id="@+id/next" android:layout_width="48dp" android:layout_height="48dp" android:background="@drawable/shape_control" android:src="@drawable/exo_icon_next" android:visibility="gone" tools:visibility="visible" android:contentDescription="下一集" android:focusable="true" android:clickable="true" />
+   </androidx.appcompat.widget.LinearLayoutCompat>
+   <include android:id="@+id/right" layout="@layout/view_control_right" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:layout_marginEnd="4dp" />
++  <LinearLayout android:id="@+id/scrubPreview" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_centerHorizontal="true" android:layout_above="@+id/bottom" android:layout_marginBottom="4dp" android:padding="6dp" android:background="@drawable/shape_control" android:orientation="vertical" android:gravity="center" android:visibility="gone">
++    <ImageView android:id="@+id/previewImage" android:layout_width="128dp" android:layout_height="72dp" android:scaleType="fitCenter" android:importantForAccessibility="no"/>
++    <TextView android:id="@+id/previewTime" android:layout_width="wrap_content" android:layout_height="wrap_content" android:maxWidth="260dp" android:gravity="center" android:textSize="12sp" android:textColor="@android:color/white"/>
++  </LinearLayout>
+   <androidx.appcompat.widget.LinearLayoutCompat android:id="@+id/bottom" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_alignParentBottom="true" android:orientation="vertical" android:paddingBottom="0dp">
+     <androidx.media3.ui.PlayerSeekView android:id="@+id/seek" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="16dp" android:paddingEnd="16dp" />
+     <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:paddingHorizontal="4dp">
+diff --git a/app/src/testMobile/java/com/fongmi/android/tv/experience/MobileLibraryTest.java b/app/src/testMobile/java/com/fongmi/android/tv/experience/MobileLibraryTest.java
+new file mode 100644
+index 0000000..3a95ef4
+--- /dev/null
++++ b/app/src/testMobile/java/com/fongmi/android/tv/experience/MobileLibraryTest.java
+@@ -0,0 +1,79 @@
++package com.fongmi.android.tv.experience;
++
++import android.content.Context;
++import android.net.Uri;
++import com.fongmi.android.tv.bean.*;
++import com.fongmi.android.tv.ui.search.SearchGroup;
++import com.fongmi.android.tv.watch.WatchlistStore;
++import com.fongmi.android.tv.player.preview.PreviewDataSource;
++import com.fongmi.android.tv.ui.dialog.PreciseSeekDialog;
++import com.fongmi.android.tv.ui.dialog.PlaybackAccessDialog;
++import com.fongmi.android.tv.player.danmaku.DanmakuStatus;
++import com.fongmi.android.tv.offline.OfflineMetadata;
++import org.junit.*;
++import org.junit.runner.RunWith;
++import org.robolectric.*;
++import org.robolectric.annotation.*;
++import org.robolectric.util.ReflectionHelpers;
++import okhttp3.mockwebserver.*;
++import java.util.*;
++import java.util.concurrent.TimeUnit;
++import static org.junit.Assert.*;
++
++@RunWith(RobolectricTestRunner.class)
++@org.robolectric.annotation.Config(sdk=35,application=com.fongmi.android.tv.offline.OfflineRuntimeTest.TestApp.class)
++@LooperMode(LooperMode.Mode.PAUSED)
++public class MobileLibraryTest {
++    private Context context;
++    @Before public void setup(){context=RuntimeEnvironment.getApplication();context.getSharedPreferences("mobile-watchlist-v1",0).edit().clear().commit();ReflectionHelpers.setStaticField(WatchlistStore.class,"instance",null);}
++    private Vod video(String name,String year,String site,String id){Vod v=new Vod();v.setName(name);v.setYear(year);v.setId(id);v.setSite(new com.google.gson.Gson().fromJson("{\"key\":\""+site+"\",\"name\":\""+site+"\"}",Site.class));return v;}
++    private Vod series(String flag,String... names){Vod v=video("星河旅途","2026","a","show");StringJoiner urls=new StringJoiner("#");for(String name:names)urls.add(name+"$https://example.invalid/"+name);v.setFlags(new ArrayList<>(List.of(Flag.create(flag,urls.toString()))));return v;}
++    @Test public void sameTitleMergesAcrossSourcesButPreservesRemakesAndSeasons(){
++        var a=video("星河 旅途 第一季","2026","a","1");var b=video("星河旅途 第一季","2026","b","2");
++        var groups=SearchGroup.of(List.of(a,b,video("星河旅途 第一季","2020","c","3"),video("星河旅途 第二季","2026","d","4")),true);
++        assertEquals(3,groups.size());assertEquals(2,groups.get(0).sources.size());assertSame(b,groups.get(0).sources.get(1));
++    }
++    @Test public void unknownYearAndDifferentEditionsRemainSeparate(){assertEquals(3,SearchGroup.of(List.of(video("旅途","2026","a","1"),video("旅途","","b","2"),video("旅途 导演剪辑版","2026","c","3")),true).size());}
++    @Test public void sourceTabDoesNotAggregateAndGroupChangeRebinds(){Vod a=video("旅途","2026","a","1"),b=video("旅途","2026","b","2");assertEquals(2,SearchGroup.of(List.of(a,b),false).size());assertFalse(SearchGroup.of(List.of(a),true).get(0).isSameContent(SearchGroup.of(List.of(a,b),true).get(0)));}
++    @Test public void repeatedSourceResultsAreDeduplicated(){Vod a=video("旅途","2026","a","1");assertEquals(1,SearchGroup.of(List.of(a,a),true).get(0).sources.size());}
++    @Test public void reorderingAndReappearingEpisodesDoNotCreateDuplicateUpdates(){
++        WatchlistStore.Entry e=new WatchlistStore.Entry();e.followed=true;assertTrue(WatchlistStore.applyCatalog(e,series("HD","第1集","第2集")).isEmpty());
++        assertTrue(WatchlistStore.applyCatalog(e,series("HD","第2集","第1集")).isEmpty());
++        assertEquals(Set.of("第3集"),WatchlistStore.applyCatalog(e,series("HD","第1集","第2集","第3集")));
++        WatchlistStore.applyCatalog(e,series("HD","第1集","第2集"));assertTrue(WatchlistStore.applyCatalog(e,series("HD","第1集","第2集","第3集")).isEmpty());
++    }
++    @Test public void replacingEpisodeLabelsOrSourceDoesNotNotifyEntireSeries(){WatchlistStore.Entry e=new WatchlistStore.Entry();e.followed=true;WatchlistStore.applyCatalog(e,series("HD","第1集","第2集"));assertTrue(WatchlistStore.applyCatalog(e,series("HD","EP01","EP02")).isEmpty());assertTrue(WatchlistStore.applyCatalog(e,series("4K","第1集","第2集","第3集")).isEmpty());}
++    @Test public void followedWatchedAndUpdatesPersistIndependently(){
++        WatchlistStore store=WatchlistStore.get(context);var e=store.observe(5,"a","show","来源",series("HD","1","2"));store.follow(e.id,true);store.watched(e.id,"1",true);assertEquals(1,store.refresh(e.id,series("HD","1","2","3")));
++        ReflectionHelpers.setStaticField(WatchlistStore.class,"instance",null);store=WatchlistStore.get(context);e=store.find(e.id);assertTrue(e.followed);assertEquals(1,e.watchedCount());assertEquals(Set.of("3"),e.fresh);store.watched(e.id,"1",false);assertEquals(0,store.find(e.id).watchedCount());assertFalse(store.reminders());
++    }
++    @Test public void watchedStateUsesTheLineChosenForPlayback(){
++        var store=WatchlistStore.get(context);var entry=store.observe(1,"a","1","source",series("HD","1","2"));
++        store.useFlag(entry.id,Flag.create("4K","第1集$https://example.invalid/1#第2集$https://example.invalid/2"));
++        store.watched(entry.id,"第1集",true);assertEquals(1,store.find(entry.id).watchedCount());assertEquals("4K",store.find(entry.id).flag);
++    }
++    @Test public void identitySeparatesSubscriptionsAndSources(){assertNotEquals(WatchlistStore.id(1,"a","1"),WatchlistStore.id(2,"a","1"));assertNotEquals(WatchlistStore.id(1,"a","1"),WatchlistStore.id(1,"b","1"));}
++    @Test public void corruptStoredWatchlistDoesNotCrash(){context.getSharedPreferences("mobile-watchlist-v1",0).edit().putString("entries","[{\"id\":null}]").commit();assertTrue(WatchlistStore.get(context).followed().isEmpty());}
++    @Test public void oldDownloadMetadataHasSafeGroupingFallback(){OfflineMetadata m=OfflineMetadata.decode("{\"title\":\"旅途\",\"episode\":\"1\"}".getBytes());assertEquals("legacy:旅途",m.groupKey());assertEquals("",m.poster);m.showId="source-id";assertEquals("source-id",OfflineMetadata.decode(m.encode()).groupKey());}
++    @Test public void preciseSeekParsesHoursAndRejectsInvalidOrPastEnd(){assertEquals(3723000,PreciseSeekDialog.parse("1:02:03",4000000));assertEquals(123000,PreciseSeekDialog.parse("02:03",200000));for(String value:List.of("1:60","-1","1:2:3:4","999999999999","abc","100:00"))assertThrows(IllegalArgumentException.class,()->PreciseSeekDialog.parse(value,300000));}
++    @Test public void missingDanmakuExplainsFailureRatherThanPretendingReady(){assertTrue(PlaybackAccessDialog.statusText(DanmakuStatus.failed(DanmakuStatus.Failure.NO_MATCH)).contains("核对"));assertTrue(PlaybackAccessDialog.statusText(DanmakuStatus.failed(DanmakuStatus.Failure.EMPTY_DOCUMENT)).contains("空弹幕"));assertTrue(PlaybackAccessDialog.statusText(DanmakuStatus.ready(12)).contains("12"));}
++    @Test public void previewRequiresRangeAndPreservesHeaders()throws Exception{
++        try(MockWebServer server=new MockWebServer()){
++            server.enqueue(new MockResponse().setResponseCode(206).setHeader("Content-Range","bytes 131072-131075/131076").setBody("test"));server.start();
++            try(PreviewDataSource data=new PreviewDataSource(Uri.parse(server.url("/video.mp4").toString()),Map.of("Authorization","test-only","Range","bytes=0-"),null,-1)){
++                byte[] out=new byte[4];assertEquals(4,data.readAt(131072,out,0,4));assertEquals("test",new String(out));assertEquals(131076,data.getSize());
++                var request=server.takeRequest(2,TimeUnit.SECONDS);assertEquals("test-only",request.getHeader("Authorization"));assertEquals("bytes=131072-262143",request.getHeader("Range"));
++            }
++        }
++    }
++    @Test public void previewRejectsServerIgnoringRangeWithoutDownloadingMovie()throws Exception{
++        try(MockWebServer server=new MockWebServer()){server.enqueue(new MockResponse().setBody("ignored"));server.start();try(PreviewDataSource data=new PreviewDataSource(Uri.parse(server.url("/movie").toString()),Map.of(),null,2000000)){assertThrows(java.io.IOException.class,()->data.readAt(1000000,new byte[100],0,100));}}
++    }
++    @Test public void updateJobsOnlyRunAfterOptIn(){
++        var scheduler=context.getSystemService(android.app.job.JobScheduler.class);scheduler.cancelAll();
++        com.fongmi.android.tv.watch.WatchlistJob.schedule(context);assertTrue(scheduler.getAllPendingJobs().isEmpty());
++        WatchlistStore.get(context).reminders(true);com.fongmi.android.tv.watch.WatchlistJob.schedule(context);assertEquals(1,scheduler.getAllPendingJobs().size());assertEquals(21600000,scheduler.getAllPendingJobs().get(0).getIntervalMillis());
++        WatchlistStore.get(context).reminders(false);com.fongmi.android.tv.watch.WatchlistJob.schedule(context);assertTrue(scheduler.getAllPendingJobs().isEmpty());
++    }
++    @Test public void cancelledPreviewMakesNoRequest()throws Exception{try(PreviewDataSource data=new PreviewDataSource(Uri.parse("https://example.invalid/video"),Map.of(),null,-1)){data.cancel();assertThrows(java.io.IOException.class,()->data.readAt(0,new byte[1],0,1));}}
++}
