@@ -18,6 +18,7 @@ public final class PreviewDataSource extends MediaDataSource {
     private final long deadline=SystemClock.elapsedRealtime()+6000;
     private volatile boolean cancelled;private volatile Call call;private long size;private int bytes,requests;
     public PreviewDataSource(Uri uri,Map<String,String> headers,DataSource.Factory local,long size){this.uri=uri;this.headers=new HashMap<>(headers);this.local=local;this.size=size>0?size:-1;}
+    boolean availableForPreview(){return !cancelled && SystemClock.elapsedRealtime() < deadline;}
     private void check()throws IOException{if(cancelled||SystemClock.elapsedRealtime()>deadline||bytes>=MAX_BYTES||requests>=40)throw new IOException("Preview budget exhausted");}
     @Override public synchronized int readAt(long position,byte[] buffer,int offset,int length)throws IOException{
         check();if(position<0||offset<0||length<0||offset>buffer.length-length)throw new IOException("Invalid read");if(length==0)return 0;if(size>=0&&position>=size)return -1;

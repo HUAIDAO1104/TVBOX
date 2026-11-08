@@ -441,7 +441,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
             snapshotRenderScheduled = true;
             // Coalesce closely spaced provider callbacks into one frame. The data remains
             // incremental; this only avoids repeated layout/Diff work on the main thread.
-            binding.resultArea.postDelayed(renderPendingSnapshot, 320);
+            binding.resultArea.postOnAnimation(renderPendingSnapshot);
         }
     }
 
@@ -472,9 +472,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         borrowedPosterBySource.clear();
         borrowedPosterBySource.putAll(index.posters());
         groupedWorks = index.groups();
-        Map<String, Integer> counts = new LinkedHashMap<>();
-        groupedWorks.forEach((id, work) -> counts.put(id, (int) work.sources().stream().map(source -> source.repositoryId() + source.configId() + source.siteKey()).distinct().count()));
-        workAdapter.updateSourceCounts(counts);
+        workAdapter.updateSourceCounts(index.sourceCounts());
         activateFamily(activeSourceFamily);
         workAdapter.updatePosterOverrides(borrowedPosterBySource);
         submitWorks();

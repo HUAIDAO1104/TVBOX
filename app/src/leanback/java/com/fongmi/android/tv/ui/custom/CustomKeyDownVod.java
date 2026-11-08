@@ -17,7 +17,10 @@ public class CustomKeyDownVod extends GestureDetector.SimpleOnGestureListener {
     private final Listener listener;
     private boolean changeSpeed;
     private boolean full;
+    private boolean seeking;
     private long holdTime;
+    private final Runnable finishSeek = this::finishSeek;
+    private void finishSeek() { if (seeking) listener.onSeekEnd(holdTime); }
 
     public static CustomKeyDownVod create(Activity activity) {
         return new CustomKeyDownVod(activity);
@@ -55,11 +58,15 @@ public class CustomKeyDownVod extends GestureDetector.SimpleOnGestureListener {
 
     private void check(KeyEvent event) {
         if (KeyUtil.isActionDown(event) && KeyUtil.isLeftKey(event)) {
+            seeking = true;
+            App.removeCallbacks(finishSeek);
             listener.onSeeking(subTime());
         } else if (KeyUtil.isActionDown(event) && KeyUtil.isRightKey(event)) {
+            seeking = true;
+            App.removeCallbacks(finishSeek);
             listener.onSeeking(addTime());
         } else if (KeyUtil.isActionUp(event) && (KeyUtil.isLeftKey(event) || KeyUtil.isRightKey(event))) {
-            App.post(() -> listener.onSeekEnd(holdTime), 250);
+            if (seeking) App.post(finishSeek, 250);
         } else if (KeyUtil.isActionUp(event) && KeyUtil.isUpKey(event)) {
             if (changeSpeed) listener.onSpeedEnd();
             else listener.onKeyUp();
@@ -95,6 +102,8 @@ public class CustomKeyDownVod extends GestureDetector.SimpleOnGestureListener {
     }
 
     public void reset() {
+        App.removeCallbacks(finishSeek);
+        seeking = false;
         holdTime = 0;
     }
 

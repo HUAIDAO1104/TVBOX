@@ -22,6 +22,7 @@ public final class SearchResultIndex {
     private final Map<String, List<Vod>> fallbackCandidatesBySource = new LinkedHashMap<>();
     private final Map<String, String> borrowedPosterBySource = new LinkedHashMap<>();
     private final Map<String, SearchWork> groupsBySource = new LinkedHashMap<>();
+    private final Map<String, Integer> sourceCounts = new HashMap<>();
     private final SearchAggregator fallbackAggregator;
     private SearchSnapshot previous;
 
@@ -71,22 +72,27 @@ public final class SearchResultIndex {
         }
         changed.values().forEach(work -> {
             refreshBorrowedPosters(work);
-            for (SearchSource source : work.sources()) groupsBySource.put(source.stableId(), work);
+            int count = (int) work.sources().stream().map(source ->
+                    List.of(source.repositoryId(), source.configId(), source.siteKey())).distinct().count();
+            for (SearchSource source : work.sources()) {
+                groupsBySource.put(source.stableId(), work);
+                sourceCounts.put(source.stableId(), count);
+            }
+            updateFallbackCandidates(work);
         });
-        rebuildFallbackCandidates(fallbackAggregator, allVodBySource);
         previous = next;
         Map<String, SearchAggregator> copies = new LinkedHashMap<>();
         aggregators.forEach((family, value) -> copies.put(family, value.copy()));
         Map<String, Map<String, Vod>> sources = new LinkedHashMap<>();
         vods.forEach((family, value) -> sources.put(family, Map.copyOf(value)));
         return new Snapshot(next, Map.copyOf(copies), Map.copyOf(sources), Map.copyOf(allVodBySource),
-                Map.copyOf(fallbackCandidatesBySource), Map.copyOf(borrowedPosterBySource), Map.copyOf(groupsBySource));
+                Map.copyOf(fallbackCandidatesBySource), Map.copyOf(borrowedPosterBySource), Map.copyOf(groupsBySource), Map.copyOf(sourceCounts));
     }
 
     public record Snapshot(SearchSnapshot raw, Map<String, SearchAggregator> families,
                            Map<String, Map<String, Vod>> vods, Map<String, Vod> allVods,
                            Map<String, List<Vod>> candidates, Map<String, String> posters,
-                           Map<String, SearchWork> groups) { }
+                           Map<String, SearchWork> groups, Map<String, Integer> sourceCounts) { }
 
     private SearchSource sourceFrom(Vod vod) {
         Site site = vod.getSite() == null ? new Site() : vod.getSite();
@@ -174,17 +180,14 @@ public final class SearchResultIndex {
         for (SearchSource source : work.sources()) borrowedPosterBySource.put(source.stableId(), poster);
     }
 
-    private void rebuildFallbackCandidates(SearchAggregator grouped, Map<String, Vod> allSources) {
-        fallbackCandidatesBySource.clear();
-        for (SearchWork work : grouped.works()) {
-            List<Vod> candidates = new ArrayList<>();
-            for (SearchSource source : work.rankedSources()) {
-                Vod vod = allSources.get(source.stableId());
-                if (vod != null && vod.getSite() != null) candidates.add(vod);
-            }
-            if (candidates.isEmpty()) continue;
-            List<Vod> snapshot = List.copyOf(candidates);
-            for (SearchSource source : work.sources()) fallbackCandidatesBySource.put(source.stableId(), snapshot);
+    private void updateFallbackCandidates(SearchWork work) {
+        List<Vod> candidates = new ArrayList<>();
+        for (SearchSource source : work.rankedSources()) {
+            Vod vod = allVodBySource.get(source.stableId());
+            if (vod != null && vod.getSite() != null) candidates.add(vod);
         }
+        if (candidates.isEmpty()) return;
+        List<Vod> snapshot = List.copyOf(candidates);
+        for (SearchSource source : work.sources()) fallbackCandidatesBySource.put(source.stableId(), snapshot);
     }
 }

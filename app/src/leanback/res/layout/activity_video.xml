@@ -427,6 +427,32 @@
             android:layout_gravity="bottom"
             android:visibility="gone" />
 
+        <LinearLayout
+            android:id="@+id/scrubPreview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="28dp"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="8dp"
+            android:background="@drawable/player_v2_widget_surface"
+            android:visibility="gone">
+            <ImageView
+                android:id="@+id/previewImage"
+                android:layout_width="160dp"
+                android:layout_height="90dp"
+                android:importantForAccessibility="no"
+                android:scaleType="fitCenter" />
+            <TextView
+                android:id="@+id/previewTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFeatureSettings="tnum"
+                android:textColor="@color/tv_text_primary"
+                android:textSize="15sp" />
+        </LinearLayout>
+
         <include
             android:id="@+id/progress"
             layout="@layout/player_v2_progress"

@@ -28,7 +28,7 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
     private int tabsGeneration;
     private SearchAdapter adapter;
     private List<Site> sites = List.of();
-    private final Map<String, List<Vod>> rows = new LinkedHashMap<>();
+    private final Map<String, List<SearchRowsViewModel.Hit>> rows = new LinkedHashMap<>();
     private final Map<String, Parcelable> positions = new HashMap<>();
     private String active = "";
     private boolean updatingTabs;
@@ -159,7 +159,7 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
     private void renderRows(boolean restore) {
         if (binding == null) return;
         String key = active; int generation = ++renderGeneration;
-        adapter.setItems(com.fongmi.android.tv.ui.search.SearchGroup.of(rows.getOrDefault(key, List.of()), key.isEmpty()), () -> {
+        adapter.setItems(rows.getOrDefault(key, List.of()), () -> {
             if (binding == null || generation != renderGeneration || !active.equals(key)) return;
             if (restore) {
                 Parcelable position = positions.get(key);
@@ -172,7 +172,7 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
     private void renderStatus() {
         if (binding == null || model == null) return;
         int count = rows.getOrDefault("", List.of()).size();
-        binding.status.setText(getString(R.string.mobile_results_progress, progress.completed(), progress.total(), count) + (active.isEmpty() ? " · 合并为 " + adapter.getItemCount() + " 部" : ""));
+        binding.status.setText(getString(R.string.mobile_results_progress, progress.completed(), progress.total(), count));
         binding.progress.setVisibility(progress.running() ? View.VISIBLE : View.INVISIBLE);
         binding.stop.setVisibility(progress.running() ? View.VISIBLE : View.GONE);
         boolean failed = sites.stream().anyMatch(s -> (active.isEmpty() || active.equals(s.getKey())) && model.sourceState(s) != null && model.sourceState(s).failed());

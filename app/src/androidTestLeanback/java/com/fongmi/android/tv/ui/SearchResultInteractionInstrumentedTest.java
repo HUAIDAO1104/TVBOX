@@ -76,7 +76,7 @@ public class SearchResultInteractionInstrumentedTest {
             snapshot(activity, List.of(
                     Result.list(List.of(vod("甲源", "1", "庆余年"), vod("甲源", "1", "庆余年"),
                             vod("甲源", "2", "庆余年预告"))),
-                    Result.list(List.of(vod("乙源", "1", "庆余年花絮"))),
+                    Result.empty(),
                     Result.list(List.of(vod("丙源", "1", "庆余年"), vod("丙源", "2", "庆余年")))));
         });
         idle();
@@ -96,7 +96,7 @@ public class SearchResultInteractionInstrumentedTest {
     public void focusSwitchesWithoutConfirmAndCountsMatchVisibleCardsIncludingEmptySource() {
         for (String id : List.of("甲源", "乙源", "丙源", ALL)) {
             focus(id);
-            int expected = id.equals("甲源") ? 1 : id.equals("乙源") ? 0 : id.equals("丙源") ? 2 : 3;
+            int expected = id.equals("甲源") ? 2 : id.equals("乙源") ? 0 : id.equals("丙源") ? 2 : 4;
             assertSelection(id, expected);
         }
         android.graphics.Bitmap screenshot = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
@@ -130,9 +130,9 @@ public class SearchResultInteractionInstrumentedTest {
             snapshot(activity, results);
         });
         idle();
-        assertSelection("甲源", 2);
+        assertSelection("甲源", 4);
         focus(ALL);
-        assertSelection(ALL, 4);
+        assertSelection(ALL, 6);
         scenario.onActivity(activity -> snapshot(activity,
                 List.of(Result.list(List.of(vod("甲源", "5", "庆余年"))))));
         idle();

@@ -374,6 +374,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     @Override
     protected void onNewIntent(Intent intent) {
+        resetSeekPreview();
         String oldId = getId();
         String oldKey = getKey();
         super.onNewIntent(intent);
@@ -547,7 +548,33 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         mBinding.quick.setAdapter(mQuickAdapter = new QuickAdapter(this));
     }
 
+    private com.fongmi.android.tv.player.preview.ScrubPreview scrubPreview;
+    private long remoteSeekStart = C.TIME_UNSET;
+    private long remoteSeekTarget = C.TIME_UNSET;
+    private void resetSeekPreview() {
+        remoteSeekStart = remoteSeekTarget = C.TIME_UNSET;
+        if (mKeyDown != null) mKeyDown.reset();
+        if (scrubPreview != null) scrubPreview.hide();
+    }
+
+    private void showSeekPreview(long position) {
+        if (scrubPreview == null || service() == null) return;
+        var item = player().getCurrentMediaItem();
+        if (item == null) return;
+        var config = item.localConfiguration;
+        boolean canPreview = config != null && config.drmConfiguration == null && !player().getPlayer().isCurrentMediaItemLive();
+        mBinding.widget.center.setVisibility(View.GONE);
+        mBinding.scrubPreview.setTranslationY(isVisible(mBinding.control.getRoot()) ? -mBinding.control.getRoot().getHeight() : 0);
+        scrubPreview.show(canPreview ? config.uri : null, player().getHeaders(), config == null ? null : config.mimeType, position, null, -1);
+    }
+
     private void setVideoView() {
+        scrubPreview = new com.fongmi.android.tv.player.preview.ScrubPreview(mBinding.scrubPreview, mBinding.previewImage, mBinding.previewTime);
+        getSeekView().getTimeBar().addListener(new androidx.media3.ui.TimeBar.OnScrubListener() {
+            public void onScrubStart(androidx.media3.ui.TimeBar bar, long position) { showSeekPreview(position); }
+            public void onScrubMove(androidx.media3.ui.TimeBar bar, long position) { showSeekPreview(position); }
+            public void onScrubStop(androidx.media3.ui.TimeBar bar, long position, boolean canceled) { scrubPreview.hide(); }
+        });
         setSeekNextFocusDown(R.id.next);
         PlayerEngineDialog.setText(mBinding.control.action.player);
         int touchActionVisibility = Util.isMobile() ? View.VISIBLE : View.GONE;
@@ -1647,6 +1674,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     private void exitFullscreen() {
+        resetSeekPreview();
         setFullscreen(false);
         mBinding.video.setForeground(ResUtil.getDrawable(R.drawable.selector_video));
         mBinding.video.setLayoutParams(mFrameParams);
@@ -2286,6 +2314,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     @Override
     protected void onPrepare() {
+        resetSeekPreview();
         setPlaybackMode();
     }
 
@@ -2306,6 +2335,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     @Override
     protected void onError(String msg) {
+        resetSeekPreview();
         mVod.playbackError(msg);
     }
 
@@ -2546,17 +2576,22 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     @Override
     public void onSeeking(long time) {
-        mBinding.widget.center.setVisibility(View.VISIBLE);
-        mBinding.widget.duration.setText(player().getDurationTime());
-        mBinding.widget.position.setText(player().getPositionTime(time));
-        mBinding.widget.action.setImageResource(time > 0 ? R.drawable.ic_widget_forward : R.drawable.ic_widget_rewind);
+        if (remoteSeekStart == C.TIME_UNSET) remoteSeekStart = player().getPosition();
+        long target = Math.max(0, remoteSeekStart + time);
+        if (player().getDuration() > 0) target = Math.min(target, player().getDuration());
+        remoteSeekTarget = target;
+        showSeekPreview(target);
         hideProgress();
     }
 
     @Override
     public void onSeekEnd(long time) {
-        mKeyDown.reset();
-        seekTo(time);
+        long target = remoteSeekTarget;
+        resetSeekPreview();
+        if (controller() != null && target != C.TIME_UNSET) {
+            controller().seekTo(target);
+            controller().play();
+        }
     }
 
     @Override
@@ -2633,12 +2668,14 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     @Override
     protected void onStop() {
+        resetSeekPreview();
         super.onStop();
         if (PlayerSetting.isBackgroundOff()) mClock.stop();
     }
 
     @Override
     protected void onBackInvoked() {
+        if (isVisible(mBinding.scrubPreview) && !isScrubbing()) { resetSeekPreview(); return; }
         if (isVisible(mBinding.progress.getRoot())) {
             mVod.cancelFallback();
             mViewModel.stopSearch();
@@ -2664,6 +2701,8 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     @Override
     protected void onDestroy() {
+        resetSeekPreview();
+        if (scrubPreview != null) scrubPreview.close();
         App.removeCallbacks(fallbackDeadline);
         cancelRepositorySiteResolve();
         if (mVod != null) mVod.cancelFallback();

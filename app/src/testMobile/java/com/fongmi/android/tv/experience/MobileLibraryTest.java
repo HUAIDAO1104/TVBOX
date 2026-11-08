@@ -3,7 +3,8 @@ package com.fongmi.android.tv.experience;
 import android.content.Context;
 import android.net.Uri;
 import com.fongmi.android.tv.bean.*;
-import com.fongmi.android.tv.ui.search.SearchGroup;
+import com.fongmi.android.tv.model.SearchRowsViewModel.Index;
+import com.fongmi.android.tv.model.SearchSnapshot;
 import com.fongmi.android.tv.watch.WatchlistStore;
 import com.fongmi.android.tv.player.preview.PreviewDataSource;
 import com.fongmi.android.tv.ui.dialog.PreciseSeekDialog;
@@ -28,14 +29,20 @@ public class MobileLibraryTest {
     @Before public void setup(){context=RuntimeEnvironment.getApplication();context.getSharedPreferences("mobile-watchlist-v1",0).edit().clear().commit();ReflectionHelpers.setStaticField(WatchlistStore.class,"instance",null);}
     private Vod video(String name,String year,String site,String id){Vod v=new Vod();v.setName(name);v.setYear(year);v.setId(id);v.setSite(new com.google.gson.Gson().fromJson("{\"key\":\""+site+"\",\"name\":\""+site+"\"}",Site.class));return v;}
     private Vod series(String flag,String... names){Vod v=video("星河旅途","2026","a","show");StringJoiner urls=new StringJoiner("#");for(String name:names)urls.add(name+"$https://example.invalid/"+name);v.setFlags(new ArrayList<>(List.of(Flag.create(flag,urls.toString()))));return v;}
-    @Test public void sameTitleMergesAcrossSourcesButPreservesRemakesAndSeasons(){
-        var a=video("星河 旅途 第一季","2026","a","1");var b=video("星河旅途 第一季","2026","b","2");
-        var groups=SearchGroup.of(List.of(a,b,video("星河旅途 第一季","2020","c","3"),video("星河旅途 第二季","2026","d","4")),true);
-        assertEquals(3,groups.size());assertEquals(2,groups.get(0).sources.size());assertSame(b,groups.get(0).sources.get(1));
+    @Test public void fastResultDoesNotWaitForOtherSourcesOrLoseItsIdentity() {
+        Index index = new Index();
+        Vod a=video("旅途","2026","a","1"), b=video("旅途","2026","b","1");
+        Result first=Result.list(List.of(a,a)), second=Result.list(List.of(b));
+        var partial=index.update(new SearchSnapshot(1,List.of(first)));
+        assertEquals(1,partial.sources().get("").size());
+        var complete=index.update(new SearchSnapshot(1,List.of(first,second)));
+        assertEquals(2,complete.sources().get("").size());
+        assertFalse(complete.sources().get("a").get(0).isSameItem(complete.sources().get("b").get(0)));
+        assertSame(b,complete.sources().get("").get(1).vod());
+        assertEquals(1,partial.sources().get("").size());
+        assertTrue(index.update(new SearchSnapshot(2,List.of())).sources().get("").isEmpty());
     }
-    @Test public void unknownYearAndDifferentEditionsRemainSeparate(){assertEquals(3,SearchGroup.of(List.of(video("旅途","2026","a","1"),video("旅途","","b","2"),video("旅途 导演剪辑版","2026","c","3")),true).size());}
-    @Test public void sourceTabDoesNotAggregateAndGroupChangeRebinds(){Vod a=video("旅途","2026","a","1"),b=video("旅途","2026","b","2");assertEquals(2,SearchGroup.of(List.of(a,b),false).size());assertFalse(SearchGroup.of(List.of(a),true).get(0).isSameContent(SearchGroup.of(List.of(a,b),true).get(0)));}
-    @Test public void repeatedSourceResultsAreDeduplicated(){Vod a=video("旅途","2026","a","1");assertEquals(1,SearchGroup.of(List.of(a,a),true).get(0).sources.size());}
+
     @Test public void reorderingAndReappearingEpisodesDoNotCreateDuplicateUpdates(){
         WatchlistStore.Entry e=new WatchlistStore.Entry();e.followed=true;assertTrue(WatchlistStore.applyCatalog(e,series("HD","第1集","第2集")).isEmpty());
         assertTrue(WatchlistStore.applyCatalog(e,series("HD","第2集","第1集")).isEmpty());

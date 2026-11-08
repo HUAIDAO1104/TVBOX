@@ -9,10 +9,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.fongmi.android.tv.bean.Vod;
+import com.fongmi.android.tv.model.SearchRowsViewModel.Hit;
 import com.fongmi.android.tv.databinding.AdapterSearchBinding;
 import com.fongmi.android.tv.utils.ImgUtil;
 
-public class SearchAdapter extends BaseDiffAdapter<com.fongmi.android.tv.ui.search.SearchGroup, SearchAdapter.ViewHolder> {
+public class SearchAdapter extends BaseDiffAdapter<Hit, SearchAdapter.ViewHolder> {
 
     private final OnClickListener listener;
 
@@ -33,8 +34,7 @@ public class SearchAdapter extends BaseDiffAdapter<com.fongmi.android.tv.ui.sear
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        com.fongmi.android.tv.ui.search.SearchGroup group = getItem(position);
-        Vod item = group.first();
+        Vod item = getItem(position).vod();
         boolean large=holder.itemView.getResources().getConfiguration().fontScale>=1.4f;
         holder.binding.resultActions.setOrientation(large?android.widget.LinearLayout.VERTICAL:android.widget.LinearLayout.HORIZONTAL);
         holder.binding.site.setLayoutParams(new android.widget.LinearLayout.LayoutParams(large?ViewGroup.LayoutParams.MATCH_PARENT:0,ViewGroup.LayoutParams.WRAP_CONTENT,large?0:1));
@@ -43,18 +43,12 @@ public class SearchAdapter extends BaseDiffAdapter<com.fongmi.android.tv.ui.sear
         String metadata = java.util.stream.Stream.of(item.getYear(), item.getArea(), item.getTypeName()).filter(v -> v != null && !v.isEmpty()).collect(java.util.stream.Collectors.joining(" · "));
         holder.binding.metadata.setText(metadata);
         holder.binding.metadata.setVisibility(metadata.isEmpty() ? View.GONE : View.VISIBLE);
-        holder.binding.watch.setText(group.sources.size()>1 ? "选择来源" : item.isFolder() ? "打开" : "播放");
+        holder.binding.watch.setText(item.isFolder() ? "打开" : "播放");
         holder.binding.remark.setText(item.getRemarks());
         holder.binding.site.setVisibility(item.getSiteVisible());
-        if(group.sources.size()>1){holder.binding.site.setVisibility(View.VISIBLE);holder.binding.site.setText(group.sources.size()+" 个播放选项");}
         holder.binding.remark.setVisibility(item.getRemarkVisible());
         holder.binding.getRoot().setContentDescription(item.getName()+"，"+metadata+"，"+holder.binding.site.getText()+"，"+holder.binding.watch.getText());
-        holder.binding.getRoot().setOnClickListener(v -> {
-            if(group.sources.size()==1){listener.onItemClick(item);return;}
-            String[] labels=group.sources.stream().map(source->com.fongmi.android.tv.ui.search.SearchDisplayName.clean(source.getSiteName())+" · "+source.getName()+"\n"+source.getYear()+" "+source.getRemarks()).toArray(String[]::new);
-            new com.google.android.material.dialog.MaterialAlertDialogBuilder(v.getContext()).setTitle(item.getName()+" · 选择来源")
-                .setItems(labels,(dialog,which)->listener.onItemClick(group.sources.get(which))).setNegativeButton("取消",null).show();
-        });
+        holder.binding.getRoot().setOnClickListener(v -> listener.onItemClick(item));
         ImgUtil.load(item.getName(), item.getPic(), holder.binding.image);
     }
 

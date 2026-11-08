@@ -98,7 +98,7 @@ public final class SearchAggregator {
      * the source lane without weakening the conservative title aggregation used elsewhere.
      */
     public synchronized Update addUnaggregated(SearchSource source) {
-        if (source == null || !relevance.isRelevant(normalizedKeyword, source)) return filtered();
+        if (source == null) return filtered();
         String existingWorkId = sourceToWork.get(source.stableId());
         if (existingWorkId != null) return updateExisting(existingWorkId, source);
         String workId = SearchStableIds.create("raw", source.stableId());

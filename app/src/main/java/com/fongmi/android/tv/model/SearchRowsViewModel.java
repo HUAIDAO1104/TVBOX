@@ -9,9 +9,54 @@ import com.fongmi.android.tv.bean.Vod;
 import java.util.*;
 import java.util.concurrent.*;
 
-/** Mobile result grouping is worker-owned; coalescing never drops a source from a snapshot. */
+/** Incremental source rows. A slow provider cannot delay publishing an earlier response. */
 public final class SearchRowsViewModel extends ViewModel {
-    public record Rows(int session, Map<String, List<Vod>> sources) { }
+    public record Rows(int session, Map<String, List<Hit>> sources) { }
+    /** Source-local IDs are not globally unique. Keep selection and DiffUtil on the same identity. */
+    public record Hit(Vod vod) implements com.fongmi.android.tv.impl.Diffable<Hit> {
+        private static String id(Vod vod) { return vod.getId().isEmpty() ? "name:" + vod.getName() : "id:" + vod.getId(); }
+        @Override public boolean isSameItem(Hit other) {
+            return vod.getSiteKey().equals(other.vod.getSiteKey()) && id(vod).equals(id(other.vod));
+        }
+        @Override public boolean isSameContent(Hit other) {
+            return vod.isSameContent(other.vod) && vod.getYear().equals(other.vod.getYear())
+                    && vod.getArea().equals(other.vod.getArea()) && vod.getTypeName().equals(other.vod.getTypeName())
+                    && vod.isFolder() == other.vod.isFolder();
+        }
+    }
+
+    public static final class Index {
+        private final Map<String, LinkedHashMap<String, Hit>> perSite = new LinkedHashMap<>();
+        private final LinkedHashMap<List<String>, Hit> all = new LinkedHashMap<>();
+        private final Map<String, List<Hit>> lists = new LinkedHashMap<>();
+        private SearchSnapshot previous;
+
+        public Rows update(SearchSnapshot next) {
+            int start = 0;
+            if (previous != null && previous.session() == next.session()
+                    && previous.results().size() <= next.results().size()
+                    && next.results().subList(0, previous.results().size()).equals(previous.results())) {
+                start = previous.results().size();
+            } else {
+                perSite.clear(); all.clear(); lists.clear();
+            }
+            Set<String> changed = new HashSet<>();
+            for (Result batch : next.results().subList(start, next.results().size())) for (Vod vod : batch.getList()) {
+                if (vod == null) continue;
+                String site = vod.getSiteKey(), id = Hit.id(vod);
+                Hit hit = new Hit(vod);
+                perSite.computeIfAbsent(site, ignored -> new LinkedHashMap<>()).put(id, hit);
+                all.put(List.of(site, id), hit);
+                changed.add(site);
+            }
+            for (String site : changed) lists.put(site, List.copyOf(perSite.get(site).values()));
+            if (!changed.isEmpty() || !lists.containsKey("")) lists.put("", List.copyOf(all.values()));
+            previous = next;
+            return new Rows(next.session(), Map.copyOf(lists));
+        }
+    }
+
+    private final Index index = new Index();
     private final MutableLiveData<Rows> rows = new MutableLiveData<>();
     private final ExecutorService worker = Executors.newSingleThreadExecutor(r -> new Thread(r, "search-rows"));
     private SearchSnapshot pending;
@@ -32,13 +77,7 @@ public final class SearchRowsViewModel extends ViewModel {
                 next = pending; pending = null; current = revision;
                 if (next == null || closed) { processing = false; return; }
             }
-            Map<String, LinkedHashMap<String, Vod>> unique = new LinkedHashMap<>();
-            for (Result result : next.results()) for (Vod vod : result.getList())
-                unique.computeIfAbsent(vod.getSiteKey(), key -> new LinkedHashMap<>())
-                        .put(vod.getId().isEmpty() ? "name:" + vod.getName() : "id:" + vod.getId(), vod);
-            Map<String, List<Vod>> groups = new LinkedHashMap<>(); List<Vod> all = new ArrayList<>();
-            unique.forEach((key, values) -> { List<Vod> list = List.copyOf(values.values()); groups.put(key, list); all.addAll(list); });
-            groups.put("", List.copyOf(all)); Rows result = new Rows(next.session(), Map.copyOf(groups));
+            Rows result = index.update(next);
             App.post(() -> {
                 synchronized (this) {
                     if (closed || next.session() != latestSession || current <= deliveredRevision) return;

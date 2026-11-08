@@ -221,10 +221,10 @@ public class SiteViewModel extends ViewModel {
         // Native sources reuse a bounded pool of separate processes with globally serial slots and a hard
         // watchdog. Plain HTTP sources use an independent, cancellable three-request pool.
         spiderEpoch = spiderSearches.start(nativeSites, site -> trackedSearchTask(site, keyword, quick),
-                (site, result) -> onSearchResult(session, site, result, keyword),
+                (site, result) -> onSearchResult(session, site, result, keyword, quick),
                 (site, throwable) -> onSearchFailure(session, site, throwable));
         networkEpoch = networkSearches.start(httpSites, site -> trackedSearchTask(site, keyword, quick),
-                (site, result) -> onSearchResult(session, site, result, keyword),
+                (site, result) -> onSearchResult(session, site, result, keyword, quick),
                 (site, throwable) -> onSearchFailure(session, site, throwable));
     }
 
@@ -326,12 +326,14 @@ public class SiteViewModel extends ViewModel {
         };
     }
 
-    private void onSearchResult(int session, Site site, Result result, String keyword) {
+    private void onSearchResult(int session, Site site, Result result, String keyword, boolean quick) {
         if (searchSession.get() != session) return;
         List<com.fongmi.android.tv.bean.Vod> received = result == null ? List.of() : new ArrayList<>(result.getList());
         // Relevance normalization can take hundreds of milliseconds for large sources. It must
         // not hold the monitor used by UI source switching, cancellation and state reads.
-        Result filtered = filterRelevant(result, keyword);
+        // Interactive searches belong to the provider (it may match an alias, actor or director).
+        // Automatic playback fallback still needs a strict work-title match.
+        Result filtered = quick ? filterRelevant(result, keyword) : result;
         synchronized (this) {
             if (currentSearchProgress.session() != session || currentSearchProgress.cancelled()) return;
             SourceState prior = sourceStates.get(site.getKey());
@@ -469,7 +471,7 @@ public class SiteViewModel extends ViewModel {
             ViewModelSearchRunner runner = usesNativeSpider(site) ? spiderSearches : networkSearches;
             runner.add(List.of(site), usesNativeSpider(site) ? spiderEpoch : networkEpoch,
                     value -> trackedSearchTask(value, activeKeyword, false, page),
-                    (value, result) -> onSearchResult(session, value, result, activeKeyword),
+                    (value, result) -> onSearchResult(session, value, result, activeKeyword, false),
                     (value, error) -> onSearchFailure(session, value, error));
         }
         publishSources();

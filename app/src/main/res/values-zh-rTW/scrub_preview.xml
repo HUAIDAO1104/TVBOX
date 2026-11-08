@@ -1,0 +1,6 @@
+<resources>
+    <string name="scrub_loading">%1$s · 正在取得預覽畫面</string>
+    <string name="scrub_time_only">%1$s · 此片源僅支援時間定位</string>
+    <string name="scrub_unavailable">%1$s · 暫無預覽畫面</string>
+    <string name="scrub_sample">%1$s · 預覽約 %2$s</string>
+</resources>

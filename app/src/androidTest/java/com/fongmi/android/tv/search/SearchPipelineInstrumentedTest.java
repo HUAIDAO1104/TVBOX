@@ -52,6 +52,21 @@ public class SearchPipelineInstrumentedTest {
         }
     }
 
+    @Test public void interactiveProviderHitCanMatchByActorWithoutTitleOverlap() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(result("actor-match", "https://example.invalid/1.jpg"));
+            server.start();
+            SiteViewModel model = new SiteViewModel();
+            CountDownLatch seen = new CountDownLatch(1);
+            Observer<SearchSnapshot> observer = snapshot -> {
+                if (!snapshot.results().isEmpty() && snapshot.results().get(0).getVod().getId().equals("actor-match")) seen.countDown();
+            };
+            main(() -> { model.getAggregateSearch().observeForever(observer); model.searchContent(List.of(site(server, "cast", 1)), "张若昀", false); });
+            try { assertTrue("The provider matched an actor; the card should not be discarded", seen.await(5, TimeUnit.SECONDS)); }
+            finally { main(() -> { model.getAggregateSearch().removeObserver(observer); model.stopSearch(); }); }
+        }
+    }
+
     @Test public void selectedSourcePaginationPreservesCardsAndStopsRepeatedPages() throws Exception {
         try (MockWebServer server = new MockWebServer()) {
             server.enqueue(result("page1", "https://example.invalid/1.jpg"));

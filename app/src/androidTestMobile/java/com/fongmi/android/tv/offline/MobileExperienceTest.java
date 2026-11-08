@@ -157,7 +157,7 @@ public class MobileExperienceTest {
         activity.onActivity(a->{androidx.recyclerview.widget.RecyclerView list=a.findViewById(R.id.list);assertEquals(4,list.getAdapter().getItemCount());list.findViewHolderForAdapterPosition(0).itemView.performLongClick();assertEquals("已选 2 项",((android.widget.TextView)a.findViewById(R.id.selectionCount)).getText().toString());assertFalse(a.findViewById(R.id.resumeSelected).isEnabled());});
         screenshot("downloads-group-selection");
     }
-    @Test public void libraryAndAggregatedSearchRemainUsableWithLargeText()throws Exception{
+    @Test public void libraryAndSeparateSearchResultsRemainUsableWithLargeText()throws Exception{
         var keep=new com.fongmi.android.tv.bean.Keep();keep.setKey("mobile-ui-fixture"+com.fongmi.android.tv.db.AppDatabase.SYMBOL+"large-font-fixture");keep.setVodName("星河旅途：一场漫长的远行");keep.setSiteName("本地测试片库");keep.setCid(VodConfig.getCid());
         String searchScope=MobileSearchSources.scope(),previousSources=com.fongmi.android.tv.setting.Setting.getSearchSources(searchScope);
         float previous=android.provider.Settings.System.getFloat(context.getContentResolver(),android.provider.Settings.System.FONT_SCALE,1f);
@@ -166,14 +166,14 @@ public class MobileExperienceTest {
             main(keep::save);ActivityScenario<KeepActivity> library=ActivityScenario.launch(KeepActivity.class);screen=library;Thread.sleep(500);screenshot("library-large-text");
             library.onActivity(a->{assertTrue(a.getResources().getConfiguration().fontScale>1.7);((android.widget.EditText)a.findViewById(R.id.search)).setText("不存在的记录");});Thread.sleep(300);
             library.onActivity(a->assertEquals(View.VISIBLE,a.findViewById(R.id.empty).getVisibility()));screenshot("library-empty-large-text");library.close();screen=null;
-            // Two real search providers return the same fixture; the actual results route must group them.
+            // Two real search providers return the same fixture; the actual results route must keep both playable sources.
             Site second=new Gson().fromJson("{\"key\":\"mobile-ui-fixture-2\",\"name\":\"备用测试来源\",\"type\":1,\"api\":\""+server.url("/api")+"\"}",Site.class);
             var sources=new ArrayList<Site>((List<Site>)sitesField.get(VodConfig.get()));sources.add(second);sitesField.set(VodConfig.get(),sources);
             com.fongmi.android.tv.setting.Setting.putSearchSources(searchScope,com.fongmi.android.tv.ui.search.SearchSourcePreference.serialize(new LinkedHashSet<>(com.fongmi.android.tv.ui.search.SearchSourcePreference.choices(sources))));
             ActivityScenario<SearchActivity> search=ActivityScenario.launch(new Intent(context,SearchActivity.class).putExtra("keyword","星河旅途"));screen=search;AtomicReference<SearchActivity> ref=new AtomicReference<>();search.onActivity(ref::set);
-            waitFor(()->onMain(()->{for(androidx.fragment.app.Fragment f:ref.get().getSupportFragmentManager().getFragments())if(f instanceof com.fongmi.android.tv.ui.fragment.CollectFragment&&f.getView()!=null){androidx.recyclerview.widget.RecyclerView list=f.requireView().findViewById(R.id.recycler);return list!=null&&list.getAdapter()!=null&&list.getAdapter().getItemCount()==1&&((com.fongmi.android.tv.ui.adapter.SearchAdapter)list.getAdapter()).getItem(0).sources.size()==2;}return false;}),30000);
-            screenshot("search-merged-large-text");
-            search.onActivity(a->{for(androidx.fragment.app.Fragment f:a.getSupportFragmentManager().getFragments())if(f instanceof com.fongmi.android.tv.ui.fragment.CollectFragment&&f.getView()!=null){androidx.recyclerview.widget.RecyclerView list=f.requireView().findViewById(R.id.recycler);list.findViewHolderForAdapterPosition(0).itemView.performClick();}});screenshot("search-source-choice");
+            waitFor(()->onMain(()->{for(androidx.fragment.app.Fragment f:ref.get().getSupportFragmentManager().getFragments())if(f instanceof com.fongmi.android.tv.ui.fragment.CollectFragment&&f.getView()!=null){androidx.recyclerview.widget.RecyclerView list=f.requireView().findViewById(R.id.recycler);return list!=null&&list.getAdapter()!=null&&list.getAdapter().getItemCount()==2&&!((com.fongmi.android.tv.ui.adapter.SearchAdapter)list.getAdapter()).getItem(0).isSameItem(((com.fongmi.android.tv.ui.adapter.SearchAdapter)list.getAdapter()).getItem(1));}return false;}),30000);
+            screenshot("search-by-source-large-text");
+            search.onActivity(a->{for(androidx.fragment.app.Fragment f:a.getSupportFragmentManager().getFragments())if(f instanceof com.fongmi.android.tv.ui.fragment.CollectFragment&&f.getView()!=null){androidx.recyclerview.widget.RecyclerView list=f.requireView().findViewById(R.id.recycler);list.findViewHolderForAdapterPosition(0).itemView.performClick();}});
         }finally{com.fongmi.android.tv.setting.Setting.putSearchSources(searchScope,previousSources);if(screen!=null){screen.close();screen=null;}main(keep::delete);InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand("settings put system font_scale "+previous).close();Thread.sleep(500);}
     }
     @Test public void offlinePreviewAndCaptionPanelUseOnlyLocalFiles()throws Exception{
