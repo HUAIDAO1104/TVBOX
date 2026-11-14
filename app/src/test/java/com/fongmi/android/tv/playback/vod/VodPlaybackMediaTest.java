@@ -12,6 +12,25 @@ import org.junit.Test;
 import java.util.List;
 
 public class VodPlaybackMediaTest {
+    @Test public void leadingEpisodeWinsOverCollectionRangeInRealFilenames() {
+        for (String label : java.util.List.of("22 4k 凡人修仙传 1-73集", "022.4K.凡人修仙传.1-73集.mp4",
+                "[22] 2160P 凡人修仙传 第1至73集", "22_凡人修仙传_1～73集全", "第22集 凡人修仙传 全1-73集",
+                "22 1080P 凡人修仙传 1-12集")) {
+            assertEquals(label, "22", VodPlaybackMedia.resolveEpisodeQuery(label, 22, "动漫"));
+            assertTrue(label, DanmakuMatch.isEpisodeCompatible(label,"凡人修仙传 from bilibili - 第22集"));
+            assertFalse(label, DanmakuMatch.isEpisodeCompatible(label,"凡人修仙传 from bilibili - 第73集"));
+        }
+        for (int number=1;number<=73;number++) for (String quality : java.util.List.of("4K","8K","1080P","2160P")) {
+            String file=String.format(java.util.Locale.ROOT,"%02d.%s.凡人修仙传.1-73集.mkv",number,quality);
+            assertEquals(file,String.valueOf(number),VodPlaybackMedia.resolveEpisodeQuery(file,999,"动漫"));
+        }
+        assertEquals("22",VodPlaybackMedia.resolveEpisodeQuery("凡人修仙传 1-73集",22,"动漫"));
+        assertEquals("正片",VodPlaybackMedia.resolveEpisodeQuery("01 4K 哪吒2 正片",1,"电影"));
+        for (String date : java.util.List.of("2026-10-12期上", "10-12期下", "2026年10月12日加更"))
+            assertEquals(date, VodPlaybackMedia.resolveEpisodeQuery(date, 22, "综艺"));
+        assertFalse(DanmakuMatch.isEpisodeCompatible("凡人修仙传 1-73集","凡人修仙传 from bilibili - 第73集"));
+    }
+
 
     @Test
     public void staleDanmakuResponseCannotCrossIntoAnotherTitleOrEpisode() {
@@ -129,7 +148,7 @@ public class VodPlaybackMediaTest {
         DanmakuManualMatchStore.Selection restored =
                 DanmakuManualMatchStore.decode(stable).get("work");
 
-        assertTrue(stable.contains("\"schema\":5"));
+        assertTrue(stable.contains("\"schema\":6"));
         assertTrue(stable.contains("\"episodes\""));
         assertNotNull(restored);
         assertEquals("episode-2", restored.episode("2").getUrl());

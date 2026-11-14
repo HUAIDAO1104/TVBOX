@@ -17,6 +17,7 @@ public final class BilibiliDanmaku {
     public static final String SOURCE = "bilibili-direct";
     private static final Pattern VIDEO = Pattern.compile("^bilibili-danmaku://video/([1-9][0-9]{0,14})/([1-9][0-9]{0,17})/([1-9][0-9]{0,4})$");
     private static final ExecutorService SEARCH = Executors.newFixedThreadPool(2);
+    private static final ExecutorService CACHE_LOOKUP = Executors.newSingleThreadExecutor();
     private static final ExecutorService COMMENTS = Executors.newFixedThreadPool(2);
     private static final Object REQUEST_START = new Object();
     private static long nextRequest, retryAfter;
@@ -156,48 +157,53 @@ public final class BilibiliDanmaku {
         var job = new NativeDanmakuRequest(18000, "https://www.bilibili.com/", client);
         // Automatic discovery already fetched the complete official season. Reopening
         // manual search must not wait behind unrelated index scans in the worker queue.
-        List<Danmaku> saved = cache ? cachedWork(query) : List.of();
-        if (!saved.isEmpty()) {
-            if (!episode.isBlank() && !timelineCandidates(new DanmakuMatchContext(identity, year, type, episode), saved).isEmpty()) {
-                callback.onSuccess(saved);
-                return job;
-            }
-            callback.onPartial(saved);
-        }
-        job.start(SEARCH, () -> {
-            if (!type.isBlank() && !type.matches("(?i).*(动漫|动画|番剧|国漫|国创|日漫|卡通|年番|anime).*")) return List.of();
-            String base = EDITION.matcher(query).replaceFirst("").trim();
-            if (base.length() < 2) return List.of();
-            Set<String> visited = new HashSet<>();
-            Map<String, Danmaku> rows = new LinkedHashMap<>();
-            int[] kinds = {4, 1}, totals = {100, 100};
-            // Discover works through the platform's public animation catalogue.
-            // Cache small index pages, not a list of hard-coded programmes or episode IDs.
-            for (int page = 1; page <= 100; page++) {
-                boolean more = false;
-                for (int k = 0; k < kinds.length; k++) {
-                    if ((page - 1) * 100 >= totals[k]) continue;
-                    more = true;
-                    Page index = index(job, kinds[k], page, cache);
-                    totals[k] = index.total();
-                    for (Work work : index.works()) {
-                        if (!DanmakuMatch.isSameBaseWork(base, work.title()) || !visited.add(work.id())) continue;
-                        List<Danmaku> catalogue = season(job, work.id(), cache);
-                        for (Danmaku item : catalogue) {
-                            rows.put(item.getUrl(), item);
-                        }
-                        job.check();
-                        if (!rows.isEmpty()) callback.onPartial(new ArrayList<>(rows.values()));
-                    }
-                    // A matched catalogue contains the entire season, including episode 10+
-                    // and explicit alternative editions. No need to scan unrelated programmes.
-                    if (!rows.isEmpty() && (episode.isBlank() || !DanmakuMatch.ranked(identity, year, type, episode,
-                            new ArrayList<>(rows.values()), Danmaku::getMatchName).isEmpty())) return new ArrayList<>(rows.values());
+        // Cached catalogues still require title/episode ranking. Never run that work inline
+        // on the caller (normally the UI thread), or under CatalogueSearch's cancellation lock.
+        CACHE_LOOKUP.execute(() -> {
+            List<Danmaku> saved = cache ? cachedWork(query) : List.of();
+            try { job.check(); } catch (IOException cancelled) { return; }
+            if (!saved.isEmpty()) {
+                if (!episode.isBlank() && !timelineCandidates(new DanmakuMatchContext(identity, year, type, episode), saved).isEmpty()) {
+                    callback.onSuccess(saved);
+                    return;
                 }
-                if (!more) break;
+                callback.onPartial(saved);
             }
-            return new ArrayList<>(rows.values());
-        }, callback);
+            job.start(SEARCH, () -> {
+                if (!type.isBlank() && !type.matches("(?i).*(动漫|动画|番剧|国漫|国创|日漫|卡通|年番|anime).*")) return List.of();
+                String base = EDITION.matcher(query).replaceFirst("").trim();
+                if (base.length() < 2) return List.of();
+                Set<String> visited = new HashSet<>();
+                Map<String, Danmaku> rows = new LinkedHashMap<>();
+                int[] kinds = {4, 1}, totals = {100, 100};
+                // Discover works through the platform's public animation catalogue.
+                // Cache small index pages, not a list of hard-coded programmes or episode IDs.
+                for (int page = 1; page <= 100; page++) {
+                    boolean more = false;
+                    for (int k = 0; k < kinds.length; k++) {
+                        if ((page - 1) * 100 >= totals[k]) continue;
+                        more = true;
+                        Page index = index(job, kinds[k], page, cache);
+                        totals[k] = index.total();
+                        for (Work work : index.works()) {
+                            if (!DanmakuMatch.isSameBaseWork(base, work.title()) || !visited.add(work.id())) continue;
+                            List<Danmaku> catalogue = season(job, work.id(), cache);
+                            for (Danmaku item : catalogue) {
+                                rows.put(item.getUrl(), item);
+                            }
+                            job.check();
+                            if (!rows.isEmpty()) callback.onPartial(new ArrayList<>(rows.values()));
+                        }
+                        // A matched catalogue contains the entire season, including episode 10+
+                        // and explicit alternative editions. No need to scan unrelated programmes.
+                        if (!rows.isEmpty() && (episode.isBlank() || !DanmakuMatch.ranked(identity, year, type, episode,
+                                new ArrayList<>(rows.values()), Danmaku::getMatchName).isEmpty())) return new ArrayList<>(rows.values());
+                    }
+                    if (!more) break;
+                }
+                return new ArrayList<>(rows.values());
+            }, callback);
+        });
         return job;
     }
     private static List<Danmaku> cachedWork(String query) {
@@ -227,7 +233,8 @@ public final class BilibiliDanmaku {
     private static List<Danmaku> copy(List<Danmaku> source) {
         List<Danmaku> rows = new ArrayList<>();
         for (Danmaku item : source) {
-            Danmaku row = new Danmaku(); row.setName(item.getName()); row.setUrl(item.getUrl()); row.setSourceKey(SOURCE); rows.add(row);
+            Danmaku row = new Danmaku(); row.setName(item.getName()); row.setUrl(item.getUrl()); row.setSourceKey(SOURCE);
+            row.setVerifiedIdentity(item.hasVerifiedIdentity()); rows.add(row);
         }
         return rows;
     }
@@ -293,6 +300,7 @@ public final class BilibiliDanmaku {
             row.setName(title + "(" + year + ")【动漫】from bilibili - 【bilibili】 第" + number + "集" + (extra.isBlank() ? "" : "：" + extra));
             row.setSourceKey(SOURCE);
             row.setUrl("bilibili-danmaku://video/" + id + "/" + cid + "/" + ((number(ep, "duration") + 999) / 1000));
+            row.setVerifiedIdentity(true);
             rows.putIfAbsent(row.getUrl(), row);
         }
     }

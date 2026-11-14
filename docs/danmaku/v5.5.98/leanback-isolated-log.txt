@@ -1,0 +1,96 @@
+--------- beginning of main
+--------- beginning of system
+11-14 23:11:36.633 25096 25114 I TestRunner: run started: 4 tests
+11-14 23:11:36.633 25096 25114 I TestRunner: started: confirmedWrong73IsRepairedAcrossActualPlaylistAndReentry(com.fongmi.android.tv.ui.activity.DanmakuEpisodeTransitionInstrumentedTest)
+11-14 23:11:37.843 25096 25114 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=17
+11-14 23:11:37.885 25096 25096 I Danmaku598QA: playlist next mainMs=6
+11-14 23:11:38.058 25096 25114 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=18
+11-14 23:11:38.074 25096 25096 I Danmaku598QA: playlist next mainMs=2
+11-14 23:11:38.188 25096 25114 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=19
+11-14 23:11:38.211 25096 25096 I Danmaku598QA: playlist next mainMs=5
+11-14 23:11:38.403 25096 25114 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=20
+11-14 23:11:38.433 25096 25096 I Danmaku598QA: playlist next mainMs=13
+11-14 23:11:38.607 25096 25114 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=22
+11-14 23:11:38.634 25096 25096 I Danmaku598QA: playlist next mainMs=4
+11-14 23:11:38.763 25096 25114 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=23
+11-14 23:11:38.794 25096 25096 I Danmaku598QA: playlist next mainMs=8
+11-14 23:11:38.903 25096 25114 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=73
+11-14 23:11:39.136 25096 25114 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=23
+11-14 23:11:39.716 25096 25114 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=23
+11-14 23:11:39.834 25096 25114 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=73
+11-14 23:11:40.110 25096 25114 I TestRunner: finished: confirmedWrong73IsRepairedAcrossActualPlaylistAndReentry(com.fongmi.android.tv.ui.activity.DanmakuEpisodeTransitionInstrumentedTest)
+11-14 23:11:40.111 25096 25114 I TestRunner: started: thousandEpisodeCachedSearchNeverRanksOnUiThread(com.fongmi.android.tv.ui.activity.DanmakuEpisodeTransitionInstrumentedTest)
+11-14 23:11:40.714 25096 25114 I Danmaku598QA: 1000-episode cached search mainMs=1 callbackOnMain=false
+11-14 23:11:40.714 25096 25114 I TestRunner: finished: thousandEpisodeCachedSearchNeverRanksOnUiThread(com.fongmi.android.tv.ui.activity.DanmakuEpisodeTransitionInstrumentedTest)
+11-14 23:11:40.715 25096 25114 I TestRunner: started: thousandEpisodeManualDirectoryOpensAndSelectsWithoutBlockingUi(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 23:11:43.187 25096 25096 I Danmaku598QA: manual open 1000 rows mainMs=69
+11-14 23:11:43.551 25096 25096 I Danmaku598QA: manual choose mainMs=1
+11-14 23:11:44.068 25096 25114 I TestRunner: finished: thousandEpisodeManualDirectoryOpensAndSelectsWithoutBlockingUi(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 23:11:44.071 25096 25114 I TestRunner: started: fanrenCollectionFilenameLoadsActualEpisodeTwentyTwo(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+11-14 23:11:45.073 25096 25775 W DanmakuLoad: Native document failed
+11-14 23:11:45.073 25096 25775 W DanmakuLoad: com.fongmi.android.tv.api.PlatformDanmaku$RejectedComments: Bilibili comment service rejected the request: -352
+11-14 23:11:45.073 25096 25775 W DanmakuLoad: 	at com.fongmi.android.tv.api.PlatformDanmaku.biliComments(PlatformDanmaku.java:170)
+11-14 23:11:45.073 25096 25775 W DanmakuLoad: 	at com.fongmi.android.tv.api.BilibiliDanmaku.lambda$comments$6(BilibiliDanmaku.java:123)
+11-14 23:11:45.073 25096 25775 W DanmakuLoad: 	at com.fongmi.android.tv.api.BilibiliDanmaku$$ExternalSyntheticLambda8.get(D8$$SyntheticClass:0)
+11-14 23:11:45.073 25096 25775 W DanmakuLoad: 	at com.fongmi.android.tv.api.NativeDanmakuRequest.lambda$segments$2(NativeDanmakuRequest.java:91)
+11-14 23:11:45.073 25096 25775 W DanmakuLoad: 	at com.fongmi.android.tv.api.NativeDanmakuRequest.$r8$lambda$F5sVYWF3I3zEFrs67jAvV4Jcg6Q(Unknown Source:0)
+11-14 23:11:45.073 25096 25775 W DanmakuLoad: 	at com.fongmi.android.tv.api.NativeDanmakuRequest$$ExternalSyntheticLambda0.call(D8$$SyntheticClass:0)
+11-14 23:11:45.073 25096 25775 W DanmakuLoad: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-14 23:11:45.073 25096 25775 W DanmakuLoad: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:458)
+11-14 23:11:45.073 25096 25775 W DanmakuLoad: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-14 23:11:45.073 25096 25775 W DanmakuLoad: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1167)
+11-14 23:11:45.073 25096 25775 W DanmakuLoad: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:641)
+11-14 23:11:45.073 25096 25775 W DanmakuLoad: 	at java.lang.Thread.run(Thread.java:764)
+11-14 23:13:14.563 25096 25096 E Danmaku577QA: automatic native match position=689948 playing=true enabled=true source=null view=1920x1080 visible=true attached=true started=true paused=false draw=true
+11-14 23:13:14.563 25096 25096 E Danmaku577QA: DanmakuController.sortedItems=count=0
+11-14 23:13:14.563 25096 25096 E Danmaku577QA: DanmakuController.loadedFrom=590009
+11-14 23:13:14.563 25096 25096 E Danmaku577QA: DanmakuController.loadedTo=720009
+11-14 23:13:14.563 25096 25096 E Danmaku577QA: DanmakuController.player=androidx.media3.exoplayer.ExoPlayerImpl@737d16c
+11-14 23:13:14.563 25096 25096 E Danmaku577QA: DanmakuController.dataSourceUri=null
+11-14 23:13:14.563 25096 25096 E Danmaku577QA: DanmakuView.pool=count=0
+11-14 23:13:14.563 25096 25096 E Danmaku577QA: DanmakuView.activeItems=count=0
+11-14 23:13:14.563 25096 25096 E Danmaku577QA: DanmakuView.clock=androidx.media3.ui.danmaku.bean.PlaybackClock@fe826d3
+11-14 23:13:14.563 25096 25096 E Danmaku577QA: DanmakuView.lastActivationPositionMs=600020
+11-14 23:13:14.768 25096 25114 E TestRunner: failed: fanrenCollectionFilenameLoadsActualEpisodeTwentyTwo(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+11-14 23:13:14.768 25096 25114 E TestRunner: ----- begin exception -----
+11-14 23:13:14.768 25096 25114 E TestRunner: java.lang.AssertionError: Timed out: automatic native match
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.Assert.fail(Assert.java:89)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:285)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:171)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.fanrenCollectionFilenameLoadsActualEpisodeTwentyTwo(PlatformPlaybackInstrumentedTest.java:33)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at java.lang.reflect.Method.invoke(Native Method)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at androidx.test.ext.junit.runners.AndroidJUnit4.run(AndroidJUnit4.java:162)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.Suite.runChild(Suite.java:128)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.Suite.runChild(Suite.java:27)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:68)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:59)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at androidx.test.runner.AndroidJUnitRunner.onStart(AndroidJUnitRunner.java:467)
+11-14 23:13:14.768 25096 25114 E TestRunner: 	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2145)
+11-14 23:13:14.768 25096 25114 E TestRunner: ----- end exception -----
+11-14 23:13:14.769 25096 25114 I TestRunner: finished: fanrenCollectionFilenameLoadsActualEpisodeTwentyTwo(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+11-14 23:13:14.769 25096 25114 I TestRunner: run finished: 4 tests, 1 failed, 0 ignored

@@ -17,11 +17,13 @@ import java.util.Objects;
 public final class DanmakuManualMatchStore {
 
     private static final String PREF_KEY = "danmaku_manual_matches_v1";
-    private static final int SCHEMA_VERSION = 5;
+    private static final int SCHEMA_VERSION = 6;
     static final long CATALOGUE_TTL_MS = java.util.concurrent.TimeUnit.HOURS.toMillis(6);
     private static final int MAX_ENTRIES = 64;
     private static final int MAX_EPISODES_PER_ENTRY = 160;
 
+    private static final java.util.concurrent.ExecutorService WRITER = java.util.concurrent.Executors.newSingleThreadExecutor(r -> new Thread(r, "danmaku-preferences"));
+    private long writeVersion;
     private final LinkedHashMap<String, Selection> entries = new LinkedHashMap<>();
 
     private DanmakuManualMatchStore() {
@@ -71,76 +73,84 @@ public final class DanmakuManualMatchStore {
         return selection;
     }
 
-    public synchronized void remember(DanmakuMatchContext context, String query, Danmaku selected) {
+    public void remember(DanmakuMatchContext context, String query, Danmaku selected) {
         remember(context, query, selected, List.of());
     }
 
-    public synchronized void remember(DanmakuMatchContext context, String query, Danmaku selected,
-                                      List<Danmaku> catalogue) {
-        remember(context, query, selected, catalogue, true);
+    public void remember(DanmakuMatchContext context, String query, Danmaku selected, List<Danmaku> catalogue) {
+        savePrepared(context, prepare(context, query, selected, catalogue), 0);
     }
 
-    public synchronized void rememberAutomatic(DanmakuMatchContext context, String query, Danmaku selected,
-                                               List<Danmaku> catalogue) {
-        remember(context, query, selected, catalogue, false);
+    public void rememberAutomatic(DanmakuMatchContext context, String query, Danmaku selected, List<Danmaku> catalogue) {
+        savePrepared(context, prepare(context, query, selected, catalogue), 1);
     }
 
-    public synchronized void rememberResolved(DanmakuMatchContext context, String query, Danmaku selected, List<Danmaku> catalogue) {
-        Selection previous = find(context);
-        remember(context, query, selected, catalogue, previous != null && previous.isUserConfirmed());
-        Selection current = entries.get(preferenceKey(context));
-        if (previous != null && current != null && previous.isUserConfirmed()) {
-            current.contextYear = previous.contextYear;
-            current.contextType = previous.contextType;
-            persist();
-        }
+    public void rememberResolved(DanmakuMatchContext context, String query, Danmaku selected, List<Danmaku> catalogue) {
+        savePrepared(context, prepare(context, query, selected, catalogue), 2);
     }
 
-    private void remember(DanmakuMatchContext context, String query, Danmaku selected,
-                          List<Danmaku> catalogue, boolean confirmed) {
-        Selection previous = find(context);
-        // A temporary automatic fallback must not erase the user's chosen catalogue.
-        if (!confirmed && previous != null && previous.isUserConfirmed()) return;
-        String key = preferenceKey(context);
+    /** Build the potentially large directory off the UI thread, then commit after request checks. */
+    static Selection prepare(DanmakuMatchContext context, String query, Danmaku selected, List<Danmaku> catalogue) {
         String cleanedQuery = DanmakuQuery.from(Objects.toString(query, "")).searchTitle();
-        if (cleanedQuery.isEmpty() && context != null) {
-            cleanedQuery = DanmakuQuery.from(context.getTitle()).searchTitle();
-        }
-        String selectedName = selected == null ? "" : selected.getName().trim();
-        if (key.isEmpty() || cleanedQuery.isEmpty() || selectedName.isEmpty()) return;
-        LinkedHashMap<String, CachedEpisode> episodes = buildEpisodeCache(
-                context, selected, catalogue);
-        if (previous != null && previous.isSameSelection(selectedName, selected.getSourceKey())) {
-            episodes = previous.mergeEpisodes(episodes);
-        }
-        entries.remove(key);
-        Selection selection = new Selection(cleanedQuery, selectedName, selected.getSourceKey(), episodes, System.currentTimeMillis());
-        selection.confirmed = confirmed;
-        selection.contextYear = context == null ? "" : DanmakuMatch.normalizeYear(context.getYear());
-        selection.contextType = context == null ? "" : DanmakuMatch.normalizeMediaType(context.getType());
-        entries.put(key, selection);
-        trim();
-        persist();
+        if (cleanedQuery.isEmpty() && context != null) cleanedQuery = DanmakuQuery.from(context.getTitle()).searchTitle();
+        String name = selected == null ? "" : selected.getName().trim();
+        if (preferenceKey(context).isEmpty() || cleanedQuery.isEmpty() || name.isEmpty()) return null;
+        Selection value = new Selection(cleanedQuery, name, selected.getSourceKey(),
+                buildEpisodeCache(context, selected, catalogue), System.currentTimeMillis());
+        value.contextYear = context == null ? "" : DanmakuMatch.normalizeYear(context.getYear());
+        value.contextType = context == null ? "" : DanmakuMatch.normalizeMediaType(context.getType());
+        return value;
     }
 
-    public synchronized void extendConfirmedCatalogue(DanmakuMatchContext context, String sourceKey, List<Danmaku> rows) {
+    // kind: explicit choice / automatic guess / freshly resolved confirmed catalogue.
+    synchronized void savePrepared(DanmakuMatchContext context, Selection value, int kind) {
+        if (value == null) return;
+        Selection previous = find(context);
+        if (kind == 1 && previous != null && previous.isUserConfirmed()) return;
+        value.confirmed = kind == 0 || kind == 2 && previous != null && previous.confirmed;
+        if (kind == 2 && previous != null && previous.confirmed) {
+            value.contextYear = previous.contextYear;
+            value.contextType = previous.contextType;
+        }
+        if (previous != null && previous.isSameSelection(value.selectedName(), value.sourceKey())) {
+            CachedEpisode old = previous.findEpisode(context.getEpisode()), current = value.findEpisode(context.getEpisode());
+            // A correction is evidence that the old directory is unsafe. Do not preserve its
+            // unseen neighbours and send the next episode back to the same wrong document.
+            if (old == null || current == null || old.url().equals(current.url())) value.episodes = previous.mergeEpisodes(value.episodes);
+        }
+        removeConflictingDocuments(value.episodes);
+        String key = preferenceKey(context);
+        entries.remove(key); entries.put(key, value);
+        trim(); persist();
+    }
+
+    public void extendConfirmedCatalogue(DanmakuMatchContext context, String sourceKey, List<Danmaku> rows) {
         Selection selection = find(context);
         if (selection == null || !selection.confirmed || !selection.sourceKey().equals(sourceKey)) return;
         Danmaku current = selection.episode(context.getEpisode());
         if (current == null) return;
         LinkedHashMap<String, CachedEpisode> additions = buildEpisodeCache(context, current, rows);
-        for (Map.Entry<String, CachedEpisode> row : additions.entrySet()) {
-            CachedEpisode old = selection.episodes.get(row.getKey());
-            if (old != null && old.url().equals(row.getValue().url())) row.setValue(old);
+        synchronized (this) {
+            if (find(context) != selection) return; // A newer click owns the directory now.
+            for (Map.Entry<String, CachedEpisode> row : additions.entrySet()) {
+                CachedEpisode old = selection.episodes.get(row.getKey());
+                if (old != null && old.url().equals(row.getValue().url())
+                        && (old.verifiedIdentity || !row.getValue().verifiedIdentity)) row.setValue(old);
+            }
+            Selection updated = selection.copy(selection.mergeEpisodes(additions));
+            removeConflictingDocuments(updated.episodes);
+            entries.put(preferenceKey(context), updated);
+            persist();
         }
-        selection.episodes = selection.mergeEpisodes(additions);
-        persist();
     }
 
     /** Removes one stale document while retaining the user's confirmed work/provider choice. */
     public synchronized void forgetEpisode(DanmakuMatchContext context) {
         Selection selection = find(context);
-        if (selection == null || context == null || !selection.removeEpisode(context.getEpisode())) return;
+        if (selection == null || context == null) return;
+        Selection updated = selection.copy(new LinkedHashMap<>(selection.episodes));
+        if (!updated.removeEpisode(context.getEpisode())) return;
+        entries.put(preferenceKey(context), updated);
         persist();
     }
 
@@ -173,12 +183,24 @@ public final class DanmakuManualMatchStore {
                 ambiguous.add(key);
             }
         }
+        removeConflictingDocuments(result);
         String currentEpisode = context == null ? "" : context.getEpisode();
         String selectedKey = DanmakuMatch.episodeKey(selected.getName());
         String contextKey = DanmakuMatch.episodeKey(currentEpisode);
         if (!selectedKey.isEmpty()) result.put(selectedKey, CachedEpisode.from(selected));
-        if (!contextKey.isEmpty()) result.put(contextKey, CachedEpisode.from(selected));
+        if (!contextKey.isEmpty() && DanmakuMatch.isEpisodeCompatible(currentEpisode, selected.getName())) result.put(contextKey, CachedEpisode.from(selected));
         return result;
+    }
+
+    private static void removeConflictingDocuments(Map<String, CachedEpisode> episodes) {
+        Map<String, DanmakuEpisode> identities = new java.util.HashMap<>();
+        java.util.Set<String> conflicting = new java.util.HashSet<>();
+        for (CachedEpisode row : episodes.values()) {
+            DanmakuEpisode identity = row.identity;
+            DanmakuEpisode previous = identities.putIfAbsent(row.url(), identity);
+            if (previous != null && !previous.sameTimeline(identity)) conflicting.add(row.url());
+        }
+        episodes.values().removeIf(row -> conflicting.contains(row.url()));
     }
 
     static String preferenceKey(DanmakuMatchContext context) {
@@ -237,10 +259,14 @@ public final class DanmakuManualMatchStore {
     }
 
     private void persist() {
-        try {
-            Prefers.put(PREF_KEY, encode(entries));
-        } catch (Throwable ignored) {
-        }
+        // Selection snapshots are immutable after insertion. Encoding and disk writes must not
+        // hold the store monitor: playback reads should never wait for a whole-library save.
+        Map<String, Selection> snapshot = new LinkedHashMap<>(entries);
+        long version = ++writeVersion;
+        WRITER.execute(() -> {
+            synchronized (this) { if (version != writeVersion) return; }
+            try { Prefers.put(PREF_KEY, encode(snapshot)); } catch (Throwable ignored) { }
+        });
     }
 
     static LinkedHashMap<String, Selection> decode(String raw) {
@@ -325,6 +351,12 @@ public final class DanmakuManualMatchStore {
             this.updatedAt = updatedAt;
         }
 
+        private Selection copy(LinkedHashMap<String, CachedEpisode> rows) {
+            Selection value = new Selection(query, selectedName, sourceKey, rows, updatedAt);
+            value.confirmed = confirmed; value.contextYear = contextYear; value.contextType = contextType;
+            return value;
+        }
+
         private static Selection fromJson(JsonObject object) {
             String query = string(object, "query", "a");
             String selectedName = string(object, "selectedName", "b");
@@ -344,6 +376,7 @@ public final class DanmakuManualMatchStore {
                     if (episodes.size() >= MAX_EPISODES_PER_ENTRY) break;
                 }
             }
+            removeConflictingDocuments(episodes);
             Selection value = new Selection(query, selectedName, sourceKey, episodes, updatedAt);
             // Older releases did not distinguish automatic guesses from user confirmations.
             // Keep their work hints, but never promote an unverified old URL to a manual choice.
@@ -406,6 +439,7 @@ public final class DanmakuManualMatchStore {
             Danmaku result = Danmaku.from(cached.url());
             result.setName(cached.name());
             result.setSourceKey(sourceKey());
+            result.setVerifiedIdentity(cached.verifiedIdentity);
             return result;
         }
 
@@ -434,6 +468,17 @@ public final class DanmakuManualMatchStore {
 
         public boolean hasEpisodes() {
             return episodes != null && !episodes.isEmpty();
+        }
+
+        /** A saved platform episode can locate its catalogue; it is never the next document. */
+        public Danmaku catalogueAnchor() {
+            if (episodes == null) return null;
+            for (CachedEpisode row : episodes.values()) {
+                if (!com.fongmi.android.tv.api.BilibiliDanmaku.supports(row.url())) continue;
+                Danmaku anchor = Danmaku.from(row.url()); anchor.setName(row.name()); anchor.setSourceKey(sourceKey());
+                return anchor; // Deliberately unverified: resolve the current episode first.
+            }
+            return null;
         }
 
         private boolean isSameSelection(String name, String key) {
@@ -466,6 +511,8 @@ public final class DanmakuManualMatchStore {
         private String name;
         private String url;
         private long discoveredAt;
+        private boolean verifiedIdentity;
+        private DanmakuEpisode identity;
 
         @SuppressWarnings("unused")
         private CachedEpisode() {
@@ -473,18 +520,22 @@ public final class DanmakuManualMatchStore {
 
         private CachedEpisode(String name, String url) {
             this.name = name;
+            this.identity = DanmakuEpisode.from(name);
             this.url = url;
             this.discoveredAt = System.currentTimeMillis();
         }
 
         static CachedEpisode from(Danmaku item) {
-            return new CachedEpisode(item == null ? "" : item.getName(),
+            CachedEpisode row = new CachedEpisode(item == null ? "" : item.getName(),
                     item == null ? "" : item.getUrl());
+            row.verifiedIdentity = item != null && item.hasVerifiedIdentity();
+            return row;
         }
 
         static CachedEpisode fromJson(JsonObject object) {
             CachedEpisode value = new CachedEpisode(string(object, "name", "a"), string(object, "url", "b"));
             value.discoveredAt = number(object, "discoveredAt");
+            value.verifiedIdentity = object.has("verifiedIdentity") && object.get("verifiedIdentity").getAsBoolean();
             return value;
         }
 
@@ -493,6 +544,7 @@ public final class DanmakuManualMatchStore {
             object.addProperty("name", name());
             object.addProperty("url", url());
             object.addProperty("discoveredAt", discoveredAt);
+            object.addProperty("verifiedIdentity", verifiedIdentity);
             return object;
         }
 

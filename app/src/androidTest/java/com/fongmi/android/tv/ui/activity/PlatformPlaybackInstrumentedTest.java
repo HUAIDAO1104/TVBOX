@@ -26,6 +26,14 @@ import org.junit.runner.RunWith;
 /** Exercises the real Activity/service/Exo/overlay path, including actual drawn pixels. */
 @RunWith(AndroidJUnit4.class)
 public class PlatformPlaybackInstrumentedTest {
+    @Test public void fanrenCollectionFilenameLoadsActualEpisodeTwentyTwo() throws Exception {
+        var entries = com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.class.getDeclaredField("entries");
+        entries.setAccessible(true);
+        ((java.util.Map<?, ?>) entries.get(com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get())).remove("凡人修仙传");
+        automaticTimeline("凡人修仙传", "22 4k 凡人修仙传 1-73集", "598-filename-22", "2020", "国产动漫",
+                new long[]{60000,600000}, "playback-timeline.mp4", "/428988/");
+    }
+
     @Test public void liveCommonPlatformsRenderActualPixelsOnBothFlavors() throws Exception {
         org.junit.Assume.assumeTrue("true".equals(InstrumentationRegistry.getArguments().getString("danmakuLive")));
         var instrumentation = InstrumentationRegistry.getInstrumentation();

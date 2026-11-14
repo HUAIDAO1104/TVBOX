@@ -1,0 +1,173 @@
+--------- beginning of system
+--------- beginning of main
+11-14 23:09:46.538 19139 19139 E Danmaku577QA: comments at 60000 on composed screen position=75926 playing=true enabled=true source=bilibili-danmaku://video/428988/453947774/1150 view=1920x1080 visible=true attached=true started=true paused=false draw=true
+11-14 23:09:46.538 19139 19139 E Danmaku577QA: DanmakuController.sortedItems=count=60
+11-14 23:09:46.538 19139 19139 E Danmaku577QA: DanmakuController.loadedFrom=50000
+11-14 23:09:46.538 19139 19139 E Danmaku577QA: DanmakuController.loadedTo=180000
+11-14 23:09:46.538 19139 19139 E Danmaku577QA: DanmakuController.player=androidx.media3.exoplayer.ExoPlayerImpl@b267403
+11-14 23:09:46.538 19139 19139 E Danmaku577QA: DanmakuController.dataSourceUri=file:///data/user/0/com.fongmi.android.tv/cache/danmaku_documents_v2/6ed8c691b4e68fe167f937a173a6a0941d021943e97731998d04d0fd0c1af259.xml
+11-14 23:09:46.538 19139 19139 E Danmaku577QA: DanmakuView.pool=count=10
+11-14 23:09:46.538 19139 19139 E Danmaku577QA: DanmakuView.activeItems=count=0
+11-14 23:09:46.538 19139 19139 E Danmaku577QA: DanmakuView.clock=androidx.media3.ui.danmaku.bean.PlaybackClock@5a88be3
+11-14 23:09:46.538 19139 19139 E Danmaku577QA: DanmakuView.lastActivationPositionMs=60028
+11-14 23:09:46.695 19139 19157 E TestRunner: failed: fanrenCollectionFilenameLoadsActualEpisodeTwentyTwo(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+11-14 23:09:46.695 19139 19157 E TestRunner: ----- begin exception -----
+11-14 23:09:46.695 19139 19157 E TestRunner: java.lang.AssertionError: Timed out: comments at 60000 on composed screen
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.Assert.fail(Assert.java:89)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:285)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.awaitScreenComments(PlatformPlaybackInstrumentedTest.java:241)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:179)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.fanrenCollectionFilenameLoadsActualEpisodeTwentyTwo(PlatformPlaybackInstrumentedTest.java:33)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at java.lang.reflect.Method.invoke(Native Method)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at androidx.test.ext.junit.runners.AndroidJUnit4.run(AndroidJUnit4.java:162)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.Suite.runChild(Suite.java:128)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.Suite.runChild(Suite.java:27)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:68)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:59)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at androidx.test.runner.AndroidJUnitRunner.onStart(AndroidJUnitRunner.java:467)
+11-14 23:09:46.695 19139 19157 E TestRunner: 	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2145)
+11-14 23:09:46.695 19139 19157 E TestRunner: ----- end exception -----
+11-14 23:09:46.696 19139 19157 I TestRunner: finished: fanrenCollectionFilenameLoadsActualEpisodeTwentyTwo(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+11-14 23:09:46.698 19139 19157 I TestRunner: run finished: 32 tests, 1 failed, 0 ignored
+11-14 23:09:49.442 22344 22361 I TestRunner: run started: 32 tests
+11-14 23:09:49.442 22344 22361 I TestRunner: started: slowDirectCatalogueSurvivesAFailedBackup(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:09:58.979 22344 22361 I TestRunner: finished: slowDirectCatalogueSurvivesAFailedBackup(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:09:58.980 22344 22361 I TestRunner: started: failedDirectDocumentFallsBackWithoutManualLink(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:09:59.007 22344 22361 I TestRunner: finished: failedDirectDocumentFallsBackWithoutManualLink(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:09:59.008 22344 22361 I TestRunner: started: slowFirstExactDocumentDoesNotBlockAHealthySameEpisode(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:00.048 22344 22361 I Danmaku597QA: same-episode alternate elapsedMs=1038
+11-14 23:10:00.060 22344 22361 I TestRunner: finished: slowFirstExactDocumentDoesNotBlockAHealthySameEpisode(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:00.061 22344 22361 I TestRunner: started: failedFastAlternativeDoesNotDiscardTheHealthySlowExactDocument(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:02.183 22344 22361 I Danmaku597QA: same-episode alternate elapsedMs=2122
+11-14 23:10:02.185 22344 22361 I TestRunner: finished: failedFastAlternativeDoesNotDiscardTheHealthySlowExactDocument(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:02.187 22344 22361 I TestRunner: started: refreshedCatalogueRetriesTransientDocumentOnceWithoutManualSearch(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:03.428 22344 22361 I Danmaku597QA: automatic transient recovery elapsedMs=1238
+11-14 23:10:03.429 22344 22361 I TestRunner: finished: refreshedCatalogueRetriesTransientDocumentOnceWithoutManualSearch(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:03.431 22344 22361 I TestRunner: started: recycledProviderIdCannotReplayAnUnrelatedCachedDocument(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:03.493 22344 22361 I TestRunner: finished: recycledProviderIdCannotReplayAnUnrelatedCachedDocument(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:03.494 22344 22361 I TestRunner: started: lateDirectDocumentSurvivesAFailedBackup(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:12.739 22344 22361 I TestRunner: finished: lateDirectDocumentSurvivesAFailedBackup(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:12.741 22344 22361 I TestRunner: started: stalledDocumentDoesNotSuppressHealthyBackup(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:17.785 22344 22361 I TestRunner: finished: stalledDocumentDoesNotSuppressHealthyBackup(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:17.785 22344 22361 I TestRunner: started: liveAutomaticBroadTitleKeepsSeasonDatesHalvesAndExtras(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:19.884 22344 22361 I Danmaku584QA: automatic 第1期上 elapsedMs=2098 source=tencent-danmaku://video/r4102opm7x3
+11-14 23:10:21.903 22344 22361 I Danmaku584QA: automatic 第1期下 elapsedMs=2019 source=tencent-danmaku://video/z41023tinp7
+11-14 23:10:22.100 22344 22361 I Danmaku584QA: automatic 2026年10月10日上 elapsedMs=197 source=tencent-danmaku://video/r4102opm7x3
+11-14 23:10:23.137 22344 22361 I Danmaku584QA: automatic 第1期加更 elapsedMs=1036 source=tencent-danmaku://video/r4102w56q2o
+11-14 23:10:23.137 22344 22361 I TestRunner: finished: liveAutomaticBroadTitleKeepsSeasonDatesHalvesAndExtras(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:23.137 22344 22361 I TestRunner: started: baseQueryFallbackDoesNotWaitForAnUnrelatedSlowProvider(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:23.248 22344 22361 I TestRunner: finished: baseQueryFallbackDoesNotWaitForAnUnrelatedSlowProvider(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:23.249 22344 22361 I TestRunner: started: directMatchCompletesBeforeAnyBackupRequest(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:23.530 22344 22361 I TestRunner: finished: directMatchCompletesBeforeAnyBackupRequest(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:23.532 22344 22361 I TestRunner: started: wrongHalfIsRejectedBeforeAutomaticBackupMatches(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:23.557 22344 22361 I TestRunner: finished: wrongHalfIsRejectedBeforeAutomaticBackupMatches(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:23.558 22344 22361 I TestRunner: started: liveDramaAutomaticMatchesAcrossTitlesAndEpisodeLabels(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:25.058 22344 22361 I Danmaku585QA: drama [喜剧之王, 2026, 第14集] failure=null elapsedMs=1499 result=喜剧之王(2026)【电视剧】from iqiyi - 【qiyi】 第14集 民宿乌龙遇情敌 iqiyi-danmaku://video/2586684050154100
+11-14 23:10:26.070 22344 22361 I Danmaku585QA: drama [狂飙, 2023, 14] failure=null elapsedMs=1011 result=狂飙(2023)【电视剧】from iqiyi - 【qiyi】 第14集 京海街霸团为夺莽村造命案 iqiyi-danmaku://video/2856211773028900
+11-14 23:10:27.250 22344 22361 I Danmaku585QA: drama [庆余年第二季, 2024, 第14集] failure=null elapsedMs=1180 result=庆余年第二季(2024)【电视剧】from tencent - 【qq】 第14集 tencent-danmaku://video/b41007m5t4f
+11-14 23:10:29.539 22344 22361 I Danmaku585QA: drama [长相思第二季, 2024, 第5集] failure=null elapsedMs=2288 result=长相思 第二季(2024)【电视剧】from tencent - 【qq】 5 tencent-danmaku://video/j41000ms26r
+11-14 23:10:30.614 22344 22361 I Danmaku585QA: drama [罚罪2, 2025, 第2集] failure=null elapsedMs=1074 result=罚罪2(2025)【电视剧】from iqiyi - 【qiyi】 第2集 龙湾突然停电 iqiyi-danmaku://video/2329990978126400
+11-14 23:10:30.614 22344 22361 I TestRunner: finished: liveDramaAutomaticMatchesAcrossTitlesAndEpisodeLabels(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:30.615 22344 22361 I TestRunner: started: ordinaryXmlUrlsAreVerifiedBeforeDeclaringAMatch(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:30.628 22344 22361 I TestRunner: finished: ordinaryXmlUrlsAreVerifiedBeforeDeclaringAMatch(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:30.629 22344 22361 I TestRunner: started: stalledCatalogueAllowsBackupWithoutWaitingForItsTimeout(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:35.764 22344 22361 I TestRunner: finished: stalledCatalogueAllowsBackupWithoutWaitingForItsTimeout(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:35.766 22344 22361 I TestRunner: started: playbackResolutionHappensBeforeDownloadingTheDefaultCandidate(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:35.790 22344 22361 I TestRunner: finished: playbackResolutionHappensBeforeDownloadingTheDefaultCandidate(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:35.791 22344 22361 I TestRunner: started: failedDocumentStartsBackupBeforeUnrelatedCatalogueFinishes(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:35.900 22344 22361 I TestRunner: finished: failedDocumentStartsBackupBeforeUnrelatedCatalogueFinishes(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:35.902 22344 22361 I TestRunner: started: malformedResponseIsNotMisreportedAsNetworkTimeout(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:35.907 22344 22361 I TestRunner: finished: malformedResponseIsNotMisreportedAsNetworkTimeout(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:35.908 22344 22361 I TestRunner: started: newCatalogueReplacesAnOlderPrefetchWithoutLateCacheOverwrite(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:36.749 22344 22361 I TestRunner: finished: newCatalogueReplacesAnOlderPrefetchWithoutLateCacheOverwrite(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:36.751 22344 22361 I TestRunner: started: winningBackupCancelsPendingAlternateDocumentStarts(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:38.326 22344 22361 I TestRunner: finished: winningBackupCancelsPendingAlternateDocumentStarts(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:38.328 22344 22361 I TestRunner: started: persistentDocumentFailureStopsAfterOneCatalogueRefresh(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:39.559 22344 22361 I Danmaku597QA: automatic transient recovery elapsedMs=1229
+11-14 23:10:39.561 22344 22361 I TestRunner: finished: persistentDocumentFailureStopsAfterOneCatalogueRefresh(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 23:10:39.562 22344 22361 I TestRunner: started: confirmedWrong73IsRepairedAcrossActualPlaylistAndReentry(com.fongmi.android.tv.ui.activity.DanmakuEpisodeTransitionInstrumentedTest)
+11-14 23:10:40.563 22344 22361 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=17
+11-14 23:10:40.594 22344 22344 I Danmaku598QA: playlist next mainMs=4
+11-14 23:10:40.700 22344 22361 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=18
+11-14 23:10:40.717 22344 22344 I Danmaku598QA: playlist next mainMs=1
+11-14 23:10:40.825 22344 22361 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=19
+11-14 23:10:40.828 22344 22344 I Danmaku598QA: playlist next mainMs=1
+11-14 23:10:40.916 22344 22361 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=20
+11-14 23:10:40.918 22344 22344 I Danmaku598QA: playlist next mainMs=1
+11-14 23:10:41.054 22344 22361 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=22
+11-14 23:10:41.073 22344 22344 I Danmaku598QA: playlist next mainMs=4
+11-14 23:10:41.157 22344 22361 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=23
+11-14 23:10:41.159 22344 22344 I Danmaku598QA: playlist next mainMs=1
+11-14 23:10:41.233 22344 22361 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=73
+11-14 23:10:41.331 22344 22361 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=23
+11-14 23:10:41.746 22344 22361 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=23
+11-14 23:10:41.832 22344 22361 I Danmaku598QA: verified actual playlist, selected URL and parsed body episode=73
+11-14 23:10:42.243 22344 22361 I TestRunner: finished: confirmedWrong73IsRepairedAcrossActualPlaylistAndReentry(com.fongmi.android.tv.ui.activity.DanmakuEpisodeTransitionInstrumentedTest)
+11-14 23:10:42.244 22344 22361 I TestRunner: started: thousandEpisodeCachedSearchNeverRanksOnUiThread(com.fongmi.android.tv.ui.activity.DanmakuEpisodeTransitionInstrumentedTest)
+11-14 23:10:42.688 22344 22361 I Danmaku598QA: 1000-episode cached search mainMs=0 callbackOnMain=false
+11-14 23:10:42.688 22344 22361 I TestRunner: finished: thousandEpisodeCachedSearchNeverRanksOnUiThread(com.fongmi.android.tv.ui.activity.DanmakuEpisodeTransitionInstrumentedTest)
+11-14 23:10:42.689 22344 22361 I TestRunner: started: manualCatalogueSurvivesBadMetadataAndContinuesSeventeenEighteenNineteen(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 23:10:44.728 22344 22361 I Danmaku597QA: file time=1794669044000 source=http://localhost:57146/api/v2/comment/chain-17?format=xml
+11-14 23:10:44.755 22344 22361 I Danmaku597QA: file time=1794669044000 source=http://localhost:57146/api/v2/comment/chain-18?format=xml
+11-14 23:10:44.756 22344 22361 I Danmaku597QA: snapshot=1794669044687
+11-14 23:10:44.762 22344 22361 I Danmaku597QA: file time=1794669044000 source=http://localhost:57146/api/v2/comment/chain-18?format=xml
+11-14 23:10:44.773 22344 22361 I Danmaku597QA: manual17 continuation episode=18 elapsedMs=16 catalogueRequests=2
+11-14 23:10:44.807 22344 22361 I Danmaku597QA: file time=1794669044000 source=http://localhost:57146/api/v2/comment/chain-19?format=xml
+11-14 23:10:44.811 22344 22361 I Danmaku597QA: snapshot=1794669044687
+11-14 23:10:44.812 22344 22361 I Danmaku597QA: file time=1794669044000 source=http://localhost:57146/api/v2/comment/chain-19?format=xml
+11-14 23:10:44.818 22344 22361 I Danmaku597QA: manual17 continuation episode=19 elapsedMs=7 catalogueRequests=2
+11-14 23:10:44.979 22344 22361 I TestRunner: finished: manualCatalogueSurvivesBadMetadataAndContinuesSeventeenEighteenNineteen(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 23:10:44.980 22344 22361 I TestRunner: started: stalledSavedEpisodeRefreshesWithoutWaitingForOldUrl(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 23:10:46.790 22344 22361 I TestRunner: finished: stalledSavedEpisodeRefreshesWithoutWaitingForOldUrl(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 23:10:46.791 22344 22361 I TestRunner: started: savedAutomaticRestoreCannotOverwriteANewerManualChoice(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 23:10:54.004 22344 22361 I TestRunner: finished: savedAutomaticRestoreCannotOverwriteANewerManualChoice(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 23:10:54.006 22344 22361 I TestRunner: started: manualFailureRecoversTheConfirmedMovieOrPartAcrossProviders(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 23:10:56.110 22344 22361 I TestRunner: finished: manualFailureRecoversTheConfirmedMovieOrPartAcrossProviders(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 23:10:56.111 22344 22361 I TestRunner: started: thousandEpisodeManualDirectoryOpensAndSelectsWithoutBlockingUi(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 23:10:59.038 22344 22344 I Danmaku598QA: manual open 1000 rows mainMs=81
+11-14 23:10:59.276 22344 22344 I Danmaku598QA: manual choose mainMs=1
+11-14 23:10:59.758 22344 22361 I TestRunner: finished: thousandEpisodeManualDirectoryOpensAndSelectsWithoutBlockingUi(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 23:10:59.759 22344 22361 I TestRunner: started: automaticMovieAndDatedVarietyDownloadParseAndCache(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 23:11:00.301 22344 22361 I TestRunner: finished: automaticMovieAndDatedVarietyDownloadParseAndCache(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 23:11:00.303 22344 22361 I TestRunner: started: confirmedVarietyPrefetchUsesActualHalfAndBonusPlaylistLabels(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 23:11:01.830 22344 22361 I Danmaku597QA: file time=1794669061000 source=http://localhost:48141/api/v2/comment/lower?format=xml
+11-14 23:11:01.973 22344 22361 I Danmaku597QA: file time=1794669061000 source=http://localhost:48141/api/v2/comment/bonus?format=xml
+11-14 23:11:02.252 22344 22361 I TestRunner: finished: confirmedVarietyPrefetchUsesActualHalfAndBonusPlaylistLabels(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 23:11:02.254 22344 22361 I TestRunner: started: externalLinkCancelsOldRestoreFailureAndEnablesRendering(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 23:11:09.614 22344 22361 I TestRunner: finished: externalLinkCancelsOldRestoreFailureAndEnablesRendering(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 23:11:09.618 22344 22361 I TestRunner: started: fanrenCollectionFilenameLoadsActualEpisodeTwentyTwo(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+11-14 23:11:12.558 22344 22344 I Danmaku596QA: verified cut duration=7200000 source=bilibili-danmaku://video/428988/453947774/1150
+11-14 23:11:14.426 22344 22361 I Danmaku577QA: comments at 60000 composed moving pixels=111
+11-14 23:11:14.426 22344 22344 I Danmaku577QA: pixels position=61834 source=bilibili-danmaku://video/428988/453947774/1150
+11-14 23:11:16.261 22344 22361 I Danmaku577QA: comments at 600000 composed moving pixels=174
+11-14 23:11:16.261 22344 22344 I Danmaku577QA: pixels position=601801 source=bilibili-danmaku://video/428988/453947774/1150
+11-14 23:11:17.999 22344 22361 I Danmaku577QA: comments after pause/resume composed moving pixels=1142
+11-14 23:11:20.099 22344 22361 I Danmaku577QA: comments after fullscreen composed moving pixels=541
+11-14 23:11:22.353 22344 22361 I Danmaku577QA: comments after background return composed moving pixels=240
+11-14 23:11:22.732 22344 22361 I TestRunner: finished: fanrenCollectionFilenameLoadsActualEpisodeTwentyTwo(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+11-14 23:11:22.733 22344 22361 I TestRunner: run finished: 32 tests, 0 failed, 0 ignored

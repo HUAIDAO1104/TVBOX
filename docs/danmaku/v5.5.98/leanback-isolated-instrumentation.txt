@@ -1,0 +1,22 @@
+com.fongmi.android.tv.ui.activity.DanmakuEpisodeTransitionInstrumentedTest:..
+com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest:.
+com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest:
+Error in fanrenCollectionFilenameLoadsActualEpisodeTwentyTwo(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest):
+java.lang.AssertionError: Timed out: automatic native match
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:285)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:171)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.fanrenCollectionFilenameLoadsActualEpisodeTwentyTwo(PlatformPlaybackInstrumentedTest.java:33)
+
+
+Time: 98.136
+There was 1 failure:
+1) fanrenCollectionFilenameLoadsActualEpisodeTwentyTwo(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+java.lang.AssertionError: Timed out: automatic native match
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:285)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:171)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.fanrenCollectionFilenameLoadsActualEpisodeTwentyTwo(PlatformPlaybackInstrumentedTest.java:33)
+
+FAILURES!!!
+Tests run: 4,  Failures: 1

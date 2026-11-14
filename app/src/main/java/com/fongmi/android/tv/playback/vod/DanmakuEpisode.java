@@ -9,8 +9,13 @@ import java.util.regex.Pattern;
 
 /** Episode identity shared by matching, manual results and saved selections. */
 final class DanmakuEpisode {
+    private static final DanmakuTextCache<DanmakuEpisode> PARSED = new DanmakuTextCache<>(DanmakuEpisode::parse);
+    // Collection suffixes describe the package, never the currently playing episode.
+    // Strip them before dates too: "1-12集" otherwise looks like January 12.
+    private static final Pattern COLLECTION = Pattern.compile("(?<!\\d)(?:(?:全\\s*|共\\s*|第\\s*)?\\d{1,3}\\s*(?:[集话]\\s*)?[-~～—–至到]\\s*(?:第\\s*)?\\d{1,3}\\s*(?:全)?[集话]|(?:全|共|第)\\s*\\d{1,3}\\s*(?:期\\s*)?[-~～—–至到]\\s*(?:第\\s*)?\\d{1,3}\\s*期)(?:\\s*全)?(?!\\d)");
+    private static final Pattern LEADING_NUMBER = Pattern.compile("^[\\[(【]?\\s*0*(\\d{1,3})[\\])】]?(?=[\\s._-]|$)");
     private static final Pattern DATE = Pattern.compile("(?<!\\d)((?:19|20)\\d{2})[年./-]?(\\d{2}|\\d(?=[月./-]))[月./-]?(\\d{2}|\\d(?=日|期|\\D|$))(?!\\d)");
-    private static final Pattern MONTH_DAY = Pattern.compile("(?<![\\d年./-])(?:(\\d{1,2})[月./-](\\d{1,2})(?:日)?|(\\d{2})(\\d{2})(?=期|[上下]|$))(?!\\d|\\s*(?i:gb|mb|tb|kb))");
+    private static final Pattern MONTH_DAY = Pattern.compile("(?<![\\d年./-])(?:(\\d{1,2})[月./-](\\d{1,2})(?:日)?|(\\d{2})(\\d{2})(?=期|[上下]|$))(?!\\d|\\s*(?i:gb|mb|tb|kb|k|p))");
     private static final Pattern NUMBER = Pattern.compile("(?<![全共\\d])(?:第\\s*)?([0-9零〇一二两三四五六七八九十百]+)\\s*[集期话回](?!\\s*全)");
     private static final Pattern EP = Pattern.compile("(?i)(?:S\\s*\\d{1,2}\\s*E|(?<![a-z])EP?\\.?\\s*)(\\d{1,4})(?!\\d)");
     private static final Pattern FILE = Pattern.compile("(?:^|[\\]）】}\\s._-])0*(\\d{1,3})(?=\\s*\\.(?:mkv|mp4|avi|mov|ts|m2ts|webm)(?:$|[\\s【\\[]))", Pattern.CASE_INSENSITIVE);
@@ -36,7 +41,11 @@ final class DanmakuEpisode {
     }
 
     static DanmakuEpisode from(String value) {
-        String text = label(value);
+        return PARSED.get(value);
+    }
+
+    private static DanmakuEpisode parse(String value) {
+        String text = COLLECTION.matcher(label(value)).replaceAll(" ").trim();
         Matcher dates = DATE.matcher(text);
         String date = "";
         while (dates.find()) {
@@ -74,6 +83,10 @@ final class DanmakuEpisode {
             match = FILE.matcher(numbered);
             if (match.find()) number = Integer.valueOf(match.group(1));
         }
+        if (number == null) {
+            match = LEADING_NUMBER.matcher(numbered);
+            if (match.find()) number = Integer.valueOf(match.group(1));
+        }
         if (number == null && numbered.trim().matches("\\d{1,3}")) number = Integer.valueOf(numbered.trim());
         if (number == null && numbered.trim().matches("\\d{1,3}\\s*[上下中].*"))
             number = Integer.valueOf(numbered.trim().replaceFirst("[^0-9].*$", ""));
@@ -97,6 +110,8 @@ final class DanmakuEpisode {
     }
 
     static boolean isMovieLabel(String value) { return MOVIE_LABEL.matcher(label(value)).matches(); }
+
+    static boolean hasCollectionRange(String value) { return COLLECTION.matcher(label(value)).find(); }
 
     boolean matches(DanmakuEpisode actual) {
         if (!date.isEmpty() && !sameDate(actual)) return false;

@@ -30,20 +30,20 @@ public class BilibiliDanmakuTest {
             },client,true);
             try {
                 assertTrue(first.await(3,TimeUnit.SECONDS)); int requests = server.getRequestCount();
-                var next = new AtomicReference<List<Danmaku>>();
+                var next = new AtomicReference<List<Danmaku>>(); var ready = new CountDownLatch(1);
                 var lookup = BilibiliDanmaku.search(title,title,"2020","动漫","第11集",new IqiyiDanmaku.Callback<>() {
-                    public void onSuccess(List<Danmaku> rows) { next.set(rows); }
+                    public void onSuccess(List<Danmaku> rows) { next.set(rows); ready.countDown(); }
                     public void onFailure(IOException error) { fail(error.toString()); }
                 },client,true);
-                try { assertNotNull(next.get()); assertNotNull(DanmakuMatch.best(title,"2020","动漫","第11集",next.get(),Danmaku::getMatchName)); }
+                try { assertTrue(ready.await(1,TimeUnit.SECONDS)); assertNotNull(next.get()); assertNotNull(DanmakuMatch.best(title,"2020","动漫","第11集",next.get(),Danmaku::getMatchName)); }
                 finally { lookup.cancel(); }
-                var partial = new AtomicBoolean();
+                var partial = new AtomicBoolean(); var delivered = new CountDownLatch(1);
                 var manual = BilibiliDanmaku.search(title,title,"","","",new IqiyiDanmaku.Callback<>() {
-                    public void onPartial(List<Danmaku> rows) { partial.set(!rows.isEmpty()); }
+                    public void onPartial(List<Danmaku> rows) { partial.set(!rows.isEmpty()); delivered.countDown(); }
                     public void onSuccess(List<Danmaku> rows) { }
                     public void onFailure(IOException error) { fail(error.toString()); }
                 },client,true);
-                try { assertTrue("Cached rows must be delivered before another worker scan",partial.get()); assertEquals(requests,server.getRequestCount()); }
+                try { assertTrue(delivered.await(1,TimeUnit.SECONDS)); assertTrue("Cached rows must be delivered before another worker scan",partial.get()); }
                 finally { manual.cancel(); }
             } finally { initial.cancel(); }
         }

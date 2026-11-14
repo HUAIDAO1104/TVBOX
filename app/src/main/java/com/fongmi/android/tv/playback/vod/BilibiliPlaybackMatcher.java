@@ -38,9 +38,11 @@ final class BilibiliPlaybackMatcher implements NativeDanmaku.Job {
         player.notifyDanmakuStatus(DanmakuStatus.matching());
         catalogueJob = BilibiliDanmaku.playbackCatalogue(initial.getUrl(), new IqiyiDanmaku.Callback<>() {
             public void onSuccess(List<Danmaku> rows) {
+                // Ranking hundreds of catalogue rows is CPU work; playback callbacks are UI work.
+                List<Danmaku> matching = BilibiliDanmaku.timelineCandidates(context, rows);
                 App.post(() -> {
                     if (cancelled) return;
-                    catalogue = rows; candidates = BilibiliDanmaku.timelineCandidates(context, rows);
+                    catalogue = rows; candidates = matching;
                     select();
                 });
             }

@@ -206,7 +206,10 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
             for (Danmaku row : catalogue) accumulated.put(row.getUrl(), row);
             List<Danmaku> combined = new ArrayList<>(accumulated.values());
             sourceCatalogues.put(sourceKey, combined);
-            DanmakuManualMatchStore.get().extendConfirmedCatalogue(matchContext, sourceKey, combined);
+            DanmakuMatchContext context = matchContext;
+            sorter.execute(() -> {
+                if (id == requestId.get()) DanmakuManualMatchStore.get().extendConfirmedCatalogue(context, sourceKey, combined);
+            });
         }
         for (Danmaku item : items) {
             if (item == null || item.isEmpty()) continue;

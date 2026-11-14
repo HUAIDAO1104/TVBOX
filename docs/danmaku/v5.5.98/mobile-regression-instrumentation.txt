@@ -1,0 +1,8 @@
+com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest:.....................
+com.fongmi.android.tv.ui.activity.DanmakuEpisodeTransitionInstrumentedTest:..
+com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest:........
+com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest:.
+
+Time: 93.291
+
+OK (32 tests)

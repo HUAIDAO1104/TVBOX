@@ -1,0 +1,9 @@
+2026-11-14; Android 9 / ARM64 AVD; no physical device attached.
+<dictionary> {
+  ExceptionsList : <array> {
+    0 : *.local
+    1 : 169.254/16
+  }
+  FTPPassive : 1
+}
+Android http_proxy: :0

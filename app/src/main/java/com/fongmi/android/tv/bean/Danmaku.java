@@ -35,6 +35,12 @@ public class Danmaku {
     // Only native catalogue adapters may populate a provider-verified alias for this query.
     // Keep the real title in the UI/cache and never deserialize an untrusted alias from a URL.
     private transient String matchName;
+    // Set only by a native catalogue adapter after resolving an episode's platform ID.
+    // A user click confirms the choice, not an old/mislabeled URL's underlying identity.
+    private transient boolean verifiedIdentity;
+
+    public boolean hasVerifiedIdentity() { return verifiedIdentity; }
+    public void setVerifiedIdentity(boolean value) { verifiedIdentity = value; }
 
     public String getMatchName() { return matchName == null || matchName.isBlank() ? getName() : matchName; }
     public void setMatchName(String value) { matchName = value; }
@@ -111,6 +117,7 @@ public class Danmaku {
     }
 
     public void setName(String name) {
+        verifiedIdentity = false;
         this.name = name;
     }
 
@@ -119,6 +126,7 @@ public class Danmaku {
     }
 
     public void setUrl(String url) {
+        verifiedIdentity = false;
         this.url = url;
     }
 

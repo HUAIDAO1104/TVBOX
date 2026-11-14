@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 
 /** Deterministic ranking for automatic danmaku selection. */
 public final class DanmakuMatch {
+    private static final DanmakuTextCache<String> TITLES = new DanmakuTextCache<>(DanmakuMatch::parseTitle);
 
     private static final Pattern SEASON_EPISODE = Pattern.compile("(?i)S\\s*0*(\\d{1,2})\\s*E\\s*0*(\\d{1,3})");
     private static final Pattern SEASON = Pattern.compile("(?:第\\s*)?([0-9一二三四五六七八九十百壹贰叁肆伍陆柒捌玖拾]+)\\s*[季部]");
@@ -367,6 +368,7 @@ public final class DanmakuMatch {
     public static boolean isEpisodeCompatible(String episode, String candidate) {
         DanmakuEpisode expected = DanmakuEpisode.from(episode);
         DanmakuEpisode actual = DanmakuEpisode.from(candidate);
+        if (!expected.identified() && DanmakuEpisode.hasCollectionRange(episode)) return false;
         if (DanmakuEpisode.isMovieLabel(episode) && actual.number != null && actual.number != 1) return false;
         return expected.matches(actual);
     }
@@ -422,6 +424,10 @@ public final class DanmakuMatch {
     }
 
     static String canonicalTitle(String value) {
+        return TITLES.get(value);
+    }
+
+    private static String parseTitle(String value) {
         if (value == null) return "";
         String text = Normalizer.normalize(value, Normalizer.Form.NFKC)
                 .replaceAll("<[^>]*>", "")

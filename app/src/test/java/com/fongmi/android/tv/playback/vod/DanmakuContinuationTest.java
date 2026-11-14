@@ -6,6 +6,36 @@ import java.util.*;
 import org.junit.Test;
 
 public class DanmakuContinuationTest {
+    @Test public void verifiedNativeIdentitySurvivesStorageButNotLabelOrUrlChanges() {
+        Danmaku item=row("第22集","bilibili-danmaku://video/428988/453947774/1200");
+        item.setVerifiedIdentity(true);
+        String json=DanmakuManualMatchStore.encode(Map.of("work",selection(List.of(item),"第22集")));
+        assertTrue(DanmakuManualMatchStore.decode(json).get("work").episode("22").hasVerifiedIdentity());
+        assertFalse(DanmakuManualMatchStore.decode(json.replace(",\"verifiedIdentity\":true","")).get("work").episode("22").hasVerifiedIdentity());
+        item.setName("连续节目 from fixture - 第23集"); assertFalse(item.hasVerifiedIdentity());
+        item.setVerifiedIdentity(true); item.setUrl("bilibili-danmaku://video/428989/453949369/1200"); assertFalse(item.hasVerifiedIdentity());
+    }
+
+    @Test public void oneDocumentCannotBeSavedAsEveryEpisode() {
+        var rows = List.of(row("第17集", "same-73"), row("第18集", "same-73"), row("第73集", "same-73"));
+        var saved = selection(rows, "第17集");
+        // The explicit click may be kept for this episode, but it is not a season mapping.
+        assertNull(saved.episode("第18集"));
+        assertNull(saved.episode("第73集"));
+    }
+
+    @Test public void legacyCrossEpisodeUrlAliasesAreRemovedOnRead() {
+        String json = "{\"schema\":5,\"entries\":{\"work\":{\"query\":\"连续节目\",\"selectedName\":\"连续节目 from fixture - 第17集\",\"confirmed\":true,\"episodes\":{"
+                + "\"17\":{\"name\":\"连续节目 from fixture - 第17集\",\"url\":\"same-73\"},"
+                + "\"18\":{\"name\":\"连续节目 from fixture - 第18集\",\"url\":\"same-73\"},"
+                + "\"19\":{\"name\":\"连续节目 from fixture - 第19集\",\"url\":\"correct-19\"}}}}}";
+        var saved = DanmakuManualMatchStore.decode(json).get("work");
+        assertNull(saved.episode("17"));
+        assertNull(saved.episode("18"));
+        assertEquals("correct-19", saved.episode("19").getUrl());
+        assertTrue(saved.isUserConfirmed());
+    }
+
     private Danmaku row(String label, String url) {
         Danmaku value = new Danmaku(); value.setName("连续节目(2020)【综艺】from fixture - " + label); value.setUrl(url); return value;
     }

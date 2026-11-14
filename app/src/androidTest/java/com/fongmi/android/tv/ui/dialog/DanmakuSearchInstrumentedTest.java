@@ -73,7 +73,7 @@ public class DanmakuSearchInstrumentedTest {
                 if (status != 0) return new MockResponse().setResponseCode(status).setBody("denied");
                 String name = request.getRequestUrl().queryParameter("name");
                 if (name != null && name.startsWith("连续播放回归片")) return new MockResponse().setBody(App.gson().toJson(
-                        java.util.stream.IntStream.rangeClosed(1, 30).mapToObj(i -> item(name + "(2020)【动漫】from fixture - 第" + i + "集", "chain-" + i)).toList()));
+                        java.util.stream.IntStream.rangeClosed(1, name.contains("性能") ? 1000 : 30).mapToObj(i -> item(name + "(2020)【动漫】from fixture - 第" + i + "集", "chain-" + i)).toList()));
                 if ("弹幕年份回归片2026".equals(name)) return new MockResponse().setBody("[]");
                 if ("弹幕备选回归片".equals(name)) return new MockResponse().setBody(App.gson().toJson(
                         java.util.stream.IntStream.range(0, 5).mapToObj(i -> item(name + "(2026)【电影】from fixture - 正片",
@@ -93,6 +93,28 @@ public class DanmakuSearchInstrumentedTest {
     private Danmaku item(String name, String id) {
         Danmaku item = Danmaku.from(server.url("/api/v2/comment/" + id + "?format=xml").toString());
         item.setName(name); return item;
+    }
+
+    @Test public void thousandEpisodeManualDirectoryOpensAndSelectsWithoutBlockingUi() throws Exception {
+        openPanel("连续播放回归片性能", "22 4k 连续播放回归片性能 1-73集");
+        var adapter=(com.fongmi.android.tv.ui.adapter.DanmakuAdapter)binding.recycler.getAdapter();
+        await(() -> indexOf(adapter,"连续播放回归片性能(2020)【动漫】")>=0,10000);
+        main(() -> {
+            long start=SystemClock.elapsedRealtime();
+            panel.onItemClick(adapter.getItem(indexOf(adapter,"连续播放回归片性能(2020)【动漫】")));
+            long elapsed=SystemClock.elapsedRealtime()-start;
+            android.util.Log.i("Danmaku598QA","manual open 1000 rows mainMs="+elapsed);
+            assertTrue("Opening catalogue blocked UI: "+elapsed,elapsed<250);
+        });
+        await(() -> adapter.getItemCount()==1000,5000);
+        main(() -> {
+            long start=SystemClock.elapsedRealtime();
+            panel.onItemClick(adapter.getItem(adapter.indexOfUrl(item("", "chain-22").getUrl())));
+            long elapsed=SystemClock.elapsedRealtime()-start;
+            android.util.Log.i("Danmaku598QA","manual choose mainMs="+elapsed);
+            assertTrue("Selecting a row blocked UI: "+elapsed,elapsed<150);
+        });
+        await(() -> player.getSelectedDanmaku()!=null && player.getSelectedDanmaku().getUrl().contains("/chain-22?"),5000);
     }
 
     @After public void cleanup() throws Exception {
