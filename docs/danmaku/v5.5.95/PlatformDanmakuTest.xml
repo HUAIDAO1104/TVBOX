@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.fongmi.android.tv.api.PlatformDanmakuTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-14T11:36:20.967Z" hostname="administratordeMac-mini.local" time="0.001">
+  <properties/>
+  <testcase name="biliProtobufHasBoundsAndDoesNotTreatScriptCommentsAsText" classname="com.fongmi.android.tv.api.PlatformDanmakuTest" time="0.001"/>
+  <testcase name="youkuRejectsTokenErrorsAndPreservesMilliseconds" classname="com.fongmi.android.tv.api.PlatformDanmakuTest" time="0.0"/>
+  <testcase name="iqiyiPublicUrlEncodingResolvesVerifiedVideoId" classname="com.fongmi.android.tv.api.PlatformDanmakuTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

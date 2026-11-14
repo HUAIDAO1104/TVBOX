@@ -1,0 +1,20 @@
+{
+  "Leanback": {
+    "tests": 391,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "skippedCases": [
+      "com.fongmi.android.tv.api.BilibiliDanmakuLiveTest.realAnimationCataloguesAndCompleteCommentsOverDirectNetwork"
+    ]
+  },
+  "Mobile": {
+    "tests": 428,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "skippedCases": [
+      "com.fongmi.android.tv.api.BilibiliDanmakuLiveTest.realAnimationCataloguesAndCompleteCommentsOverDirectNetwork"
+    ]
+  }
+}

@@ -83,7 +83,14 @@ public class PlatformPlaybackInstrumentedTest {
         automaticTimeline("现在就出发第四季", "第1期上", "584-tencent-timeline");
     }
 
+    @Test public void fanrenEpisodeTenAutomaticCommentsRenderAcrossPlaybackStates() throws Exception {
+        automaticTimeline("凡人修仙传", "第10集", "595-fanren-timeline", "2020", "国产动漫", new long[]{60000, 600000, 1000000});
+    }
+
     private void automaticTimeline(String title, String episode, String capture) throws Exception {
+        automaticTimeline(title, episode, capture, "2026", "综艺", new long[]{600000, 2400000, 60000});
+    }
+    private void automaticTimeline(String title, String episode, String capture, String year, String type, long[] positions) throws Exception {
         org.junit.Assume.assumeTrue("true".equals(InstrumentationRegistry.getArguments().getString("danmakuLive")));
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         var context = instrumentation.getTargetContext();
@@ -109,10 +116,10 @@ public class PlatformPlaybackInstrumentedTest {
                 var history = new com.fongmi.android.tv.bean.History();
                 history.setVodName(title); history.setKey("timeline-test");
                 VodPlaybackMedia.searchDanmaku(new com.fongmi.android.tv.bean.Result(), history,
-                        com.fongmi.android.tv.bean.Episode.create(episode, "timeline"), 1, "2026", "综艺", a.player());
+                        com.fongmi.android.tv.bean.Episode.create(episode, "timeline"), 1, year, type, a.player());
             });
             await(scenario, a -> a.player().haveDanmaku(), "automatic native match", 90000);
-            for (long position : new long[]{600000, 2400000, 60000}) {
+            for (long position : positions) {
                 onActivity(scenario, a -> a.player().getPlayer().seekTo(position));
                 awaitScreenComments(scenario, "comments at " + position);
                 onActivity(scenario, a -> android.util.Log.i("Danmaku577QA", "pixels position=" + a.player().getPosition() + " source=" + a.player().getSelectedDanmakuUri()));

@@ -1,0 +1,140 @@
+[
+  {
+    "label": "bili-index-cn",
+    "url": "https://api.bilibili.com/pgc/season/index/result?season_type=4&type=1&st=4&order=3&sort=0&page=1&pagesize=100",
+    "route": "200 14.17.92.72 172.22.100.31",
+    "seconds": 0.154,
+    "error": "",
+    "bytes": 62971,
+    "code": 0,
+    "total": 3162,
+    "list_count": 100,
+    "examples": [
+      {
+        "title": "凡人修仙传",
+        "season_id": 28747,
+        "media_id": 28223043,
+        "index_show": "更新至第200话"
+      },
+      {
+        "title": "伍六七之记忆碎片",
+        "season_id": 48315,
+        "media_id": 22580805,
+        "index_show": "全10话"
+      },
+      {
+        "title": "伍六七之暗影宿命",
+        "season_id": 44176,
+        "media_id": 28412536,
+        "index_show": "全10话"
+      },
+      {
+        "title": "时光代理人 第三季",
+        "season_id": 105212,
+        "media_id": 26949780,
+        "index_show": "全12话"
+      },
+      {
+        "title": "镇魂街 第五季",
+        "season_id": 119021,
+        "media_id": 281812061,
+        "index_show": "即将开播"
+      },
+      {
+        "title": "灵笼 第二季",
+        "season_id": 46585,
+        "media_id": 21123554,
+        "index_show": "全12话"
+      },
+      {
+        "title": "仙王的日常生活 第五季",
+        "season_id": 73972,
+        "media_id": 23775603,
+        "index_show": "全12话"
+      },
+      {
+        "title": "镇魂街 第四季",
+        "season_id": 48578,
+        "media_id": 22811568,
+        "index_show": "全26话"
+      }
+    ]
+  },
+  {
+    "label": "bili-index-jp",
+    "url": "https://api.bilibili.com/pgc/season/index/result?season_type=1&type=1&st=1&order=3&sort=0&page=1&pagesize=100",
+    "route": "200 14.17.92.72 172.22.100.31",
+    "seconds": 0.164,
+    "error": "",
+    "bytes": 64029,
+    "code": 0,
+    "total": 4280,
+    "list_count": 100,
+    "examples": [
+      {
+        "title": "鬼灭之刃 柱训练篇",
+        "season_id": 47836,
+        "media_id": 21226899,
+        "index_show": "全8话"
+      },
+      {
+        "title": "鬼灭之刃 刀匠村篇",
+        "season_id": 44860,
+        "media_id": 20140389,
+        "index_show": "全13话"
+      },
+      {
+        "title": "鬼灭之刃 游郭篇",
+        "season_id": 39433,
+        "media_id": 28235125,
+        "index_show": "全11话"
+      },
+      {
+        "title": "鬼灭之刃",
+        "season_id": 26801,
+        "media_id": 22718131,
+        "index_show": "全26话"
+      },
+      {
+        "title": "鬼灭之刃 无限列车篇",
+        "season_id": 39444,
+        "media_id": 28235136,
+        "index_show": "全7话"
+      },
+      {
+        "title": "间谍过家家 第三季",
+        "season_id": 112827,
+        "media_id": 27709925,
+        "index_show": ""
+      },
+      {
+        "title": "咒术回战",
+        "season_id": 34430,
+        "media_id": 28229899,
+        "index_show": "全24话"
+      },
+      {
+        "title": "剧场版 咒术回战 0",
+        "season_id": 48001,
+        "media_id": 22006270,
+        "index_show": "全1话"
+      }
+    ]
+  },
+  {
+    "label": "comments-original-10",
+    "url": "https://api.bilibili.com/x/v2/dm/web/seg.so?type=1&oid=246010329&segment_index=1",
+    "route": "200 14.17.92.72 172.22.100.31",
+    "seconds": 0.304,
+    "error": "",
+    "bytes": 128807
+  },
+  {
+    "label": "comments-remaster-10",
+    "url": "https://api.bilibili.com/x/v2/dm/web/seg.so?type=1&oid=1077921686&segment_index=1",
+    "route": "200 14.17.92.72 172.22.100.31",
+    "seconds": 0.248,
+    "error": "",
+    "bytes": 85397
+  }
+]

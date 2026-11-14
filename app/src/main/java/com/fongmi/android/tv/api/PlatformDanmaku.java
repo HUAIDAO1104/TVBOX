@@ -46,8 +46,7 @@ public final class PlatformDanmaku {
         var job = new NativeDanmakuRequest(75000, referer(link), client);
         job.start(NativeDanmakuRequest.DOCUMENTS, () -> {
             Video video = resolve(link, job);
-            if (video.source().equals("bilibili")) return job.segments((video.duration() + 359) / 360, progress,
-                    i -> biliComments(job.bytes("https://api.bilibili.com/x/v2/dm/web/seg.so?type=1&oid=" + video.id() + "&segment_index=" + (i + 1), 4_000_000)));
+            if (video.source().equals("bilibili")) return BilibiliDanmaku.comments(job, video.id(), video.duration(), progress);
             if (video.source().equals("youku")) {
                 job.text("https://acs.youku.com/h5/mtop.com.youku.aplatform.weakget/1.0/?jsv=2.5.1&appKey=24679788");
                 String token; synchronized (cookies) { token = cookies.stream().filter(c -> c.name().equals("_m_h5_tk")).map(c -> c.value().split("_")[0]).findFirst().orElse(""); }
@@ -155,7 +154,21 @@ public final class PlatformDanmaku {
     static JsonObject json(String text) throws IOException {
         try { return JsonParser.parseString(text).getAsJsonObject(); } catch (RuntimeException e) { throw new IOException("Invalid platform JSON", e); }
     }
+    static final class RejectedComments extends IOException {
+        final String code;
+        RejectedComments(String code) { super("Bilibili comment service rejected the request: " + code); this.code = code; }
+    }
     static List<IqiyiDanmakuCodec.Comment> biliComments(byte[] bytes) throws IOException {
+        // The service sometimes returns HTTP 200 with a JSON refusal instead of protobuf.
+        // Preserve that cause; it is neither a truncated download nor an empty episode.
+        int start = 0;
+        while (start < bytes.length && (bytes[start] == ' ' || bytes[start] == '\n' || bytes[start] == '\r' || bytes[start] == '\t')) start++;
+        if (start < bytes.length && bytes[start] == '{') {
+            JsonObject error = null;
+            // Protobuf can also start with 0x0a, 0x7b (a 123-byte entry).
+            try { error = json(new String(bytes, StandardCharsets.UTF_8)); } catch (IOException ignored) {}
+            if (error != null && error.has("code")) throw new RejectedComments(str(error, "code"));
+        }
         List<IqiyiDanmakuCodec.Comment> rows = new ArrayList<>();
         var root = new IqiyiDanmakuCodec.Proto(bytes, 0, bytes.length);
         while (root.next()) {

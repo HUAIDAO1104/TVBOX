@@ -7,23 +7,25 @@ import java.util.function.IntConsumer;
 /** Shared routing for public platform catalogues and bounded document downloads. */
 public final class NativeDanmaku {
     public interface Job { void cancel(); }
-    public static List<String> sources() { return List.of(IqiyiDanmakuCodec.SOURCE, TencentDanmakuCodec.SOURCE, MangoDanmaku.SOURCE); }
+    public static List<String> sources() { return List.of(IqiyiDanmakuCodec.SOURCE, TencentDanmakuCodec.SOURCE, MangoDanmaku.SOURCE, BilibiliDanmaku.SOURCE); }
     public static List<String> sources(String query) {
         return MangoDanmaku.supports(query) ? List.of(MangoDanmaku.SOURCE)
                 : PlatformDanmaku.supports(query) ? List.of(PlatformDanmaku.SOURCE) : sources();
     }
     public static boolean isSource(String value) { return sources().contains(value) || PlatformDanmaku.SOURCE.equals(value); }
     public static boolean supports(String value) {
-        return IqiyiDanmakuCodec.supports(value) || TencentDanmakuCodec.supports(value)
+        return BilibiliDanmaku.supports(value) || IqiyiDanmakuCodec.supports(value) || TencentDanmakuCodec.supports(value)
                 || MangoDanmaku.supports(value) || PlatformDanmaku.supports(value);
     }
     public static Job search(String source, String query, IqiyiDanmaku.Callback<List<Danmaku>> callback) {
+        if (BilibiliDanmaku.SOURCE.equals(source)) return BilibiliDanmaku.search(query, query, "", "", "", callback);
         if (MangoDanmaku.SOURCE.equals(source)) return MangoDanmaku.search(query, callback);
         if (PlatformDanmaku.SOURCE.equals(source)) return PlatformDanmaku.search(query, callback);
         if (TencentDanmakuCodec.SOURCE.equals(source)) return TencentDanmaku.search(query, callback);
         return IqiyiDanmaku.search(query, callback)::cancel;
     }
     public static Job search(String source, String query, String year, String type, IqiyiDanmaku.Callback<List<Danmaku>> callback) {
+        if (BilibiliDanmaku.SOURCE.equals(source)) return BilibiliDanmaku.search(query, query, year, type, "", callback);
         if (MangoDanmaku.SOURCE.equals(source)) return MangoDanmaku.searchTarget(query, year, type, callback);
         if (TencentDanmakuCodec.SOURCE.equals(source)) return TencentDanmaku.searchTarget(query, year, type, callback);
         return search(source, query, callback);
@@ -32,6 +34,7 @@ public final class NativeDanmaku {
         return search(source, query, query, year, type, episode, callback);
     }
     public static Job search(String source, String query, String identity, String year, String type, String episode, IqiyiDanmaku.Callback<List<Danmaku>> callback) {
+        if (BilibiliDanmaku.SOURCE.equals(source)) return BilibiliDanmaku.search(query, identity, year, type, episode, callback);
         if (MangoDanmaku.SOURCE.equals(source)) return MangoDanmaku.searchTarget(query, identity, year, type, episode, callback);
         if (TencentDanmakuCodec.SOURCE.equals(source)) return TencentDanmaku.searchTarget(query, identity, year, type, callback);
         return search(source, query, year, type, callback);
@@ -48,6 +51,7 @@ public final class NativeDanmaku {
     }
 
     public static Job document(String source, IntConsumer progress, IqiyiDanmaku.Callback<byte[]> callback) {
+        if (BilibiliDanmaku.supports(source)) return BilibiliDanmaku.document(source, progress, callback);
         if (MangoDanmaku.supports(source)) return MangoDanmaku.document(source, progress, callback);
         String alias = PlatformDanmaku.nativeAlias(source);
         if (!alias.isEmpty()) return TencentDanmaku.document(alias, progress, callback);

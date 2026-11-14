@@ -73,15 +73,18 @@ final class NativeDanmakuRequest implements NativeDanmaku.Job {
     String text(String url) throws IOException { return new String(bytes(url, 4_000_000), StandardCharsets.UTF_8); }
     interface Segment { List<IqiyiDanmakuCodec.Comment> get(int index) throws IOException; }
     byte[] segments(int count, IntConsumer progress, Segment fetch) throws Exception {
+        return segments(count, progress, fetch, SEGMENTS, SEGMENT_CONCURRENCY);
+    }
+    byte[] segments(int count, IntConsumer progress, Segment fetch, ExecutorService pool, int concurrency) throws Exception {
         if (count < 1 || count > 720) throw new IOException("Invalid platform timeline");
         List<List<IqiyiDanmakuCodec.Comment>> values = new ArrayList<>(Collections.nCopies(count, null));
         AtomicInteger chars = new AtomicInteger();
-        CompletionService<Void> completed = new ExecutorCompletionService<>(SEGMENTS);
+        CompletionService<Void> completed = new ExecutorCompletionService<>(pool);
         int limit = Math.min(2000, 150_000 / count), scheduled = 0, done = 0;
         while (done < count) {
             // Queue one segment per task, so another document can share the bounded pool.
             // Long-lived workers previously monopolised all four slots for an entire film.
-            while (scheduled < count && scheduled - done < SEGMENT_CONCURRENCY) {
+            while (scheduled < count && scheduled - done < concurrency) {
                 final int index = scheduled++;
                 Future<?> worker = completed.submit(() -> {
                     check(); List<IqiyiDanmakuCodec.Comment> rows;
@@ -90,6 +93,7 @@ final class NativeDanmakuRequest implements NativeDanmaku.Job {
                         // One bounded retry absorbs a transient segment failure; the original
                         // overall deadline and complete-document boundary still apply.
                         check();
+                        if (first instanceof PlatformDanmaku.RejectedComments) throw first;
                         if (first instanceof HttpFailure http && http.code != 408 && http.code != 429 && http.code < 500) throw first;
                         rows = fetch.get(index);
                     }

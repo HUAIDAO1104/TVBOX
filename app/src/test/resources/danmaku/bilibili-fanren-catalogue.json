@@ -1,0 +1,173 @@
+{
+  "code": 0,
+  "result": {
+    "title": "凡人修仙传",
+    "season_id": 28747,
+    "type": 4,
+    "publish": {
+      "is_finish": 0,
+      "is_started": 1,
+      "pub_time": "2020-07-25 20:00:00",
+      "pub_time_show": "2020年07月25日20:00",
+      "unknow_pub_date": 0,
+      "weekday": 0
+    },
+    "episodes": [
+      {
+        "id": 733323,
+        "cid": 1069021958,
+        "title": "8",
+        "long_title": "凡人风起天南8重制版",
+        "duration": 1053000,
+        "section_type": 0,
+        "badge": "限免"
+      },
+      {
+        "id": 733324,
+        "cid": 1070273236,
+        "title": "9",
+        "long_title": "凡人风起天南9重制版",
+        "duration": 1198000,
+        "section_type": 0,
+        "badge": "限免"
+      },
+      {
+        "id": 733325,
+        "cid": 1077921686,
+        "title": "10",
+        "long_title": "凡人风起天南10重制版",
+        "duration": 1176000,
+        "section_type": 0,
+        "badge": "限免"
+      },
+      {
+        "id": 733326,
+        "cid": 1087782600,
+        "title": "11",
+        "long_title": "凡人风起天南11重制版",
+        "duration": 1215000,
+        "section_type": 0,
+        "badge": "限免"
+      },
+      {
+        "id": 733327,
+        "cid": 1095828785,
+        "title": "12",
+        "long_title": "凡人风起天南12重制版",
+        "duration": 1085000,
+        "section_type": 0,
+        "badge": "限免"
+      },
+      {
+        "id": 733328,
+        "cid": 1105652557,
+        "title": "13",
+        "long_title": "凡人风起天南13重制版",
+        "duration": 1269000,
+        "section_type": 0,
+        "badge": "限免"
+      },
+      {
+        "id": 733336,
+        "cid": 1165522299,
+        "title": "21",
+        "long_title": "燕家堡之战4重制版",
+        "duration": 1116000,
+        "section_type": 0,
+        "badge": "限免"
+      },
+      {
+        "id": 428988,
+        "cid": 453947774,
+        "title": "22",
+        "long_title": "魔道争锋1",
+        "duration": 1150000,
+        "section_type": 0,
+        "badge": "限免"
+      },
+      {
+        "id": 788322,
+        "cid": 1341749679,
+        "title": "77",
+        "long_title": "星海飞驰1",
+        "duration": 31000,
+        "section_type": 1,
+        "badge": "预告"
+      },
+      {
+        "id": 788444,
+        "cid": 1520927987,
+        "title": "100",
+        "long_title": "星海飞驰24",
+        "duration": 27000,
+        "section_type": 1,
+        "badge": "预告"
+      },
+      {
+        "id": 785516,
+        "cid": 28224782475,
+        "title": "77",
+        "long_title": "星海飞驰1",
+        "duration": 1160080,
+        "section_type": 0,
+        "badge": "会员"
+      },
+      {
+        "id": 785539,
+        "cid": 28224719980,
+        "title": "100",
+        "long_title": "星海飞驰24",
+        "duration": 1369760,
+        "section_type": 0,
+        "badge": "会员"
+      }
+    ],
+    "section": [
+      {
+        "title": "2020版",
+        "episodes": [
+          {
+            "id": 734371,
+            "cid": 246009706,
+            "title": "9",
+            "long_title": "凡人风起天南9",
+            "duration": 1208000,
+            "section_type": 2,
+            "badge": "限免"
+          },
+          {
+            "id": 734372,
+            "cid": 246010329,
+            "title": "10",
+            "long_title": "凡人风起天南10",
+            "duration": 1224000,
+            "section_type": 2,
+            "badge": "限免"
+          },
+          {
+            "id": 734373,
+            "cid": 248822804,
+            "title": "11",
+            "long_title": "凡人风起天南11",
+            "duration": 1234000,
+            "section_type": 2,
+            "badge": "会员"
+          }
+        ]
+      },
+      {
+        "title": "预告",
+        "episodes": [
+          {
+            "id": 342223,
+            "cid": 223456789,
+            "title": "10",
+            "duration": 32000,
+            "section_type": 1,
+            "badge": "预告"
+          }
+        ]
+      }
+    ]
+  }
+}

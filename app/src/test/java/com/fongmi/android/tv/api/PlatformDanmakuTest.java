@@ -26,6 +26,7 @@ public class PlatformDanmakuTest {
         ByteArrayOutputStream root = new ByteArrayOutputStream();root.write(10);root.write(child.size());root.write(child.toByteArray());
         var rows = PlatformDanmaku.biliComments(root.toByteArray()); assertEquals(1, rows.size()); assertEquals(1.234, rows.get(0).seconds(), .0001);
         assertThrows(IOException.class, () -> PlatformDanmaku.biliComments(new byte[]{10,127,16,1}));
-        assertThrows(IOException.class, () -> PlatformDanmaku.biliComments("{\"code\":-412}".getBytes(StandardCharsets.UTF_8)));
+        assertTrue(assertThrows(PlatformDanmaku.RejectedComments.class, () -> PlatformDanmaku.biliComments("{\"code\":-412}".getBytes(StandardCharsets.UTF_8))).getMessage().contains("-412"));
+        assertEquals("-352", assertThrows(PlatformDanmaku.RejectedComments.class, () -> PlatformDanmaku.biliComments("\n {\"code\":-352}".getBytes(StandardCharsets.UTF_8))).code);
     }
 }
