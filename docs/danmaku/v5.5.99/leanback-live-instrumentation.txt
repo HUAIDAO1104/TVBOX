@@ -1,0 +1,5 @@
+com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest:.
+
+Time: 15.27
+
+OK (1 test)

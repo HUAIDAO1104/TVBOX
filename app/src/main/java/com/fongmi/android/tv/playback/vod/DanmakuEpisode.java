@@ -45,7 +45,7 @@ final class DanmakuEpisode {
     }
 
     private static DanmakuEpisode parse(String value) {
-        String text = COLLECTION.matcher(label(value)).replaceAll(" ").trim();
+        String text = withoutCollections(value);
         Matcher dates = DATE.matcher(text);
         String date = "";
         while (dates.find()) {
@@ -112,6 +112,8 @@ final class DanmakuEpisode {
     static boolean isMovieLabel(String value) { return MOVIE_LABEL.matcher(label(value)).matches(); }
 
     static boolean hasCollectionRange(String value) { return COLLECTION.matcher(label(value)).find(); }
+
+    static String withoutCollections(String value) { return COLLECTION.matcher(label(value)).replaceAll(" ").trim(); }
 
     boolean matches(DanmakuEpisode actual) {
         if (!date.isEmpty() && !sameDate(actual)) return false;

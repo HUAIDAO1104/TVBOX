@@ -26,6 +26,30 @@ import org.junit.runner.RunWith;
 /** Exercises the real Activity/service/Exo/overlay path, including actual drawn pixels. */
 @RunWith(AndroidJUnit4.class)
 public class PlatformPlaybackInstrumentedTest {
+    @Test public void fanrenComplexFilenameUsesRealAiBeforeLoadingEpisodeTwentyTwo() throws Exception {
+        String endpoint=InstrumentationRegistry.getArguments().getString("aiLiveEndpoint", "");
+        org.junit.Assume.assumeTrue(!endpoint.isEmpty());
+        var prefs=com.fongmi.android.tv.App.get().getSharedPreferences("danmaku_ai_private",android.content.Context.MODE_PRIVATE);
+        var old=prefs.getAll();
+        try {
+            com.fongmi.android.tv.setting.DanmakuAiSetting.save("https://example.invalid/v1",
+                    com.fongmi.android.tv.playback.vod.DanmakuAiModels.DEFAULT,"local-relay",true);
+            prefs.edit().putString("base_url",endpoint).commit();
+            var entries=com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.class.getDeclaredField("entries");entries.setAccessible(true);
+            ((java.util.Map<?,?>)entries.get(com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get())).remove("凡人修仙传");
+            automaticTimeline("凡人修仙传","序号01【4K】凡人修仙传 22 1-73集","599-ai-22","2020","国产动漫",
+                    new long[]{60000,600000},"playback-timeline.mp4","/428988/");
+        } finally {
+            com.fongmi.android.tv.playback.vod.DanmakuAiMatcher.cancel();
+            var edit=prefs.edit().clear();
+            for(var e:old.entrySet()) {
+                if(e.getValue() instanceof String v)edit.putString(e.getKey(),v);
+                if(e.getValue() instanceof Boolean v)edit.putBoolean(e.getKey(),v);
+            }
+            edit.commit();
+        }
+    }
+
     @Test public void fanrenCollectionFilenameLoadsActualEpisodeTwentyTwo() throws Exception {
         var entries = com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.class.getDeclaredField("entries");
         entries.setAccessible(true);

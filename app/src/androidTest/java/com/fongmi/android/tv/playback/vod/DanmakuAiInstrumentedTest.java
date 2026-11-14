@@ -67,7 +67,7 @@ public class DanmakuAiInstrumentedTest {
         try (MockWebServer server = new MockWebServer(); MockWebServer destination = new MockWebServer()) {
             server.start(); destination.start();
             server.enqueue(new MockResponse().setBody("{\"choices\":[{\"message\":{\"content\":\"{\\\"query\\\":\\\"喜剧之王\\\",\\\"confidence\\\":1}\"}}]}"));
-            var client = new DanmakuAiClient(server.url("/v1").toString(), "deepseek-v4.1-flash", "fixture-secret");
+            var client = new DanmakuAiClient(server.url("/v1").toString(), DanmakuAiModels.DEFAULT, "fixture-secret");
             var context = new DanmakuMatchContext("喜剧之王4K", "2026", "电视剧", "第14集");
             assertEquals("喜剧之王", DanmakuAiProtocol.query(client.complete(DanmakuAiProtocol.context("clean", context)), context));
             var request = server.takeRequest(2, TimeUnit.SECONDS);
@@ -76,8 +76,9 @@ public class DanmakuAiInstrumentedTest {
             assertEquals("/v1/chat/completions", request.getPath());
             assertEquals("Bearer fixture-secret", request.getHeader("Authorization"));
             var body = JsonParser.parseString(request.getBody().readUtf8()).getAsJsonObject();
-            assertEquals(180, body.get("max_tokens").getAsInt());
+            assertEquals(768, body.get("max_tokens").getAsInt());
             assertEquals("disabled", body.getAsJsonObject("thinking").get("type").getAsString());
+            assertEquals("none", body.get("reasoning_effort").getAsString());
             assertFalse(body.has("enable_thinking"));
             assertEquals(2, body.getAsJsonArray("messages").size());
             server.enqueue(new MockResponse().setResponseCode(302).addHeader("Location", destination.url("/stolen")));

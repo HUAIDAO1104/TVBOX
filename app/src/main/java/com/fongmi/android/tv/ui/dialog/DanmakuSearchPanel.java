@@ -165,7 +165,7 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         binding.progress.setVisibility(VISIBLE);
         Util.hideKeyboard(binding.keyword);
         String metadataEpisode = player.getMetadata().artist == null ? "" : player.getMetadata().artist.toString().trim();
-        searchEpisode = matchContext.getEpisode().isEmpty() ? metadataEpisode : matchContext.getEpisode();
+        searchEpisode = matchContext.getResolvedEpisode().isEmpty() ? metadataEpisode : matchContext.getResolvedEpisode();
         DanmakuApi.cancel();
         DanmakuQuery query = DanmakuQuery.from(keyword, searchYear);
         List<String> sources = new ArrayList<>(NativeDanmaku.sources(searchTitle));

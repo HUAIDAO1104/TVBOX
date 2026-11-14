@@ -1,0 +1,20 @@
+com.fongmi.android.tv.playback.vod.DanmakuAiEpisodeInstrumentedTest:
+Error in timeoutFallsBackOnlyToEvidencedEpisodeWithinBoundedTime(com.fongmi.android.tv.playback.vod.DanmakuAiEpisodeInstrumentedTest):
+java.lang.AssertionError: Timeout
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.playback.vod.DanmakuAiEpisodeInstrumentedTest.await(DanmakuAiEpisodeInstrumentedTest.java:154)
+	at com.fongmi.android.tv.playback.vod.DanmakuAiEpisodeInstrumentedTest.loaded(DanmakuAiEpisodeInstrumentedTest.java:102)
+	at com.fongmi.android.tv.playback.vod.DanmakuAiEpisodeInstrumentedTest.timeoutFallsBackOnlyToEvidencedEpisodeWithinBoundedTime(DanmakuAiEpisodeInstrumentedTest.java:138)
+......
+
+Time: 29.622
+There was 1 failure:
+1) timeoutFallsBackOnlyToEvidencedEpisodeWithinBoundedTime(com.fongmi.android.tv.playback.vod.DanmakuAiEpisodeInstrumentedTest)
+java.lang.AssertionError: Timeout
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.playback.vod.DanmakuAiEpisodeInstrumentedTest.await(DanmakuAiEpisodeInstrumentedTest.java:154)
+	at com.fongmi.android.tv.playback.vod.DanmakuAiEpisodeInstrumentedTest.loaded(DanmakuAiEpisodeInstrumentedTest.java:102)
+	at com.fongmi.android.tv.playback.vod.DanmakuAiEpisodeInstrumentedTest.timeoutFallsBackOnlyToEvidencedEpisodeWithinBoundedTime(DanmakuAiEpisodeInstrumentedTest.java:138)
+
+FAILURES!!!
+Tests run: 7,  Failures: 1

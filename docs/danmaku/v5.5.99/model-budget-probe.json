@@ -1,0 +1,19 @@
+{
+  "episode": "01.22 4K 凡人修仙传 1-73集",
+  "model": "deepseek-v4.1-flash-1017",
+  "response": null,
+  "finish_reason": "length",
+  "elapsed_ms": 6072,
+  "usage": {
+    "completion_tokens": 768,
+    "completion_tokens_details": {
+      "reasoning_tokens": 768
+    },
+    "prompt_tokens": 326,
+    "prompt_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "total_tokens": 1094
+  }
+}

@@ -44,6 +44,7 @@ public final class DanmakuAiMatcher {
     }
 
     public static synchronized void cancel() {
+        DanmakuAiEpisodeResolver.cancelAll();
         if (active != null) active.cancel();
         active = null;
     }

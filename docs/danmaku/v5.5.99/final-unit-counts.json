@@ -1,0 +1,14 @@
+{
+  "LeanbackArm64_v8a": {
+    "tests": 411,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  },
+  "MobileArm64_v8a": {
+    "tests": 448,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  }
+}

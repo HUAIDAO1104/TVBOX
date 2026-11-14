@@ -24,6 +24,7 @@ public final class VodPlaybackMedia {
     private static final Map<PlayerManager, DanmakuDocumentCache.Ticket> MANUAL_DOWNLOADS = new WeakHashMap<>();
     private static final Map<PlayerManager, DanmakuDocumentCache.Ticket> RESTORE_DOWNLOADS = new WeakHashMap<>();
     private static final Map<PlayerManager, BilibiliPlaybackMatcher> TIMELINE_MATCHES = new WeakHashMap<>();
+    private static final Map<PlayerManager, com.fongmi.android.tv.api.NativeDanmaku.Job> EPISODE_JOBS = new WeakHashMap<>();
     private static final java.util.concurrent.atomic.AtomicInteger MANUAL_SEQUENCE = new java.util.concurrent.atomic.AtomicInteger();
 
     public static MediaMetadata metadata(History history, Episode episode) {
@@ -47,7 +48,9 @@ public final class VodPlaybackMedia {
         invalidate(player);
         String title = history.getVodName();
         String episodeName = episode.getName();
-        String episodeQuery = resolveEpisodeQuery(episodeName, stableEpisodeIndex, type);
+        var original = new DanmakuMatchContext(title, year, type, episodeName);
+        var plan = DanmakuEpisodePlan.from(original, stableEpisodeIndex);
+        String episodeQuery = plan.fallback;
         // Preserve the source's complete label for AI and manual recovery. Reducing an
         // unfamiliar "EP01 Part B" to "1" destroys the evidence needed to identify its half.
         DanmakuMatchContext matchContext = new DanmakuMatchContext(title, year, type,
@@ -61,13 +64,40 @@ public final class VodPlaybackMedia {
             player.notifyDanmakuStatus(DanmakuStatus.failed(DanmakuStatus.Failure.DISABLED));
             return;
         }
-        DanmakuManualMatchStore.Selection preferred = DanmakuManualMatchStore.get().find(matchContext);
         String identity = identityOf(history, episode, stableEpisodeIndex) + '\u001f'
-                + Objects.toString(year, "") + '\u001f' + Objects.toString(type, "") + '\u001f'
-                + (preferred == null ? "" : preferred.selectedName());
+                + Objects.toString(year, "") + '\u001f' + Objects.toString(type, "");
         synchronized (REQUEST_IDENTITIES) {
             REQUEST_IDENTITIES.put(player, identity);
         }
+        var confirmed = DanmakuManualMatchStore.get().find(matchContext);
+        String correction = confirmed == null ? "" : confirmed.correctedEpisode(episodeName);
+        if (!correction.isEmpty()) {
+            var resolved = new DanmakuMatchContext(title, year, type, episodeName, correction);
+            synchronized (MATCH_CONTEXTS) { MATCH_CONTEXTS.put(player, resolved); }
+            searchResolved(title, episodeName, year, type, player, identity, resolved, true);
+            return;
+        }
+        if (plan.complex && com.fongmi.android.tv.setting.DanmakuAiSetting.enabled()) {
+            player.notifyDanmakuStatus(DanmakuStatus.aiMatching());
+            var job = DanmakuAiEpisodeResolver.resolve(matchContext, stableEpisodeIndex, plan, outcome -> {
+                if (!isCurrentIdentity(player, identity) || !matchesCurrent(player, title, episodeName)) return;
+                synchronized (EPISODE_JOBS) { EPISODE_JOBS.remove(player); }
+                if (outcome.episode().isEmpty()) { player.notifyDanmakuStatus(DanmakuStatus.failed(outcome.failure())); return; }
+                var resolved = new DanmakuMatchContext(title, year, type, episodeName, outcome.episode());
+                synchronized (MATCH_CONTEXTS) { MATCH_CONTEXTS.put(player, resolved); }
+                searchResolved(title, episodeName, year, type, player, identity, resolved, true);
+            });
+            synchronized (EPISODE_JOBS) { EPISODE_JOBS.put(player, job); }
+        } else if (episodeQuery.isEmpty()) {
+            // Unknown complex labels cannot silently become the first playlist item.
+            player.notifyDanmakuStatus(DanmakuStatus.failed(DanmakuStatus.Failure.NO_MATCH));
+        } else searchResolved(title, episodeName, year, type, player, identity, matchContext, false);
+    }
+
+    private static void searchResolved(String title, String episodeName, String year, String type, PlayerManager player,
+                                       String identity, DanmakuMatchContext matchContext, boolean interpreted) {
+        String episodeQuery = matchContext.getResolvedEpisode();
+        DanmakuManualMatchStore.Selection preferred = DanmakuManualMatchStore.get().find(matchContext);
         java.util.function.Consumer<Danmaku> apply = danmaku -> {
             if (!isCurrentIdentity(player, identity)) return;
             if (!matchesCurrent(player, title, episodeName)) return;
@@ -142,7 +172,7 @@ public final class VodPlaybackMedia {
                     case INVALID_RESPONSE -> DanmakuStatus.Failure.INVALID_RESPONSE;
                     case DOWNLOAD -> DanmakuStatus.Failure.DOWNLOAD;
                 };
-                if (failure != DanmakuApi.SearchFailure.DOWNLOAD
+                if (!interpreted && failure != DanmakuApi.SearchFailure.DOWNLOAD
                         && failure != DanmakuApi.SearchFailure.ACCESS_DENIED
                         && DanmakuAiMatcher.search(matchingContext(preferred, matchContext), new DanmakuAiMatcher.Callback() {
                     @Override public void onFound(String query, Danmaku item, java.util.List<Danmaku> catalogue) {
@@ -373,6 +403,10 @@ public final class VodPlaybackMedia {
 
     /** Manual search/selection takes ownership while retaining playback identity and its source. */
     public static void cancelSelection(PlayerManager player) {
+        synchronized (EPISODE_JOBS) {
+            var job = EPISODE_JOBS.remove(player);
+            if (job != null) job.cancel();
+        }
         DanmakuApi.cancel();
         synchronized (TIMELINE_MATCHES) {
             var matcher = TIMELINE_MATCHES.remove(player);
@@ -465,11 +499,15 @@ public final class VodPlaybackMedia {
                     ? initialCatalogue : items;
             CATALOGUE_WORK.execute(() -> {
                 if (!isCurrentManualRequest(player, request)) return;
-                var prepared = DanmakuManualMatchStore.prepare(context, finalQuery, item, resolved);
+                String chosenLabel = DanmakuEpisode.label(item.getName());
+                var chosenContext = new DanmakuMatchContext(context.getTitle(), context.getYear(), context.getType(),
+                        context.getEpisode(), chosenLabel.isEmpty() ? context.getResolvedEpisode() : chosenLabel);
+                var prepared = DanmakuManualMatchStore.prepare(chosenContext, finalQuery, item, resolved);
                 com.fongmi.android.tv.App.post(() -> {
                     if (!isCurrentManualRequest(player, request)) return;
-                    DanmakuManualMatchStore.get().savePrepared(context, prepared, 0);
-                    confirmSavedDocument(context, item);
+                    DanmakuManualMatchStore.get().savePrepared(chosenContext, prepared, 0);
+                    synchronized (MATCH_CONTEXTS) { MATCH_CONTEXTS.put(player, chosenContext); }
+                    confirmSavedDocument(chosenContext, item);
                     player.setDanmakuEnabled(true);
                     player.setDanmaku(item, true);
                     if (onApplied != null) onApplied.accept(item);
@@ -566,7 +604,7 @@ public final class VodPlaybackMedia {
         DanmakuMatchContext context = contextOf(player);
         DanmakuManualMatchStore.Selection selection = DanmakuManualMatchStore.get().find(context);
         if (selection == null || !selection.isUserConfirmed()) return null;
-        Danmaku cached = selection.episode(context.getEpisode());
+        Danmaku cached = selection.episode(context.getResolvedEpisode());
         // Do not turn an old automatic guess or a recycled provider ID into a clickable
         // manual confirmation before the search has refreshed its actual episode identity.
         return cached != null && com.fongmi.android.tv.api.NativeDanmaku.supports(cached.getUrl()) ? cached : null;
@@ -582,10 +620,15 @@ public final class VodPlaybackMedia {
         String nextEpisode;
         synchronized (NEXT_EPISODES) { nextEpisode = NEXT_EPISODES.get(player); }
         if (nextEpisode == null) {
-            DanmakuEpisode current = DanmakuEpisode.from(context.getEpisode());
+            DanmakuEpisode current = DanmakuEpisode.from(context.getResolvedEpisode());
             if (current.number == null || !current.date.isEmpty() || !current.part.isEmpty() || !current.extra.isEmpty()) return;
             nextEpisode = String.valueOf(current.number + 1);
         }
+        if (nextEpisode.isEmpty()) return;
+        // Preload only evidenced next labels. Do not let a raw ambiguous filename undo
+        // the foreground AI correction by preloading the wrong episode.
+        nextEpisode = DanmakuEpisodePlan.from(new DanmakuMatchContext(context.getTitle(), context.getYear(),
+                context.getType(), nextEpisode), 0).fallback;
         if (nextEpisode.isEmpty()) return;
         DanmakuManualMatchStore.Selection selection = DanmakuManualMatchStore.get().find(context);
         if (selection == null) return;

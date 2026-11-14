@@ -16,7 +16,11 @@ public final class DanmakuAiSetting {
     }
 
     public static String baseUrl() { return prefs().getString("base_url", DEFAULT_BASE_URL); }
-    public static String model() { return prefs().getString("model", DEFAULT_MODEL); }
+    public static String model() {
+        String saved = prefs().getString("model", DEFAULT_MODEL);
+        // Upgrade this gateway's previous default; preserve explicit alternative providers/models.
+        return DEFAULT_BASE_URL.equals(baseUrl()) && "deepseek-v4.1-flash".equals(saved) ? DEFAULT_MODEL : saved;
+    }
     public static boolean hasKey() { return !prefs().getString("credential", "").isEmpty(); }
     public static boolean enabled() { return prefs().getBoolean("enabled", false) && hasKey(); }
     public static String key() { return KeystoreCipher.decrypt(prefs().getString("credential", "")); }

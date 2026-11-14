@@ -1,0 +1,8 @@
+{
+  "system_proxy": "<dictionary> {\n  ExceptionsList : <array> {\n    0 : *.local\n    1 : 169.254/16\n  }\n  FTPPassive : 1\n}\n",
+  "android_proxy": ":0",
+  "android_sdk": "28",
+  "proxy_environment_keys_present": [],
+  "test_ai_endpoint": "http://10.0.2.2:59900/v1 (local credential relay, upstream HTTPS, no VPN)",
+  "scope": "Owned Android 9 AVD, not physical devices or user home router"
+}

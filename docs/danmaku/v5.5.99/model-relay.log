@@ -1,0 +1,4 @@
+QA relay listening on loopback:59900; maximum 8 requests
+{"call": 1, "model": "deepseek-v4.1-flash-1017", "task": "episode", "effort": "none", "elapsed_ms": 950, "content": "{\"episode\":\"第22集\",\"evidence\":\"22\"}", "finish_reason": "stop"}
+{"call": 2, "model": "deepseek-v4.1-flash-1017", "task": "episode", "effort": "none", "elapsed_ms": 965, "content": "{\"episode\":\"第22集\",\"evidence\":\"22\"}", "finish_reason": "stop"}
+{"call": 3, "model": "deepseek-v4.1-flash-1017", "task": "episode", "effort": "none", "elapsed_ms": 904, "content": "{\"episode\":\"第22集\",\"evidence\":\"22\"}", "finish_reason": "stop"}

@@ -154,7 +154,7 @@ public final class DanmakuAiProtocol {
         return index < count ? index : -1;
     }
 
-    private static JsonObject object(String response) {
+    static JsonObject object(String response) {
         if (response == null || response.length() > 8192) return new JsonObject();
         String text = response.trim().replaceFirst("(?s)^<think>.*?</think>\\s*", "");
         if (text.startsWith("[") || text.startsWith("<think>")) return new JsonObject();

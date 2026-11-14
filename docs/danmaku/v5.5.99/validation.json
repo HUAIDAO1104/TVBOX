@@ -1,0 +1,69 @@
+{
+  "version": "5.5.99",
+  "versionCode": 650,
+  "jvm": {
+    "LeanbackArm64_v8a": {
+      "tests": 411,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    "MobileArm64_v8a": {
+      "tests": 448,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    }
+  },
+  "final_episode_plan_tests": {
+    "Leanback": {
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    "Mobile": {
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  },
+  "android_regression": {
+    "leanback": {
+      "registered": 32,
+      "executed_passed": 26,
+      "conditional_skipped": 6,
+      "failed": 0
+    },
+    "mobile": {
+      "registered": 32,
+      "executed_passed": 26,
+      "conditional_skipped": 6,
+      "failed": 0
+    }
+  },
+  "live": {
+    "leanback": {
+      "passed": true,
+      "model_ms": 950,
+      "episode": 22,
+      "platform_ep": 428988,
+      "cid": 453947774,
+      "moving_pixels_checked": true
+    },
+    "mobile_first": {
+      "passed": false,
+      "model_ms": 965,
+      "episode": 22,
+      "reason": "Bilibili document -352"
+    },
+    "mobile_retry": {
+      "passed": false,
+      "model_ms": 904,
+      "episode": 22,
+      "reason": "Bilibili document -352 after >60 sec cooldown; identity/network unchanged"
+    }
+  },
+  "physical_devices_tested": false
+}

@@ -113,10 +113,17 @@ public final class DanmakuManualMatchStore {
             value.contextType = previous.contextType;
         }
         if (previous != null && previous.isSameSelection(value.selectedName(), value.sourceKey())) {
-            CachedEpisode old = previous.findEpisode(context.getEpisode()), current = value.findEpisode(context.getEpisode());
+            value.correctedLabels.putAll(previous.correctedLabels);
+            CachedEpisode old = previous.findEpisode(context.getResolvedEpisode()), current = value.findEpisode(context.getResolvedEpisode());
             // A correction is evidence that the old directory is unsafe. Do not preserve its
             // unseen neighbours and send the next episode back to the same wrong document.
             if (old == null || current == null || old.url().equals(current.url())) value.episodes = previous.mergeEpisodes(value.episodes);
+        }
+        if (kind == 0 && context.getEpisode().length() <= 512 && !context.getResolvedEpisode().isEmpty()
+                && DanmakuEpisodePlan.from(context, 0).complex) {
+            value.correctedLabels.remove(context.getEpisode());
+            value.correctedLabels.put(context.getEpisode(), context.getResolvedEpisode());
+            while (value.correctedLabels.size() > 32) value.correctedLabels.remove(value.correctedLabels.keySet().iterator().next());
         }
         removeConflictingDocuments(value.episodes);
         String key = preferenceKey(context);
@@ -127,7 +134,7 @@ public final class DanmakuManualMatchStore {
     public void extendConfirmedCatalogue(DanmakuMatchContext context, String sourceKey, List<Danmaku> rows) {
         Selection selection = find(context);
         if (selection == null || !selection.confirmed || !selection.sourceKey().equals(sourceKey)) return;
-        Danmaku current = selection.episode(context.getEpisode());
+        Danmaku current = selection.episode(context.getResolvedEpisode());
         if (current == null) return;
         LinkedHashMap<String, CachedEpisode> additions = buildEpisodeCache(context, current, rows);
         synchronized (this) {
@@ -149,7 +156,7 @@ public final class DanmakuManualMatchStore {
         Selection selection = find(context);
         if (selection == null || context == null) return;
         Selection updated = selection.copy(new LinkedHashMap<>(selection.episodes));
-        if (!updated.removeEpisode(context.getEpisode())) return;
+        if (!updated.removeEpisode(context.getResolvedEpisode())) return;
         entries.put(preferenceKey(context), updated);
         persist();
     }
@@ -184,7 +191,7 @@ public final class DanmakuManualMatchStore {
             }
         }
         removeConflictingDocuments(result);
-        String currentEpisode = context == null ? "" : context.getEpisode();
+        String currentEpisode = context == null ? "" : context.getResolvedEpisode();
         String selectedKey = DanmakuMatch.episodeKey(selected.getName());
         String contextKey = DanmakuMatch.episodeKey(currentEpisode);
         if (!selectedKey.isEmpty()) result.put(selectedKey, CachedEpisode.from(selected));
@@ -224,7 +231,7 @@ public final class DanmakuManualMatchStore {
         if (context == null || selection == null) return false;
         // A pasted video URL confirms this episode only; never search that URL as the
         // next episode's work title or let it pin a different episode to the old video.
-        if (selection.isVideoLink() && selection.episode(context.getEpisode()) == null) return false;
+        if (selection.isVideoLink() && selection.episode(context.getResolvedEpisode()) == null) return false;
         // An explicit choice may correct inaccurate repository metadata, but only for
         // that same repository edition (or missing metadata), not another known remake.
         if (selection.isUserConfirmed()
@@ -337,6 +344,7 @@ public final class DanmakuManualMatchStore {
         private long updatedAt;
         private boolean confirmed = true;
         private String contextYear, contextType;
+        private final LinkedHashMap<String, String> correctedLabels = new LinkedHashMap<>();
 
         @SuppressWarnings("unused")
         private Selection() {
@@ -354,6 +362,7 @@ public final class DanmakuManualMatchStore {
         private Selection copy(LinkedHashMap<String, CachedEpisode> rows) {
             Selection value = new Selection(query, selectedName, sourceKey, rows, updatedAt);
             value.confirmed = confirmed; value.contextYear = contextYear; value.contextType = contextType;
+            value.correctedLabels.putAll(correctedLabels);
             return value;
         }
 
@@ -383,6 +392,14 @@ public final class DanmakuManualMatchStore {
             value.confirmed = object.has("confirmed") && object.get("confirmed").getAsBoolean();
             value.contextYear = object.has("contextYear") ? string(object, "contextYear") : null;
             value.contextType = object.has("contextType") ? string(object, "contextType") : null;
+            if (value.confirmed && object.has("correctedLabels") && object.get("correctedLabels").isJsonObject()) {
+                for (var entry : object.getAsJsonObject("correctedLabels").entrySet()) {
+                    if (entry.getKey().length() > 512 || !entry.getValue().isJsonPrimitive() || !entry.getValue().getAsJsonPrimitive().isString()) continue;
+                    String label = entry.getValue().getAsString();
+                    if (!label.isEmpty() && label.length() <= 80) value.correctedLabels.put(entry.getKey(), label);
+                    if (value.correctedLabels.size() >= 32) break;
+                }
+            }
             return value;
         }
 
@@ -403,8 +420,11 @@ public final class DanmakuManualMatchStore {
                 }
             }
             object.add("episodes", cachedEpisodes);
+            JsonObject labels = new JsonObject(); correctedLabels.forEach(labels::addProperty); object.add("correctedLabels", labels);
             return object;
         }
+
+        public String correctedEpisode(String raw) { return confirmed ? correctedLabels.getOrDefault(raw, "") : ""; }
 
         public String query() {
             return Objects.toString(query, "").trim();

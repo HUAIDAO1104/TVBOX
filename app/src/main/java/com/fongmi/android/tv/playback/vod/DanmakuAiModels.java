@@ -6,12 +6,13 @@ import java.util.*;
 
 /** Model IDs come from the selected provider; display names never become API IDs. */
 public final class DanmakuAiModels {
-    public static final String DEFAULT = "deepseek-v4.1-flash";
+    public static final String DEFAULT = "deepseek-v4.1-flash-1017";
     private static final List<String> COMMON = List.of(DEFAULT, "deepseek-v4-flash", "qwen3.5-flash", "deepseek-v4-pro", "qwen3.6-plus");
     public record Model(String id, String label) { }
 
     public static Model model(String id) {
         return new Model(id, switch (id) {
+            case "deepseek-v4.1-flash-1017" -> "DeepSeek V4.1 Flash · 1017";
             case "deepseek-v4.1-flash" -> "DeepSeek V4.1 Flash";
             case "deepseek-flash" -> "DeepSeek Flash";
             case "deepseek-v4-flash" -> "DeepSeek V4 Flash";
@@ -69,5 +70,8 @@ public final class DanmakuAiModels {
                     .limit(512).map(DanmakuAiModels::model).toList();
         } catch (RuntimeException error) { throw new IOException("response"); }
     }
-    private static int rank(String id) { int index = COMMON.indexOf(id); return index < 0 ? COMMON.size() : index; }
+    private static int rank(String id) {
+        if ("deepseek-v4.1-flash".equals(id)) return 1;
+        int index = COMMON.indexOf(id); return index < 0 ? COMMON.size() + 1 : index == 0 ? 0 : index + 1;
+    }
 }

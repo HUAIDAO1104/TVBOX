@@ -1,0 +1,42 @@
+[
+  {
+    "extra": {
+      "reasoning_effort": "low"
+    },
+    "content": null,
+    "finish_reason": "length",
+    "elapsed_ms": 5817,
+    "usage": {
+      "completion_tokens": 768,
+      "completion_tokens_details": {
+        "reasoning_tokens": 768
+      },
+      "prompt_tokens": 326,
+      "prompt_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 1094
+    }
+  },
+  {
+    "extra": {
+      "enable_thinking": false
+    },
+    "content": null,
+    "finish_reason": "length",
+    "elapsed_ms": 6152,
+    "usage": {
+      "completion_tokens": 768,
+      "completion_tokens_details": {
+        "reasoning_tokens": 768
+      },
+      "prompt_tokens": 326,
+      "prompt_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 256
+      },
+      "total_tokens": 1094
+    }
+  }
+]

@@ -11,7 +11,7 @@ public class DanmakuAiModelsTest {
         assertEquals("DeepSeek V4.1 Flash", models.get(0).label());
     }
     @Test public void presetsBelongToTheirProviderAndKeepExistingChoice() {
-        assertEquals("deepseek-v4.1-flash", DanmakuAiModels.presets("https://llm-api.mcisaas.com/v1", "").get(0).id());
+        assertEquals("deepseek-v4.1-flash-1017", DanmakuAiModels.presets("https://llm-api.mcisaas.com/v1", "").get(0).id());
         assertTrue(DanmakuAiModels.presets("https://other.invalid/v1", "").isEmpty());
         var saved = DanmakuAiModels.presets("https://other.invalid/v1", "private-model");
         assertEquals(1, saved.size()); assertEquals("private-model", saved.get(0).id());
@@ -26,8 +26,8 @@ public class DanmakuAiModelsTest {
     }
     @Test public void serializesIdsSeparatelyFromDisplayLabels() {
         var json = DanmakuAiModels.json(List.of(DanmakuAiModels.model(DanmakuAiModels.DEFAULT))).get(0).getAsJsonObject();
-        assertEquals("deepseek-v4.1-flash", json.get("id").getAsString());
-        assertEquals("DeepSeek V4.1 Flash", json.get("label").getAsString());
+        assertEquals("deepseek-v4.1-flash-1017", json.get("id").getAsString());
+        assertEquals("DeepSeek V4.1 Flash · 1017", json.get("label").getAsString());
         assertTrue(json.get("recommended").getAsBoolean());
     }
 }

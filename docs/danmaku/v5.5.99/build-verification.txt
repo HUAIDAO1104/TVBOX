@@ -1,0 +1,13 @@
+> Task :app:verifyLeanbackArm64_v8aReleaseStreamApis
+Checked leanback-arm64_v8a.apk: 3 DEX files
+PASS: no unsupported stream API references
+> Task :app:verifyLeanbackArmeabi_v7aReleaseStreamApis
+Checked leanback-armeabi_v7a.apk: 3 DEX files
+PASS: no unsupported stream API references
+> Task :app:verifyMobileArm64_v8aReleaseStreamApis
+Checked mobile-arm64_v8a.apk: 3 DEX files
+PASS: no unsupported stream API references
+> Task :app:verifyMobileArmeabi_v7aReleaseStreamApis
+Checked mobile-armeabi_v7a.apk: 3 DEX files
+PASS: no unsupported stream API references
+BUILD SUCCESSFUL in 3m 12s

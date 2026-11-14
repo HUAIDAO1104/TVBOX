@@ -41,19 +41,26 @@ public final class DanmakuAiClient {
         JsonObject body = new JsonObject();
         body.addProperty("model", model);
         body.addProperty("temperature", 0);
-        body.addProperty("max_tokens", 180);
+        boolean episodeTask = input.has("task") && "episode".equals(input.get("task").getAsString());
+        // Some compatible gateways count internal reasoning in this same budget even
+        // with thinking disabled. A tiny cap can exhaust it before any JSON is returned.
+        body.addProperty("max_tokens", 768);
         body.addProperty("stream", false);
         if (model.toLowerCase(java.util.Locale.ROOT).contains("deepseek")) {
             JsonObject thinking = new JsonObject(); thinking.addProperty("type", "disabled"); body.add("thinking", thinking);
+            // The gateway's pinned V4.1 model honors the OpenAI effort switch, not only
+            // DeepSeek's native thinking object. Verified against its actual /v1 endpoint.
+            if (DanmakuAiModels.DEFAULT.equals(model)) body.addProperty("reasoning_effort", "none");
         } else body.addProperty("enable_thinking", false);
         JsonArray messages = new JsonArray();
-        messages.add(message("system", DanmakuAiProtocol.SYSTEM));
+        messages.add(message("system", episodeTask ? DanmakuEpisodePlan.SYSTEM : DanmakuAiProtocol.SYSTEM));
         messages.add(message("user", input.toString()));
         body.add("messages", messages);
         Request request = new Request.Builder().url(baseUrl + "/chat/completions")
                 .header("Authorization", "Bearer " + key)
                 .post(RequestBody.create(MediaType.get("application/json; charset=utf-8"), body.toString())).build();
         call = CLIENT.newCall(request);
+        if (episodeTask) call.timeout().timeout(8, TimeUnit.SECONDS);
         if (cancelled) call.cancel();
         try (var response = call.execute()) {
             if (!response.isSuccessful()) throw new IOException("http_" + response.code());

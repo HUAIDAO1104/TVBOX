@@ -1,0 +1,9 @@
+com.fongmi.android.tv.playback.vod.DanmakuAiEpisodeInstrumentedTest:........
+com.fongmi.android.tv.playback.vod.DanmakuAiMatchingInstrumentedTest:..........
+com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest:
+com.fongmi.android.tv.playback.vod.DanmakuAiInstrumentedTest:......
+com.fongmi.android.tv.ui.activity.DanmakuEpisodeTransitionInstrumentedTest:..
+
+Time: 50.272
+
+OK (32 tests)
