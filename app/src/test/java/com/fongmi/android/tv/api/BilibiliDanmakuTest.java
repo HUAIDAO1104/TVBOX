@@ -13,6 +13,41 @@ import okhttp3.mockwebserver.*;
 import org.junit.Test;
 
 public class BilibiliDanmakuTest {
+    @Test public void knownOfficialWorkReturnsImmediatelyForManualAndNextEpisodeSearch() throws Exception {
+        String title = "缓存动画回归";
+        try (var server = new MockWebServer()) {
+            String catalogue = fixture().replace("凡人修仙传", title);
+            server.setDispatcher(new okhttp3.mockwebserver.Dispatcher() { public MockResponse dispatch(RecordedRequest request) {
+                return new MockResponse().setBody(request.getPath().contains("/pgc/view/web/season") ? catalogue
+                        : "{\"code\":0,\"data\":{\"total\":1,\"list\":[{\"season_id\":28747,\"season_type\":4,\"title\":\""+title+"\"}]}}");
+            }}); server.start();
+            var client = new OkHttpClient.Builder().addInterceptor(c -> c.proceed(c.request().newBuilder().url(
+                    server.url(c.request().url().encodedPath()+"?"+c.request().url().encodedQuery())).build())).build();
+            var first = new CountDownLatch(1);
+            var initial = BilibiliDanmaku.search(title,title,"2020","动漫","第10集",new IqiyiDanmaku.Callback<>() {
+                public void onSuccess(List<Danmaku> rows) { first.countDown(); }
+                public void onFailure(IOException error) { fail(error.toString()); }
+            },client,true);
+            try {
+                assertTrue(first.await(3,TimeUnit.SECONDS)); int requests = server.getRequestCount();
+                var next = new AtomicReference<List<Danmaku>>();
+                var lookup = BilibiliDanmaku.search(title,title,"2020","动漫","第11集",new IqiyiDanmaku.Callback<>() {
+                    public void onSuccess(List<Danmaku> rows) { next.set(rows); }
+                    public void onFailure(IOException error) { fail(error.toString()); }
+                },client,true);
+                try { assertNotNull(next.get()); assertNotNull(DanmakuMatch.best(title,"2020","动漫","第11集",next.get(),Danmaku::getMatchName)); }
+                finally { lookup.cancel(); }
+                var partial = new AtomicBoolean();
+                var manual = BilibiliDanmaku.search(title,title,"","","",new IqiyiDanmaku.Callback<>() {
+                    public void onPartial(List<Danmaku> rows) { partial.set(!rows.isEmpty()); }
+                    public void onSuccess(List<Danmaku> rows) { }
+                    public void onFailure(IOException error) { fail(error.toString()); }
+                },client,true);
+                try { assertTrue("Cached rows must be delivered before another worker scan",partial.get()); assertEquals(requests,server.getRequestCount()); }
+                finally { manual.cancel(); }
+            } finally { initial.cancel(); }
+        }
+    }
     private String fixture() throws Exception {
         try (var in = getClass().getResourceAsStream("/danmaku/bilibili-fanren-catalogue.json")) {
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);

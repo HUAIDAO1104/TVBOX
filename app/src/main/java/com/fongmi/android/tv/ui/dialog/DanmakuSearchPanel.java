@@ -201,7 +201,12 @@ final class DanmakuSearchPanel implements DanmakuAdapter.OnClickListener {
         if (failure == 2) denied++;
         if (failure == 3) invalid++;
         if (!sourceKey.isEmpty() && catalogue != null && !catalogue.isEmpty()) {
-            sourceCatalogues.put(sourceKey, catalogue);
+            Map<String, Danmaku> accumulated = new LinkedHashMap<>();
+            for (Danmaku row : sourceCatalogues.getOrDefault(sourceKey, List.of())) accumulated.put(row.getUrl(), row);
+            for (Danmaku row : catalogue) accumulated.put(row.getUrl(), row);
+            List<Danmaku> combined = new ArrayList<>(accumulated.values());
+            sourceCatalogues.put(sourceKey, combined);
+            DanmakuManualMatchStore.get().extendConfirmedCatalogue(matchContext, sourceKey, combined);
         }
         for (Danmaku item : items) {
             if (item == null || item.isEmpty()) continue;

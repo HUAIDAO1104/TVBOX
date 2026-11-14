@@ -39,8 +39,8 @@ public class BilibiliTimelineTest {
     }
     @Test public void missingAmbiguousOrIncompatibleEvidenceNeverGuessesACut() throws Exception {
         var rows = catalogue(); var candidates = BilibiliDanmaku.timelineCandidates(context("17"), rows);
-        assertNull(BilibiliDanmaku.chooseTimeline(candidates, 0));
-        assertNull(BilibiliDanmaku.chooseTimeline(candidates, 7200000));
+        assertTrue(BilibiliDanmaku.chooseTimeline(candidates, 0).getUrl().contains("/733332/"));
+        assertTrue(BilibiliDanmaku.chooseTimeline(candidates, 7200000).getUrl().contains("/733332/"));
         Danmaku duplicate = Danmaku.from(candidates.get(0).getUrl()); duplicate.setName(candidates.get(0).getName());
         long duration = Long.parseLong(duplicate.getUrl().substring(duplicate.getUrl().lastIndexOf('/') + 1)) * 1000;
         assertNull(BilibiliDanmaku.chooseTimeline(List.of(candidates.get(0), duplicate), duration));

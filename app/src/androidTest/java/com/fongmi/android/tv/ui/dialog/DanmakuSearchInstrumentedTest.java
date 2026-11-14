@@ -35,6 +35,8 @@ public class DanmakuSearchInstrumentedTest {
     private MockWebServer server;
     private String previousApi;
     private volatile int status;
+    private final java.util.concurrent.atomic.AtomicInteger catalogueRequests = new java.util.concurrent.atomic.AtomicInteger();
+    private final java.util.concurrent.ConcurrentHashMap<String, Integer> documentRequests = new java.util.concurrent.ConcurrentHashMap<>();
     private volatile boolean slowDocument, stalledRestore;
     private final java.util.concurrent.atomic.AtomicInteger staleDocumentRequests = new java.util.concurrent.atomic.AtomicInteger();
     private final CountDownLatch documentStarted = new CountDownLatch(1);
@@ -55,6 +57,7 @@ public class DanmakuSearchInstrumentedTest {
         server.setDispatcher(new Dispatcher() {
             @Override public MockResponse dispatch(RecordedRequest request) {
                 if (request.getPath().startsWith("/api/v2/comment/")) {
+                    documentRequests.merge(request.getPath().split("\\?")[0], 1, Integer::sum);
                     if (request.getPath().contains("/restore-fail")) {
                         staleDocumentRequests.incrementAndGet();
                         documentStarted.countDown();
@@ -66,8 +69,11 @@ public class DanmakuSearchInstrumentedTest {
                     return new MockResponse().setBodyDelay(slowDocument ? 5 : 0, TimeUnit.SECONDS).setBody(
                         "<?xml version=\"1.0\"?><i><d p=\"0,1,25,16777215,0,0,0,1\">弹幕测试</d><d p=\"1,1,25,16777215,0,0,0,2\">下一条</d></i>");
                 }
+                catalogueRequests.incrementAndGet();
                 if (status != 0) return new MockResponse().setResponseCode(status).setBody("denied");
                 String name = request.getRequestUrl().queryParameter("name");
+                if (name != null && name.startsWith("连续播放回归片")) return new MockResponse().setBody(App.gson().toJson(
+                        java.util.stream.IntStream.rangeClosed(1, 30).mapToObj(i -> item(name + "(2020)【动漫】from fixture - 第" + i + "集", "chain-" + i)).toList()));
                 if ("弹幕年份回归片2026".equals(name)) return new MockResponse().setBody("[]");
                 if ("弹幕备选回归片".equals(name)) return new MockResponse().setBody(App.gson().toJson(
                         java.util.stream.IntStream.range(0, 5).mapToObj(i -> item(name + "(2026)【电影】from fixture - 正片",
@@ -217,12 +223,102 @@ public class DanmakuSearchInstrumentedTest {
     }
 
 
+    @Test public void manualCatalogueSurvivesBadMetadataAndContinuesSeventeenEighteenNineteen() throws Exception {
+        String title = "连续播放回归片";
+        openPanel(title, "第17集");
+        boolean auto = DanmakuSetting.isAuto();
+        try {
+            DanmakuSetting.putAuto(false);
+            continueEpisode(title, "第17集", "2026", "电视剧"); // deliberately inaccurate source metadata
+            DanmakuSetting.putAuto(true);
+            submitSearch(); // playback setup cancels the earlier search, as a real episode change does
+            var adapter = (com.fongmi.android.tv.ui.adapter.DanmakuAdapter) binding.recycler.getAdapter();
+            await(() -> indexOf(adapter, title + "(2020)") >= 0, 8000);
+            clickRow(indexOf(adapter, title + "(2020)"));
+            await(() -> adapter.getItemCount() == 30, 3000);
+            clickRow(16);
+            await(() -> player.getSelectedDanmaku() != null && player.getSelectedDanmaku().getUrl().contains("chain-17?"), 5000);
+            assertEquals(2, parse(player.getSelectedDanmaku()));
+            int searches = catalogueRequests.get(); status = 503;
+            for (int number : new int[]{18, 19}) {
+                String path = "/api/v2/comment/chain-" + number;
+                main(() -> VodPlaybackMedia.prefetchNextDanmaku(player));
+                await(() -> documentRequests.getOrDefault(path, 0) == 1, 2000);
+                Danmaku next = item(title + "(2020)【动漫】from fixture - 第" + number + "集", "chain-" + number);
+                assertEquals(2, parse(next)); // join the prefetch and wait for its complete body
+                var stored = com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get().find(VodPlaybackMedia.contextOf(player));
+                android.util.Log.i("Danmaku597QA", "snapshot=" + stored.discoveredAt(String.valueOf(number)));
+                long start = SystemClock.elapsedRealtime();
+                continueEpisode(title, "第" + number + "集", "2026", "电视剧");
+                await(() -> player.getSelectedDanmaku() != null && player.getSelectedDanmaku().getUrl().equals(next.getUrl()), 1500);
+                assertEquals("Next episode must not need discovery", searches, catalogueRequests.get());
+                assertEquals("Mount must reuse the prefetched document", 1, (int) documentRequests.get(path));
+                assertEquals(2, parse(player.getSelectedDanmaku()));
+                android.util.Log.i("Danmaku597QA", "manual17 continuation episode=" + number + " elapsedMs=" + (SystemClock.elapsedRealtime()-start) + " catalogueRequests=" + searches);
+            }
+            continueEpisode(title, "第17集", "2026", "电视剧");
+            await(() -> player.getSelectedDanmaku()!=null && player.getSelectedDanmaku().getUrl().contains("chain-17?"),1500);
+            assertEquals(1,(int)documentRequests.get("/api/v2/comment/chain-17"));
+            assertEquals(searches,catalogueRequests.get());
+        } finally { DanmakuSetting.putAuto(auto); }
+    }
+
+    private void continueEpisode(String title, String label, String year, String type) {
+        main(() -> {
+            try {
+                Field spec = PlayerManager.class.getDeclaredField("spec"); spec.setAccessible(true);
+                spec.set(player, PlaySpec.from("fixture", server.url("/video/" + label).toString(), null,
+                        new MediaMetadata.Builder().setTitle(title).setArtist(label).build()));
+            } catch (Exception e) { throw new AssertionError(e); }
+            var history = new com.fongmi.android.tv.bean.History(); history.setVodName(title);
+            var episode = new com.fongmi.android.tv.bean.Episode(); episode.setName(label);
+            VodPlaybackMedia.searchDanmaku(new com.fongmi.android.tv.bean.Result(), history, episode, 1, year, type, player);
+        });
+    }
+
+    private void expireCatalogue(com.fongmi.android.tv.playback.vod.DanmakuMatchContext context) throws Exception {
+        var saved = com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get().find(context);
+        var episodes = saved.getClass().getDeclaredField("episodes"); episodes.setAccessible(true);
+        for (Object row : ((java.util.Map<?, ?>) episodes.get(saved)).values()) {
+            var age = row.getClass().getDeclaredField("discoveredAt"); age.setAccessible(true); age.setLong(row, 1);
+        }
+    }
+
+    @Test public void confirmedVarietyPrefetchUsesActualHalfAndBonusPlaylistLabels() throws Exception {
+        String title="连续综艺回归片";
+        openPanel(title,"第1期上");
+        boolean auto=DanmakuSetting.isAuto();
+        try {
+            DanmakuSetting.putAuto(false); continueEpisode(title,"第1期上","2026","综艺"); DanmakuSetting.putAuto(true);
+            List<Danmaku> rows=List.of(item(title+"(2026)【综艺】from fixture - 第1期上 20261010","upper"),
+                    item(title+"(2026)【综艺】from fixture - 第1期下 20261010","lower"),
+                    item(title+"(2026)【综艺】from fixture - 第1期加更 20261010","bonus"),
+                    item(title+"(2026)【综艺】from fixture - 第2期上 20261017","wrong-next"));
+            CountDownLatch chosen=new CountDownLatch(1);
+            main(() -> VodPlaybackMedia.applyManualMatch(player,title,rows.get(0),rows,value -> chosen.countDown(), () -> fail("manual")));
+            assertTrue(chosen.await(5,TimeUnit.SECONDS));
+            status=503; int searches=catalogueRequests.get();
+            String[] labels={"20261010下","第1期加更"}, ids={"lower","bonus"};
+            for(int i=0;i<labels.length;i++) {
+                String label=labels[i], id=ids[i], path="/api/v2/comment/"+id;
+                main(() -> { VodPlaybackMedia.setNextEpisode(player,label); VodPlaybackMedia.prefetchNextDanmaku(player); });
+                await(() -> documentRequests.getOrDefault(path,0)==1,2000);
+                assertEquals(2,parse(rows.get(i+1)));
+                continueEpisode(title,label,"2026","综艺");
+                await(() -> player.getSelectedDanmaku()!=null && player.getSelectedDanmaku().getUrl().contains("/"+id+"?"),1500);
+                assertEquals(searches,catalogueRequests.get());
+            }
+            assertFalse(documentRequests.containsKey("/api/v2/comment/wrong-next"));
+        } finally { DanmakuSetting.putAuto(auto); }
+    }
+
     @Test public void stalledSavedEpisodeRefreshesWithoutWaitingForOldUrl() throws Exception {
         stalledRestore = true;
         openPanel("恢复卡住回归片", "正片");
         var context = new com.fongmi.android.tv.playback.vod.DanmakuMatchContext("恢复卡住回归片", "2026", "电影", "正片");
         Danmaku stale = item("恢复卡住回归片(2026)【电影】from fixture - 正片", "restore-fail");
         com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get().remember(context, "恢复卡住回归片", stale, List.of(stale));
+        expireCatalogue(context);
         var history = new com.fongmi.android.tv.bean.History(); history.setVodName("恢复卡住回归片");
         var episode = new com.fongmi.android.tv.bean.Episode(); episode.setName("正片");
         boolean auto = DanmakuSetting.isAuto(); DanmakuSetting.putAuto(true);
@@ -264,6 +360,7 @@ public class DanmakuSearchInstrumentedTest {
         var context = new com.fongmi.android.tv.playback.vod.DanmakuMatchContext("外部弹幕回归片", "2026", "电影", "正片");
         Danmaku stale = item("外部弹幕回归片(2026)【电影】from fixture - 正片", "restore-fail");
         com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get().remember(context, "外部弹幕回归片", stale, List.of(stale));
+        expireCatalogue(context);
         var history = new com.fongmi.android.tv.bean.History(); history.setVodName("外部弹幕回归片");
         var episode = new com.fongmi.android.tv.bean.Episode(); episode.setName("正片");
         boolean auto = DanmakuSetting.isAuto(), show = DanmakuSetting.isShow(); DanmakuSetting.putAuto(true);
@@ -594,6 +691,7 @@ public class DanmakuSearchInstrumentedTest {
             @Override public void onFailure(Uri source, java.io.IOException error) { done.countDown(); }
         });
         assertTrue(done.await(50, TimeUnit.SECONDS)); assertNotNull(local.get());
+        if (item.getName().startsWith("连续")) android.util.Log.i("Danmaku597QA", "file time=" + new java.io.File(local.get().getPath()).lastModified() + " source=" + item.getUrl());
         try (var stream = App.get().getContentResolver().openInputStream(local.get())) {
             int parsed = FilteringBiliParser.INSTANCE.parse(stream).size();
             CountDownLatch loaded = new CountDownLatch(1);

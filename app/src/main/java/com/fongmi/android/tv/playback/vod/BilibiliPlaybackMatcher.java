@@ -21,12 +21,13 @@ final class BilibiliPlaybackMatcher implements NativeDanmaku.Job {
     private final DanmakuMatchContext context;
     private final BiConsumer<Danmaku, List<Danmaku>> ready;
     private final Consumer<DanmakuStatus.Failure> failure;
-    private final long deadline = android.os.SystemClock.elapsedRealtime() + 30000;
+    private final long deadline = android.os.SystemClock.elapsedRealtime() + 3000;
     private final Runnable poll = this::select;
     private NativeDanmaku.Job catalogueJob;
     private DanmakuDocumentCache.Ticket document;
     private List<Danmaku> catalogue, candidates;
     private volatile boolean cancelled;
+    private boolean resolveOnly;
 
     BilibiliPlaybackMatcher(PlayerManager player, DanmakuMatchContext context,
                             BiConsumer<Danmaku, List<Danmaku>> ready, Consumer<DanmakuStatus.Failure> failure) {
@@ -47,6 +48,11 @@ final class BilibiliPlaybackMatcher implements NativeDanmaku.Job {
         });
     }
 
+    void resolve(Danmaku initial) {
+        resolveOnly = true;
+        start(initial);
+    }
+
     private void select() {
         if (cancelled) return;
         if (candidates.isEmpty()) { fail(DanmakuStatus.Failure.NO_MATCH); return; }
@@ -61,6 +67,11 @@ final class BilibiliPlaybackMatcher implements NativeDanmaku.Job {
         }
         Danmaku selected = BilibiliDanmaku.chooseTimeline(candidates, duration);
         if (selected == null) { fail(DanmakuStatus.Failure.NO_MATCH); return; }
+        if (resolveOnly) {
+            cancelled = true;
+            ready.accept(selected, catalogue);
+            return;
+        }
         document = DanmakuDocumentCache.load(selected.getUri(), new DanmakuDocumentCache.Listener() {
             public void onProgress(android.net.Uri source, int percent) {
                 if (!cancelled) player.notifyDanmakuStatus(DanmakuStatus.downloading(percent));

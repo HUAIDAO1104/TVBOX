@@ -113,8 +113,17 @@ public class DanmakuApi {
     public static void searchPreferredDetailed(String name, String year, String type, String episode,
                                                String selectedName, String selectedSourceKey,
                                                SearchCallback callback) {
-        searchStaged(name, year, type, episode, Objects.toString(selectedName, ""),
-                NativeDanmaku.sources(), orderedEndpoints(selectedSourceKey), callback);
+        List<String> sources = new ArrayList<>(NativeDanmaku.sources());
+        sources.addAll(orderedEndpoints(selectedSourceKey));
+        List<String> preferred = sources.stream().filter(source -> source.equals(selectedSourceKey)
+                || DanmakuManualMatchStore.sourceKey(source).equals(selectedSourceKey)).toList();
+        if (preferred.isEmpty()) {
+            searchStaged(name, year, type, episode, Objects.toString(selectedName, ""),
+                    NativeDanmaku.sources(), orderedEndpoints(selectedSourceKey), callback);
+        } else {
+            sources.removeAll(preferred);
+            searchStaged(name, year, type, episode, Objects.toString(selectedName, ""), preferred, sources, callback);
+        }
     }
 
     // One shared pipeline for automatic matching and recovery of a manually confirmed work.
@@ -175,6 +184,7 @@ public class DanmakuApi {
         String candidateTitle = query.searchTitle();
         AtomicBoolean finished = new AtomicBoolean();
         AtomicBoolean refreshSource = new AtomicBoolean();
+        Set<String> retryAfterRefresh = java.util.concurrent.ConcurrentHashMap.newKeySet();
         AtomicInteger remaining = new AtomicInteger(apiUrls.size());
         List<Call> calls = new ArrayList<>();
         List<DanmakuDocumentCache.Ticket> validations = Collections.synchronizedList(new ArrayList<>());
@@ -201,7 +211,7 @@ public class DanmakuApi {
                         if (generation != REQUEST_GENERATION.get() || finished.get()) return;
                         if (resolved.isEmpty()) { stats.startBackup(); completeOne(); return; }
                         verifyCandidates(generation, resolved, items, 0, finished, calls,
-                                validations, stats, refreshSource, this::completeOne, callback);
+                                validations, stats, refreshSource, retryAfterRefresh, this::completeOne, callback);
                     });
                 }
                 @Override public void onFailure(IOException error) {
@@ -218,6 +228,9 @@ public class DanmakuApi {
                         List<String> usable = new ArrayList<>(apiUrls);
                         usable.removeAll(stats.failedEndpoints);
                         if (refreshSource.get() && refreshCount < 1) {
+                            // A refreshed catalogue can return the same stable URL after a
+                            // transient 404/5xx. Do not force the user to repeat this manually.
+                            for (String url : retryAfterRefresh) if (stats.refreshedUrls.add(url)) stats.rejectedUrls.remove(url);
                             App.post(() -> searchCandidateParallel(generation, query, year, type,
                                     episode, preferredName, usable, callback, 0, refreshCount + 1, stats), 1_200L);
                         } else {
@@ -249,69 +262,73 @@ public class DanmakuApi {
                                          AtomicBoolean finished, List<Call> calls,
                                          List<DanmakuDocumentCache.Ticket> validations,
                                          SearchStats stats, AtomicBoolean refreshSource,
-                                         Runnable exhausted,
+                                         Set<String> retryAfterRefresh, Runnable exhausted,
                                          SearchCallback callback) {
-        if (generation != REQUEST_GENERATION.get() || finished.get()) return;
-        if (index >= candidates.size()) {
-            exhausted.run();
-            return;
-        }
-        Danmaku item = candidates.get(index);
-        if (item == null || item.getUri() == null) {
-            verifyCandidates(generation, candidates, catalogue, index + 1, finished, calls,
-                    validations, stats, refreshSource, exhausted, callback);
-            return;
-        }
-        if (stats.rejectedUrls.contains(item.getUrl())) {
-            verifyCandidates(generation, candidates, catalogue, index + 1, finished, calls,
-                    validations, stats, refreshSource, exhausted, callback);
-            return;
-        }
-        stats.attemptedDownloads.incrementAndGet();
-        DanmakuDocumentCache.Ticket ticket = DanmakuDocumentCache.loadFresh(item.getUri(),
-                new DanmakuDocumentCache.Listener() {
-                    @Override
-                    public void onProgress(android.net.Uri source, int percent) {
-                        if (generation == REQUEST_GENERATION.get() && !finished.get()) {
-                            callback.onProgress(percent);
+        // Rank and verify identity first. A stalled body may then race one other exact
+        // candidate; never serialize many full download timeouts behind the first result.
+        class CandidateDownloads {
+            int next = index, active;
+            boolean exhaustedSent;
+            final Runnable hedge = this::advance;
+
+            void advance() {
+                Danmaku selected = null;
+                boolean complete = false;
+                synchronized (this) {
+                    if (generation != REQUEST_GENERATION.get() || finished.get() || stats.delivered.get() || active >= 2) return;
+                    while (next < candidates.size()) {
+                        Danmaku candidate = candidates.get(next++);
+                        if (candidate != null && candidate.getUri() != null && !stats.rejectedUrls.contains(candidate.getUrl())) {
+                            selected = candidate; active++; break;
                         }
                     }
-
-                    @Override
-                    public void onReady(android.net.Uri source, android.net.Uri local) {
-                        if (generation != REQUEST_GENERATION.get() || finished.get()) return;
-                        if (!finished.compareAndSet(false, true) || !stats.finish()) return;
+                    if (selected == null && active == 0 && !exhaustedSent) { exhaustedSent = true; complete = true; }
+                }
+                if (complete) { exhausted.run(); return; }
+                if (selected == null) return;
+                Danmaku item = selected;
+                stats.attemptedDownloads.incrementAndGet();
+                DanmakuDocumentCache.Ticket ticket = DanmakuDocumentCache.loadFresh(item.getUri(), new DanmakuDocumentCache.Listener() {
+                    @Override public void onProgress(android.net.Uri source, int percent) {
+                        if (generation == REQUEST_GENERATION.get() && !finished.get() && !stats.delivered.get()) callback.onProgress(percent);
+                    }
+                    @Override public void onReady(android.net.Uri source, android.net.Uri local) {
+                        if (generation != REQUEST_GENERATION.get() || !finished.compareAndSet(false, true) || !stats.finish()) return;
+                        App.removeCallbacks(hedge);
                         for (Call pending : calls) if (pending != null) pending.cancel();
                         cancelNativeSearches();
                         synchronized (validations) {
-                            for (DanmakuDocumentCache.Ticket validation : validations) {
-                                validation.cancel();
-                            }
+                            for (DanmakuDocumentCache.Ticket validation : validations) validation.cancel();
                             validations.clear();
                         }
                         cancelValidations();
                         callback.onFound(item, catalogue);
                     }
-
-                    @Override
-                    public void onFailure(android.net.Uri source, IOException error) {
-                        if (generation != REQUEST_GENERATION.get() || finished.get()) return;
+                    @Override public void onFailure(android.net.Uri source, IOException error) {
+                        if (generation != REQUEST_GENERATION.get() || finished.get() || stats.delivered.get()) return;
                         stats.download.incrementAndGet();
                         stats.startBackup();
                         if (DanmakuLoadPolicy.shouldRefreshSource(error)) {
                             refreshSource.set(true);
+                            if (DanmakuLoadPolicy.canRetryAfterCatalogueRefresh(error)) retryAfterRefresh.add(item.getUrl());
                         }
                         stats.rejectedUrls.add(item.getUrl());
                         DanmakuDocumentCache.invalidate(source);
-                        verifyCandidates(generation, candidates, catalogue, index + 1, finished,
-                                calls, validations, stats, refreshSource, exhausted, callback);
+                        synchronized (CandidateDownloads.this) { active--; }
+                        advance();
                     }
                 });
-        validations.add(ticket);
-        ACTIVE_VALIDATIONS.add(ticket);
-        if (generation != REQUEST_GENERATION.get() || stats.delivered.get()) {
-            ticket.cancel(); ACTIVE_VALIDATIONS.remove(ticket);
+                validations.add(ticket);
+                ACTIVE_VALIDATIONS.add(ticket);
+                if (generation != REQUEST_GENERATION.get() || stats.delivered.get()) {
+                    ticket.cancel(); ACTIVE_VALIDATIONS.remove(ticket);
+                } else {
+                    App.removeCallbacks(hedge);
+                    App.post(hedge, 1_000L);
+                }
+            }
         }
+        new CandidateDownloads().advance();
     }
 
     static Danmaku bestMatch(String name, String episode, List<Danmaku> items) {
@@ -413,5 +430,6 @@ public class DanmakuApi {
         private final AtomicInteger denied = new AtomicInteger();
         private final Set<String> failedEndpoints = Collections.synchronizedSet(new HashSet<>());
         private final Set<String> rejectedUrls = Collections.synchronizedSet(new HashSet<>());
+        private final Set<String> refreshedUrls = Collections.synchronizedSet(new HashSet<>());
     }
 }

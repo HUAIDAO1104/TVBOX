@@ -88,6 +88,10 @@ public class PlatformPlaybackInstrumentedTest {
     }
 
     @Test public void fanrenEpisodeSeventeenRejectsWrongEpisodeCacheAndChoosesPlayingCut() throws Exception {
+        // Isolate automatic-cache injection from a preceding test's explicit manual choice.
+        var entries = com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.class.getDeclaredField("entries");
+        entries.setAccessible(true);
+        ((java.util.Map<?, ?>) entries.get(com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get())).remove("凡人修仙传");
         // Reproduce the more serious stale binding: text says episode 17, but its cached URL
         // belongs to episode 100. A parseable document must not make that binding trustworthy.
         var wrong = Danmaku.from("bilibili-danmaku://video/785539/28224719980/1370");
@@ -100,6 +104,26 @@ public class PlatformPlaybackInstrumentedTest {
         // first run's persisted automatic mapping and must re-evaluate its real media duration.
         automaticTimeline("凡人修仙传", "第17集", "596-original-17", "2020", "国产动漫", new long[]{60000, 600000, 1000000}, "timeline-1163.mp4", "/734379/");
         automaticTimeline("凡人修仙传", "第17集", "596-remaster-17", "2020", "国产动漫", new long[]{60000, 600000, 1000000}, "timeline-1130.mp4", "/733332/");
+    }
+
+    @Test public void fanrenManualSeventeenContinuesToEighteenWithRealVisibleComments() throws Exception {
+        org.junit.Assume.assumeTrue("true".equals(InstrumentationRegistry.getArguments().getString("danmakuLive")));
+        var done=new java.util.concurrent.CountDownLatch(1);
+        var rows=new java.util.concurrent.atomic.AtomicReference<List<Danmaku>>();
+        var job=com.fongmi.android.tv.api.BilibiliDanmaku.playbackCatalogue("bilibili-danmaku://video/734379/260274090/1163",new com.fongmi.android.tv.api.IqiyiDanmaku.Callback<List<Danmaku>>() {
+            public void onSuccess(List<Danmaku> items) { rows.set(items); done.countDown(); }
+            public void onFailure(java.io.IOException e) { done.countDown(); }
+        });
+        try { assertTrue(done.await(20,java.util.concurrent.TimeUnit.SECONDS)); assertNotNull(rows.get()); }
+        finally { job.cancel(); }
+        Danmaku chosen=rows.get().stream().filter(row -> row.getUrl().contains("/734379/")).findFirst().orElseThrow();
+        com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get().remember(
+                new com.fongmi.android.tv.playback.vod.DanmakuMatchContext("凡人修仙传","2026","国产动漫","第17集"),"凡人修仙传",chosen,rows.get());
+        automaticTimeline("凡人修仙传","第17集","597-manual-17","2026","国产动漫",new long[]{60000,600000,1000000},"timeline-1163.mp4","/734379/");
+        automaticTimeline("凡人修仙传","第18集","597-next-18","2026","国产动漫",new long[]{60000,600000,1000000},"playback-timeline.mp4","/734380/");
+        Danmaku nineteenth=rows.get().stream().filter(row -> row.getName().split("(?i)\\s*from\\s+",2)[0].equals(chosen.getName().split("(?i)\\s*from\\s+",2)[0])
+                && com.fongmi.android.tv.playback.vod.DanmakuMatch.isEpisodeCompatible("第19集",row.getName())).findFirst().orElseThrow();
+        automaticTimeline("凡人修仙传","第19集","597-next-19","2026","国产动漫",new long[]{60000,600000,1000000},"playback-timeline.mp4",nineteenth.getUrl());
     }
 
     private void automaticTimeline(String title, String episode, String capture) throws Exception {

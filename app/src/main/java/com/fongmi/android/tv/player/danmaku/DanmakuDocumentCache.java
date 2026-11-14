@@ -68,14 +68,34 @@ public final class DanmakuDocumentCache {
         return load(source, listener, false);
     }
 
+    public static Ticket loadConfirmed(Uri source, long catalogueTime, Listener listener) {
+        if (!isRemote(source) || NativeDanmaku.supports(source.toString())) return load(source, listener);
+        File target = fileFor(source);
+        return isFresh(source, target) && verifiedAt(target) >= catalogueTime
+                ? load(source, listener) : load(source, listener, true, catalogueTime);
+    }
+
+    /** Associate the just-verified selected document with the catalogue saved after it loaded. */
+    public static void confirmSnapshot(Uri source, long catalogueTime) {
+        if (!isRemote(source) || catalogueTime <= 0) return;
+        File target = fileFor(source);
+        if (!isUsable(target)) return;
+        try (var out = new java.io.DataOutputStream(new FileOutputStream(stampFor(target)))) {
+            out.writeLong(catalogueTime);
+        } catch (IOException ignored) { /* A missing stamp causes bounded revalidation. */ }
+    }
+
     /** An opaque third-party ID can be reassigned; a fresh catalogue requires a fresh payload. */
     public static Ticket loadFresh(Uri source, Listener listener) {
         boolean fresh = isRemote(source) && !NativeDanmaku.supports(source.toString());
-        if (fresh) invalidate(source);
         return load(source, listener, fresh);
     }
 
     private static Ticket load(Uri source, Listener listener, boolean fresh) {
+        return load(source, listener, fresh, 0);
+    }
+
+    private static Ticket load(Uri source, Listener listener, boolean fresh, long catalogueTime) {
         if (!isCacheable(source)) {
             App.post(() -> listener.onReady(source, source));
             return () -> {
@@ -91,7 +111,7 @@ public final class DanmakuDocumentCache {
         Subscription subscription = new Subscription(source, listener);
         PendingDownload pending;
         synchronized (DOWNLOADS) {
-            pending = DOWNLOADS.get(key);
+            pending = currentDownload(key, catalogueTime);
             if (pending != null) {
                 pending.add(subscription);
                 return subscription;
@@ -110,15 +130,37 @@ public final class DanmakuDocumentCache {
         pending = new PendingDownload(key, request);
         pending.add(subscription);
         synchronized (DOWNLOADS) {
-            PendingDownload existing = DOWNLOADS.get(key);
+            PendingDownload existing = currentDownload(key, catalogueTime);
             if (existing != null) {
                 existing.add(subscription);
                 return subscription;
             }
+            // Never invalidate a document underneath an in-flight prefetch we just joined.
+            if (fresh) invalidate(source);
             DOWNLOADS.put(key, pending);
         }
         enqueue(pending);
         return subscription;
+    }
+
+    // Called with DOWNLOADS held. A new catalogue must not join an older in-flight body.
+    private static PendingDownload currentDownload(String key, long catalogueTime) {
+        PendingDownload pending = DOWNLOADS.get(key);
+        if (pending == null || pending.startedAt >= catalogueTime) return pending;
+        pending.cancelled = true;
+        DOWNLOADS.remove(key);
+        if (pending.retryRunnable != null) App.removeCallbacks(pending.retryRunnable);
+        if (pending.call != null) pending.call.cancel();
+        if (pending.nativeJob != null) pending.nativeJob.cancel();
+        return null;
+    }
+
+    private static File stampFor(File target) { return new File(target.getPath() + ".stamp"); }
+
+    private static long verifiedAt(File target) {
+        try (var in = new java.io.DataInputStream(new java.io.FileInputStream(stampFor(target)))) {
+            return in.readLong();
+        } catch (IOException ignored) { return 0; }
     }
 
     private static void enqueue(PendingDownload download) {
@@ -159,7 +201,7 @@ public final class DanmakuDocumentCache {
                         throw new IOException("Danmaku document is too large: " + declared);
                     }
                     writeAtomically(target, body.byteStream(), declared,
-                            percent -> download.progress(percent));
+                            percent -> download.progress(percent), download);
                     if (!isUsable(target)) {
                         invalidate(source);
                         throw new IOException("Danmaku document is empty or incomplete");
@@ -184,7 +226,7 @@ public final class DanmakuDocumentCache {
                             synchronized (download) {
                                 if (download.cancelled) return;
                                 writeAtomically(target, new java.io.ByteArrayInputStream(bytes), bytes.length,
-                                        percent -> download.progress(95 + percent / 20));
+                                        percent -> download.progress(95 + percent / 20), download);
                             }
                             if (!isUsable(target)) throw new IOException("Empty native danmaku document");
                             prune(target);
@@ -248,6 +290,7 @@ public final class DanmakuDocumentCache {
         File target = fileFor(source);
         File partial = new File(target.getAbsolutePath() + ".part");
         if (target.exists()) target.delete();
+        stampFor(target).delete();
         if (partial.exists()) partial.delete();
     }
 
@@ -326,7 +369,7 @@ public final class DanmakuDocumentCache {
     }
 
     private static void writeAtomically(File target, InputStream input, long declared,
-                                        java.util.function.IntConsumer progress) throws IOException {
+                                        java.util.function.IntConsumer progress, PendingDownload download) throws IOException {
         File parent = target.getParentFile();
         if (parent != null && !parent.exists() && !parent.mkdirs()) {
             throw new IOException("Unable to create danmaku cache directory");
@@ -338,6 +381,7 @@ public final class DanmakuDocumentCache {
         try (InputStream source = input; FileOutputStream output = new FileOutputStream(partial)) {
             int count;
             while ((count = source.read(buffer)) != -1) {
+                if (download.cancelled) throw new IOException("Cancelled danmaku document");
                 total += count;
                 if (total > MAX_DOCUMENT_BYTES) throw new IOException("Danmaku document exceeds limit");
                 output.write(buffer, 0, count);
@@ -358,13 +402,24 @@ public final class DanmakuDocumentCache {
             partial.delete();
             throw new IOException("Incomplete danmaku document");
         }
-        if (target.exists() && !target.delete()) {
-            partial.delete();
-            throw new IOException("Unable to replace danmaku cache");
-        }
-        if (!partial.renameTo(target)) {
-            partial.delete();
-            throw new IOException("Unable to commit danmaku cache");
+        synchronized (DOWNLOADS) {
+            if (download.cancelled || DOWNLOADS.get(download.key) != download) {
+                partial.delete();
+                throw new IOException("Superseded danmaku document");
+            }
+            if (target.exists() && !target.delete()) {
+                partial.delete();
+                throw new IOException("Unable to replace danmaku cache");
+            }
+            if (!partial.renameTo(target)) {
+                partial.delete();
+                throw new IOException("Unable to commit danmaku cache");
+            }
+            // Android 9 File.lastModified() can truncate to seconds. Persist the request's
+            // identity-validation timestamp explicitly instead of forcing another download.
+            try (var stamp = new java.io.DataOutputStream(new FileOutputStream(stampFor(target)))) {
+                stamp.writeLong(download.startedAt);
+            }
         }
         progress.accept(100);
     }
@@ -387,7 +442,7 @@ public final class DanmakuDocumentCache {
             if (total <= MAX_CACHE_BYTES) break;
             if (file.equals(protectedFile)) continue;
             long length = file.length();
-            if (file.delete()) total -= length;
+            if (file.delete()) { total -= length; stampFor(file).delete(); }
         }
     }
 
@@ -423,6 +478,7 @@ public final class DanmakuDocumentCache {
     private static final class PendingDownload {
 
         private final String key;
+        private final long startedAt = System.currentTimeMillis();
         private final Request request;
         private final List<Subscription> subscribers = new ArrayList<>();
         private volatile Call call;

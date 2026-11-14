@@ -52,6 +52,12 @@ public final class DanmakuLoadPolicy {
         return responseCode == 404 || shouldRetryResponseCode(responseCode);
     }
 
+    public static boolean canRetryAfterCatalogueRefresh(IOException error) {
+        int code = responseCode(error);
+        // Authentication/refusal/rate limits are not fixed by repeating a request.
+        return code == 404 || code >= 500;
+    }
+
     private static int responseCode(IOException error) {
         if (error instanceof HttpDataSource.InvalidResponseCodeException) {
             return ((HttpDataSource.InvalidResponseCodeException) error).responseCode;

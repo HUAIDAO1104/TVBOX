@@ -1,0 +1,27 @@
+leanback
+Performing Streamed Install
+Success
+Performing Streamed Install
+Success
+com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest:
+Error in manualCatalogueSurvivesBadMetadataAndContinuesSeventeenEighteenNineteen(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:806)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.manualCatalogueSurvivesBadMetadataAndContinuesSeventeenEighteenNineteen(DanmakuSearchInstrumentedTest.java:246)
+
+
+Time: 6.516
+There was 1 failure:
+1) manualCatalogueSurvivesBadMetadataAndContinuesSeventeenEighteenNineteen(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:806)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.manualCatalogueSurvivesBadMetadataAndContinuesSeventeenEighteenNineteen(DanmakuSearchInstrumentedTest.java:246)
+
+FAILURES!!!
+Tests run: 1,  Failures: 1
+Traceback (most recent call last):
+  File "/tmp/tv597/device-baseline.py", line 28, in <module>
+    assert 'OK (' in r and 'FAILURES!!!' not in r
+AssertionError

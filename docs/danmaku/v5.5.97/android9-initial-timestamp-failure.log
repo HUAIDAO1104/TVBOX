@@ -1,0 +1,29 @@
+leanback
+Performing Streamed Install
+Success
+Performing Streamed Install
+Success
+com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest:
+Error in manualCatalogueSurvivesBadMetadataAndContinuesSeventeenEighteenNineteen(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError: Mount must reuse the prefetched document expected:<1> but was:<2>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:647)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.manualCatalogueSurvivesBadMetadataAndContinuesSeventeenEighteenNineteen(DanmakuSearchInstrumentedTest.java:255)
+.
+
+Time: 5.978
+There was 1 failure:
+1) manualCatalogueSurvivesBadMetadataAndContinuesSeventeenEighteenNineteen(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError: Mount must reuse the prefetched document expected:<1> but was:<2>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:647)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.manualCatalogueSurvivesBadMetadataAndContinuesSeventeenEighteenNineteen(DanmakuSearchInstrumentedTest.java:255)
+
+FAILURES!!!
+Tests run: 2,  Failures: 1
+Traceback (most recent call last):
+  File "/tmp/tv597/device-continuation.py", line 28, in <module>
+    assert 'OK (' in r and 'FAILURES!!!' not in r
+AssertionError

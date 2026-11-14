@@ -1,0 +1,44 @@
+leanback
+Performing Streamed Install
+Success
+Performing Streamed Install
+Success
+com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest:
+Error in slowFirstExactDocumentDoesNotBlockAHealthySameEpisode(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest):
+java.lang.AssertionError: Healthy exact candidate must not wait for a stalled document
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest.slowFirstExactDocumentDoesNotBlockAHealthySameEpisode(DanmakuRoutingInstrumentedTest.java:32)
+
+Error in refreshedCatalogueRetriesTransientDocumentOnceWithoutManualSearch(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest):
+java.lang.AssertionError: A refreshed, now-working document must not require manual search
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest.refreshedCatalogueRetriesTransientDocumentOnceWithoutManualSearch(DanmakuRoutingInstrumentedTest.java:52)
+
+
+Time: 5.368
+There were 2 failures:
+1) slowFirstExactDocumentDoesNotBlockAHealthySameEpisode(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+java.lang.AssertionError: Healthy exact candidate must not wait for a stalled document
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest.slowFirstExactDocumentDoesNotBlockAHealthySameEpisode(DanmakuRoutingInstrumentedTest.java:32)
+2) refreshedCatalogueRetriesTransientDocumentOnceWithoutManualSearch(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+java.lang.AssertionError: A refreshed, now-working document must not require manual search
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest.refreshedCatalogueRetriesTransientDocumentOnceWithoutManualSearch(DanmakuRoutingInstrumentedTest.java:52)
+
+FAILURES!!!
+Tests run: 2,  Failures: 2
+Baseline reproduces both defects
+adb: error: failed to stat remote object '/sdcard/Android/data/com.fongmi.android.tv/files': No such file or directory
+Traceback (most recent call last):
+  File "/tmp/tv597/device-speed-baseline.py", line 31, in <module>
+    s.check_call(adb+['pull','/sdcard/Android/data/com.fongmi.android.tv/files',str(p/(mode+'-speed-baseline-screens'))],stdout=s.DEVNULL)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/subprocess.py", line 373, in check_call
+    raise CalledProcessError(retcode, cmd)
+subprocess.CalledProcessError: Command '['/Users/liudongji/Library/Android/sdk/platform-tools/adb', '-s', 'emulator-5554', 'pull', '/sdcard/Android/data/com.fongmi.android.tv/files', '/tmp/tv597/leanback-speed-baseline-screens']' returned non-zero exit status 1.

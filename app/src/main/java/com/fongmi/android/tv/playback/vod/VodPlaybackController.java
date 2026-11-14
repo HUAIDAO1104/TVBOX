@@ -193,6 +193,12 @@ public class VodPlaybackController {
         requestPlayer(state.getFlag(), state.getEpisode());
     }
 
+    public String nextEpisodeName() {
+        if (!state.hasEpisode()) return "";
+        Episode next = getRelativeEpisode(state.getHistory() != null && state.getHistory().isRevPlay() ? -1 : 1);
+        return next.isSelected() ? "" : next.getName();
+    }
+
     public void nextEpisode(boolean notify) {
         if (state.getHistory() != null && state.getHistory().isRevPlay()) prevEpisode(notify, true);
         else nextEpisode(notify, false);

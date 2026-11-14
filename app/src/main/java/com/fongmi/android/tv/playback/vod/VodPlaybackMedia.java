@@ -18,6 +18,7 @@ public final class VodPlaybackMedia {
 
     private static final Map<PlayerManager, String> REQUEST_IDENTITIES = new WeakHashMap<>();
     private static final Map<PlayerManager, DanmakuMatchContext> MATCH_CONTEXTS = new WeakHashMap<>();
+    private static final Map<PlayerManager, String> NEXT_EPISODES = new WeakHashMap<>();
     private static final Map<PlayerManager, Integer> MANUAL_REQUESTS = new WeakHashMap<>();
     private static final Map<PlayerManager, DanmakuDocumentCache.Ticket> MANUAL_DOWNLOADS = new WeakHashMap<>();
     private static final Map<PlayerManager, DanmakuDocumentCache.Ticket> RESTORE_DOWNLOADS = new WeakHashMap<>();
@@ -84,7 +85,7 @@ public final class VodPlaybackMedia {
                         || isConfirmed(preferred, matchContext, candidates.get(0))) { ready.accept(candidates); return; }
                 com.fongmi.android.tv.App.post(() -> {
                     if (!isCurrentIdentity(player, identity)) return;
-                    var matcher = new BilibiliPlaybackMatcher(player, matchContext, (item, rows) -> {
+                    var matcher = new BilibiliPlaybackMatcher(player, matchingContext(preferred, matchContext), (item, rows) -> {
                         if (!isCurrentIdentity(player, identity)) return;
                         synchronized (TIMELINE_MATCHES) { TIMELINE_MATCHES.remove(player); }
                         ready.accept(java.util.List.of(item));
@@ -97,7 +98,9 @@ public final class VodPlaybackMedia {
                         var previous = TIMELINE_MATCHES.put(player, matcher);
                         if (previous != null) previous.cancel();
                     }
-                    matcher.start(candidates.get(0));
+                    // Body failures belong to the shared validation/fallback pipeline;
+                    // they must not be swallowed as an empty identity match here.
+                    matcher.resolve(candidates.get(0));
                 });
             }
 
@@ -140,7 +143,7 @@ public final class VodPlaybackMedia {
                 };
                 if (failure != DanmakuApi.SearchFailure.DOWNLOAD
                         && failure != DanmakuApi.SearchFailure.ACCESS_DENIED
-                        && DanmakuAiMatcher.search(matchContext, new DanmakuAiMatcher.Callback() {
+                        && DanmakuAiMatcher.search(matchingContext(preferred, matchContext), new DanmakuAiMatcher.Callback() {
                     @Override public void onFound(String query, Danmaku item, java.util.List<Danmaku> catalogue) {
                         if (!isCurrentIdentity(player, identity)) return;
                         applyAutomatic(player, identity, matchContext, preferred, query, item, catalogue, apply);
@@ -167,6 +170,10 @@ public final class VodPlaybackMedia {
         } else {
             player.notifyDanmakuStatus(DanmakuStatus.restoring());
             Danmaku cached = preferred.episode(episodeQuery);
+            String preferredTitle = preferred.selectedName().split("(?i)\\s*from\\s+", 2)[0].replaceAll("【[^】]*】", "");
+            String confirmedTitle = DanmakuQuery.from(preferredTitle).searchTitle();
+            String confirmedYear = DanmakuMatch.candidateYear(preferred.selectedName());
+            String confirmedType = DanmakuMatch.candidateType(preferred.selectedName());
             DanmakuApi.SearchCallback preferredCallback = new DanmakuApi.SearchCallback() {
                 @Override
                 public void resolveCandidates(java.util.List<Danmaku> candidates, java.util.List<Danmaku> catalogue,
@@ -190,15 +197,17 @@ public final class VodPlaybackMedia {
                     // Keep it as the first choice, then relax only the provider/platform while
                     // preserving strict title, season, year, type and episode matching.
                     player.notifyDanmakuStatus(DanmakuStatus.matching());
-                    DanmakuApi.searchDetailed(title, year, type, episodeQuery, callback);
+                    DanmakuApi.searchDetailed(preferred.isUserConfirmed() ? confirmedTitle : title,
+                            preferred.isUserConfirmed() ? confirmedYear : year,
+                            preferred.isUserConfirmed() ? confirmedType : type, episodeQuery, callback);
                 }
             };
             Runnable resolveFresh = () -> {
                 if (!preferred.isUserConfirmed() || preferred.isVideoLink()) DanmakuApi.searchDetailed(title, year, type, episodeQuery, callback);
-                else DanmakuApi.searchPreferredDetailed(preferred.query(), year, type, episodeQuery,
+                else DanmakuApi.searchPreferredDetailed(preferred.query(), confirmedYear, confirmedType, episodeQuery,
                         preferred.selectedName(), preferred.sourceKey(), preferredCallback);
             };
-            if (cached == null || !com.fongmi.android.tv.api.NativeDanmaku.supports(cached.getUrl())
+            if (cached == null || !com.fongmi.android.tv.api.NativeDanmaku.supports(cached.getUrl()) && !preferred.canReuseEpisode(episodeQuery)
                     || !preferred.isUserConfirmed() && !com.fongmi.android.tv.api.BilibiliDanmaku.supports(cached.getUrl())) {
                 resolveFresh.run();
             } else if (!preferred.isUserConfirmed() && com.fongmi.android.tv.api.BilibiliDanmaku.supports(cached.getUrl())) {
@@ -212,7 +221,7 @@ public final class VodPlaybackMedia {
                 // only that episode and transparently resolve the same confirmed season through
                 // the remaining providers.
                 RestoreAttempt restore = new RestoreAttempt(resolveFresh);
-                restore.ticket = DanmakuDocumentCache.load(cached.getUri(), new DanmakuDocumentCache.Listener() {
+                restore.ticket = DanmakuDocumentCache.loadConfirmed(cached.getUri(), preferred.discoveredAt(episodeQuery), new DanmakuDocumentCache.Listener() {
                     @Override
                     public void onProgress(android.net.Uri source, int percent) {
                         if (isCurrentIdentity(player, identity)) {
@@ -225,7 +234,9 @@ public final class VodPlaybackMedia {
                         if (restore.cancelled || !isCurrentIdentity(player, identity)) return;
                         cancelRestore(player);
                         DanmakuApi.cancel(); // Saved document won; do not accept a late failure from refresh.
-                        applyAutomatic(player, identity, matchContext, preferred, preferred.query(), cached, java.util.List.of(cached), apply);
+                        // A restore reuses a verified row; it must not reset catalogue age or
+                        // replace the user-confirmed work with this episode's temporary result.
+                        apply.accept(cached);
                     }
 
                     @Override
@@ -267,12 +278,13 @@ public final class VodPlaybackMedia {
                 var pending = TIMELINE_MATCHES.remove(player);
                 if (pending != null) pending.cancel();
             }
-            if (confirmed) DanmakuManualMatchStore.get().remember(context, query, item, rows);
+            if (confirmed) DanmakuManualMatchStore.get().rememberResolved(context, query, item, rows);
             else DanmakuManualMatchStore.get().rememberAutomatic(context, query, item, rows);
+            confirmSavedDocument(context, item);
             apply.accept(item);
         };
         if (!confirmed && com.fongmi.android.tv.api.BilibiliDanmaku.supports(selected.getUrl())) {
-            var matcher = new BilibiliPlaybackMatcher(player, context, commit, reason -> {
+            var matcher = new BilibiliPlaybackMatcher(player, matchingContext(preferred, context), commit, reason -> {
                 if (!isCurrentIdentity(player, identity)) return;
                 synchronized (TIMELINE_MATCHES) { TIMELINE_MATCHES.remove(player); }
                 if (refreshSaved != null) {
@@ -286,6 +298,20 @@ public final class VodPlaybackMedia {
             }
             matcher.start(selected);
         } else commit.accept(selected, catalogue);
+    }
+
+    private static void confirmSavedDocument(DanmakuMatchContext context, Danmaku item) {
+        var saved = DanmakuManualMatchStore.get().find(context);
+        if (saved != null && saved.isUserConfirmed())
+            DanmakuDocumentCache.confirmSnapshot(item.getUri(), saved.discoveredAt(item.getName()));
+    }
+
+    private static DanmakuMatchContext matchingContext(DanmakuManualMatchStore.Selection preferred, DanmakuMatchContext context) {
+        if (preferred == null || !preferred.isUserConfirmed()) return context;
+        String title = preferred.selectedName().split("(?i)\\s*from\\s+", 2)[0].replaceAll("【[^】]*】", "");
+        return new DanmakuMatchContext(DanmakuQuery.from(title).searchTitle(),
+                DanmakuMatch.candidateYear(preferred.selectedName()), DanmakuMatch.candidateType(preferred.selectedName()),
+                context.getEpisode(), context.getResolvedEpisode());
     }
 
     private static boolean isConfirmed(DanmakuManualMatchStore.Selection preferred, DanmakuMatchContext context, Danmaku selected) {
@@ -325,6 +351,7 @@ public final class VodPlaybackMedia {
         synchronized (MATCH_CONTEXTS) {
             MATCH_CONTEXTS.remove(player);
         }
+        synchronized (NEXT_EPISODES) { NEXT_EPISODES.remove(player); }
         player.setDanmaku(Danmaku.empty());
         player.notifyDanmakuStatus(DanmakuStatus.hidden());
     }
@@ -406,6 +433,7 @@ public final class VodPlaybackMedia {
             java.util.List<Danmaku> resolved = items == null || items.isEmpty()
                     ? initialCatalogue : items;
             DanmakuManualMatchStore.get().remember(context, finalQuery, item, resolved);
+            confirmSavedDocument(context, item);
             // Selecting an episode is an explicit request to show its comments, including
             // recovery from the historical PiP bug that persisted a hidden state.
             player.setDanmakuEnabled(true);
@@ -508,27 +536,36 @@ public final class VodPlaybackMedia {
         return cached != null && com.fongmi.android.tv.api.NativeDanmaku.supports(cached.getUrl()) ? cached : null;
     }
 
+    public static void setNextEpisode(PlayerManager player, String name) {
+        synchronized (NEXT_EPISODES) { NEXT_EPISODES.put(player, Objects.toString(name, "")); }
+    }
+
     /** Warms the next confirmed episode after the current document is mounted successfully. */
     public static void prefetchNextDanmaku(PlayerManager player) {
         DanmakuMatchContext context = contextOf(player);
-        Integer current = DanmakuMatch.episodeNumber(context.getEpisode());
-        if (current == null || current <= 0) return;
+        String nextEpisode;
+        synchronized (NEXT_EPISODES) { nextEpisode = NEXT_EPISODES.get(player); }
+        if (nextEpisode == null) {
+            DanmakuEpisode current = DanmakuEpisode.from(context.getEpisode());
+            if (current.number == null || !current.date.isEmpty() || !current.part.isEmpty() || !current.extra.isEmpty()) return;
+            nextEpisode = String.valueOf(current.number + 1);
+        }
+        if (nextEpisode.isEmpty()) return;
         DanmakuManualMatchStore.Selection selection = DanmakuManualMatchStore.get().find(context);
         if (selection == null) return;
-        String nextEpisode = String.valueOf(current + 1);
         Danmaku next = selection.episode(nextEpisode);
         if (next == null || next.getUri() == null) return;
-        if (!com.fongmi.android.tv.api.NativeDanmaku.supports(next.getUrl())) return;
+        if (!com.fongmi.android.tv.api.NativeDanmaku.supports(next.getUrl()) && !selection.canReuseEpisode(nextEpisode)) return;
         // The next source may use another cut. Its duration is unknown until it opens.
         if (!selection.isUserConfirmed() && com.fongmi.android.tv.api.BilibiliDanmaku.supports(next.getUrl())) return;
-        DanmakuDocumentCache.load(next.getUri(), new DanmakuDocumentCache.Listener() {
+        DanmakuDocumentCache.loadConfirmed(next.getUri(), selection.discoveredAt(nextEpisode), new DanmakuDocumentCache.Listener() {
             @Override
             public void onReady(android.net.Uri source, android.net.Uri local) {
             }
 
             @Override
             public void onFailure(android.net.Uri source, java.io.IOException error) {
-                DanmakuDocumentCache.invalidate(source);
+                // A late prefetch failure must not delete a newer foreground document.
                 // A background prefetch must never start a foreground search: the shared
                 // generation would cancel a user's new search or next episode in flight.
                 // Resolve expired IDs when that episode is actually requested.

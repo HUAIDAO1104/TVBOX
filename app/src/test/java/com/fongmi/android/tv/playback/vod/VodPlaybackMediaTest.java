@@ -129,7 +129,7 @@ public class VodPlaybackMediaTest {
         DanmakuManualMatchStore.Selection restored =
                 DanmakuManualMatchStore.decode(stable).get("work");
 
-        assertTrue(stable.contains("\"schema\":4"));
+        assertTrue(stable.contains("\"schema\":5"));
         assertTrue(stable.contains("\"episodes\""));
         assertNotNull(restored);
         assertEquals("episode-2", restored.episode("2").getUrl());

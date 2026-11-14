@@ -1,0 +1,12 @@
+--------- beginning of main
+--------- beginning of system
+11-14 22:06:29.233 17578 17595 I TestRunner: run started: 3 tests
+11-14 22:06:29.234 17578 17595 I TestRunner: started: failedFastAlternativeDoesNotDiscardTheHealthySlowExactDocument(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 22:06:31.799 17578 17595 I Danmaku597QA: same-episode alternate elapsedMs=2513
+11-14 22:06:31.812 17578 17595 I TestRunner: finished: failedFastAlternativeDoesNotDiscardTheHealthySlowExactDocument(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 22:06:31.832 17578 17595 I TestRunner: started: refreshedCatalogueRetriesTransientDocumentOnceWithoutManualSearch(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 22:06:33.147 17578 17595 I Danmaku597QA: automatic transient recovery elapsedMs=1308
+11-14 22:06:33.148 17578 17595 I TestRunner: finished: refreshedCatalogueRetriesTransientDocumentOnceWithoutManualSearch(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 22:06:33.149 17578 17595 I TestRunner: started: winningBackupCancelsPendingAlternateDocumentStarts(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 22:06:34.905 17578 17595 I TestRunner: finished: winningBackupCancelsPendingAlternateDocumentStarts(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 22:06:34.916 17578 17595 I TestRunner: run finished: 3 tests, 0 failed, 0 ignored

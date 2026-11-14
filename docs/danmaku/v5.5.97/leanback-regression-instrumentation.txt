@@ -1,0 +1,68 @@
+com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest:
+Error in fanrenEpisodeTenAutomaticCommentsRenderAcrossPlaybackStates(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest):
+java.lang.AssertionError: Timed out: automatic native match
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:270)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:156)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.fanrenEpisodeTenAutomaticCommentsRenderAcrossPlaybackStates(PlatformPlaybackInstrumentedTest.java:87)
+..
+Error in fanrenManualSeventeenContinuesToEighteenWithRealVisibleComments(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest):
+java.lang.AssertionError: Timed out: automatic native match
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:270)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:156)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.fanrenManualSeventeenContinuesToEighteenWithRealVisibleComments(PlatformPlaybackInstrumentedTest.java:118)
+
+Error in fanrenEpisodeSeventeenRejectsWrongEpisodeCacheAndChoosesPlayingCut(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest):
+java.lang.AssertionError: Timed out: automatic native match
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:270)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:156)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.fanrenEpisodeSeventeenRejectsWrongEpisodeCacheAndChoosesPlayingCut(PlatformPlaybackInstrumentedTest.java:101)
+
+com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest:..........
+com.fongmi.android.tv.api.BilibiliDanmakuInstrumentedTest:.
+Error in automaticAnimeAcrossEpisodeTenSurvivesUnavailableAggregate(com.fongmi.android.tv.api.BilibiliDanmakuInstrumentedTest):
+java.lang.AssertionError: Episode 8: DOWNLOAD
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at com.fongmi.android.tv.api.BilibiliDanmakuInstrumentedTest.automaticAnimeAcrossEpisodeTenSurvivesUnavailableAggregate(BilibiliDanmakuInstrumentedTest.java:43)
+
+com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest:................
+com.fongmi.android.tv.api.DanmakuNetworkInstrumentedTest:.
+com.fongmi.android.tv.api.DanmakuCatalogueInstrumentedTest:.....
+com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest:.......
+com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest:...
+com.fongmi.android.tv.playback.vod.DanmakuAiMatchingInstrumentedTest:..........
+com.fongmi.android.tv.player.DanmakuClockInstrumentedTest:.
+
+Time: 527.598
+There were 4 failures:
+1) fanrenEpisodeTenAutomaticCommentsRenderAcrossPlaybackStates(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+java.lang.AssertionError: Timed out: automatic native match
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:270)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:156)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.fanrenEpisodeTenAutomaticCommentsRenderAcrossPlaybackStates(PlatformPlaybackInstrumentedTest.java:87)
+2) fanrenManualSeventeenContinuesToEighteenWithRealVisibleComments(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+java.lang.AssertionError: Timed out: automatic native match
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:270)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:156)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.fanrenManualSeventeenContinuesToEighteenWithRealVisibleComments(PlatformPlaybackInstrumentedTest.java:118)
+3) fanrenEpisodeSeventeenRejectsWrongEpisodeCacheAndChoosesPlayingCut(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+java.lang.AssertionError: Timed out: automatic native match
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:270)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:156)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.fanrenEpisodeSeventeenRejectsWrongEpisodeCacheAndChoosesPlayingCut(PlatformPlaybackInstrumentedTest.java:101)
+4) automaticAnimeAcrossEpisodeTenSurvivesUnavailableAggregate(com.fongmi.android.tv.api.BilibiliDanmakuInstrumentedTest)
+java.lang.AssertionError: Episode 8: DOWNLOAD
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at com.fongmi.android.tv.api.BilibiliDanmakuInstrumentedTest.automaticAnimeAcrossEpisodeTenSurvivesUnavailableAggregate(BilibiliDanmakuInstrumentedTest.java:43)
+
+FAILURES!!!
+Tests run: 64,  Failures: 4

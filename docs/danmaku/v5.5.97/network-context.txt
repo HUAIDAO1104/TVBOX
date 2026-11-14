@@ -1,0 +1,22 @@
+System proxy configuration:
+<dictionary> {
+  ExceptionsList : <array> {
+    0 : *.local
+    1 : 169.254/16
+  }
+  FTPPassive : 1
+}
+
+Proxy environment presence only: {'HTTP_PROXY': False, 'HTTPS_PROXY': False, 'ALL_PROXY': False, 'http_proxy': False, 'https_proxy': False, 'all_proxy': False}
+
+Route:
+   route to: 58.63.237.26
+destination: default
+       mask: default
+    gateway: 172.22.100.254
+  interface: en0
+      flags: <UP,GATEWAY,DONE,STATIC,PRCLONING,GLOBAL>
+ recvpipe  sendpipe  ssthresh  rtt,msec    rttvar  hopcount      mtu     expire
+       0         0         0         0         0         0      1500         0
+
+Android http_proxy: :0

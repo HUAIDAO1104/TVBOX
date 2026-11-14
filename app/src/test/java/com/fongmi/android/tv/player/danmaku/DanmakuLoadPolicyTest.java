@@ -48,5 +48,8 @@ public class DanmakuLoadPolicyTest {
                 new DanmakuDocumentCache.HttpStatusException(500)));
         assertFalse(DanmakuLoadPolicy.shouldRefreshSource(
                 new DanmakuDocumentCache.HttpStatusException(403)));
+        assertTrue(DanmakuLoadPolicy.canRetryAfterCatalogueRefresh(new DanmakuDocumentCache.HttpStatusException(503)));
+        assertFalse(DanmakuLoadPolicy.canRetryAfterCatalogueRefresh(new DanmakuDocumentCache.HttpStatusException(403)));
+        assertFalse(DanmakuLoadPolicy.canRetryAfterCatalogueRefresh(new DanmakuDocumentCache.HttpStatusException(429, 60_000)));
     }
 }

@@ -78,7 +78,7 @@ public final class BilibiliDanmaku {
 
     public static Danmaku chooseTimeline(List<Danmaku> candidates, long durationMs) {
         if (candidates.size() == 1) return candidates.get(0);
-        if (durationMs <= 0) return null;
+        if (durationMs <= 0) return officialCut(candidates);
         Danmaku best = null;
         long first = Long.MAX_VALUE, second = Long.MAX_VALUE;
         for (Danmaku row : candidates) {
@@ -90,8 +90,16 @@ public final class BilibiliDanmaku {
         }
         // Encoding/container rounding is small. Removed openings, merged episodes and equally
         // close cuts are not enough evidence to invent an episode mapping or stretch time.
-        return first <= 5000 && second - first >= 3000 ? best : null;
+        return first <= 5000 && second - first >= 3000 ? best : officialCut(candidates);
     }
+    private static Danmaku officialCut(List<Danmaku> candidates) {
+        // Duration is only a tie-breaker within an already verified episode. Missing,
+        // edited intros or transport timing must not disable the official main catalogue.
+        List<Danmaku> main = candidates.stream().filter(row -> !row.getName().split("(?i)\\s*from\\s+", 2)[0]
+                .matches(".*(?:19|20)\\d{2}版.*|.*重制版.*")).toList();
+        return main.size() == 1 ? main.get(0) : null;
+    }
+
     public static NativeDanmaku.Job document(String source, java.util.function.IntConsumer progress,
                                               IqiyiDanmaku.Callback<byte[]> callback) {
         var job = new NativeDanmakuRequest(75000, "https://www.bilibili.com/", NativeDanmakuRequest.CLIENT);
@@ -146,6 +154,16 @@ public final class BilibiliDanmaku {
                                      String episode, IqiyiDanmaku.Callback<List<Danmaku>> callback,
                                      OkHttpClient client, boolean cache) {
         var job = new NativeDanmakuRequest(18000, "https://www.bilibili.com/", client);
+        // Automatic discovery already fetched the complete official season. Reopening
+        // manual search must not wait behind unrelated index scans in the worker queue.
+        List<Danmaku> saved = cache ? cachedWork(query) : List.of();
+        if (!saved.isEmpty()) {
+            if (!episode.isBlank() && !timelineCandidates(new DanmakuMatchContext(identity, year, type, episode), saved).isEmpty()) {
+                callback.onSuccess(saved);
+                return job;
+            }
+            callback.onPartial(saved);
+        }
         job.start(SEARCH, () -> {
             if (!type.isBlank() && !type.matches("(?i).*(动漫|动画|番剧|国漫|国创|日漫|卡通|年番|anime).*")) return List.of();
             String base = EDITION.matcher(query).replaceFirst("").trim();
@@ -181,6 +199,18 @@ public final class BilibiliDanmaku {
             return new ArrayList<>(rows.values());
         }, callback);
         return job;
+    }
+    private static List<Danmaku> cachedWork(String query) {
+        String base = EDITION.matcher(query).replaceFirst("").trim();
+        Map<String, Danmaku> rows = new LinkedHashMap<>();
+        synchronized (CATALOGUES) {
+            for (CachedCatalogue value : CATALOGUES.values()) {
+                if (System.nanoTime() - value.time() >= TimeUnit.MINUTES.toNanos(5) || value.rows().isEmpty()
+                        || !DanmakuMatch.isSameBaseWork(base, value.rows().get(0).getName())) continue;
+                for (Danmaku row : value.rows()) rows.put(row.getUrl(), row);
+            }
+        }
+        return copy(new ArrayList<>(rows.values()));
     }
     private static List<Danmaku> season(NativeDanmakuRequest job, String id, boolean cache) throws IOException {
         if (cache) synchronized (CATALOGUES) {

@@ -1,0 +1,116 @@
+--------- beginning of main
+--------- beginning of system
+11-14 21:34:04.626  4080  4098 I TestRunner: run started: 4 tests
+11-14 21:34:04.626  4080  4098 I TestRunner: started: manualCatalogueSurvivesBadMetadataAndContinuesSeventeenEighteenNineteen(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 21:34:09.433  4080  4098 I Danmaku597QA: file time=1794663249000 source=http://localhost:51929/api/v2/comment/chain-17?format=xml
+11-14 21:34:09.559  4080  4098 I Danmaku597QA: file time=1794663249000 source=http://localhost:51929/api/v2/comment/chain-18?format=xml
+11-14 21:34:09.562  4080  4098 I Danmaku597QA: snapshot=1794663249370
+11-14 21:34:09.628  4080  4098 I Danmaku597QA: file time=1794663249000 source=http://localhost:51929/api/v2/comment/chain-18?format=xml
+11-14 21:34:09.680  4080  4098 I Danmaku597QA: manual17 continuation episode=18 elapsedMs=118 catalogueRequests=2
+11-14 21:34:09.736  4080  4098 I Danmaku597QA: file time=1794663249000 source=http://localhost:51929/api/v2/comment/chain-19?format=xml
+11-14 21:34:09.738  4080  4098 I Danmaku597QA: snapshot=1794663249372
+11-14 21:34:09.773  4080  4098 I Danmaku597QA: file time=1794663249000 source=http://localhost:51929/api/v2/comment/chain-19?format=xml
+11-14 21:34:09.788  4080  4098 I Danmaku597QA: manual17 continuation episode=19 elapsedMs=50 catalogueRequests=2
+11-14 21:34:10.051  4080  4098 I TestRunner: finished: manualCatalogueSurvivesBadMetadataAndContinuesSeventeenEighteenNineteen(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 21:34:10.054  4080  4098 I TestRunner: started: confirmedVarietyPrefetchUsesActualHalfAndBonusPlaylistLabels(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 21:34:11.711  4080  4098 I Danmaku597QA: file time=1794663251000 source=http://localhost:57057/api/v2/comment/lower?format=xml
+11-14 21:34:11.818  4080  4098 I Danmaku597QA: file time=1794663251000 source=http://localhost:57057/api/v2/comment/bonus?format=xml
+11-14 21:34:12.118  4080  4098 I TestRunner: finished: confirmedVarietyPrefetchUsesActualHalfAndBonusPlaylistLabels(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 21:34:12.119  4080  4098 I TestRunner: started: newCatalogueReplacesAnOlderPrefetchWithoutLateCacheOverwrite(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 21:34:12.973  4080  4098 I TestRunner: finished: newCatalogueReplacesAnOlderPrefetchWithoutLateCacheOverwrite(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 21:34:12.975  4080  4098 I TestRunner: started: fanrenManualSeventeenContinuesToEighteenWithRealVisibleComments(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+11-14 21:34:15.177  4080  4264 W DanmakuLoad: Native document failed
+11-14 21:34:15.177  4080  4264 W DanmakuLoad: com.fongmi.android.tv.api.PlatformDanmaku$RejectedComments: Bilibili comment service rejected the request: -352
+11-14 21:34:15.177  4080  4264 W DanmakuLoad: 	at com.fongmi.android.tv.api.PlatformDanmaku.biliComments(PlatformDanmaku.java:170)
+11-14 21:34:15.177  4080  4264 W DanmakuLoad: 	at com.fongmi.android.tv.api.BilibiliDanmaku.lambda$comments$6(BilibiliDanmaku.java:122)
+11-14 21:34:15.177  4080  4264 W DanmakuLoad: 	at com.fongmi.android.tv.api.BilibiliDanmaku$$ExternalSyntheticLambda8.get(D8$$SyntheticClass:0)
+11-14 21:34:15.177  4080  4264 W DanmakuLoad: 	at com.fongmi.android.tv.api.NativeDanmakuRequest.lambda$segments$2(NativeDanmakuRequest.java:91)
+11-14 21:34:15.177  4080  4264 W DanmakuLoad: 	at com.fongmi.android.tv.api.NativeDanmakuRequest.$r8$lambda$F5sVYWF3I3zEFrs67jAvV4Jcg6Q(Unknown Source:0)
+11-14 21:34:15.177  4080  4264 W DanmakuLoad: 	at com.fongmi.android.tv.api.NativeDanmakuRequest$$ExternalSyntheticLambda0.call(D8$$SyntheticClass:0)
+11-14 21:34:15.177  4080  4264 W DanmakuLoad: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-14 21:34:15.177  4080  4264 W DanmakuLoad: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:458)
+11-14 21:34:15.177  4080  4264 W DanmakuLoad: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-14 21:34:15.177  4080  4264 W DanmakuLoad: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1167)
+11-14 21:34:15.177  4080  4264 W DanmakuLoad: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:641)
+11-14 21:34:15.177  4080  4264 W DanmakuLoad: 	at java.lang.Thread.run(Thread.java:764)
+11-14 21:34:15.455  4080  4327 W DanmakuLoad: Native document failed
+11-14 21:34:15.455  4080  4327 W DanmakuLoad: com.fongmi.android.tv.api.PlatformDanmaku$RejectedComments: Bilibili comment service rejected the request: temporary cooldown after service refusal
+11-14 21:34:15.455  4080  4327 W DanmakuLoad: 	at com.fongmi.android.tv.api.BilibiliDanmaku.awaitRequest(BilibiliDanmaku.java:136)
+11-14 21:34:15.455  4080  4327 W DanmakuLoad: 	at com.fongmi.android.tv.api.BilibiliDanmaku.lambda$comments$6(BilibiliDanmaku.java:120)
+11-14 21:34:15.455  4080  4327 W DanmakuLoad: 	at com.fongmi.android.tv.api.BilibiliDanmaku$$ExternalSyntheticLambda8.get(D8$$SyntheticClass:0)
+11-14 21:34:15.455  4080  4327 W DanmakuLoad: 	at com.fongmi.android.tv.api.NativeDanmakuRequest.lambda$segments$2(NativeDanmakuRequest.java:91)
+11-14 21:34:15.455  4080  4327 W DanmakuLoad: 	at com.fongmi.android.tv.api.NativeDanmakuRequest.$r8$lambda$F5sVYWF3I3zEFrs67jAvV4Jcg6Q(Unknown Source:0)
+11-14 21:34:15.455  4080  4327 W DanmakuLoad: 	at com.fongmi.android.tv.api.NativeDanmakuRequest$$ExternalSyntheticLambda0.call(D8$$SyntheticClass:0)
+11-14 21:34:15.455  4080  4327 W DanmakuLoad: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-14 21:34:15.455  4080  4327 W DanmakuLoad: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:458)
+11-14 21:34:15.455  4080  4327 W DanmakuLoad: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-14 21:34:15.455  4080  4327 W DanmakuLoad: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1167)
+11-14 21:34:15.455  4080  4327 W DanmakuLoad: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:641)
+11-14 21:34:15.455  4080  4327 W DanmakuLoad: 	at java.lang.Thread.run(Thread.java:764)
+11-14 21:34:28.917  4080  4976 W DanmakuLoad: Native document failed
+11-14 21:34:28.917  4080  4976 W DanmakuLoad: com.fongmi.android.tv.api.PlatformDanmaku$RejectedComments: Bilibili comment service rejected the request: temporary cooldown after service refusal
+11-14 21:34:28.917  4080  4976 W DanmakuLoad: 	at com.fongmi.android.tv.api.BilibiliDanmaku.awaitRequest(BilibiliDanmaku.java:136)
+11-14 21:34:28.917  4080  4976 W DanmakuLoad: 	at com.fongmi.android.tv.api.BilibiliDanmaku.lambda$comments$6(BilibiliDanmaku.java:120)
+11-14 21:34:28.917  4080  4976 W DanmakuLoad: 	at com.fongmi.android.tv.api.BilibiliDanmaku$$ExternalSyntheticLambda8.get(D8$$SyntheticClass:0)
+11-14 21:34:28.917  4080  4976 W DanmakuLoad: 	at com.fongmi.android.tv.api.NativeDanmakuRequest.lambda$segments$2(NativeDanmakuRequest.java:91)
+11-14 21:34:28.917  4080  4976 W DanmakuLoad: 	at com.fongmi.android.tv.api.NativeDanmakuRequest.$r8$lambda$F5sVYWF3I3zEFrs67jAvV4Jcg6Q(Unknown Source:0)
+11-14 21:34:28.917  4080  4976 W DanmakuLoad: 	at com.fongmi.android.tv.api.NativeDanmakuRequest$$ExternalSyntheticLambda0.call(D8$$SyntheticClass:0)
+11-14 21:34:28.917  4080  4976 W DanmakuLoad: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-14 21:34:28.917  4080  4976 W DanmakuLoad: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:458)
+11-14 21:34:28.917  4080  4976 W DanmakuLoad: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-14 21:34:28.917  4080  4976 W DanmakuLoad: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1167)
+11-14 21:34:28.917  4080  4976 W DanmakuLoad: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:641)
+11-14 21:34:28.917  4080  4976 W DanmakuLoad: 	at java.lang.Thread.run(Thread.java:764)
+11-14 21:35:44.603  4080  4080 E Danmaku577QA: automatic native match position=689979 playing=true enabled=true source=null view=1920x1080 visible=true attached=true started=true paused=false draw=true
+11-14 21:35:44.603  4080  4080 E Danmaku577QA: DanmakuController.sortedItems=count=0
+11-14 21:35:44.604  4080  4080 E Danmaku577QA: DanmakuController.loadedFrom=590018
+11-14 21:35:44.604  4080  4080 E Danmaku577QA: DanmakuController.loadedTo=720018
+11-14 21:35:44.604  4080  4080 E Danmaku577QA: DanmakuController.player=androidx.media3.exoplayer.ExoPlayerImpl@6d3d94d
+11-14 21:35:44.604  4080  4080 E Danmaku577QA: DanmakuController.dataSourceUri=null
+11-14 21:35:44.604  4080  4080 E Danmaku577QA: DanmakuView.pool=count=0
+11-14 21:35:44.604  4080  4080 E Danmaku577QA: DanmakuView.activeItems=count=0
+11-14 21:35:44.604  4080  4080 E Danmaku577QA: DanmakuView.clock=androidx.media3.ui.danmaku.bean.PlaybackClock@4f97e47
+11-14 21:35:44.604  4080  4080 E Danmaku577QA: DanmakuView.lastActivationPositionMs=600035
+11-14 21:35:45.053  4080  4098 E TestRunner: failed: fanrenManualSeventeenContinuesToEighteenWithRealVisibleComments(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+11-14 21:35:45.054  4080  4098 E TestRunner: ----- begin exception -----
+11-14 21:35:45.054  4080  4098 E TestRunner: java.lang.AssertionError: Timed out: automatic native match
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.Assert.fail(Assert.java:89)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:270)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:156)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.fanrenManualSeventeenContinuesToEighteenWithRealVisibleComments(PlatformPlaybackInstrumentedTest.java:118)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at java.lang.reflect.Method.invoke(Native Method)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at androidx.test.ext.junit.runners.AndroidJUnit4.run(AndroidJUnit4.java:162)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.Suite.runChild(Suite.java:128)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.Suite.runChild(Suite.java:27)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:68)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:59)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at androidx.test.runner.AndroidJUnitRunner.onStart(AndroidJUnitRunner.java:467)
+11-14 21:35:45.054  4080  4098 E TestRunner: 	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2145)
+11-14 21:35:45.054  4080  4098 E TestRunner: ----- end exception -----
+11-14 21:35:45.054  4080  4098 I TestRunner: finished: fanrenManualSeventeenContinuesToEighteenWithRealVisibleComments(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+11-14 21:35:45.055  4080  4098 I TestRunner: run finished: 4 tests, 1 failed, 0 ignored

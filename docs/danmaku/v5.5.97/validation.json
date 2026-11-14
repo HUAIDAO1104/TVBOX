@@ -1,0 +1,44 @@
+{
+  "leanback-regression": {
+    "registered": 64,
+    "failures": 4,
+    "skips": 4
+  },
+  "leanback-final": {
+    "registered": 31,
+    "failures": 0,
+    "skips": 0
+  },
+  "leanback-guard": {
+    "registered": 3,
+    "failures": 0,
+    "skips": 0
+  },
+  "mobile-regression": {
+    "registered": 64,
+    "failures": 2,
+    "skips": 4
+  },
+  "mobile-final": {
+    "registered": 31,
+    "failures": 0,
+    "skips": 0
+  },
+  "mobile-guard": {
+    "registered": 3,
+    "failures": 0,
+    "skips": 0
+  },
+  "Leanback-unit": {
+    "tests": 402,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  },
+  "Mobile-unit": {
+    "tests": 439,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  }
+}

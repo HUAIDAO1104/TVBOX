@@ -1,0 +1,31 @@
+com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest:
+Error in slowFirstExactDocumentDoesNotBlockAHealthySameEpisode(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest):
+java.lang.AssertionError: Healthy exact candidate must not wait for a stalled document
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest.slowFirstExactDocumentDoesNotBlockAHealthySameEpisode(DanmakuRoutingInstrumentedTest.java:32)
+
+Error in refreshedCatalogueRetriesTransientDocumentOnceWithoutManualSearch(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest):
+java.lang.AssertionError: A refreshed, now-working document must not require manual search
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest.refreshedCatalogueRetriesTransientDocumentOnceWithoutManualSearch(DanmakuRoutingInstrumentedTest.java:52)
+
+
+Time: 5.368
+There were 2 failures:
+1) slowFirstExactDocumentDoesNotBlockAHealthySameEpisode(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+java.lang.AssertionError: Healthy exact candidate must not wait for a stalled document
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest.slowFirstExactDocumentDoesNotBlockAHealthySameEpisode(DanmakuRoutingInstrumentedTest.java:32)
+2) refreshedCatalogueRetriesTransientDocumentOnceWithoutManualSearch(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+java.lang.AssertionError: A refreshed, now-working document must not require manual search
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest.refreshedCatalogueRetriesTransientDocumentOnceWithoutManualSearch(DanmakuRoutingInstrumentedTest.java:52)
+
+FAILURES!!!
+Tests run: 2,  Failures: 2

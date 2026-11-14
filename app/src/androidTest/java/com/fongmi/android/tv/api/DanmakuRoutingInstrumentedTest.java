@@ -14,6 +14,111 @@ import java.util.concurrent.atomic.*;
 
 @RunWith(AndroidJUnit4.class)
 public class DanmakuRoutingInstrumentedTest {
+    @Test public void winningBackupCancelsPendingAlternateDocumentStarts() throws Exception {
+        try (var direct = new MockWebServer(); var backup = new MockWebServer()) {
+            direct.start(); backup.start(); var late = new AtomicInteger();
+            List<Danmaku> rows = new ArrayList<>();
+            for (String id : List.of("bad", "slow", "must-not-start")) {
+                Danmaku row = Danmaku.from(direct.url("/api/v2/comment/"+id+"?format=xml").toString());
+                row.setName("自动线路测试(2026)【综艺】from fixture - 第1期下"); rows.add(row);
+            }
+            direct.setDispatcher(new Dispatcher() { public MockResponse dispatch(RecordedRequest r) {
+                if (r.getPath().startsWith("/search")) return new MockResponse().setBody(App.gson().toJson(rows));
+                if (r.getPath().contains("/bad?")) return new MockResponse().setResponseCode(403);
+                if (r.getPath().contains("/must-not-start")) late.incrementAndGet();
+                return document().setBodyDelay(8,TimeUnit.SECONDS);
+            }});
+            backup.setDispatcher(new Dispatcher() { public MockResponse dispatch(RecordedRequest r) {
+                return r.getPath().startsWith("/search") ? rows(backup,"第1期下","backup") : document();
+            }});
+            var done = new CountDownLatch(1); var found = new AtomicReference<Danmaku>();
+            DanmakuApi.searchStaged("自动线路测试","2026","综艺","第1期下","",List.of(endpoint(direct)),List.of(endpoint(backup)),new DanmakuApi.SearchCallback() {
+                public void onFound(Danmaku item,List<Danmaku> catalogue) { found.set(item);done.countDown(); }
+                public void onFailure(DanmakuApi.SearchFailure error) { done.countDown(); }
+            });
+            try {
+                assertTrue(done.await(4,TimeUnit.SECONDS));assertNotNull(found.get());assertTrue(found.get().getUrl().contains("/backup?"));
+                android.os.SystemClock.sleep(1500);
+                assertEquals("A finished match must not launch a queued alternative",0,late.get());
+            } finally { DanmakuApi.cancel(); }
+        }
+    }
+    @Test public void slowFirstExactDocumentDoesNotBlockAHealthySameEpisode() throws Exception { sameEpisodeRace(false); }
+    @Test public void failedFastAlternativeDoesNotDiscardTheHealthySlowExactDocument() throws Exception { sameEpisodeRace(true); }
+    private void sameEpisodeRace(boolean fastFails) throws Exception {
+        try (var server = new MockWebServer()) {
+            server.start(); var first = Danmaku.from(server.url("/api/v2/comment/slow?format=xml").toString());
+            first.setName("自动线路测试(2026)【综艺】from fixture - 第1期下");
+            var second = Danmaku.from(server.url("/api/v2/comment/fast?format=xml").toString()); second.setName(first.getName());
+            server.setDispatcher(new Dispatcher() { public MockResponse dispatch(RecordedRequest r) {
+                if (r.getPath().startsWith("/search")) return new MockResponse().setBody(App.gson().toJson(List.of(first, second)));
+                return r.getPath().contains("/slow") ? document().setBodyDelay(fastFails ? 2 : 8, TimeUnit.SECONDS)
+                        : fastFails ? new MockResponse().setResponseCode(403) : document();
+            }});
+            var done = new CountDownLatch(1); var found = new AtomicReference<Danmaku>(); long started = android.os.SystemClock.elapsedRealtime();
+            DanmakuApi.searchStaged("自动线路测试", "2026", "综艺", "第1期下", "", List.of(endpoint(server)), List.of(), new DanmakuApi.SearchCallback() {
+                public void onFound(Danmaku item, List<Danmaku> rows) { found.set(item); done.countDown(); }
+                public void onFailure(DanmakuApi.SearchFailure error) { done.countDown(); }
+            });
+            try {
+                assertTrue("Healthy exact candidate must not wait for a stalled document", done.await(4, TimeUnit.SECONDS));
+                assertNotNull(found.get()); assertEquals((fastFails ? first : second).getUrl(), found.get().getUrl());
+                android.util.Log.i("Danmaku597QA", "same-episode alternate elapsedMs=" + (android.os.SystemClock.elapsedRealtime()-started));
+            } finally { DanmakuApi.cancel(); }
+        }
+    }
+    @Test public void refreshedCatalogueRetriesTransientDocumentOnceWithoutManualSearch() throws Exception { transientRecovery(true); }
+    @Test public void persistentDocumentFailureStopsAfterOneCatalogueRefresh() throws Exception { transientRecovery(false); }
+    private void transientRecovery(boolean recovers) throws Exception {
+        try (var server = new MockWebServer()) {
+            server.start(); var documents = new AtomicInteger(); var searches = new AtomicInteger();
+            server.setDispatcher(new Dispatcher() { public MockResponse dispatch(RecordedRequest r) {
+                if (r.getPath().startsWith("/search")) { searches.incrementAndGet(); return rows(server, "第1期下", "transient"); }
+                return documents.incrementAndGet() == 1 || !recovers ? new MockResponse().setResponseCode(503) : document();
+            }});
+            var done = new CountDownLatch(1); var found = new AtomicReference<Danmaku>();
+            long started = android.os.SystemClock.elapsedRealtime();
+            DanmakuApi.searchStaged("自动线路测试", "2026", "综艺", "第1期下", "", List.of(endpoint(server)), List.of(), new DanmakuApi.SearchCallback() {
+                public void onFound(Danmaku item, List<Danmaku> rows) { found.set(item); done.countDown(); }
+                public void onFailure(DanmakuApi.SearchFailure error) { done.countDown(); }
+            });
+            try {
+                assertTrue(done.await(5, TimeUnit.SECONDS));
+                if (recovers) assertNotNull("A refreshed, now-working document must not require manual search", found.get());
+                else assertNull(found.get());
+                assertEquals(2, searches.get()); assertEquals(2, documents.get());
+                android.util.Log.i("Danmaku597QA", "automatic transient recovery elapsedMs=" + (android.os.SystemClock.elapsedRealtime()-started));
+            } finally { DanmakuApi.cancel(); }
+        }
+    }
+    @Test public void newCatalogueReplacesAnOlderPrefetchWithoutLateCacheOverwrite() throws Exception {
+        try(var server=new MockWebServer()) {
+            server.start(); var requests=new AtomicInteger(); var started=new CountDownLatch(1);
+            server.setDispatcher(new Dispatcher() { public MockResponse dispatch(RecordedRequest r) {
+                int n=requests.incrementAndGet(); started.countDown();
+                return new MockResponse().setBody("<i><d p=\"1,1,25,16777215,0,0,0,1\">"+(n==1?"旧内容":"新内容")+"</d></i>").setBodyDelay(n==1?600:0,TimeUnit.MILLISECONDS);
+            }});
+            var source=android.net.Uri.parse(server.url("/comment.xml").toString());
+            com.fongmi.android.tv.player.danmaku.DanmakuDocumentCache.load(source,new com.fongmi.android.tv.player.danmaku.DanmakuDocumentCache.Listener() {
+                public void onReady(android.net.Uri s,android.net.Uri l) { fail("Superseded request delivered"); }
+                public void onFailure(android.net.Uri s,java.io.IOException e) { }
+            });
+            assertTrue(started.await(3,TimeUnit.SECONDS)); android.os.SystemClock.sleep(20);
+            var done=new CountDownLatch(1);var result=new AtomicReference<android.net.Uri>();
+            com.fongmi.android.tv.player.danmaku.DanmakuDocumentCache.loadConfirmed(source,System.currentTimeMillis(),new com.fongmi.android.tv.player.danmaku.DanmakuDocumentCache.Listener() {
+                public void onReady(android.net.Uri s,android.net.Uri l) { result.set(l);done.countDown(); }
+                public void onFailure(android.net.Uri s,java.io.IOException e) { done.countDown(); }
+            });
+            assertTrue(done.await(3,TimeUnit.SECONDS));assertNotNull(result.get());
+            android.os.SystemClock.sleep(800);
+            try(var in=new java.io.FileInputStream(result.get().getPath())) {
+                String body=new String(com.fongmi.android.tv.utils.InputStreamCompat.readUpTo(in,10000),java.nio.charset.StandardCharsets.UTF_8);
+                assertTrue(body.contains("新内容"));assertFalse(body.contains("旧内容"));
+            }
+            assertEquals(2,requests.get());
+        }
+    }
+
     @Test public void recycledProviderIdCannotReplayAnUnrelatedCachedDocument() throws Exception {
         try (var server = new MockWebServer()) {
             server.start(); var stale = new AtomicBoolean(true); var documents = new AtomicInteger();
