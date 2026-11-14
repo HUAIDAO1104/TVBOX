@@ -178,7 +178,7 @@ public final class DanmakuAiMatcher {
                         item = candidates.get(index);
                     } while (!attemptedDocuments.add(item.getUrl()));
                     Danmaku selected = item;
-                    var ticket = DanmakuDocumentCache.load(item.getUri(), new DanmakuDocumentCache.Listener() {
+                    var ticket = DanmakuDocumentCache.loadFresh(item.getUri(), new DanmakuDocumentCache.Listener() {
                         @Override public void onProgress(android.net.Uri source, int percent) {
                             if (!done.get()) callback.onProgress(percent);
                         }

@@ -1,0 +1,155 @@
+{
+  "code": 0,
+  "result": {
+    "season_id": 28747,
+    "title": "凡人修仙传",
+    "type": 4,
+    "publish": {
+      "pub_time": "2020-07-25 20:00:00"
+    },
+    "episodes": [
+      {
+        "id": 733325,
+        "cid": 1077921686,
+        "title": "10",
+        "long_title": "凡人风起天南10重制版",
+        "duration": 1176000,
+        "section_type": 0,
+        "badge": "限免"
+      },
+      {
+        "id": 733331,
+        "cid": 1130274847,
+        "title": "16",
+        "long_title": "凡人风起天南16重制版",
+        "duration": 1092320,
+        "section_type": 0,
+        "badge": "限免"
+      },
+      {
+        "id": 733332,
+        "cid": 1134723036,
+        "title": "17",
+        "long_title": "凡人风起天南17重制版",
+        "duration": 1130000,
+        "section_type": 0,
+        "badge": "限免"
+      },
+      {
+        "id": 733333,
+        "cid": 1145682597,
+        "title": "18",
+        "long_title": "燕家堡之战1重制版",
+        "duration": 1014560,
+        "section_type": 0,
+        "badge": "限免"
+      },
+      {
+        "id": 733334,
+        "cid": 1158276219,
+        "title": "19",
+        "long_title": "燕家堡之战2重制版",
+        "duration": 1173320,
+        "section_type": 0,
+        "badge": "限免"
+      },
+      {
+        "id": 733335,
+        "cid": 1158294292,
+        "title": "20",
+        "long_title": "燕家堡之战3重制版",
+        "duration": 1253000,
+        "section_type": 0,
+        "badge": "限免"
+      },
+      {
+        "id": 733336,
+        "cid": 1165522299,
+        "title": "21",
+        "long_title": "燕家堡之战4重制版",
+        "duration": 1116000,
+        "section_type": 0,
+        "badge": "限免"
+      },
+      {
+        "id": 428988,
+        "cid": 453947774,
+        "title": "22",
+        "long_title": "魔道争锋1",
+        "duration": 1150000,
+        "section_type": 0,
+        "badge": "限免"
+      }
+    ],
+    "section": [
+      {
+        "title": "2020版",
+        "episodes": [
+          {
+            "id": 734372,
+            "cid": 246010329,
+            "title": "10",
+            "long_title": "凡人风起天南10",
+            "duration": 1224000,
+            "section_type": 2,
+            "badge": "限免"
+          },
+          {
+            "id": 734378,
+            "cid": 257902308,
+            "title": "16",
+            "long_title": "凡人风起天南16",
+            "duration": 1114000,
+            "section_type": 2,
+            "badge": "会员"
+          },
+          {
+            "id": 734379,
+            "cid": 260274090,
+            "title": "17",
+            "long_title": "凡人风起天南17",
+            "duration": 1163000,
+            "section_type": 2,
+            "badge": "会员"
+          },
+          {
+            "id": 734380,
+            "cid": 291562411,
+            "title": "18",
+            "long_title": "燕家堡之战1",
+            "duration": 1024000,
+            "section_type": 2,
+            "badge": "会员"
+          },
+          {
+            "id": 734381,
+            "cid": 291562750,
+            "title": "19",
+            "long_title": "燕家堡之战2",
+            "duration": 1183000,
+            "section_type": 2,
+            "badge": "会员"
+          },
+          {
+            "id": 734382,
+            "cid": 292626898,
+            "title": "20",
+            "long_title": "燕家堡之战3",
+            "duration": 1260000,
+            "section_type": 2,
+            "badge": "会员"
+          },
+          {
+            "id": 734383,
+            "cid": 295847270,
+            "title": "21",
+            "long_title": "燕家堡之战4",
+            "duration": 1125000,
+            "section_type": 2,
+            "badge": "会员"
+          }
+        ]
+      }
+    ]
+  }
+}

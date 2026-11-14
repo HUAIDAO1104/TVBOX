@@ -129,10 +129,22 @@ public class VodPlaybackMediaTest {
         DanmakuManualMatchStore.Selection restored =
                 DanmakuManualMatchStore.decode(stable).get("work");
 
-        assertTrue(stable.contains("\"schema\":3"));
+        assertTrue(stable.contains("\"schema\":4"));
         assertTrue(stable.contains("\"episodes\""));
         assertNotNull(restored);
         assertEquals("episode-2", restored.episode("2").getUrl());
+    }
+
+    @Test
+    public void legacyBilibiliAutomaticGuessesAreRecheckedButNewManualChoicesStayConfirmed() {
+        String legacy = "{\"work\":{\"query\":\"凡人修仙传\",\"selectedName\":\"凡人修仙传 第17集\",\"sourceKey\":\"bilibili-direct\"}}";
+        var decoded = DanmakuManualMatchStore.decode(legacy);
+        assertFalse(decoded.get("work").isUserConfirmed());
+        var roundTrip = DanmakuManualMatchStore.decode(DanmakuManualMatchStore.encode(decoded));
+        assertFalse(roundTrip.get("work").isUserConfirmed());
+        String manual = legacy.replace("\"sourceKey\"", "\"confirmed\":true,\"sourceKey\"");
+        assertTrue(DanmakuManualMatchStore.decode(manual).get("work").isUserConfirmed());
+        assertFalse(DanmakuManualMatchStore.decode(legacy.replace("bilibili-direct", "another-provider")).get("work").isUserConfirmed());
     }
 
     @Test

@@ -3,21 +3,18 @@ package com.fongmi.android.tv.player.danmaku;
 import com.fongmi.android.tv.App;
 
 import java.io.File;
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.Cache;
 import okhttp3.OkHttpClient;
-import okhttp3.Response;
 
-/** Network policy for immutable, episode-specific danmaku documents. */
+/** Isolated transport that respects provider cache validation. */
 public final class DanmakuHttp {
 
     static final long CACHE_SIZE_BYTES = 48L * 1024L * 1024L;
     static final int CONNECT_TIMEOUT_SECONDS = 8;
     static final int READ_TIMEOUT_SECONDS = 42;
     static final int CALL_TIMEOUT_SECONDS = 45;
-    static final int CACHE_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 
     private static volatile OkHttpClient client;
 
@@ -41,23 +38,9 @@ public final class DanmakuHttp {
                 // Use system TLS/DNS and a separate dispatcher; source plugins may replace
                 // the player's DNS, proxy or interceptors. Alternate IPs/stale pooled
                 // connections can recover, but the same 45 s call budget still applies.
-                .retryOnConnectionFailure(true)
-                .addNetworkInterceptor(chain -> {
-                    Response response = chain.proceed(chain.request());
-                    if (!response.isSuccessful() || !isImmutableCommentUrl(chain.request().url().toString())) {
-                        return response;
-                    }
-                    // The provider currently replies with "Cache-Control: no-cache" even though
-                    // a comment id identifies one immutable episode. Revalidate-free local cache
-                    // makes revisits and service/view re-attachments immediate and keeps playback
-                    // independent of a temporary provider slowdown.
-                    return response.newBuilder()
-                            .removeHeader("Pragma")
-                            .header("Cache-Control", "public, max-age=" + CACHE_MAX_AGE_SECONDS + ", immutable")
-                            .build();
-                });
+                .retryOnConnectionFailure(true);
         try {
-            File directory = new File(App.get().getCacheDir(), "danmaku_http");
+            File directory = new File(App.get().getCacheDir(), "danmaku_http_v2");
             builder.cache(new Cache(directory, CACHE_SIZE_BYTES));
         } catch (Throwable ignored) {
             // A read-only/full cache directory must never stop playback or danmaku loading.
@@ -65,10 +48,4 @@ public final class DanmakuHttp {
         return builder.build();
     }
 
-    static boolean isImmutableCommentUrl(String value) {
-        String url = value == null ? "" : value.toLowerCase(Locale.ROOT);
-        return url.startsWith("http")
-                && (url.contains("/api/v2/comment/") || url.contains("/api/v1/comment/"))
-                && (url.contains("format=xml") || url.endsWith(".xml"));
-    }
 }

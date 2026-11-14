@@ -405,7 +405,7 @@ public final class DanmakuMatch {
         return matcher.find() ? matcher.group(1).trim() : "";
     }
 
-    static Integer episodeNumber(String value) {
+    public static Integer episodeNumber(String value) {
         return DanmakuEpisode.from(value).number;
     }
 

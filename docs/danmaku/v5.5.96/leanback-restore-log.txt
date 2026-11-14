@@ -1,0 +1,10 @@
+--------- beginning of main
+--------- beginning of system
+11-14 20:40:13.171 26505 26523 I TestRunner: run started: 3 tests
+11-14 20:40:13.172 26505 26523 I TestRunner: started: stalledSavedEpisodeRefreshesWithoutWaitingForOldUrl(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 20:40:16.060 26505 26523 I TestRunner: finished: stalledSavedEpisodeRefreshesWithoutWaitingForOldUrl(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 20:40:16.061 26505 26523 I TestRunner: started: savedAutomaticRestoreCannotOverwriteANewerManualChoice(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 20:40:23.598 26505 26523 I TestRunner: finished: savedAutomaticRestoreCannotOverwriteANewerManualChoice(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 20:40:23.598 26505 26523 I TestRunner: started: externalLinkCancelsOldRestoreFailureAndEnablesRendering(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 20:40:30.960 26505 26523 I TestRunner: finished: externalLinkCancelsOldRestoreFailureAndEnablesRendering(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+11-14 20:40:30.960 26505 26523 I TestRunner: run finished: 3 tests, 0 failed, 0 ignored

@@ -1,0 +1,138 @@
+--------- beginning of main
+--------- beginning of system
+11-14 20:12:49.005  2907  2926 I TestRunner: run started: 2 tests
+11-14 20:12:49.006  2907  2926 I TestRunner: started: fanrenEpisodeTenAutomaticCommentsRenderAcrossPlaybackStates(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+11-14 20:12:52.101  2907  3114 W DanmakuLoad: Native document failed
+11-14 20:12:52.101  2907  3114 W DanmakuLoad: com.fongmi.android.tv.api.PlatformDanmaku$RejectedComments: Bilibili comment service rejected the request: -352
+11-14 20:12:52.101  2907  3114 W DanmakuLoad: 	at com.fongmi.android.tv.api.PlatformDanmaku.biliComments(PlatformDanmaku.java:170)
+11-14 20:12:52.101  2907  3114 W DanmakuLoad: 	at com.fongmi.android.tv.api.BilibiliDanmaku.lambda$comments$5(BilibiliDanmaku.java:114)
+11-14 20:12:52.101  2907  3114 W DanmakuLoad: 	at com.fongmi.android.tv.api.BilibiliDanmaku$$ExternalSyntheticLambda7.get(D8$$SyntheticClass:0)
+11-14 20:12:52.101  2907  3114 W DanmakuLoad: 	at com.fongmi.android.tv.api.NativeDanmakuRequest.lambda$segments$2(NativeDanmakuRequest.java:91)
+11-14 20:12:52.101  2907  3114 W DanmakuLoad: 	at com.fongmi.android.tv.api.NativeDanmakuRequest.$r8$lambda$F5sVYWF3I3zEFrs67jAvV4Jcg6Q(Unknown Source:0)
+11-14 20:12:52.101  2907  3114 W DanmakuLoad: 	at com.fongmi.android.tv.api.NativeDanmakuRequest$$ExternalSyntheticLambda0.call(D8$$SyntheticClass:0)
+11-14 20:12:52.101  2907  3114 W DanmakuLoad: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-14 20:12:52.101  2907  3114 W DanmakuLoad: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:458)
+11-14 20:12:52.101  2907  3114 W DanmakuLoad: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-14 20:12:52.101  2907  3114 W DanmakuLoad: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1167)
+11-14 20:12:52.101  2907  3114 W DanmakuLoad: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:641)
+11-14 20:12:52.101  2907  3114 W DanmakuLoad: 	at java.lang.Thread.run(Thread.java:764)
+11-14 20:14:20.486  2907  2907 E Danmaku577QA: automatic native match position=689988 playing=true enabled=true source=null view=1920x1080 visible=true attached=true started=true paused=false draw=true
+11-14 20:14:20.486  2907  2907 E Danmaku577QA: DanmakuController.sortedItems=count=0
+11-14 20:14:20.486  2907  2907 E Danmaku577QA: DanmakuController.loadedFrom=590012
+11-14 20:14:20.486  2907  2907 E Danmaku577QA: DanmakuController.loadedTo=720012
+11-14 20:14:20.486  2907  2907 E Danmaku577QA: DanmakuController.player=androidx.media3.exoplayer.ExoPlayerImpl@e24adb6
+11-14 20:14:20.487  2907  2907 E Danmaku577QA: DanmakuController.dataSourceUri=null
+11-14 20:14:20.487  2907  2907 E Danmaku577QA: DanmakuView.pool=count=0
+11-14 20:14:20.487  2907  2907 E Danmaku577QA: DanmakuView.activeItems=count=0
+11-14 20:14:20.487  2907  2907 E Danmaku577QA: DanmakuView.clock=androidx.media3.ui.danmaku.bean.PlaybackClock@39e6640
+11-14 20:14:20.487  2907  2907 E Danmaku577QA: DanmakuView.lastActivationPositionMs=600025
+11-14 20:14:20.835  2907  2926 E TestRunner: failed: fanrenEpisodeTenAutomaticCommentsRenderAcrossPlaybackStates(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+11-14 20:14:20.835  2907  2926 E TestRunner: ----- begin exception -----
+11-14 20:14:20.835  2907  2926 E TestRunner: java.lang.AssertionError: Timed out: automatic native match
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.Assert.fail(Assert.java:89)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:245)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:131)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.fanrenEpisodeTenAutomaticCommentsRenderAcrossPlaybackStates(PlatformPlaybackInstrumentedTest.java:87)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at java.lang.reflect.Method.invoke(Native Method)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at androidx.test.ext.junit.runners.AndroidJUnit4.run(AndroidJUnit4.java:162)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.Suite.runChild(Suite.java:128)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.Suite.runChild(Suite.java:27)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:68)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:59)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at androidx.test.runner.AndroidJUnitRunner.onStart(AndroidJUnitRunner.java:467)
+11-14 20:14:20.835  2907  2926 E TestRunner: 	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2145)
+11-14 20:14:20.835  2907  2926 E TestRunner: ----- end exception -----
+11-14 20:14:20.836  2907  2926 I TestRunner: finished: fanrenEpisodeTenAutomaticCommentsRenderAcrossPlaybackStates(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+11-14 20:14:20.837  2907  2926 I TestRunner: started: fanrenEpisodeSeventeenChoosesThePlayingCutDespiteASavedDifferentCut(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+11-14 20:14:26.072  2907  7805 W DanmakuLoad: Native document failed
+11-14 20:14:26.072  2907  7805 W DanmakuLoad: com.fongmi.android.tv.api.PlatformDanmaku$RejectedComments: Bilibili comment service rejected the request: -352
+11-14 20:14:26.072  2907  7805 W DanmakuLoad: 	at com.fongmi.android.tv.api.PlatformDanmaku.biliComments(PlatformDanmaku.java:170)
+11-14 20:14:26.072  2907  7805 W DanmakuLoad: 	at com.fongmi.android.tv.api.BilibiliDanmaku.lambda$comments$5(BilibiliDanmaku.java:114)
+11-14 20:14:26.072  2907  7805 W DanmakuLoad: 	at com.fongmi.android.tv.api.BilibiliDanmaku$$ExternalSyntheticLambda7.get(D8$$SyntheticClass:0)
+11-14 20:14:26.072  2907  7805 W DanmakuLoad: 	at com.fongmi.android.tv.api.NativeDanmakuRequest.lambda$segments$2(NativeDanmakuRequest.java:91)
+11-14 20:14:26.072  2907  7805 W DanmakuLoad: 	at com.fongmi.android.tv.api.NativeDanmakuRequest.$r8$lambda$F5sVYWF3I3zEFrs67jAvV4Jcg6Q(Unknown Source:0)
+11-14 20:14:26.072  2907  7805 W DanmakuLoad: 	at com.fongmi.android.tv.api.NativeDanmakuRequest$$ExternalSyntheticLambda0.call(D8$$SyntheticClass:0)
+11-14 20:14:26.072  2907  7805 W DanmakuLoad: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-14 20:14:26.072  2907  7805 W DanmakuLoad: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:458)
+11-14 20:14:26.072  2907  7805 W DanmakuLoad: 	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+11-14 20:14:26.072  2907  7805 W DanmakuLoad: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1167)
+11-14 20:14:26.072  2907  7805 W DanmakuLoad: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:641)
+11-14 20:14:26.072  2907  7805 W DanmakuLoad: 	at java.lang.Thread.run(Thread.java:764)
+11-14 20:15:51.844  2907  2907 E Danmaku577QA: automatic native match position=690049 playing=true enabled=true source=null view=1920x1080 visible=true attached=true started=true paused=false draw=true
+11-14 20:15:51.844  2907  2907 E Danmaku577QA: DanmakuController.sortedItems=count=0
+11-14 20:15:51.844  2907  2907 E Danmaku577QA: DanmakuController.loadedFrom=590009
+11-14 20:15:51.844  2907  2907 E Danmaku577QA: DanmakuController.loadedTo=720009
+11-14 20:15:51.844  2907  2907 E Danmaku577QA: DanmakuController.player=androidx.media3.exoplayer.ExoPlayerImpl@11b2923
+11-14 20:15:51.844  2907  2907 E Danmaku577QA: DanmakuController.dataSourceUri=null
+11-14 20:15:51.844  2907  2907 E Danmaku577QA: DanmakuView.pool=count=0
+11-14 20:15:51.844  2907  2907 E Danmaku577QA: DanmakuView.activeItems=count=0
+11-14 20:15:51.844  2907  2907 E Danmaku577QA: DanmakuView.clock=androidx.media3.ui.danmaku.bean.PlaybackClock@4e41f4c
+11-14 20:15:51.844  2907  2907 E Danmaku577QA: DanmakuView.lastActivationPositionMs=600034
+11-14 20:15:52.174  2907  2926 E TestRunner: failed: fanrenEpisodeSeventeenChoosesThePlayingCutDespiteASavedDifferentCut(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+11-14 20:15:52.176  2907  2926 E TestRunner: ----- begin exception -----
+11-14 20:15:52.176  2907  2926 E TestRunner: java.lang.AssertionError: Timed out: automatic native match
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.Assert.fail(Assert.java:89)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:245)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:131)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.fanrenEpisodeSeventeenChoosesThePlayingCutDespiteASavedDifferentCut(PlatformPlaybackInstrumentedTest.java:93)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at java.lang.reflect.Method.invoke(Native Method)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at androidx.test.ext.junit.runners.AndroidJUnit4.run(AndroidJUnit4.java:162)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.Suite.runChild(Suite.java:128)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.Suite.runChild(Suite.java:27)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:68)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:59)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at androidx.test.runner.AndroidJUnitRunner.onStart(AndroidJUnitRunner.java:467)
+11-14 20:15:52.176  2907  2926 E TestRunner: 	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2145)
+11-14 20:15:52.176  2907  2926 E TestRunner: ----- end exception -----
+11-14 20:15:52.176  2907  2926 I TestRunner: finished: fanrenEpisodeSeventeenChoosesThePlayingCutDespiteASavedDifferentCut(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+11-14 20:15:52.178  2907  2926 I TestRunner: run finished: 2 tests, 2 failed, 0 ignored

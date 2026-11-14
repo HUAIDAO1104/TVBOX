@@ -1,0 +1,33 @@
+--------- beginning of main
+11-14 20:29:44.305 16417 16435 I Danmaku577QA: comments after background return composed moving pixels=45
+--------- beginning of system
+11-14 20:29:44.809 16417 16435 I TestRunner: finished: fanrenEpisodeSeventeenRejectsWrongEpisodeCacheAndChoosesPlayingCut(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+11-14 20:29:44.815 16417 16435 I TestRunner: run finished: 3 tests, 0 failed, 0 ignored
+11-14 20:29:47.747 18589 18606 I TestRunner: run started: 3 tests
+11-14 20:29:47.747 18589 18606 I TestRunner: started: recycledProviderIdCannotReplayAnUnrelatedCachedDocument(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 20:29:47.897 18589 18606 I TestRunner: finished: recycledProviderIdCannotReplayAnUnrelatedCachedDocument(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 20:29:47.898 18589 18606 I TestRunner: started: playbackResolutionHappensBeforeDownloadingTheDefaultCandidate(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 20:29:47.957 18589 18606 I TestRunner: finished: playbackResolutionHappensBeforeDownloadingTheDefaultCandidate(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+11-14 20:29:47.958 18589 18606 I TestRunner: started: fanrenEpisodeSeventeenRejectsWrongEpisodeCacheAndChoosesPlayingCut(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+11-14 20:29:52.223 18589 18589 I Danmaku596QA: verified cut duration=1163000 source=bilibili-danmaku://video/734379/260274090/1163
+11-14 20:29:54.649 18589 18606 I Danmaku577QA: comments at 60000 composed moving pixels=58
+11-14 20:29:54.651 18589 18589 I Danmaku577QA: pixels position=62392 source=bilibili-danmaku://video/734379/260274090/1163
+11-14 20:29:56.463 18589 18606 I Danmaku577QA: comments at 600000 composed moving pixels=161
+11-14 20:29:56.473 18589 18589 I Danmaku577QA: pixels position=601792 source=bilibili-danmaku://video/734379/260274090/1163
+11-14 20:29:58.275 18589 18606 I Danmaku577QA: comments at 1000000 composed moving pixels=171
+11-14 20:29:58.276 18589 18589 I Danmaku577QA: pixels position=1001757 source=bilibili-danmaku://video/734379/260274090/1163
+11-14 20:30:00.075 18589 18606 I Danmaku577QA: comments after pause/resume composed moving pixels=1220
+11-14 20:30:02.146 18589 18606 I Danmaku577QA: comments after fullscreen composed moving pixels=268
+11-14 20:30:04.476 18589 18606 I Danmaku577QA: comments after background return composed moving pixels=577
+11-14 20:30:08.429 18589 18589 I Danmaku596QA: verified cut duration=1130000 source=bilibili-danmaku://video/733332/1134723036/1130
+11-14 20:30:09.673 18589 18606 I Danmaku577QA: comments at 60000 composed moving pixels=72
+11-14 20:30:09.682 18589 18589 I Danmaku577QA: pixels position=61222 source=bilibili-danmaku://video/733332/1134723036/1130
+11-14 20:30:12.643 18589 18606 I Danmaku577QA: comments at 600000 composed moving pixels=280
+11-14 20:30:12.643 18589 18589 I Danmaku577QA: pixels position=602930 source=bilibili-danmaku://video/733332/1134723036/1130
+11-14 20:30:14.444 18589 18606 I Danmaku577QA: comments at 1000000 composed moving pixels=413
+11-14 20:30:14.452 18589 18589 I Danmaku577QA: pixels position=1001793 source=bilibili-danmaku://video/733332/1134723036/1130
+11-14 20:30:16.229 18589 18606 I Danmaku577QA: comments after pause/resume composed moving pixels=1948
+11-14 20:30:18.335 18589 18606 I Danmaku577QA: comments after fullscreen composed moving pixels=423
+11-14 20:30:20.607 18589 18606 I Danmaku577QA: comments after background return composed moving pixels=397
+11-14 20:30:20.937 18589 18606 I TestRunner: finished: fanrenEpisodeSeventeenRejectsWrongEpisodeCacheAndChoosesPlayingCut(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+11-14 20:30:20.938 18589 18606 I TestRunner: run finished: 3 tests, 0 failed, 0 ignored

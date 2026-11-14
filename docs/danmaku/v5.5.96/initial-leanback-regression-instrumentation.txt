@@ -1,0 +1,29 @@
+com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest:....
+com.fongmi.android.tv.api.BilibiliDanmakuInstrumentedTest:..
+com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest:...............
+com.fongmi.android.tv.api.DanmakuNetworkInstrumentedTest:.
+com.fongmi.android.tv.api.DanmakuCatalogueInstrumentedTest:.....
+com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest:.......
+com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest:...
+com.fongmi.android.tv.playback.vod.DanmakuAiMatchingInstrumentedTest:..........
+com.fongmi.android.tv.player.DanmakuClockInstrumentedTest:.
+com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest:.......
+Error in externalLinkCancelsOldRestoreFailureAndEnablesRendering(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertTrue(Assert.java:53)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.externalLinkCancelsOldRestoreFailureAndEnablesRendering(DanmakuSearchInstrumentedTest.java:272)
+
+
+Time: 310.238
+There was 1 failure:
+1) externalLinkCancelsOldRestoreFailureAndEnablesRendering(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertTrue(Assert.java:53)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.externalLinkCancelsOldRestoreFailureAndEnablesRendering(DanmakuSearchInstrumentedTest.java:272)
+
+FAILURES!!!
+Tests run: 60,  Failures: 1

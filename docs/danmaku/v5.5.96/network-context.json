@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-11-14T20:33:56+08:00",
+  "systemProxy": "<dictionary> {\n  ExceptionsList : <array> {\n    0 : *.local\n    1 : 169.254/16\n  }\n  FTPPassive : 1\n}\n",
+  "platformRoute": "   route to: 58.63.237.169\ndestination: default\n       mask: default\n    gateway: 172.22.100.254\n  interface: en0\n      flags: <UP,GATEWAY,DONE,STATIC,PRCLONING,GLOBAL>\n recvpipe  sendpipe  ssthresh  rtt,msec    rttvar  hopcount      mtu     expire\n       0         0         0         0         0         0      1500         0 \n",
+  "androidHttpProxy": ":0",
+  "proxyEnvPresent": {
+    "HTTP_PROXY": false,
+    "HTTPS_PROXY": false,
+    "ALL_PROXY": false,
+    "http_proxy": false,
+    "https_proxy": false,
+    "all_proxy": false
+  }
+}

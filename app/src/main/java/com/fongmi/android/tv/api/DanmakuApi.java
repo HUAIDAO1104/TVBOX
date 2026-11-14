@@ -41,6 +41,8 @@ public class DanmakuApi {
         void onFailure(SearchFailure failure);
         default void onProgress(int percent) {
         }
+        default void resolveCandidates(List<Danmaku> candidates, List<Danmaku> catalogue,
+                                       Consumer<List<Danmaku>> ready) { ready.accept(candidates); }
     }
 
     private static final String TAG = DanmakuApi.class.getSimpleName();
@@ -195,8 +197,12 @@ public class DanmakuApi {
                     for (Danmaku item : items) item.setSourceKey(sourceKey);
                     List<Danmaku> candidates = rank(items);
                     if (candidates.isEmpty()) { completeOne(); return; }
-                    verifyCandidates(generation, candidates, items, 0, finished, calls,
-                            validations, stats, refreshSource, this::completeOne, callback);
+                    callback.resolveCandidates(candidates, items, resolved -> {
+                        if (generation != REQUEST_GENERATION.get() || finished.get()) return;
+                        if (resolved.isEmpty()) { stats.startBackup(); completeOne(); return; }
+                        verifyCandidates(generation, resolved, items, 0, finished, calls,
+                                validations, stats, refreshSource, this::completeOne, callback);
+                    });
                 }
                 @Override public void onFailure(IOException error) {
                     if (generation != REQUEST_GENERATION.get() || finished.get()) return;
@@ -262,7 +268,7 @@ public class DanmakuApi {
             return;
         }
         stats.attemptedDownloads.incrementAndGet();
-        DanmakuDocumentCache.Ticket ticket = DanmakuDocumentCache.load(item.getUri(),
+        DanmakuDocumentCache.Ticket ticket = DanmakuDocumentCache.loadFresh(item.getUri(),
                 new DanmakuDocumentCache.Listener() {
                     @Override
                     public void onProgress(android.net.Uri source, int percent) {

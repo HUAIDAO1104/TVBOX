@@ -1,0 +1,36 @@
+{
+  "season_id": 28747,
+  "title": "凡人修仙传",
+  "episode17": [
+    {
+      "id": 733332,
+      "cid": 1134723036,
+      "title": "17",
+      "long_title": "凡人风起天南17重制版",
+      "duration": 1130000,
+      "link": "https://www.bilibili.com/bangumi/play/ep733332",
+      "edition": "main"
+    },
+    {
+      "id": 734379,
+      "cid": 260274090,
+      "title": "17",
+      "long_title": "凡人风起天南17",
+      "duration": 1163000,
+      "link": "https://www.bilibili.com/bangumi/play/ep734379",
+      "edition": "2020版"
+    }
+  ],
+  "documents": {
+    "original": {
+      "comments": 3544,
+      "shiJinOccurrences": 0,
+      "jinChongOccurrences": 0
+    },
+    "remaster": {
+      "comments": 2392,
+      "shiJinOccurrences": 0,
+      "jinChongOccurrences": 0
+    }
+  }
+}

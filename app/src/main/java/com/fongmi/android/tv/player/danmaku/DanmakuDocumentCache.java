@@ -33,8 +33,7 @@ import okhttp3.ResponseBody;
 /**
  * Materialises remote episode comments as a local document before handing them to Media3.
  *
- * <p>The danmaku endpoint is slow and declares immutable comment-id documents as
- * {@code no-cache}. Relying only on the controller's in-memory state means that replaying a video,
+ * <p>Relying only on the controller's in-memory state means that replaying a video,
  * recreating the surface, or advancing to another episode can leave a selected URL with no
  * rendered items. A small disk-backed document cache gives every mount an explicit, local source
  * and makes a previously loaded episode available immediately.</p>
@@ -66,15 +65,24 @@ public final class DanmakuDocumentCache {
     }
 
     public static Ticket load(Uri source, Listener listener) {
+        return load(source, listener, false);
+    }
+
+    /** An opaque third-party ID can be reassigned; a fresh catalogue requires a fresh payload. */
+    public static Ticket loadFresh(Uri source, Listener listener) {
+        boolean fresh = isRemote(source) && !NativeDanmaku.supports(source.toString());
+        if (fresh) invalidate(source);
+        return load(source, listener, fresh);
+    }
+
+    private static Ticket load(Uri source, Listener listener, boolean fresh) {
         if (!isCacheable(source)) {
             App.post(() -> listener.onReady(source, source));
             return () -> {
             };
         }
         File target = fileFor(source);
-        if (isFresh(source, target)) {
-            // Keep recently replayed episodes during LRU pruning.
-            if (DanmakuHttp.isImmutableCommentUrl(source.toString())) target.setLastModified(System.currentTimeMillis());
+        if (!fresh && isFresh(source, target)) {
             App.post(() -> listener.onReady(source, Uri.fromFile(target)));
             return () -> {
             };
@@ -91,7 +99,9 @@ public final class DanmakuDocumentCache {
         }
         Request request;
         try {
-            request = NativeDanmaku.supports(key) ? null : new Request.Builder().url(key).get().build();
+            Request.Builder builder = new Request.Builder();
+            if (fresh) builder.cacheControl(okhttp3.CacheControl.FORCE_NETWORK);
+            request = NativeDanmaku.supports(key) ? null : builder.url(key).get().build();
         } catch (RuntimeException error) {
             App.post(() -> listener.onFailure(source, new IOException(error)));
             return () -> {
@@ -191,8 +201,7 @@ public final class DanmakuDocumentCache {
     }
 
     private static boolean isFresh(Uri source, File target) {
-        return isUsable(target) && (DanmakuHttp.isImmutableCommentUrl(source.toString())
-                || System.currentTimeMillis() - target.lastModified() < TimeUnit.HOURS.toMillis(6));
+        return isUsable(target) && System.currentTimeMillis() - target.lastModified() < TimeUnit.HOURS.toMillis(6);
     }
 
     private static boolean scheduleRetry(PendingDownload download, IOException error) {
@@ -311,7 +320,7 @@ public final class DanmakuDocumentCache {
     }
 
     private static File fileFor(Uri source) {
-        File directory = new File(App.get().getCacheDir(), "danmaku_documents");
+        File directory = new File(App.get().getCacheDir(), "danmaku_documents_v2");
         if (!directory.exists()) directory.mkdirs();
         return new File(directory, cacheKey(source.toString()) + ".xml");
     }

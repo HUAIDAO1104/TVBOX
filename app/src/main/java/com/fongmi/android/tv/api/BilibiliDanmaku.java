@@ -4,6 +4,7 @@ import static com.fongmi.android.tv.api.MangoDanmaku.*;
 
 import com.fongmi.android.tv.bean.Danmaku;
 import com.fongmi.android.tv.playback.vod.DanmakuMatch;
+import com.fongmi.android.tv.playback.vod.DanmakuMatchContext;
 import com.google.gson.*;
 import java.io.IOException;
 import java.util.*;
@@ -30,6 +31,66 @@ public final class BilibiliDanmaku {
     public static boolean supports(String source) {
         Matcher m = VIDEO.matcher(source == null ? "" : source);
         return m.matches() && Integer.parseInt(m.group(3)) <= 21600;
+    }
+
+    /** Revalidate saved IDs against one authoritative season before comparing its cuts. */
+    public static NativeDanmaku.Job playbackCatalogue(String source, IqiyiDanmaku.Callback<List<Danmaku>> callback) {
+        var job = new NativeDanmakuRequest(15000, "https://www.bilibili.com/", NativeDanmakuRequest.CLIENT);
+        job.start(SEARCH, () -> {
+            Matcher video = VIDEO.matcher(source);
+            if (!supports(source) || !video.matches()) throw new IOException("Invalid Bilibili playback identity");
+            synchronized (CATALOGUES) {
+                for (CachedCatalogue value : CATALOGUES.values()) {
+                    if (System.nanoTime() - value.time() < TimeUnit.MINUTES.toNanos(5)
+                            && value.rows().stream().anyMatch(row -> row.getUrl().equals(source))) return copy(value.rows());
+                }
+            }
+            String text = job.text("https://api.bilibili.com/pgc/view/web/season?ep_id=" + video.group(1));
+            String id = str(obj(PlatformDanmaku.json(text), "result"), "season_id");
+            if (!id.matches("[1-9][0-9]{0,11}")) throw new IOException("Missing Bilibili season identity");
+            List<Danmaku> rows = catalogue(text, id);
+            if (rows.stream().noneMatch(row -> row.getUrl().startsWith("bilibili-danmaku://video/" + video.group(1) + "/")))
+                throw new IOException("Bilibili episode is absent from its season");
+            synchronized (CATALOGUES) {
+                CATALOGUES.put(id, new CachedCatalogue(System.nanoTime(), copy(rows)));
+                while (CATALOGUES.size() > 24) CATALOGUES.remove(CATALOGUES.keySet().iterator().next());
+            }
+            return rows;
+        }, callback);
+        return job;
+    }
+
+    /** Only cuts of the exact work/season/year/episode may compete on duration. */
+    public static List<Danmaku> timelineCandidates(DanmakuMatchContext context, List<Danmaku> catalogue) {
+        Matcher edition = EDITION.matcher(context.getTitle());
+        String requestedEdition = edition.find() ? edition.group(1) : "";
+        String title = EDITION.matcher(context.getTitle()).replaceFirst("").trim();
+        if (DanmakuMatch.episodeNumber(context.getResolvedEpisode()) == null) return List.of();
+        List<Danmaku> rows = new ArrayList<>();
+        for (Danmaku row : catalogue) {
+            if (!supports(row.getUrl())) continue;
+            if (!requestedEdition.isEmpty() && !row.getName().contains(requestedEdition)) continue;
+            rows.add(row);
+        }
+        return DanmakuMatch.ranked(title, context.getYear(), context.getType(), context.getResolvedEpisode(), rows,
+                row -> row.getName().replaceFirst("\\s*(?:(?:19|20)\\d{2}版|重制版)\\s*(?=[(（](?:19|20)\\d{2}[)）])", ""));
+    }
+
+    public static Danmaku chooseTimeline(List<Danmaku> candidates, long durationMs) {
+        if (candidates.size() == 1) return candidates.get(0);
+        if (durationMs <= 0) return null;
+        Danmaku best = null;
+        long first = Long.MAX_VALUE, second = Long.MAX_VALUE;
+        for (Danmaku row : candidates) {
+            Matcher video = VIDEO.matcher(row.getUrl());
+            if (!video.matches()) continue;
+            long difference = Math.abs(durationMs - Long.parseLong(video.group(3)) * 1000);
+            if (difference < first) { second = first; first = difference; best = row; }
+            else second = Math.min(second, difference);
+        }
+        // Encoding/container rounding is small. Removed openings, merged episodes and equally
+        // close cuts are not enough evidence to invent an episode mapping or stretch time.
+        return first <= 5000 && second - first >= 3000 ? best : null;
     }
     public static NativeDanmaku.Job document(String source, java.util.function.IntConsumer progress,
                                               IqiyiDanmaku.Callback<byte[]> callback) {

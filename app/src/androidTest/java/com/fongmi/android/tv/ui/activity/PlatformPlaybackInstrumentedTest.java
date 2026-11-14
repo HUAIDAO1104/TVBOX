@@ -84,20 +84,38 @@ public class PlatformPlaybackInstrumentedTest {
     }
 
     @Test public void fanrenEpisodeTenAutomaticCommentsRenderAcrossPlaybackStates() throws Exception {
-        automaticTimeline("凡人修仙传", "第10集", "595-fanren-timeline", "2020", "国产动漫", new long[]{60000, 600000, 1000000});
+        automaticTimeline("凡人修仙传", "第10集", "595-fanren-timeline", "2020", "国产动漫", new long[]{60000, 600000, 1000000}, "timeline-1176.mp4", "/733325/");
+    }
+
+    @Test public void fanrenEpisodeSeventeenRejectsWrongEpisodeCacheAndChoosesPlayingCut() throws Exception {
+        // Reproduce the more serious stale binding: text says episode 17, but its cached URL
+        // belongs to episode 100. A parseable document must not make that binding trustworthy.
+        var wrong = Danmaku.from("bilibili-danmaku://video/785539/28224719980/1370");
+        wrong.setName("凡人修仙传(2020)【动漫】from bilibili - 【bilibili】 第17集");
+        wrong.setSourceKey(com.fongmi.android.tv.api.BilibiliDanmaku.SOURCE);
+        com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get().rememberAutomatic(
+                new com.fongmi.android.tv.playback.vod.DanmakuMatchContext("凡人修仙传", "2020", "国产动漫", "第17集"),
+                "凡人修仙传", wrong, List.of(wrong));
+        // Same title/episode, two source videos. The second run deliberately encounters the
+        // first run's persisted automatic mapping and must re-evaluate its real media duration.
+        automaticTimeline("凡人修仙传", "第17集", "596-original-17", "2020", "国产动漫", new long[]{60000, 600000, 1000000}, "timeline-1163.mp4", "/734379/");
+        automaticTimeline("凡人修仙传", "第17集", "596-remaster-17", "2020", "国产动漫", new long[]{60000, 600000, 1000000}, "timeline-1130.mp4", "/733332/");
     }
 
     private void automaticTimeline(String title, String episode, String capture) throws Exception {
         automaticTimeline(title, episode, capture, "2026", "综艺", new long[]{600000, 2400000, 60000});
     }
     private void automaticTimeline(String title, String episode, String capture, String year, String type, long[] positions) throws Exception {
+        automaticTimeline(title, episode, capture, year, type, positions, "playback-timeline.mp4", "");
+    }
+    private void automaticTimeline(String title, String episode, String capture, String year, String type, long[] positions, String asset, String expectedId) throws Exception {
         org.junit.Assume.assumeTrue("true".equals(InstrumentationRegistry.getArguments().getString("danmakuLive")));
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         var context = instrumentation.getTargetContext();
         boolean show = DanmakuSetting.isShow(), auto = DanmakuSetting.isAuto();
         int engine = PlayerSetting.getEngine(), background = PlayerSetting.getBackground();
         File video = new File(context.getFilesDir(), "timeline-" + System.nanoTime() + ".mp4");
-        try (var input = instrumentation.getContext().getAssets().open("playback-timeline.mp4")) {
+        try (var input = instrumentation.getContext().getAssets().open(asset)) {
             Files.write(video.toPath(), com.fongmi.android.tv.utils.InputStreamCompat.readUpTo(input, 8 * 1024 * 1024));
         }
         DanmakuSetting.putAuto(true); DanmakuSetting.putShow(true);
@@ -119,6 +137,11 @@ public class PlatformPlaybackInstrumentedTest {
                         com.fongmi.android.tv.bean.Episode.create(episode, "timeline"), 1, year, type, a.player());
             });
             await(scenario, a -> a.player().haveDanmaku(), "automatic native match", 90000);
+            if (!expectedId.isEmpty()) onActivity(scenario, a -> {
+                String source = a.player().getSelectedDanmakuUri().toString();
+                assertTrue("Wrong cut for duration=" + a.player().getDuration() + ": " + source, source.contains(expectedId));
+                android.util.Log.i("Danmaku596QA", "verified cut duration=" + a.player().getDuration() + " source=" + source);
+            });
             for (long position : positions) {
                 onActivity(scenario, a -> a.player().getPlayer().seekTo(position));
                 awaitScreenComments(scenario, "comments at " + position);

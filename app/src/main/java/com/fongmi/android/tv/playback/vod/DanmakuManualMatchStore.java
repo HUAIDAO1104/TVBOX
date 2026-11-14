@@ -17,7 +17,7 @@ import java.util.Objects;
 public final class DanmakuManualMatchStore {
 
     private static final String PREF_KEY = "danmaku_manual_matches_v1";
-    private static final int SCHEMA_VERSION = 3;
+    private static final int SCHEMA_VERSION = 4;
     private static final int MAX_ENTRIES = 64;
     private static final int MAX_EPISODES_PER_ENTRY = 160;
 
@@ -76,6 +76,16 @@ public final class DanmakuManualMatchStore {
 
     public synchronized void remember(DanmakuMatchContext context, String query, Danmaku selected,
                                       List<Danmaku> catalogue) {
+        remember(context, query, selected, catalogue, true);
+    }
+
+    public synchronized void rememberAutomatic(DanmakuMatchContext context, String query, Danmaku selected,
+                                               List<Danmaku> catalogue) {
+        remember(context, query, selected, catalogue, false);
+    }
+
+    private void remember(DanmakuMatchContext context, String query, Danmaku selected,
+                          List<Danmaku> catalogue, boolean confirmed) {
         String key = preferenceKey(context);
         String cleanedQuery = DanmakuQuery.from(Objects.toString(query, "")).searchTitle();
         if (cleanedQuery.isEmpty() && context != null) {
@@ -90,8 +100,9 @@ public final class DanmakuManualMatchStore {
             episodes = previous.mergeEpisodes(episodes);
         }
         entries.remove(key);
-        entries.put(key, new Selection(cleanedQuery, selectedName, selected.getSourceKey(),
-                episodes, System.currentTimeMillis()));
+        Selection selection = new Selection(cleanedQuery, selectedName, selected.getSourceKey(), episodes, System.currentTimeMillis());
+        selection.confirmed = confirmed;
+        entries.put(key, selection);
         trim();
         persist();
     }
@@ -254,6 +265,7 @@ public final class DanmakuManualMatchStore {
         private String sourceKey;
         private LinkedHashMap<String, CachedEpisode> episodes;
         private long updatedAt;
+        private boolean confirmed = true;
 
         @SuppressWarnings("unused")
         private Selection() {
@@ -287,7 +299,11 @@ public final class DanmakuManualMatchStore {
                     if (episodes.size() >= MAX_EPISODES_PER_ENTRY) break;
                 }
             }
-            return new Selection(query, selectedName, sourceKey, episodes, updatedAt);
+            Selection value = new Selection(query, selectedName, sourceKey, episodes, updatedAt);
+            // Older releases did not distinguish automatic guesses from user confirmations.
+            // Keep their work hints, but never promote an unverified old URL to a manual choice.
+            value.confirmed = object.has("confirmed") && object.get("confirmed").getAsBoolean();
+            return value;
         }
 
         private JsonObject toJson() {
@@ -297,6 +313,7 @@ public final class DanmakuManualMatchStore {
             object.addProperty("selectedName", selectedName());
             object.addProperty("sourceKey", sourceKey());
             object.addProperty("updatedAt", updatedAt());
+            object.addProperty("confirmed", confirmed);
             if (episodes != null) {
                 for (Map.Entry<String, CachedEpisode> entry : episodes.entrySet()) {
                     if (entry.getKey() == null || entry.getValue() == null) continue;
@@ -324,6 +341,8 @@ public final class DanmakuManualMatchStore {
         public long updatedAt() {
             return updatedAt;
         }
+
+        public boolean isUserConfirmed() { return confirmed; }
 
         public Danmaku episode(String episode) {
             String key = DanmakuMatch.episodeKey(episode);

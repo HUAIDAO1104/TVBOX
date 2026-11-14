@@ -14,6 +14,72 @@ import java.util.concurrent.atomic.*;
 
 @RunWith(AndroidJUnit4.class)
 public class DanmakuRoutingInstrumentedTest {
+    @Test public void recycledProviderIdCannotReplayAnUnrelatedCachedDocument() throws Exception {
+        try (var server = new MockWebServer()) {
+            server.start(); var stale = new AtomicBoolean(true); var documents = new AtomicInteger();
+            server.setDispatcher(new Dispatcher() { public MockResponse dispatch(RecordedRequest r) {
+                if (r.getPath().startsWith("/search")) return rows(server, "第1期下", "recycled");
+                documents.incrementAndGet();
+                return new MockResponse().setHeader("Cache-Control", "public, max-age=604800")
+                        .setBody("<i><d p=\"1,1,25,16777215,0,0,0,1\">" + (stale.get() ? "噬金虫：旧的不相关内容" : "当前集的正确内容") + "</d></i>");
+            }});
+            var uri = android.net.Uri.parse(server.url("/api/v2/comment/recycled?format=xml").toString());
+            var primed = new CountDownLatch(1); var oldFile = new AtomicReference<android.net.Uri>();
+            com.fongmi.android.tv.player.danmaku.DanmakuDocumentCache.load(uri, new com.fongmi.android.tv.player.danmaku.DanmakuDocumentCache.Listener() {
+                public void onReady(android.net.Uri s, android.net.Uri file) { oldFile.set(file); primed.countDown(); }
+                public void onFailure(android.net.Uri s, java.io.IOException error) { primed.countDown(); }
+            });
+            assertTrue(primed.await(5, TimeUnit.SECONDS)); assertNotNull(oldFile.get());
+            try (var in = new java.io.FileInputStream(oldFile.get().getPath())) {
+                assertTrue(new String(com.fongmi.android.tv.utils.InputStreamCompat.readUpTo(in, 10000),
+                        java.nio.charset.StandardCharsets.UTF_8).contains("噬金虫：旧的不相关内容"));
+            }
+            stale.set(false);
+            var done = new CountDownLatch(1); var found = new AtomicReference<Danmaku>();
+            DanmakuApi.searchStaged("自动线路测试", "2026", "综艺", "第1期下", "", List.of(endpoint(server)), List.of(), new DanmakuApi.SearchCallback() {
+                public void onFound(Danmaku item, List<Danmaku> rows) { found.set(item); done.countDown(); }
+                public void onFailure(DanmakuApi.SearchFailure failure) { done.countDown(); }
+            });
+            try {
+                assertTrue(done.await(5, TimeUnit.SECONDS)); assertNotNull(found.get());
+                var loaded = new CountDownLatch(1); var xml = new AtomicReference<String>();
+                com.fongmi.android.tv.player.danmaku.DanmakuDocumentCache.load(uri, new com.fongmi.android.tv.player.danmaku.DanmakuDocumentCache.Listener() {
+                    public void onReady(android.net.Uri s, android.net.Uri file) {
+                        try (var in = new java.io.FileInputStream(file.getPath())) {
+                            xml.set(new String(com.fongmi.android.tv.utils.InputStreamCompat.readUpTo(in, 10000), java.nio.charset.StandardCharsets.UTF_8));
+                        } catch (Exception e) { throw new AssertionError(e); } finally { loaded.countDown(); }
+                    }
+                    public void onFailure(android.net.Uri s, java.io.IOException error) { loaded.countDown(); }
+                });
+                assertTrue(loaded.await(5, TimeUnit.SECONDS)); assertNotNull(xml.get());
+                assertTrue(xml.get().contains("当前集的正确内容")); assertFalse(xml.get().contains("噬金虫"));
+                assertEquals("Refresh must fetch once, mounting must reuse the verified document", 2, documents.get());
+            } finally { DanmakuApi.cancel(); }
+        }
+    }
+    @Test public void playbackResolutionHappensBeforeDownloadingTheDefaultCandidate() throws Exception {
+        try (var server = new MockWebServer()) {
+            server.start();
+            var wrongRequests = new AtomicInteger();
+            Danmaku wrong = Danmaku.from(server.url("/api/v2/comment/wrong?format=xml").toString());
+            wrong.setName("自动线路测试(2026)【综艺】from fixture - 第1期下");
+            Danmaku correct = Danmaku.from(server.url("/api/v2/comment/correct?format=xml").toString());
+            correct.setName(wrong.getName());
+            server.setDispatcher(new Dispatcher() { public MockResponse dispatch(RecordedRequest r) {
+                if (r.getPath().startsWith("/search")) return new MockResponse().setBody(App.gson().toJson(List.of(wrong, correct)));
+                if (r.getPath().contains("/wrong")) { wrongRequests.incrementAndGet(); return new MockResponse().setResponseCode(403); }
+                return document();
+            }});
+            var done = new CountDownLatch(1); var found = new AtomicReference<Danmaku>();
+            DanmakuApi.searchStaged("自动线路测试", "2026", "综艺", "第1期下", "", List.of(endpoint(server)), List.of(), new DanmakuApi.SearchCallback() {
+                public void resolveCandidates(List<Danmaku> candidates, List<Danmaku> rows, java.util.function.Consumer<List<Danmaku>> ready) { ready.accept(List.of(correct)); }
+                public void onFound(Danmaku item, List<Danmaku> rows) { found.set(item); done.countDown(); }
+                public void onFailure(DanmakuApi.SearchFailure failure) { done.countDown(); }
+            });
+            try { assertTrue(done.await(5, TimeUnit.SECONDS)); assertEquals(correct, found.get()); assertEquals(0, wrongRequests.get()); }
+            finally { DanmakuApi.cancel(); }
+        }
+    }
     @Test public void liveDramaAutomaticMatchesAcrossTitlesAndEpisodeLabels() throws Exception {
         org.junit.Assume.assumeTrue("true".equals(InstrumentationRegistry.getArguments().getString("danmakuLive")));
         List<String> errors = new ArrayList<>();

@@ -1,0 +1,5 @@
+com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest:...
+
+Time: 17.789
+
+OK (3 tests)

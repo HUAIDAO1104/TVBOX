@@ -1,0 +1,14 @@
+{
+  "leanback": {
+    "tests": 395,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  },
+  "mobile": {
+    "tests": 432,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  }
+}

@@ -1,0 +1,33 @@
+com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest:
+Error in fanrenEpisodeTenAutomaticCommentsRenderAcrossPlaybackStates(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest):
+java.lang.AssertionError: Timed out: automatic native match
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:245)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:131)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.fanrenEpisodeTenAutomaticCommentsRenderAcrossPlaybackStates(PlatformPlaybackInstrumentedTest.java:87)
+
+Error in fanrenEpisodeSeventeenChoosesThePlayingCutDespiteASavedDifferentCut(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest):
+java.lang.AssertionError: Timed out: automatic native match
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:245)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:131)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.fanrenEpisodeSeventeenChoosesThePlayingCutDespiteASavedDifferentCut(PlatformPlaybackInstrumentedTest.java:93)
+
+
+Time: 183.173
+There were 2 failures:
+1) fanrenEpisodeTenAutomaticCommentsRenderAcrossPlaybackStates(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+java.lang.AssertionError: Timed out: automatic native match
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:245)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:131)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.fanrenEpisodeTenAutomaticCommentsRenderAcrossPlaybackStates(PlatformPlaybackInstrumentedTest.java:87)
+2) fanrenEpisodeSeventeenChoosesThePlayingCutDespiteASavedDifferentCut(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+java.lang.AssertionError: Timed out: automatic native match
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:245)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:131)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.fanrenEpisodeSeventeenChoosesThePlayingCutDespiteASavedDifferentCut(PlatformPlaybackInstrumentedTest.java:93)
+
+FAILURES!!!
+Tests run: 2,  Failures: 2

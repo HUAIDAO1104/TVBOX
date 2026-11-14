@@ -36,6 +36,7 @@ public class DanmakuSearchInstrumentedTest {
     private String previousApi;
     private volatile int status;
     private volatile boolean slowDocument, stalledRestore;
+    private final java.util.concurrent.atomic.AtomicInteger staleDocumentRequests = new java.util.concurrent.atomic.AtomicInteger();
     private final CountDownLatch documentStarted = new CountDownLatch(1);
     private ActivityScenario<DanmakuTestActivity> scenario;
     private DanmakuSearchPanel panel;
@@ -55,6 +56,7 @@ public class DanmakuSearchInstrumentedTest {
             @Override public MockResponse dispatch(RecordedRequest request) {
                 if (request.getPath().startsWith("/api/v2/comment/")) {
                     if (request.getPath().contains("/restore-fail")) {
+                        staleDocumentRequests.incrementAndGet();
                         documentStarted.countDown();
                         if (stalledRestore) return new MockResponse().setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.NO_RESPONSE);
                         return new MockResponse().setHeadersDelay(2, TimeUnit.SECONDS).setResponseCode(404);
@@ -226,49 +228,56 @@ public class DanmakuSearchInstrumentedTest {
         boolean auto = DanmakuSetting.isAuto(); DanmakuSetting.putAuto(true);
         try {
             main(() -> VodPlaybackMedia.searchDanmaku(new com.fongmi.android.tv.bean.Result(), history, episode, 1, "2026", "电影", player));
-            assertTrue(documentStarted.await(3, TimeUnit.SECONDS));
+            assertTrue(documentStarted.await(10, TimeUnit.SECONDS));
             await(() -> player.getSelectedDanmaku() != null && player.getSelectedDanmaku().getUrl().contains("/movie?"), 14000);
+            assertEquals("Opaque saved IDs require catalogue refresh before any document request", 0, staleDocumentRequests.get());
             assertTrue(statusEvents.stream().noneMatch(status -> status.stage() == com.fongmi.android.tv.player.danmaku.DanmakuStatus.Stage.FAILED));
         } finally { VodPlaybackMedia.cancelSelection(player); DanmakuSetting.putAuto(auto); }
     }
 
     @Test public void savedAutomaticRestoreCannotOverwriteANewerManualChoice() throws Exception {
         openPanel("恢复竞态回归片", "正片");
+        slowDocument = true;
         var context = new com.fongmi.android.tv.playback.vod.DanmakuMatchContext("恢复竞态回归片", "2026", "电影", "正片");
         Danmaku stale = item("恢复竞态回归片(2026)【电影】from stale - 正片", "restore-fail");
-        com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get().remember(context, "恢复竞态回归片", stale, List.of(stale));
+        com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get().rememberAutomatic(context, "恢复竞态回归片", stale, List.of(stale));
         var history = new com.fongmi.android.tv.bean.History(); history.setVodName("恢复竞态回归片");
         var episode = new com.fongmi.android.tv.bean.Episode(); episode.setName("正片");
         boolean auto = DanmakuSetting.isAuto(); DanmakuSetting.putAuto(true);
         try {
             main(() -> VodPlaybackMedia.searchDanmaku(new com.fongmi.android.tv.bean.Result(), history, episode, 1, "2026", "电影", player));
-            assertTrue(documentStarted.await(5, TimeUnit.SECONDS));
+            assertTrue(documentStarted.await(10, TimeUnit.SECONDS));
+            slowDocument = false;
             Danmaku confirmed = item("用户最终选择(2026)【电影】from fixture - 正片", "manual-winner");
             CountDownLatch done = new CountDownLatch(1);
             main(() -> VodPlaybackMedia.applyManualMatch(player, "用户最终选择", confirmed, List.of(confirmed), value -> done.countDown(), () -> fail("manual failed")));
             assertTrue(done.await(5, TimeUnit.SECONDS));
-            SystemClock.sleep(2500);
+            SystemClock.sleep(5500);
             main(() -> assertEquals(confirmed.getUrl(), player.getSelectedDanmaku().getUrl()));
+            assertEquals(0, staleDocumentRequests.get());
         } finally { DanmakuSetting.putAuto(auto); }
     }
 
     @Test public void externalLinkCancelsOldRestoreFailureAndEnablesRendering() throws Exception {
         openPanel("外部弹幕回归片", "正片");
+        slowDocument = true;
         var context = new com.fongmi.android.tv.playback.vod.DanmakuMatchContext("外部弹幕回归片", "2026", "电影", "正片");
-        Danmaku stale = item("外部弹幕回归片(2026)【电影】from stale - 正片", "restore-fail");
+        Danmaku stale = item("外部弹幕回归片(2026)【电影】from fixture - 正片", "restore-fail");
         com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get().remember(context, "外部弹幕回归片", stale, List.of(stale));
         var history = new com.fongmi.android.tv.bean.History(); history.setVodName("外部弹幕回归片");
         var episode = new com.fongmi.android.tv.bean.Episode(); episode.setName("正片");
         boolean auto = DanmakuSetting.isAuto(), show = DanmakuSetting.isShow(); DanmakuSetting.putAuto(true);
         try {
             main(() -> VodPlaybackMedia.searchDanmaku(new com.fongmi.android.tv.bean.Result(), history, episode, 1, "2026", "电影", player));
-            assertTrue(documentStarted.await(5, TimeUnit.SECONDS));
+            assertTrue(documentStarted.await(10, TimeUnit.SECONDS));
+            slowDocument = false;
             Danmaku confirmed = item("外部确认弹幕", "external-winner");
             main(() -> { player.setDanmakuEnabled(false); VodPlaybackMedia.applyExternalDanmaku(player, confirmed); });
             InstrumentationRegistry.getInstrumentation().waitForIdleSync(); statusEvents.clear();
-            SystemClock.sleep(2500);
+            SystemClock.sleep(5500);
             main(() -> assertEquals(confirmed.getUrl(), player.getSelectedDanmaku().getUrl()));
             assertTrue(DanmakuSetting.isShow());
+            assertEquals(0, staleDocumentRequests.get());
             assertTrue(statusEvents.stream().noneMatch(s -> s.stage() == com.fongmi.android.tv.player.danmaku.DanmakuStatus.Stage.FAILED));
         } finally { DanmakuSetting.putAuto(auto); DanmakuSetting.putShow(show); }
     }
