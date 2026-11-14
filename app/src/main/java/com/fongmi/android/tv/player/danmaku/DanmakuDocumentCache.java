@@ -74,7 +74,7 @@ public final class DanmakuDocumentCache {
         File target = fileFor(source);
         if (isFresh(source, target)) {
             // Keep recently replayed episodes during LRU pruning.
-            if (!NativeDanmaku.supports(source.toString())) target.setLastModified(System.currentTimeMillis());
+            if (DanmakuHttp.isImmutableCommentUrl(source.toString())) target.setLastModified(System.currentTimeMillis());
             App.post(() -> listener.onReady(source, Uri.fromFile(target)));
             return () -> {
             };
@@ -191,7 +191,7 @@ public final class DanmakuDocumentCache {
     }
 
     private static boolean isFresh(Uri source, File target) {
-        return isUsable(target) && (!NativeDanmaku.supports(source.toString())
+        return isUsable(target) && (DanmakuHttp.isImmutableCommentUrl(source.toString())
                 || System.currentTimeMillis() - target.lastModified() < TimeUnit.HOURS.toMillis(6));
     }
 
@@ -253,7 +253,8 @@ public final class DanmakuDocumentCache {
     }
 
     static boolean isCacheable(String source) {
-        return NativeDanmaku.supports(source) || DanmakuHttp.isImmutableCommentUrl(source);
+        String value = Objects.toString(source, "").toLowerCase(Locale.ROOT);
+        return NativeDanmaku.supports(source) || value.startsWith("https://") || value.startsWith("http://");
     }
 
     static String cacheKey(String source) {
@@ -343,6 +344,10 @@ public final class DanmakuDocumentCache {
         } catch (IOException error) {
             partial.delete();
             throw error;
+        }
+        if (declared >= 0 && total != declared) {
+            partial.delete();
+            throw new IOException("Incomplete danmaku document");
         }
         if (target.exists() && !target.delete()) {
             partial.delete();

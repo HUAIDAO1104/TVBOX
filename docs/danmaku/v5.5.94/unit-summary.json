@@ -1,0 +1,2318 @@
+{
+  "total": 385,
+  "passed": 382,
+  "failed": 0,
+  "skipped": 3,
+  "tests": [
+    {
+      "class": "com.fongmi.android.tv.api.DanmakuProgressiveSearchTest",
+      "name": "mangoFirstPageIsUsableBeforeHistoryCompletesOrFails",
+      "seconds": 0.023,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.DanmakuProgressiveSearchTest",
+      "name": "mangoSearchPreviewDoesNotWaitForCatalogueHost",
+      "seconds": 0.015,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.DanmakuProgressiveSearchTest",
+      "name": "tencentPreviewIsUsableBeforeSupplementaryEpisodesComplete",
+      "seconds": 0.006,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.DanmakuSearchRequestTest",
+      "name": "legacyPostContractStillCarriesBothFields",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.DanmakuSearchRequestTest",
+      "name": "templateValuesCannotBecomeQueryOrFragmentSyntax",
+      "seconds": 0.006,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.DanmakuServiceHealthTest",
+      "name": "authenticationAndInvalidDocumentsDoNotDisableOtherSearches",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.DanmakuServiceHealthTest",
+      "name": "repeatedOutagesBackOffBrieflyThenAllowRecovery",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.IqiyiDanmakuCodecTest",
+      "name": "malformedAndOversizedSegmentsCannotBecomeUsableDocuments",
+      "seconds": 0.034,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.IqiyiDanmakuCodecTest",
+      "name": "nativeMovieHasARealVideoIdAndNoInventedEpisode",
+      "seconds": 0.026,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.IqiyiDanmakuCodecTest",
+      "name": "officialCatalogueFindsDramaEpisode14WithoutTrailersOrOtherMedium",
+      "seconds": 0.176,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.IqiyiDanmakuCodecTest",
+      "name": "oldXmlSegmentsRemainSupported",
+      "seconds": 0.014,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.IqiyiDanmakuCodecTest",
+      "name": "protobufPreservesTimelineColorAndEscapesXml",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.IqiyiDanmakuCodecTest",
+      "name": "sourceIdentifiersCannotRedirectTheDownloader",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.MangoDanmakuTest",
+      "name": "automaticTargetDoesNotWaitForUnneededHistoricalMonths",
+      "seconds": 0.011,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.MangoDanmakuTest",
+      "name": "directLinksAreStrictlyScopedToKnownPlatformPages",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.MangoDanmakuTest",
+      "name": "mangoMillisecondsAndLongDurationsArePreserved",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.MangoDanmakuTest",
+      "name": "movieCardsUseTheirOwnMetadataAndNeverRelabelExtrasAsMain",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.MangoDanmakuTest",
+      "name": "realMangoCatalogueSeparatesMainLiveAndBonusEpisodes",
+      "seconds": 0.029,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.MangoDanmakuTest",
+      "name": "searchPreviewRejectsConflictingVideoIdentityAndPreservesEdition",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.NativeDanmakuRequestTest",
+      "name": "failedSegmentDoesNotWaitBehindSlowEarlierWorker",
+      "seconds": 0.06,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.NativeDanmakuRequestTest",
+      "name": "longVarietyOnHighLatencyLinkFinishesBeforeOldDeadline",
+      "seconds": 27.713,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.NativeDanmakuRequestTest",
+      "name": "stalledDocumentsLeaveRoomForAHealthyFallback",
+      "seconds": 0.114,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.NativeDanmakuRequestTest",
+      "name": "tencentLongMovieDoesNotTimeoutOnTelevisionLatency",
+      "seconds": 24.105,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.NativeDanmakuTargetTest",
+      "name": "onlyConflictingKnownMetadataSkipsCatalogueExpansion",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.PlatformDanmakuTest",
+      "name": "biliProtobufHasBoundsAndDoesNotTreatScriptCommentsAsText",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.PlatformDanmakuTest",
+      "name": "iqiyiPublicUrlEncodingResolvesVerifiedVideoId",
+      "seconds": 0.002,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.PlatformDanmakuTest",
+      "name": "youkuRejectsTokenErrorsAndPreservesMilliseconds",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.TencentDanmakuCodecTest",
+      "name": "aliasesCannotBeInjectedByThirdPartyJson",
+      "seconds": 0.014,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.TencentDanmakuCodecTest",
+      "name": "broadQueryAliasCannotEraseTheOfficialSeason",
+      "seconds": 0.002,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.TencentDanmakuCodecTest",
+      "name": "currentSeasonHasDistinctUpperAndLowerRealIds",
+      "seconds": 0.004,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.TencentDanmakuCodecTest",
+      "name": "denseSegmentsAreSampledAcrossTheirTimeline",
+      "seconds": 0.012,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.TencentDanmakuCodecTest",
+      "name": "fullDramaCatalogueUsesThePlatformsEpisodeNumber",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.TencentDanmakuCodecTest",
+      "name": "millisecondsColorsAndXmlEscapingSurviveConversion",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.TencentDanmakuCodecTest",
+      "name": "officialMovieAliasMatchesButRetainsActualDisplayTitle",
+      "seconds": 0.002,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.TencentDanmakuCodecTest",
+      "name": "zeroSummaryCountsDoNotDiscardRealSegments",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.api.loader.SpiderCacheEpochTest",
+      "name": "advanceMakesInFlightCacheKeyStale",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.bean.DanmakuSourceTest",
+      "name": "blocksObfuscatedGhostLabelsAtTheFinalUiBoundary",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.bean.DanmakuSourceTest",
+      "name": "blocksRepositoryInjectedGhostSourceOnly",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.bean.DanmakuSourceTest",
+      "name": "retiredCommentIdsAreDetectedWithoutUnsafeHostRewriting",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.bean.FlagEpisodeIndexTest",
+      "name": "duplicatePageItemDoesNotConsumeGlobalIndex",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.bean.FlagEpisodeIndexTest",
+      "name": "episodeIdentitySurvivesUiReversal",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.bean.FlagEpisodeIndexTest",
+      "name": "pagedLocalIndexesBecomeGlobalIndexes",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.bean.FlagEpisodeIndexTest",
+      "name": "pagedLocalIndexesStayStableWhenUiIsReversed",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.bean.FlagEpisodeIndexTest",
+      "name": "selectingFromLongPlaylistPerformsOneNormalizationScan",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.bean.HistoryNullSafetyTest",
+      "name": "legacyNullDisplayFieldsAreSafeForHomeDiff",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.bean.HistoryNullSafetyTest",
+      "name": "normalEpisodeIdentifierIsPreserved",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.bean.HistoryNullSafetyTest",
+      "name": "oversizedEpisodePayloadDoesNotEnterHistoryCursor",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.bean.VodLineFilterTest",
+      "name": "cachedGhostRemovalRepairsStableEpisodeIndexes",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.bean.VodLineFilterTest",
+      "name": "fallsBackToPairedRealLineWhenStructuredListOnlyContainsGhost",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.bean.VodLineFilterTest",
+      "name": "removesGhostEpisodeHiddenInsideARealPlaybackLine",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.bean.VodLineFilterTest",
+      "name": "removesGhostFromStructuredFlagsToo",
+      "seconds": 0.003,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.bean.VodLineFilterTest",
+      "name": "removesGhostLineWithoutShiftingItsNeighbourUrl",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.bean.VodLineFilterTest",
+      "name": "structuredGhostEpisodeCannotKeepAnEmptyLineAlive",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.cloud.CloudAccountSecurityTest",
+      "name": "credentialInjectionMetadataDoesNotImplyQrLogin",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.cloud.CloudAccountSecurityTest",
+      "name": "noProviderAdvertisesQrWithoutACompleteProtocolAdapter",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.cloud.CloudAccountSecurityTest",
+      "name": "storedCredentialDisplayNeverRevealsEnvelopeFragments",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.cloud.CloudCredentialBridgeTest",
+      "name": "nullInputAndBlankCredentialAreSafe",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.cloud.CloudCredentialBridgeTest",
+      "name": "replacesAllSupportedProviderPlaceholdersWithoutTouchingUnknownText",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.cloud.CloudCredentialBridgeTest",
+      "name": "replacesOnlyAvailablePlaceholders",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.cloud.CloudCredentialResolverExtractTest",
+      "name": "extractsLegacyTextAndIgnoresPlaceholderValues",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.cloud.CloudCredentialResolverExtractTest",
+      "name": "extractsNestedJsonAliasesForAllProviders",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.cloud.CloudLoginRouteResolverTest",
+      "name": "extractsCloudSetupTabsAndKeepsOwningSite",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.cloud.CloudLoginRouteResolverTest",
+      "name": "findsConfigurationSpiderWithoutHardcodingRepositoryName",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.cloud.CloudLoginRouteResolverTest",
+      "name": "selectsRealLoginActionInsteadOfManualOrClearCards",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.model.SearchProgressTest",
+      "name": "aggregatesPartialResultsWithoutLosingFailures",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.model.SearchProgressTest",
+      "name": "cancellationKeepsCompletedResults",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.model.SearchProgressTest",
+      "name": "catalogPlaceholderPreventsTerminalFlickerAfterActiveSitesFinish",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.model.SearchProgressTest",
+      "name": "completionAndPendingCountersNeverOverflow",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.model.SearchProgressTest",
+      "name": "partialSuccessSurvivesTimeoutAndFailure",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.model.SearchProgressTest",
+      "name": "repositoryPlaceholderExpandsToDiscoveredSites",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.model.SearchProgressTest",
+      "name": "zeroSourceSearchIsImmediatelyTerminal",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.model.SearchSnapshotTest",
+      "name": "keepsAnImmutableCopyOfAllCompletedSourceResults",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.model.SiteViewModelSearchScopeTest",
+      "name": "checkedSourcePredicateIsAppliedBeforeSearchTasksAreCreated",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.model.SiteViewModelSearchScopeTest",
+      "name": "keepsDistinctRoutingKeysEvenWhenBackendDeclarationsMatch",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.model.ViewModelSearchRunnerTest",
+      "name": "explicitNetworkPoolRunsSafeRequestsInParallelWithinItsLimit",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.model.ViewModelSearchRunnerTest",
+      "name": "prioritizingQueuedSourcesKeepsActiveNativeCallAndRunsEverySourceOnce",
+      "seconds": 0.003,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.model.ViewModelSearchRunnerTest",
+      "name": "queuesLargeSearchesWithoutExceedingNativeSafeConcurrency",
+      "seconds": 0.107,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.model.ViewModelSearchRunnerTest",
+      "name": "timeoutDoesNotReleasePhysicalSlotUntilCallableActuallyReturns",
+      "seconds": 0.223,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuAiModelsTest",
+      "name": "presetsBelongToTheirProviderAndKeepExistingChoice",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuAiModelsTest",
+      "name": "ranksProviderIdsAndFiltersNonChatEndpoints",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuAiModelsTest",
+      "name": "rejectsEmptyMalformedAndUnboundedCatalogues",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuAiModelsTest",
+      "name": "serializesIdsSeparatelyFromDisplayLabels",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest",
+      "name": "acceptsCleanTitleWithoutAppendingEpisodeOrYear",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest",
+      "name": "acceptsOneStructuredAnswerSurroundedByExplanation",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest",
+      "name": "broadSearchKeepsOriginalSeasonAsSelectionConstraint",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest",
+      "name": "discoveryUsesTitleEvidenceInsteadOfASelfReportedScore",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest",
+      "name": "handlesTextPartsWithoutUsingReasoningAsTheAnswer",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest",
+      "name": "localFallbackRetainsIdentityAndSignificantNumbers",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest",
+      "name": "mixedProviderLabelsDoNotMakeOneEpisodeAmbiguous",
+      "seconds": 0.003,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest",
+      "name": "modelCanNormalizeLabelsButCannotInventSchedulesOrSwitchHalves",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest",
+      "name": "onlyAllowsExistingIntegerCandidateIds",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest",
+      "name": "preservesEditionAndEpisodeGatesBeforeSelection",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest",
+      "name": "promptContainsNamesAndIdsOnly",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuAiProtocolTest",
+      "name": "rawDramaLabelDoesNotDiscardThePlayersResolvedEpisode",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuIdentityMatrixTest",
+      "name": "canonicalExtrasAndNamedOffshootsCannotBecomeMainEpisodes",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuIdentityMatrixTest",
+      "name": "datesWithShortMonthsAndBracketsRetainParts",
+      "seconds": 0.004,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuIdentityMatrixTest",
+      "name": "duplicateDateCannotHideConflictingPeriodNumbers",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuIdentityMatrixTest",
+      "name": "moviesAcceptReleaseLabelsWithoutPromotingTrailers",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuIdentityMatrixTest",
+      "name": "upperLowerAndSubpartsRemainDistinct",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "acceptsTitleVariantsButRejectsUnrelatedExactEpisode",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "aggregateEntryCannotImpersonateTheFinale",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "aggregateEpisodeCountIsNeverAnEpisodeNumber",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "animationOutranksLiveActionRegardlessOfProviderOrder",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "automaticFallbackNeverWeakensEditionAmbiguityGuard",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "automaticRankingRetainsSafeFallbackProviders",
+      "seconds": 0.003,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "bracketedSubtitleRemainsPartOfWorkIdentity",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "detailMediaTypeDisambiguatesSameTitleMovieAndSeries",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "exactTitleAndEpisodeOutrankPreviewAndWrongEpisode",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "manualChoiceCannotCrossIntoAnotherEditionOrMedium",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "manualChoiceKeepsTheExactPlatformAcrossTogetherWindowEpisodes",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "manualChoiceRetargetsSameSeasonAndProviderForFollowingEpisode",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "neverTreatsASubstringAsTheSameWork",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "prefers360OnlyAfterEpisodeMatches",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "providerMetadataDoesNotPolluteExactTitleButYearDisambiguates",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "realProviderOrderingCannotSelectAnotherSeason",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "refusesAutomaticGuessWhenPlaybackTitleIsMissing",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "seasonAliasesAreEquivalentButBaseTitleStaysDistinct",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "selectsExact360EpisodeFromWholeSeasonResponse",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "supportsSeasonEpisodeNotation",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "understandsRawNetworkDiskEpisodeFileNames",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "unknownProviderTypeRemainsSafeFallback",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "yearAndSeasonMetadataSelectTheCorrectTogetherWindowSeason",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuMatchTest",
+      "name": "yearSuffixNeedsIndependentEditionEvidence",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuQueryTest",
+      "name": "cleansCatalogYearAndReleaseMetadata",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuQueryTest",
+      "name": "discoverySeparatesWorkTitleFromSeasonAndAnnualMetadata",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuQueryTest",
+      "name": "gluedYearFallbackRequiresMatchingCatalogueMetadata",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuQueryTest",
+      "name": "keepsNumericTitleExactAndAllowsMetadataCheckedFallback",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuQueryTest",
+      "name": "preservesNezhaSpellingThroughSimplifiedConversion",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuQueryTest",
+      "name": "preservesSeasonAndMeaningfulTitleNumbers",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuQueryTest",
+      "name": "stripsAggregateEpisodeCountFromProviderTitles",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuQueryTest",
+      "name": "stripsInterleavedUpdateBadgesWithoutAddingNoiseBack",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuQueryTest",
+      "name": "unwrapsARealTitleWithoutTreatingItAsMetadata",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuResultGrouperTest",
+      "name": "keepsOnlyCurrentEpisodeAndGroupsExpectedSeasonFirst",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuVarietyMovieTest",
+      "name": "absentSeasonFourDoesNotBorrowEarlierSeason",
+      "seconds": 0.016,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuVarietyMovieTest",
+      "name": "confirmedMovieCanRestoreWithoutSearchingItsCatalogueAgain",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuVarietyMovieTest",
+      "name": "datesPartsAndExtrasCannotShareATimeline",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuVarietyMovieTest",
+      "name": "firstSeasonAliasAndUpperPartMatchActualVarietyCatalogue",
+      "seconds": 0.03,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuVarietyMovieTest",
+      "name": "formattedDatesAndChinesePeriodNumbersAreRecognized",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuVarietyMovieTest",
+      "name": "manualPartialTitleFindsVarietyWithoutAutomaticAliasGuess",
+      "seconds": 0.013,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuVarietyMovieTest",
+      "name": "missingMovieTypeStillRecognizesCommonFeatureLabels",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuVarietyMovieTest",
+      "name": "movieMainFeatureDoesNotRequireEpisodeOne",
+      "seconds": 0.003,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuVarietyMovieTest",
+      "name": "seasonTwoAndThreeDoNotCrossIntoFirstSeason",
+      "seconds": 0.025,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuVarietyMovieTest",
+      "name": "subpartsAreDistinct",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuVarietyMovieTest",
+      "name": "unknownYearIsAFallbackButExplicitYearConflictIsRejected",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuVarietyMovieTest",
+      "name": "varietyCacheRetainsDateAndPart",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DanmakuVarietyMovieTest",
+      "name": "varietyTypeIsNotAnOuttakeAndDatesSurvivePlaybackBoundary",
+      "seconds": 0.018,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DetailFocusPolicyTest",
+      "name": "episodeViewportStaysBoundedForLongPlaylists",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DetailFocusPolicyTest",
+      "name": "focusedControlScrollsOnlyWhenOutsideSafeViewport",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DetailFocusPolicyTest",
+      "name": "posterLeavesTheFocusGraphAsDetailRowsScrollOverItsSlot",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DetailFocusPolicyTest",
+      "name": "restoredPositionIsStableWhenListShrinksOrIsEmpty",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DetailSourceFallbackPolicyTest",
+      "name": "candidateCountIsBoundedForIntentSafety",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DetailSourceFallbackPolicyTest",
+      "name": "eachRemainingSourceIsOfferedOnce",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DetailSourceFallbackPolicyTest",
+      "name": "emptyCandidateSetHasNoFallback",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DetailSourceFallbackPolicyTest",
+      "name": "restoredMiddlePositionNeverRetriesPreviousSources",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.DetailSourceFallbackPolicyTest",
+      "name": "selectedSourceIsFirstAndDuplicatesAreRemoved",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.EpisodePickerPolicyTest",
+      "name": "actionOnlyAppearsWhenThereIsARealChoice",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.EpisodePickerPolicyTest",
+      "name": "selectedEpisodeFallsBackToFirstAndTracksPlayingEpisode",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.EpisodePickerPolicyTest",
+      "name": "selectedFlagFallsBackToFirstAvailableSource",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.PlaybackOverlayPolicyTest",
+      "name": "bufferingActionsWaitForExplicitDirectionalNavigation",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.PlaybackOverlayPolicyTest",
+      "name": "bufferingUsesDebounceAndLongWaitThreshold",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.PlaybackOverlayPolicyTest",
+      "name": "horizontalDirectionSeeksWhileVerticalDirectionRevealsHiddenControls",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.PlaybackOverlayPolicyTest",
+      "name": "interactiveOverlaysKeepRemoteKeysOutOfGestureLayer",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.PlaybackOverlayPolicyTest",
+      "name": "rebufferingPreparedMediaCanStillBePausedWithConfirm",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.PlaybackOverlayPolicyTest",
+      "name": "visibleErrorRecapturesFocusFromContentButNotFromItsOwnActions",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.VodFallbackPolicyTest",
+      "name": "nullLiveDataResetDoesNotConsumeInFlightFallbackState",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest",
+      "name": "aggregateEpisodeCountNeverBecomesTheEpisodeQuery",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest",
+      "name": "automaticDanmakuUsesTheSelectedEpisodeInsteadOfProviderOrdering",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest",
+      "name": "explicitVideoLinkRestoresOnlyTheConfirmedEpisode",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest",
+      "name": "legacyKeywordOnlyMappingRemainsUsableAfterMigration",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest",
+      "name": "manualDanmakuPreferenceIsScopedToWorkSeasonNotEpisode",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest",
+      "name": "manualEndpointIdentityNeverPersistsRawCredentialUrl",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest",
+      "name": "manualMappingSurvivesRepositoryMetadataDriftButKeepsSeasonBoundary",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest",
+      "name": "manualSelectionCachesEveryEpisodeFromTheExactSeasonAndPlatform",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest",
+      "name": "playbackIdentityIncludesSourceAndEpisodeUrlNotOnlyVisibleLabels",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest",
+      "name": "releaseObfuscatedEpisodeCacheMigratesWithoutLinkedTreeMapCast",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest",
+      "name": "retiredProviderEpisodeCacheFallsBackToFreshResolution",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest",
+      "name": "stableManualCacheRoundTripSurvivesFutureMinificationChanges",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.VodPlaybackMediaTest",
+      "name": "staleDanmakuResponseCannotCrossIntoAnotherTitleOrEpisode",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.VodPlaybackStateTest",
+      "name": "failedIdsIgnoreBlankAndRemainDeduplicated",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.VodPlaybackStateTest",
+      "name": "playbackStateCannotResurrectGhostLineAndKeepsDetailIdentity",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.playback.vod.VodPlaybackStateTest",
+      "name": "resetClearsTransientDetailAndPlaybackState",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.PlaybackStartupTimeoutTest",
+      "name": "cancelAndDisabledTimeoutIgnoreLateProgress",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.PlaybackStartupTimeoutTest",
+      "name": "frozenFirstFrameStillTimesOut",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.PlaybackStartupTimeoutTest",
+      "name": "longerSourceTimeoutIsRespected",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.PlaybackStartupTimeoutTest",
+      "name": "nativePlayerBufferGrowthCountsWithoutTransferEvents",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.PlaybackStartupTimeoutTest",
+      "name": "nextItemDoesNotInheritPreviousItemsProgress",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.PlaybackStartupTimeoutTest",
+      "name": "ongoingReadsCanBufferLongerThanTheIdleLimit",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.PlaybackStartupTimeoutTest",
+      "name": "unchangedReadsAndBufferDoNotExtendDeadline",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.danmaku.DanmakuContentFilterTest",
+      "name": "blocksDecoratedGhostLabelButKeepsRealComments",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.danmaku.DanmakuDocumentCacheTest",
+      "name": "cacheKeyIsStableAndSourceSpecific",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.danmaku.DanmakuDocumentCacheTest",
+      "name": "materialisesAllRemoteDocumentsBeforeRendering",
+      "seconds": 0.002,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.danmaku.DanmakuDocumentCacheTest",
+      "name": "usableDocumentMustContainAnActualCommentEntry",
+      "seconds": 0.002,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.danmaku.DanmakuHttpTest",
+      "name": "boundsTheNetworkWait",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.danmaku.DanmakuHttpTest",
+      "name": "cachesOnlyImmutableEpisodeDocuments",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.danmaku.DanmakuLoadPolicyTest",
+      "name": "refreshesGeneratedIdAfterStaleOrServerFailure",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.danmaku.DanmakuLoadPolicyTest",
+      "name": "retriesOnlyTransientResponseCodes",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.danmaku.DanmakuLoadPolicyTest",
+      "name": "retriesRateLimitedCommentIdWithBoundedBackoff",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.danmaku.DanmakuLoadPolicyTest",
+      "name": "retriesTransientDocumentDownloadOnlyOnce",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.danmaku.DanmakuStatusTest",
+      "name": "progressAndFailureRemainExplicit",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.media.PlaySpecDanmakuTest",
+      "name": "embeddedRepositorySourceCannotArrivePreselected",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.player.media.PlaySpecDanmakuTest",
+      "name": "repositoryGhostSubtitleNeverBecomesATrack",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositoryItemMergeTest",
+      "name": "keepsCustomNameForDirectRepositoryEntry",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositoryItemMergeTest",
+      "name": "preservesIdentityAndUserStateWhenStableItemMoves",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositoryItemMergeTest",
+      "name": "reportsOnlyRemovedRowsAndLeavesNewRowsUnassigned",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositoryParserTest",
+      "name": "acceptsDynamicSpiderConfigurationAsSingleItem",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositoryParserTest",
+      "name": "parsesStandardRepositoryAndDeduplicates",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositoryParserTest",
+      "name": "parsesTomorrowMultiRepositoryWithoutFlatteningOrDroppingChildren",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositoryParserTest",
+      "name": "preservesPrimitiveObjectOrderingEnabledStateAndCustomId",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositoryParserTest",
+      "name": "rejectsMalformedRootsAndTooManyItems",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositoryParserTest",
+      "name": "rejectsUnusableRepository",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositoryParserTest",
+      "name": "replacesPromotionalRepositoryLabelsWithoutDroppingTheConfiguration",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositoryPlaybackContextTest",
+      "name": "activeSiteUsesDefaultConfigValues",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositoryPlaybackContextTest",
+      "name": "explicitlyEmptyScopedContextRemainsEmpty",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositoryPlaybackContextTest",
+      "name": "missingScopedContextNeverLeaksDefaultValues",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositoryPlaybackContextTest",
+      "name": "scopedSiteUsesOnlyItsBoundValues",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositorySiteLocatorTest",
+      "name": "disabledRepositoryAndItemRemainResolvableForHistory",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositorySiteLocatorTest",
+      "name": "legacyScopedKeyCanStillLocateItsVodConfig",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositorySiteLocatorTest",
+      "name": "nonVodRepositoryItemsAreNotTreatedAsSiteConfigs",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositorySiteParserTest",
+      "name": "configTypeParticipatesInScope",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositorySiteParserTest",
+      "name": "configUrlPreventsCopiedPublisherIdsFromColliding",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositorySiteParserTest",
+      "name": "originKeyMayContainAtCharacters",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositorySiteParserTest",
+      "name": "scopeFingerprintHasStableGoldenValue",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositorySiteParserTest",
+      "name": "scopeIsDeterministicForTheSameRepositoryConfigAndSite",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositoryUrlResolverTest",
+      "name": "keepsOrdinaryRepositoryUrlUnchanged",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.repository.RepositoryUrlResolverTest",
+      "name": "unwrapsLlkkGithubMirrorBeforeTryingConfiguredProxy",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.security.PromotionFilterTest",
+      "name": "detectsOnlyStandalonePromotionalHomeEntries",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.security.PromotionFilterTest",
+      "name": "removesPromotionAtSentenceBoundaryButKeepsSynopsis",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.security.PromotionFilterTest",
+      "name": "sourceLabelsAreSanitizedWithoutChangingWorkTitles",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.security.PromotionFilterTest",
+      "name": "suppressesSolicitationButKeepsFunctionalMessages",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.security.SensitiveDataTest",
+      "name": "backupFilterExcludesSecrets",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.security.SensitiveDataTest",
+      "name": "backupModelHasNoCredentialOrCloudAccountPayload",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.security.SensitiveDataTest",
+      "name": "nestedArraysAndEmbeddedJsonStringsAreScrubbed",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.security.SensitiveDataTest",
+      "name": "recognizesCaseAndSeparatorVariants",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.security.SensitiveDataTest",
+      "name": "runtimeLogsRedactCommonCredentialShapes",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.security.SensitiveDataTest",
+      "name": "serializedBackupRemovesNestedSecretFields",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.security.ToastPolicyTest",
+      "name": "detectsOnlyToastShowFrames",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastByteRangeTest",
+      "name": "malformedAndUnsupportedRangesCanBeIgnored",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastByteRangeTest",
+      "name": "onlyConsistentContentRangesSupplyLengths",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastByteRangeTest",
+      "name": "unsatisfiableRangesRemainDistinguishableFromMalformedOnes",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastByteRangeTest",
+      "name": "validRangesUseLongOffsets",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastDecoderIntegrationTest",
+      "name": "hevcTenBit4kAndEac3SurviveNativeStyleRangeProbes",
+      "seconds": 0.002,
+      "result": "skipped"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastDecoderIntegrationTest",
+      "name": "hlsDecodesFirstFrameWhileLaterSegmentsRemainUnavailable",
+      "seconds": 0.0,
+      "result": "skipped"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastDecoderIntegrationTest",
+      "name": "matroskaPreservesPictureRatioAndEmbeddedSubtitles",
+      "seconds": 0.001,
+      "result": "skipped"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastDeflateResponseTest",
+      "name": "decodedPlayerResponseKeepsOneBufferAndCanBeRelayed",
+      "seconds": 0.036,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastLargeFileTest",
+      "name": "headUsesVerifiedFullSizeInsteadOfBrokenCdnHead",
+      "seconds": 0.027,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastLargeFileTest",
+      "name": "ignoredTailRangeDoesNotDownloadTwoGigabytesToSkipForward",
+      "seconds": 0.032,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastLargeFileTest",
+      "name": "openEndedProbeGetsExplicitBoundsAndFixedLength",
+      "seconds": 0.024,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastLargeFileTest",
+      "name": "rangePastEndIsClampedWithoutIntegerOverflow",
+      "seconds": 0.029,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastLargeFileTest",
+      "name": "suffixIndexProbeReadsOnlyTailAboveTwoGigabytes",
+      "seconds": 0.032,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastLargeFileTest",
+      "name": "unsatisfiableRangeReportsKnownSizeWithoutTouchingSource",
+      "seconds": 0.032,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastLargeFileTest",
+      "name": "wrongUpstreamOffsetCannotMasqueradeAsRequestedIndex",
+      "seconds": 0.029,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastMediaRelayTest",
+      "name": "chunkedUpstreamIsNotBufferedOrTruncated",
+      "seconds": 0.028,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastMediaRelayTest",
+      "name": "concurrentSegmentRequestsKeepTheirHeadersAndContent",
+      "seconds": 0.033,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastMediaRelayTest",
+      "name": "forwardsBytesBeforeTheUpstreamVideoFinishes",
+      "seconds": 0.033,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastMediaRelayTest",
+      "name": "headFallsBackWhenSourceRejectsHead",
+      "seconds": 0.032,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastMediaRelayTest",
+      "name": "headPreservesLengthWithoutSendingBody",
+      "seconds": 0.03,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastMediaRelayTest",
+      "name": "hlsHeadReportsRewrittenPlaylistLength",
+      "seconds": 0.034,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastMediaRelayTest",
+      "name": "inlineHlsKeyIsNotTurnedIntoAnHttpRequest",
+      "seconds": 0.028,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastMediaRelayTest",
+      "name": "manifestProbeRangeDoesNotTruncateRewrittenHls",
+      "seconds": 0.032,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastMediaRelayTest",
+      "name": "oversizedPlaylistIsBounded",
+      "seconds": 0.039,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastMediaRelayTest",
+      "name": "preparationAndHeadAreNotMistakenForReceiverPlayback",
+      "seconds": 0.045,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastMediaRelayTest",
+      "name": "protectedSourceFailsDirectlyButPlaysThroughPhoneHeaders",
+      "seconds": 0.034,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastMediaRelayTest",
+      "name": "receiverRangeOverridesOldPhoneRangeAndPreserves206",
+      "seconds": 0.03,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastMediaRelayTest",
+      "name": "rejectsHtmlErrorPagesEvenWith200",
+      "seconds": 0.032,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastMediaRelayTest",
+      "name": "rewritesRedirectedHlsVariantsKeysMapsAudioSubtitlesAndSegments",
+      "seconds": 0.035,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastMediaRelayTest",
+      "name": "sourceErrorsRemainErrorsInsteadOfFakeVideo",
+      "seconds": 0.032,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastMediaRelayTest",
+      "name": "stoppingPhoneRequestsDoesNotCancelRelayRequests",
+      "seconds": 0.032,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastMediaRelayTest",
+      "name": "unknownAndReplacedSessionsCannotReadMedia",
+      "seconds": 0.033,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastMediaRelayTest",
+      "name": "unknownHeadLengthIsNotAdvertisedAsAnEmptyVideo",
+      "seconds": 0.031,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastStartupGateTest",
+      "name": "downloadingAndTransitioningDoNotTriggerAnEarlySeek",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastStartupGateTest",
+      "name": "metadataAndKeyRequestsCannotConfirmPlayback",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastStartupGateTest",
+      "name": "unsupportedPositionQueryCannotForceUnseekableVideosToBufferToOldPosition",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastStreamFormatTest",
+      "name": "bomPlaylistIsRecognizedAndReturnedAsHls",
+      "seconds": 0.035,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastStreamFormatTest",
+      "name": "encryptionKeyDownloadDoesNotCountAsVideoPlayback",
+      "seconds": 0.055,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastStreamFormatTest",
+      "name": "extensionlessHlsSegmentsGetTransportStreamNames",
+      "seconds": 0.034,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastStreamFormatTest",
+      "name": "hlsKeepsDecodableExtensionsForVariantsMapsAndFragments",
+      "seconds": 0.028,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastStreamFormatTest",
+      "name": "matroskaIsNotAdvertisedAsAnMp4File",
+      "seconds": 0.028,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastStreamFormatTest",
+      "name": "matroskaRangeRetainsVerifiedTypeWhenCdnAlwaysClaimsMp4",
+      "seconds": 0.032,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastStreamFormatTest",
+      "name": "sourceRejectingRangeStillStartsWithoutAdvertisingSeek",
+      "seconds": 0.033,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.CastStreamFormatTest",
+      "name": "transportStreamWithAnImageHeaderIsSniffedWithoutLosingBytes",
+      "seconds": 0.032,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.LanAddressTest",
+      "name": "ethernetInUseWinsOverStaleWifiAndVpn",
+      "seconds": 0.002,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.server.LanAddressTest",
+      "name": "noLanNeverProducesLoopbackCellularOrInvalidQr",
+      "seconds": 0.007,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.setting.DanmakuPlaybackTuningTest",
+      "name": "androidNineAvoidsSoftwareShadowAndProjectionTrails",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.setting.DanmakuPlaybackTuningTest",
+      "name": "androidNineCapsDensityAndUnlimitedLines",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.setting.DanmakuPlaybackTuningTest",
+      "name": "legacyDurationsStayReadableAndStable",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.setting.DanmakuPlaybackTuningTest",
+      "name": "modernDevicesKeepUserPreferences",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.setting.DanmakuSettingCompatibilityTest",
+      "name": "danmakuApiUsesUserThenRepositoryThenBuiltInDefault",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.setting.DanmakuSettingCompatibilityTest",
+      "name": "localClampBoundsAllSupportedNumberTypes",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.setting.DanmakuSettingSearchApiTest",
+      "name": "malformedCustomEndpointCannotAbortAllProviders",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.setting.DanmakuSettingSearchApiTest",
+      "name": "manualSearchKeepsConfiguredProviderOrderAndRemovesDuplicates",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.setting.DanmakuSettingSearchApiTest",
+      "name": "retiredBuiltInEndpointCannotBeRestoredByOldPreferencesOrRepository",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.detail.DetailTitlePolicyTest",
+      "name": "longTitlesUseTwoLinesAndProgressivelySmallerType",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.detail.EpisodeDisplayNameTest",
+      "name": "cleansCloudDriveEpisodeNamesWithoutDroppingTheirMeaning",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.detail.EpisodeDisplayNameTest",
+      "name": "formatsCompactDatesWithoutLosingUpdateMeaning",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.detail.EpisodeDisplayNameTest",
+      "name": "playbackActionDoesNotExposeAFullTechnicalFilename",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.detail.EpisodeDisplayNameTest",
+      "name": "wideCellsAreUsedOnlyForLongLabels",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.home.HomeFeaturedPolicyTest",
+      "name": "previewAlwaysUsesFirstSixWithoutMutatingSource",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.home.HomeFeaturedPolicyTest",
+      "name": "previewKeepsShortListsIntact",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.home.HomeFeaturedPolicyTest",
+      "name": "resolvePositionClampsFallbackWhenFocusedItemDisappears",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.home.HomeFeaturedPolicyTest",
+      "name": "resolvePositionKeepsFocusedItemAfterIncrementalInsertion",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.home.HomeFeaturedPolicyTest",
+      "name": "stableKeyIncludesSiteToAvoidCrossSiteCollisions",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchAggregatorTest",
+      "name": "ambiguousMetadataFreeSourceIsNotForcedIntoEitherHomonym",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchAggregatorTest",
+      "name": "filtersIrrelevantResultsBeforeTheyReachTheSnapshot",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchAggregatorTest",
+      "name": "incrementallyMergesEquivalentTitlesAndKeepsWorkPositionAndIdStable",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchAggregatorTest",
+      "name": "irrelevantReuseOfStableSourceDoesNotOverwriteValidResult",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchAggregatorTest",
+      "name": "neverMergesDifferentSeasonsYearsMediaKindsOrActorsAndFiltersExtras",
+      "seconds": 0.002,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchAggregatorTest",
+      "name": "recommendedSourceChangesWithoutMovingTheWork",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchAggregatorTest",
+      "name": "releaseEpisodeYearAndCloudSuffixesRemainOneWork",
+      "seconds": 0.004,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchAggregatorTest",
+      "name": "repeatedStableSourceUpdatesOnlyItsExistingWork",
+      "seconds": 0.006,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchAggregatorTest",
+      "name": "runtimeCatalogBadgesQualityFragmentsAndActorListsRemainOneWork",
+      "seconds": 0.002,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchAggregatorTest",
+      "name": "sameSiteAndVodIdsInDifferentRepositoriesRemainDistinctSources",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchAggregatorTest",
+      "name": "snapshotIsImmutableAndPreservesFirstInsertionOrder",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchAggregatorTest",
+      "name": "sourceMetadataAppendedToTitleDoesNotCreateADuplicateWork",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchAggregatorTest",
+      "name": "unaggregatedModeKeepsEquivalentProviderResultsAsSeparateCards",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchDisplayNameTest",
+      "name": "preservesLegitimateTitlesAndKeys",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchDisplayNameTest",
+      "name": "removesEmojiAnywhereInVisibleLabels",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchDisplayNameTest",
+      "name": "removesOnlyPromotionalSuffixes",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchDisplayNameTest",
+      "name": "removesPromotionTokensJoinedToARealName",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchFailurePolicyTest",
+      "name": "classifiesEmptyJsonPayloadThroughWrappedCause",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchFailurePolicyTest",
+      "name": "leavesRealParserAndNetworkFailuresVisible",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchRelevanceTest",
+      "name": "acceptsCanonicalAndClearlyContainedMatches",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchRelevanceTest",
+      "name": "audioCatalogSourcesDoNotPolluteAWorkSearchUnlessAudioWasRequested",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchRelevanceTest",
+      "name": "doesNotBlanketRejectNormalLongTitlesOrLexicalMarkerWords",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchRelevanceTest",
+      "name": "explicitDerivativeQueriesStillFindTheirRequestedContent",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchRelevanceTest",
+      "name": "explicitMediaVariantDoesNotMatchAnotherEdition",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchRelevanceTest",
+      "name": "fastProviderGateKeepsRealVariantsAndDropsFallbackCatalogRows",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchRelevanceTest",
+      "name": "keepsMainTitlesInstallmentsAndReleaseLabels",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchRelevanceTest",
+      "name": "rejectsUnrelatedServerNoise",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchRelevanceTest",
+      "name": "rejectsUnrequestedNewsClipsAndPromotionalDerivatives",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchRelevanceTest",
+      "name": "specifiedInstallmentMustMatch",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchSourcePreferenceTest",
+      "name": "aggregateAllMarkerNeverActsAsBackendWildcard",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchSourcePreferenceTest",
+      "name": "bulkLabelsAndSelectionVisitCatalogLinearly",
+      "seconds": 0.009,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchSourcePreferenceTest",
+      "name": "choicesOnlyContainSitesFromTheSuppliedActiveWarehouse",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchSourcePreferenceTest",
+      "name": "concreteSelectionDoesNotMatchOverlappingNamesOrRepositoryLabels",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchSourcePreferenceTest",
+      "name": "fallsBackToHomeWhenWarehouseHasNoPreferredSource",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchSourcePreferenceTest",
+      "name": "legacyAllMigratesToConcretePreferredSources",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchSourcePreferenceTest",
+      "name": "legacyExactLabelDoesNotExpandToOverlappingSource",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchSourcePreferenceTest",
+      "name": "selectedExtraSourceIsPersistedWithoutDecoration",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchSourcePreferenceTest",
+      "name": "serializingAllSourcesDropsStaleWarehouseFamilies",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchTitleNormalizerTest",
+      "name": "canonicalizesFullWidthPunctuationAndTraditionalCharacters",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchTitleNormalizerTest",
+      "name": "extractsMediaVariantsFromEditionLabels",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchTitleNormalizerTest",
+      "name": "foldsRuntimeQualityYearAndEpisodeDecorationsIntoTheCanonicalWork",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchTitleNormalizerTest",
+      "name": "keepsPureNumericAndRomanTitlesIntact",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchTitleNormalizerTest",
+      "name": "keepsSeasonAndPartSemanticsDistinct",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchTitleNormalizerTest",
+      "name": "knownCloudProviderSuffixDoesNotTurnCloudWordsIntoGlobalNoise",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchTitleNormalizerTest",
+      "name": "normalizesPartSyntaxAcrossSpacingNumeralSystemsAndWidth",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchTitleNormalizerTest",
+      "name": "stripsLeadingCatalogBadgeAndSeparatedGenreFacetsOnly",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SearchTitleNormalizerTest",
+      "name": "stripsQualityLanguageAndUpdateLabelsWithoutLosingInstallment",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SourceRankerTest",
+      "name": "prioritizesUsableCompatibleSourceBeforeRichButUnavailableSource",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SourceRankerTest",
+      "name": "scoresAllRecommendationSignalsDeterministically",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.SourceRankerTest",
+      "name": "stableIdBreaksExactScoreTies",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.VoiceSearchPolicyTest",
+      "name": "mapsRecognizerErrorsToUserActions",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.VoiceSearchPolicyTest",
+      "name": "recognizesOnlySearchAndAssistantKeys",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.search.VoiceSearchPolicyTest",
+      "name": "selectsFirstNonBlankRecognitionResult",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.setting.SettingsFocusPolicyTest",
+      "name": "calculationUsesScrolledViewportCoordinates",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.setting.SettingsFocusPolicyTest",
+      "name": "focusedItemInsideSafeViewportDoesNotScroll",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.setting.SettingsFocusPolicyTest",
+      "name": "focusedItemNearBottomScrollsIntoSafeArea",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.setting.SettingsFocusPolicyTest",
+      "name": "focusedItemNearTopScrollsIntoSafeArea",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.ui.setting.SettingsFocusPolicyTest",
+      "name": "restoredStateRejectsInvalidValues",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.update.UpdateInstallPolicyTest",
+      "name": "androidElevenStillUsesVisibleSystemInstaller",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.update.UpdateInstallPolicyTest",
+      "name": "androidNineProjectorUsesVisibleSystemInstaller",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.update.UpdateInstallPolicyTest",
+      "name": "androidTwelveUsesPackageInstallerSession",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.update.UpdateManifestTest",
+      "name": "parsesAndSelectsExactFlavorAsset",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.update.UpdateManifestTest",
+      "name": "rejectsManifestWithoutVersionCode",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.update.UpdateSourceTest",
+      "name": "declaredMirrorsTakePriorityAndDuplicatesAreRemoved",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.update.UpdateSourceTest",
+      "name": "putsDomesticMirrorsBeforeDirectGithub",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.update.UpdateVerifierTest",
+      "name": "calculatesAndChecksSha256",
+      "seconds": 0.002,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.update.UpdateVerifierTest",
+      "name": "onlyRejectsVerifiedSignerMismatch",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.utils.DownloadRangeTest",
+      "name": "fallsBackToExistingPlusResponseLength",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.utils.DownloadRangeTest",
+      "name": "readsFullSizeFromPartialContentRange",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.utils.DownloadRangeTest",
+      "name": "rejectsWrongOffsetsTotalsAndInvalidRanges",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.utils.InputStreamCompatTest",
+      "name": "emptyAndExactSizeBodiesDoNotRequireAFullBuffer",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.utils.InputStreamCompatTest",
+      "name": "shortReadsPreserveBytesAndStopAtTheLimit",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.utils.InputStreamCompatTest",
+      "name": "zeroLimitDoesNotReadAndTransportErrorsPropagate",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.utils.InputStreamCompatTest",
+      "name": "zeroProgressDoesNotSpinAndCallerOwnsClose",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.utils.PosterResolverTest",
+      "name": "differentSeasonsNeverSharePoster",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.utils.PosterResolverTest",
+      "name": "failedPosterFallsBackToAnotherRealSourceForSameWork",
+      "seconds": 0.001,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.utils.PosterResolverTest",
+      "name": "leastRecentlyUsedTitlesAreEvicted",
+      "seconds": 0.007,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.utils.PosterResolverTest",
+      "name": "missingPosterBorrowsFromSameNormalizedWork",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.utils.RangedDownloadTest",
+      "name": "allMirrorsAt32KiBStillCommitBytesInsteadOfFallingBack",
+      "seconds": 6.466,
+      "result": "passed"
+    },
+    {
+      "class": "com.fongmi.android.tv.utils.RangedDownloadTest",
+      "name": "fiveSecondColdHeadersDoNotDisableRangeDownloads",
+      "seconds": 5.366,
+      "result": "passed"
+    },
+    {
+      "class": "com.github.catvod.utils.SecretRedactorTest",
+      "name": "leavesHarmlessDiagnosticsReadable",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.github.catvod.utils.SecretRedactorTest",
+      "name": "preservesJsonSyntaxWhenMaskingQuotedAndUnquotedValues",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.github.catvod.utils.SecretRedactorTest",
+      "name": "redactsMixedCaseHeadersUserInfoAndHyphenatedTokens",
+      "seconds": 0.0,
+      "result": "passed"
+    },
+    {
+      "class": "com.github.catvod.utils.SecretRedactorTest",
+      "name": "removesHeadersJsonBearerAndQuerySecrets",
+      "seconds": 0.001,
+      "result": "passed"
+    }
+  ]
+}

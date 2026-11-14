@@ -140,14 +140,69 @@ public class DanmakuRoutingInstrumentedTest {
             assertTrue(android.os.SystemClock.elapsedRealtime() - start < 11000);
         }
     }
-    @Test public void downloadingDirectCandidateKeepsPriorityOverBackup() throws Exception {
+    @Test public void lateDirectDocumentSurvivesAFailedBackup() throws Exception {
         try (var direct = new MockWebServer(); var backup = new MockWebServer()) {
             direct.start(); backup.start();
             direct.setDispatcher(new Dispatcher() { public MockResponse dispatch(RecordedRequest r) {
                 return r.getPath().startsWith("/search") ? rows(direct, "第1期下", "slow-document") : document().setBodyDelay(9, TimeUnit.SECONDS);
             }});
+            backup.enqueue(new MockResponse().setResponseCode(503));
             assertTrue(run(direct, backup).getUrl().contains("/slow-document?"));
-            assertEquals(0, backup.getRequestCount());
+            assertEquals(1, backup.getRequestCount());
+        }
+    }
+
+    @Test public void stalledDocumentDoesNotSuppressHealthyBackup() throws Exception {
+        try (var direct = new MockWebServer(); var backup = new MockWebServer()) {
+            direct.start(); backup.start();
+            direct.setDispatcher(new Dispatcher() { public MockResponse dispatch(RecordedRequest r) {
+                return r.getPath().startsWith("/search") ? rows(direct, "第1期下", "stalled")
+                        : document().setBodyDelay(30, TimeUnit.SECONDS);
+            }});
+            backup.setDispatcher(new Dispatcher() { public MockResponse dispatch(RecordedRequest r) {
+                return r.getPath().startsWith("/search") ? rows(backup, "第1期下", "healthy") : document();
+            }});
+            long start = android.os.SystemClock.elapsedRealtime();
+            assertTrue(run(direct, backup).getUrl().contains("/healthy?"));
+            assertTrue("A candidate without bytes is not a working service",
+                    android.os.SystemClock.elapsedRealtime() - start < 9000);
+        }
+    }
+    @Test public void failedDocumentStartsBackupBeforeUnrelatedCatalogueFinishes() throws Exception {
+        try (var direct = new MockWebServer(); var stalled = new MockWebServer(); var backup = new MockWebServer()) {
+            direct.start(); stalled.start(); backup.start();
+            direct.setDispatcher(new Dispatcher() { public MockResponse dispatch(RecordedRequest r) {
+                return r.getPath().startsWith("/search") ? rows(direct, "第1期下", "denied") : new MockResponse().setResponseCode(403);
+            }});
+            stalled.enqueue(new MockResponse().setBody("[]").setBodyDelay(12, TimeUnit.SECONDS));
+            backup.setDispatcher(new Dispatcher() { public MockResponse dispatch(RecordedRequest r) {
+                return r.getPath().startsWith("/search") ? rows(backup, "第1期下", "prompt") : document();
+            }});
+            var done = new CountDownLatch(1); var found = new AtomicReference<Danmaku>();
+            DanmakuApi.searchStaged("自动线路测试", "2026", "综艺", "第1期下", "",
+                    List.of(endpoint(direct), endpoint(stalled)), List.of(endpoint(backup)), new DanmakuApi.SearchCallback() {
+                public void onFound(Danmaku item, List<Danmaku> catalogue) { found.set(item); done.countDown(); }
+                public void onFailure(DanmakuApi.SearchFailure failure) { done.countDown(); }
+            });
+            try { assertTrue("Broken document must unblock backups", done.await(5, TimeUnit.SECONDS)); assertNotNull(found.get()); }
+            finally { DanmakuApi.cancel(); }
+        }
+    }
+
+    @Test public void ordinaryXmlUrlsAreVerifiedBeforeDeclaringAMatch() throws Exception {
+        try (var direct = new MockWebServer(); var backup = new MockWebServer()) {
+            direct.start(); backup.start();
+            direct.setDispatcher(new Dispatcher() { public MockResponse dispatch(RecordedRequest r) {
+                if (!r.getPath().startsWith("/search")) return new MockResponse().setResponseCode(503);
+                Danmaku row = Danmaku.from(direct.url("/custom/comments.xml").toString());
+                row.setName("自动线路测试(2026)【综艺】from fixture - 第1期下");
+                return new MockResponse().setBody(App.gson().toJson(List.of(row)));
+            }});
+            backup.setDispatcher(new Dispatcher() { public MockResponse dispatch(RecordedRequest r) {
+                return r.getPath().startsWith("/search") ? rows(backup, "第1期下", "verified") : document();
+            }});
+            assertTrue(run(direct, backup).getUrl().contains("/verified?"));
+            assertTrue("Custom XML must actually be fetched", direct.getRequestCount() >= 2);
         }
     }
     @Test public void malformedResponseIsNotMisreportedAsNetworkTimeout() throws Exception {

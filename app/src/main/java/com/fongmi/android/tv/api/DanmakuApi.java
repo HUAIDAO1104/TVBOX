@@ -56,7 +56,7 @@ public class DanmakuApi {
                 .connectTimeout(8, java.util.concurrent.TimeUnit.SECONDS)
                 .readTimeout(12, java.util.concurrent.TimeUnit.SECONDS)
                 .callTimeout(14, java.util.concurrent.TimeUnit.SECONDS)
-                .retryOnConnectionFailure(false).build();
+                .retryOnConnectionFailure(true).build();
     }
 
     public static boolean canSearch() {
@@ -117,7 +117,7 @@ public class DanmakuApi {
 
     // One shared pipeline for automatic matching and recovery of a manually confirmed work.
     // Direct providers get the first opportunity. A stalled catalogue permits backup lookup,
-    // while an already identified direct document keeps priority until it succeeds or fails.
+    // and a candidate whose document stalls must not suppress the backup deadline.
     static void searchStaged(String name, String year, String type, String episode, String preferredName,
                              List<String> direct, List<String> backup, SearchCallback callback) {
         int generation = beginSearch();
@@ -125,7 +125,7 @@ public class DanmakuApi {
         DanmakuQuery query = DanmakuQuery.from(name, year).forDiscovery(type);
         stats.backupSearch = () -> searchCandidateParallel(generation, query, Objects.toString(year, ""),
                 Objects.toString(type, ""), episode, preferredName, stats.backup, callback, 0, 0, stats);
-        if (!backup.isEmpty()) App.post(stats.backupDeadline, 8_000L);
+        if (!backup.isEmpty()) App.post(stats.backupDeadline, 5_000L);
         searchCandidateParallel(generation, query, Objects.toString(year, ""),
                 Objects.toString(type, ""), episode, preferredName, direct, callback, 0, 0, stats);
     }
@@ -171,7 +171,6 @@ public class DanmakuApi {
             return;
         }
         String candidateTitle = query.searchTitle();
-        boolean directStage = stats.directPhase.get();
         AtomicBoolean finished = new AtomicBoolean();
         AtomicBoolean refreshSource = new AtomicBoolean();
         AtomicInteger remaining = new AtomicInteger(apiUrls.size());
@@ -196,7 +195,6 @@ public class DanmakuApi {
                     for (Danmaku item : items) item.setSourceKey(sourceKey);
                     List<Danmaku> candidates = rank(items);
                     if (candidates.isEmpty()) { completeOne(); return; }
-                    if (directStage) stats.directCandidateFound.set(true);
                     verifyCandidates(generation, candidates, items, 0, finished, calls,
                             validations, stats, refreshSource, this::completeOne, callback);
                 }
@@ -263,6 +261,7 @@ public class DanmakuApi {
                     validations, stats, refreshSource, exhausted, callback);
             return;
         }
+        stats.attemptedDownloads.incrementAndGet();
         DanmakuDocumentCache.Ticket ticket = DanmakuDocumentCache.load(item.getUri(),
                 new DanmakuDocumentCache.Listener() {
                     @Override
@@ -292,6 +291,7 @@ public class DanmakuApi {
                     public void onFailure(android.net.Uri source, IOException error) {
                         if (generation != REQUEST_GENERATION.get() || finished.get()) return;
                         stats.download.incrementAndGet();
+                        stats.startBackup();
                         if (DanmakuLoadPolicy.shouldRefreshSource(error)) {
                             refreshSource.set(true);
                         }
@@ -358,7 +358,7 @@ public class DanmakuApi {
         private final int generation;
         private Runnable backupSearch;
         private final AtomicInteger phases = new AtomicInteger(1);
-        private final AtomicBoolean directCandidateFound = new AtomicBoolean();
+        private final AtomicInteger attemptedDownloads = new AtomicInteger();
 
         private final AtomicBoolean directPhase = new AtomicBoolean(true);
         private final List<String> backup;
@@ -366,13 +366,17 @@ public class DanmakuApi {
         SearchStats(int generation, SearchCallback callback, List<String> backup) {
             this.generation = generation;
             this.backup = List.copyOf(backup);
-            // A slow catalogue must neither block backup lookup nor be cancelled just as
-            // it returns. Once direct matching is downloading a candidate, let it finish.
-            backupDeadline = () -> { if (!directCandidateFound.get()) startBackup(); };
+            // Five seconds of direct preference, then race verified documents. Finding
+            // a title is not proof that its download is usable. Keep the direct job alive:
+            // a failed backup must not discard a late but healthy platform response.
+            backupDeadline = this::startBackup;
             deadline = () -> {
                 if (generation != REQUEST_GENERATION.get() || !delivered.compareAndSet(false, true)) return;
                 beginSearch();
-                callback.onFailure(download.get() > 0 ? SearchFailure.DOWNLOAD : SearchFailure.NETWORK);
+                callback.onFailure(attemptedDownloads.get() > 0 ? SearchFailure.DOWNLOAD
+                        : responses.get() > 0 ? SearchFailure.NO_MATCH
+                        : denied.get() > 0 ? SearchFailure.ACCESS_DENIED
+                        : invalid.get() > 0 ? SearchFailure.INVALID_RESPONSE : SearchFailure.NETWORK);
             };
             // Includes title fallbacks and comment validation; no sequence of stale IDs can
             // leave automatic matching spinning for minutes.

@@ -1,0 +1,36 @@
+
+com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest:
+Error in stalledDocumentDoesNotSuppressHealthyBackup(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest):
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertTrue(Assert.java:53)
+	at com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest.run(DanmakuRoutingInstrumentedTest.java:72)
+	at com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest.stalledDocumentDoesNotSuppressHealthyBackup(DanmakuRoutingInstrumentedTest.java:165)
+
+Error in failedDocumentStartsBackupBeforeUnrelatedCatalogueFinishes(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest):
+java.lang.AssertionError: Broken document must unblock backups
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest.failedDocumentStartsBackupBeforeUnrelatedCatalogueFinishes(DanmakuRoutingInstrumentedTest.java:186)
+
+
+Time: 20.207
+There were 2 failures:
+1) stalledDocumentDoesNotSuppressHealthyBackup(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertTrue(Assert.java:53)
+	at com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest.run(DanmakuRoutingInstrumentedTest.java:72)
+	at com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest.stalledDocumentDoesNotSuppressHealthyBackup(DanmakuRoutingInstrumentedTest.java:165)
+2) failedDocumentStartsBackupBeforeUnrelatedCatalogueFinishes(com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest)
+java.lang.AssertionError: Broken document must unblock backups
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest.failedDocumentStartsBackupBeforeUnrelatedCatalogueFinishes(DanmakuRoutingInstrumentedTest.java:186)
+
+FAILURES!!!
+Tests run: 2,  Failures: 2
+
+

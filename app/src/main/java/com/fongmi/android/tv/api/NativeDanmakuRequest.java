@@ -11,12 +11,18 @@ import okhttp3.*;
 /** Bounded, cancellable transport for public catalogue/comment protocols. */
 final class NativeDanmakuRequest implements NativeDanmaku.Job {
     static final ExecutorService SEARCH = Executors.newFixedThreadPool(3);
-    static final ExecutorService DOCUMENTS = Executors.newFixedThreadPool(2);
+    // Leave room for a fallback batch while two earlier metadata requests stall.
+    // Segment traffic remains bounded independently by the shared pool below.
+    static final ExecutorService DOCUMENTS = Executors.newFixedThreadPool(4);
     private static final int SEGMENT_CONCURRENCY = 8;
     private static final ExecutorService SEGMENTS = Executors.newFixedThreadPool(SEGMENT_CONCURRENCY);
     private static final ScheduledExecutorService TIMER = Executors.newSingleThreadScheduledExecutor();
     static final OkHttpClient CLIENT = new OkHttpClient.Builder().connectTimeout(5, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS).callTimeout(12, TimeUnit.SECONDS).retryOnConnectionFailure(false).build();
+            .readTimeout(10, TimeUnit.SECONDS).callTimeout(12, TimeUnit.SECONDS).retryOnConnectionFailure(true).build();
+    static final class HttpFailure extends IOException {
+        final int code;
+        HttpFailure(int code) { super("Platform HTTP " + code); this.code = code; }
+    }
     private final OkHttpClient client;
     private final String referer;
     private final long deadline;
@@ -59,7 +65,7 @@ final class NativeDanmakuRequest implements NativeDanmaku.Job {
         try {
             check();
             try (Response response = call.execute()) {
-                if (!response.isSuccessful() || response.body() == null) throw new IOException("Platform HTTP " + response.code());
+                if (!response.isSuccessful() || response.body() == null) throw new HttpFailure(response.code());
                 return IqiyiDanmakuCodec.readBounded(response.body().byteStream(), limit);
             }
         } finally { calls.remove(call); }
@@ -67,7 +73,7 @@ final class NativeDanmakuRequest implements NativeDanmaku.Job {
     String text(String url) throws IOException { return new String(bytes(url, 4_000_000), StandardCharsets.UTF_8); }
     interface Segment { List<IqiyiDanmakuCodec.Comment> get(int index) throws IOException; }
     byte[] segments(int count, IntConsumer progress, Segment fetch) throws Exception {
-        if (count < 1 || count > 360) throw new IOException("Invalid platform timeline");
+        if (count < 1 || count > 720) throw new IOException("Invalid platform timeline");
         List<List<IqiyiDanmakuCodec.Comment>> values = new ArrayList<>(Collections.nCopies(count, null));
         AtomicInteger chars = new AtomicInteger();
         CompletionService<Void> completed = new ExecutorCompletionService<>(SEGMENTS);
@@ -83,7 +89,9 @@ final class NativeDanmakuRequest implements NativeDanmaku.Job {
                     catch (IOException first) {
                         // One bounded retry absorbs a transient segment failure; the original
                         // overall deadline and complete-document boundary still apply.
-                        check(); rows = fetch.get(index);
+                        check();
+                        if (first instanceof HttpFailure http && http.code != 408 && http.code != 429 && http.code < 500) throw first;
+                        rows = fetch.get(index);
                     }
                     List<IqiyiDanmakuCodec.Comment> sampled = new ArrayList<>();
                     int size = Math.min(limit, rows.size());

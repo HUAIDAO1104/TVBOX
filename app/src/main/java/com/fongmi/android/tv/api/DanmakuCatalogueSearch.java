@@ -67,6 +67,12 @@ public final class DanmakuCatalogueSearch implements NativeDanmaku.Job {
                                            java.util.function.Predicate<List<Danmaku>> acceptable,
                                            IqiyiDanmaku.Callback<List<Danmaku>> callback) {
         var job = new DanmakuCatalogueSearch(source, query, year, type, episode, targeted, scopeWork, acceptable, callback);
+        IOException outage = NativeDanmaku.isSource(source) ? null : DanmakuServiceHealth.unavailable(source, System.nanoTime());
+        if (outage != null) {
+            job.finished.set(true);
+            callback.onFailure(outage);
+            return job;
+        }
         // Covers DNS, worker queues and exact-to-base retries together, not per attempt.
         job.timeout = TIMER.schedule(() -> job.failure(new java.net.SocketTimeoutException("Catalogue search timed out")),
                 20, java.util.concurrent.TimeUnit.SECONDS);
@@ -172,12 +178,14 @@ public final class DanmakuCatalogueSearch implements NativeDanmaku.Job {
     private void success(List<Danmaku> items) {
         if (!cancelled && finished.compareAndSet(false, true)) {
             cleanup();
+            if (!NativeDanmaku.isSource(source)) DanmakuServiceHealth.success(source);
             if (!cancelled) callback.onSuccess(items);
         }
     }
     private void failure(IOException error) {
         if (!cancelled && finished.compareAndSet(false, true)) {
             cleanup();
+            if (!NativeDanmaku.isSource(source)) DanmakuServiceHealth.failure(source, error, System.nanoTime());
             callback.onFailure(error);
         }
     }

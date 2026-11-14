@@ -35,7 +35,7 @@ public class DanmakuSearchInstrumentedTest {
     private MockWebServer server;
     private String previousApi;
     private volatile int status;
-    private volatile boolean slowDocument;
+    private volatile boolean slowDocument, stalledRestore;
     private final CountDownLatch documentStarted = new CountDownLatch(1);
     private ActivityScenario<DanmakuTestActivity> scenario;
     private DanmakuSearchPanel panel;
@@ -56,6 +56,7 @@ public class DanmakuSearchInstrumentedTest {
                 if (request.getPath().startsWith("/api/v2/comment/")) {
                     if (request.getPath().contains("/restore-fail")) {
                         documentStarted.countDown();
+                        if (stalledRestore) return new MockResponse().setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.NO_RESPONSE);
                         return new MockResponse().setHeadersDelay(2, TimeUnit.SECONDS).setResponseCode(404);
                     }
                     if (request.getPath().contains("/bad")) return new MockResponse().setResponseCode(404);
@@ -213,6 +214,24 @@ public class DanmakuSearchInstrumentedTest {
         }
     }
 
+
+    @Test public void stalledSavedEpisodeRefreshesWithoutWaitingForOldUrl() throws Exception {
+        stalledRestore = true;
+        openPanel("恢复卡住回归片", "正片");
+        var context = new com.fongmi.android.tv.playback.vod.DanmakuMatchContext("恢复卡住回归片", "2026", "电影", "正片");
+        Danmaku stale = item("恢复卡住回归片(2026)【电影】from fixture - 正片", "restore-fail");
+        com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get().remember(context, "恢复卡住回归片", stale, List.of(stale));
+        var history = new com.fongmi.android.tv.bean.History(); history.setVodName("恢复卡住回归片");
+        var episode = new com.fongmi.android.tv.bean.Episode(); episode.setName("正片");
+        boolean auto = DanmakuSetting.isAuto(); DanmakuSetting.putAuto(true);
+        try {
+            main(() -> VodPlaybackMedia.searchDanmaku(new com.fongmi.android.tv.bean.Result(), history, episode, 1, "2026", "电影", player));
+            assertTrue(documentStarted.await(3, TimeUnit.SECONDS));
+            await(() -> player.getSelectedDanmaku() != null && player.getSelectedDanmaku().getUrl().contains("/movie?"), 14000);
+            assertTrue(statusEvents.stream().noneMatch(status -> status.stage() == com.fongmi.android.tv.player.danmaku.DanmakuStatus.Stage.FAILED));
+        } finally { VodPlaybackMedia.cancelSelection(player); DanmakuSetting.putAuto(auto); }
+    }
+
     @Test public void savedAutomaticRestoreCannotOverwriteANewerManualChoice() throws Exception {
         openPanel("恢复竞态回归片", "正片");
         var context = new com.fongmi.android.tv.playback.vod.DanmakuMatchContext("恢复竞态回归片", "2026", "电影", "正片");
@@ -344,7 +363,7 @@ public class DanmakuSearchInstrumentedTest {
         screenshot("season-four-episodes");
     }
 
-    @Test public void liveMangoAutomaticAndManualBonusThenDirectLink() throws Exception {
+    @Test public void liveMangoAutomaticAndManualBonus() throws Exception {
         Assume.assumeTrue("true".equals(InstrumentationRegistry.getArguments().getString("danmakuLive")));
         DanmakuSetting.putApiUrl("");
         for (String[] spec : List.of(new String[]{"第1期上", "24566777"}, new String[]{"0816下", "24567586"},
@@ -370,26 +389,40 @@ public class DanmakuSearchInstrumentedTest {
         assertTrue(bonus >= 0); clickRow(bonus);
         await(() -> player.getSelectedDanmaku() != null && player.getSelectedDanmaku().getUrl().endsWith("24579459"), 50000);
         assertTrue(parse(player.getSelectedDanmaku()) > 100); screenshot("575-mango-manual-bonus");
-        for (String link : List.of("https://www.bilibili.com/bangumi/play/ep691614",
-                "https://v.youku.com/v_show/id_XNTkxNDY2Nzg2MA==.html",
-                "https://v.qq.com/x/cover/mzc00200tjkzeps/y4101qnn3jo.html",
-                "https://www.iqiyi.com/v_pp7j21xlp4.html",
-                "https://ani.gamer.com.tw/animeVideo.php?sn=41645")) {
-            main(() -> { panel.onBack(); binding.keyword.setText(link); });
-            submitSearch(); await(() -> indexOfSource(adapter, "platform-link") >= 0, 20000);
-            clickRow(indexOfSource(adapter, "platform-link"));
-            // A one-item work list and its one-item episode list have the same count.
-            // Wait for the episode identity before the next remote-control click.
-            await(() -> adapter.getItemCount() == 1 && link.equals(adapter.getItem(0).getUrl()), 5000); clickRow(0);
-            await(() -> player.getSelectedDanmaku() != null && player.getSelectedDanmaku().getUrl().equals(link), 50000);
-            assertTrue(link, parse(player.getSelectedDanmaku()) > 100);
-            var context = VodPlaybackMedia.contextOf(player);
-            var saved = com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get().find(context);
-            assertNotNull(saved); assertEquals(link, saved.episode(context.getEpisode()).getUrl());
-            assertNull(com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get().find(
-                    new com.fongmi.android.tv.playback.vod.DanmakuMatchContext(context.getTitle(), context.getYear(), context.getType(), "第2期上")));
-            screenshot("575-direct-" + android.net.Uri.parse(link).getHost());
-        }
+    }
+
+    // Isolate providers so one external outage does not prevent exercising the others.
+    @Test public void liveBilibiliDirectLink() throws Exception { liveDirectLink("https://www.bilibili.com/bangumi/play/ep691614"); }
+    @Test public void liveYoukuDirectLink() throws Exception { liveDirectLink("https://v.youku.com/v_show/id_XNTkxNDY2Nzg2MA==.html"); }
+    @Test public void liveTencentDirectLink() throws Exception { liveDirectLink("https://v.qq.com/x/cover/mzc00200tjkzeps/y4101qnn3jo.html"); }
+    @Test public void liveIqiyiDirectLink() throws Exception { liveDirectLink("https://www.iqiyi.com/v_pp7j21xlp4.html"); }
+    @Test public void liveBahamutDirectLink() throws Exception { liveDirectLink("https://ani.gamer.com.tw/animeVideo.php?sn=41645"); }
+
+    private void liveDirectLink(String link) throws Exception {
+        Assume.assumeTrue("true".equals(InstrumentationRegistry.getArguments().getString("danmakuLive")));
+        DanmakuSetting.putApiUrl("");
+        openPanel("直链验收", "第1期上");
+        boolean auto = DanmakuSetting.isAuto(); DanmakuSetting.putAuto(false);
+        try {
+            var history = new com.fongmi.android.tv.bean.History(); history.setVodName("直链验收");
+            var episode = new com.fongmi.android.tv.bean.Episode(); episode.setName("第1期上");
+            main(() -> VodPlaybackMedia.searchDanmaku(new com.fongmi.android.tv.bean.Result(), history, episode, 1, "", "", player));
+        } finally { DanmakuSetting.putAuto(auto); }
+        var adapter = (com.fongmi.android.tv.ui.adapter.DanmakuAdapter) binding.recycler.getAdapter();
+        main(() -> { panel.onBack(); binding.keyword.setText(link); });
+        submitSearch(); await(() -> indexOfSource(adapter, "platform-link") >= 0, 20000);
+        clickRow(indexOfSource(adapter, "platform-link"));
+        // A one-item work list and its one-item episode list have the same count.
+        // Wait for the episode identity before the next remote-control click.
+        await(() -> adapter.getItemCount() == 1 && link.equals(adapter.getItem(0).getUrl()), 5000); clickRow(0);
+        await(() -> player.getSelectedDanmaku() != null && player.getSelectedDanmaku().getUrl().equals(link), 50000);
+        assertTrue(link, parse(player.getSelectedDanmaku()) > 100);
+        var context = VodPlaybackMedia.contextOf(player);
+        var saved = com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get().find(context);
+        assertNotNull(saved); assertEquals(link, saved.episode(context.getEpisode()).getUrl());
+        assertNull(com.fongmi.android.tv.playback.vod.DanmakuManualMatchStore.get().find(
+                new com.fongmi.android.tv.playback.vod.DanmakuMatchContext(context.getTitle(), context.getYear(), context.getType(), "第2期上")));
+        screenshot("575-direct-" + android.net.Uri.parse(link).getHost());
     }
 
     @Test public void accessDeniedIsVisibleAndRetryRecovers() throws Exception {
@@ -522,8 +555,10 @@ public class DanmakuSearchInstrumentedTest {
             long now = SystemClock.uptimeMillis();
             var down = android.view.MotionEvent.obtain(now, now, 0, location[0], location[1], 0);
             var up = android.view.MotionEvent.obtain(now, now + 80, 1, location[0], location[1], 0);
-            instrumentation.getUiAutomation().injectInputEvent(down, true);
-            instrumentation.getUiAutomation().injectInputEvent(up, true);
+            down.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+            up.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+            assertTrue("Touch down must be injected", instrumentation.getUiAutomation().injectInputEvent(down, true));
+            assertTrue("Touch up must be injected", instrumentation.getUiAutomation().injectInputEvent(up, true));
             down.recycle(); up.recycle();
         }
         instrumentation.waitForIdleSync();
@@ -630,8 +665,10 @@ public class DanmakuSearchInstrumentedTest {
             long now = SystemClock.uptimeMillis();
             var down = android.view.MotionEvent.obtain(now, now, 0, location[0], location[1], 0);
             var up = android.view.MotionEvent.obtain(now, now + 80, 1, location[0], location[1], 0);
-            instrumentation.getUiAutomation().injectInputEvent(down, true);
-            instrumentation.getUiAutomation().injectInputEvent(up, true);
+            down.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+            up.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+            assertTrue("Touch down must be injected", instrumentation.getUiAutomation().injectInputEvent(down, true));
+            assertTrue("Touch up must be injected", instrumentation.getUiAutomation().injectInputEvent(up, true));
             down.recycle(); up.recycle();
         }
         // Injected input is asynchronous. Await an actual outgoing request before inspecting

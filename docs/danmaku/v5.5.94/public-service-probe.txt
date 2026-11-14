@@ -1,0 +1,6 @@
+http_code=522
+time_namelookup=0.021020
+time_connect=0.232245
+time_appconnect=0.454276
+time_starttransfer=20.178958
+time_total=20.180110

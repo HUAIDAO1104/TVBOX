@@ -26,8 +26,6 @@ import okhttp3.Response;
 /** Native public-platform fallback, with separate search and bounded segment workers. */
 public final class IqiyiDanmaku {
     private static final ExecutorService SEARCH = Executors.newFixedThreadPool(2);
-    private static final ExecutorService DOCUMENTS = Executors.newFixedThreadPool(2);
-    private static final ExecutorService SEGMENTS = Executors.newFixedThreadPool(4);
     private static final String CLIENT_ID = java.util.UUID.randomUUID().toString().replace("-", "");
     private static final java.util.LinkedHashMap<String, Catalogue> CATALOGUES = new java.util.LinkedHashMap<>();
     private record Catalogue(long created, List<Danmaku> rows) { }
@@ -37,7 +35,7 @@ public final class IqiyiDanmaku {
         static final OkHttpClient INSTANCE = new OkHttpClient.Builder()
                 .dispatcher(new okhttp3.Dispatcher()).connectTimeout(6, TimeUnit.SECONDS)
                 .readTimeout(10, TimeUnit.SECONDS).callTimeout(12, TimeUnit.SECONDS)
-                .retryOnConnectionFailure(false).build();
+                .retryOnConnectionFailure(true).build();
     }
 
     public interface Callback<T> {
@@ -115,57 +113,25 @@ public final class IqiyiDanmaku {
         return copy;
     }
 
-    public static Job document(String source, IntConsumer progress, Callback<byte[]> callback) {
+    public static NativeDanmaku.Job document(String source, IntConsumer progress, Callback<byte[]> callback) {
         return document(source, progress, callback, Client.INSTANCE);
     }
 
-    static Job document(String source, IntConsumer progress, Callback<byte[]> callback, OkHttpClient client) {
-        Job job = new Job(40_000, client);
-        job.submit(DOCUMENTS, () -> {
-            try {
-                String id = IqiyiDanmakuCodec.videoId(source);
-                int duration = IqiyiDanmakuCodec.duration(new String(job.get(
-                        "https://pcw-api.iqiyi.com/video/video/baseinfo/" + id, 1024 * 1024, false), StandardCharsets.UTF_8));
-                int pages = (duration + 59) / 60;
-                AtomicInteger next = new AtomicInteger(1), done = new AtomicInteger();
-                AtomicInteger count = new AtomicInteger(), characters = new AtomicInteger();
-                List<List<IqiyiDanmakuCodec.Comment>> segments = new ArrayList<>(java.util.Collections.nCopies(pages, null));
-                List<Future<?>> workers = new ArrayList<>();
-                for (int i = 0; i < Math.min(4, pages); i++) {
-                    workers.add(job.submit(SEGMENTS, () -> {
-                        for (int page; (page = next.getAndIncrement()) <= pages;) {
-                            try {
-                                job.check();
-                                byte[] bytes = job.get(IqiyiDanmakuCodec.segmentUrl(id, page), 2 * 1024 * 1024, true);
-                                List<IqiyiDanmakuCodec.Comment> comments = bytes.length == 0 ? List.of() : IqiyiDanmakuCodec.decode(bytes);
-                                int textSize = 0;
-                                for (var comment : comments) textSize += comment.text().length();
-                                if (count.addAndGet(comments.size()) > 150_000
-                                        || characters.addAndGet(textSize) > 8 * 1024 * 1024) {
-                                    throw new IOException("iQiyi comments exceed document limit");
-                                }
-                                synchronized (segments) { segments.set(page - 1, comments); }
-                                progress.accept(done.incrementAndGet() * 95 / pages);
-                            } catch (IOException error) { throw new java.io.UncheckedIOException(error); }
-                        }
-                    }));
+    static NativeDanmaku.Job document(String source, IntConsumer progress, Callback<byte[]> callback, OkHttpClient client) {
+        var job = new NativeDanmakuRequest(75000, "https://www.iqiyi.com/", client);
+        job.start(NativeDanmakuRequest.DOCUMENTS, () -> {
+            String id = IqiyiDanmakuCodec.videoId(source);
+            int duration = IqiyiDanmakuCodec.duration(job.text("https://pcw-api.iqiyi.com/video/video/baseinfo/" + id));
+            return job.segments((duration + 59) / 60, progress, index -> {
+                byte[] bytes;
+                try { bytes = job.bytes(IqiyiDanmakuCodec.segmentUrl(id, index + 1), 2 * 1024 * 1024); }
+                catch (NativeDanmakuRequest.HttpFailure error) {
+                    if (error.code == 404) return List.of();
+                    throw error;
                 }
-                for (Future<?> worker : workers) worker.get(job.remainingMillis(), TimeUnit.MILLISECONDS);
-                job.check();
-                List<IqiyiDanmakuCodec.Comment> comments = new ArrayList<>();
-                for (List<IqiyiDanmakuCodec.Comment> segment : segments) comments.addAll(segment);
-                byte[] document = IqiyiDanmakuCodec.document(comments);
-                job.check();
-                callback.onSuccess(document);
-            } catch (Exception error) {
-                boolean notify = !job.cancelled;
-                job.cancel(); // No partial document survives a failed/timed-out segment.
-                if (notify) {
-                    if (com.fongmi.android.tv.BuildConfig.DEBUG) android.util.Log.w("IqiyiDanmaku", "Document failed", error);
-                    callback.onFailure(asIo(error));
-                }
-            }
-        });
+                return IqiyiDanmakuCodec.decode(bytes);
+            });
+        }, callback);
         return job;
     }
 

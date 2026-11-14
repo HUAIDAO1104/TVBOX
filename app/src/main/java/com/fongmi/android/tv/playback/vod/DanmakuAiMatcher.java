@@ -64,6 +64,9 @@ public final class DanmakuAiMatcher {
         volatile Catalogue discovery;
         volatile DanmakuMatchContext verificationContext;
         boolean verifying;
+        final AtomicInteger verificationBatches = new AtomicInteger();
+        final AtomicBoolean watchingVerification = new AtomicBoolean();
+        Runnable verificationHedge;
 
         Job(Callback callback) { this.callback = callback; }
 
@@ -150,8 +153,11 @@ public final class DanmakuAiMatcher {
             if (!verifying) {
                 verifying = true;
                 App.removeCallbacks(deadline);
-                App.post(deadline, candidates.stream().anyMatch(item -> com.fongmi.android.tv.api.MangoDanmaku.supports(item.getUrl())) ? 80000 : 45000);
+                App.post(deadline, candidates.stream().anyMatch(item -> NativeDanmaku.supports(item.getUrl())) ? 80000 : 45000);
+                verificationHedge = () -> resumeVerification(query);
+                App.post(verificationHedge, 5000);
             }
+            verificationBatches.incrementAndGet();
             failure = DanmakuStatus.Failure.DOWNLOAD;
             var next = new java.util.concurrent.atomic.AtomicInteger();
             int workers = Math.min(2, candidates.size());
@@ -162,7 +168,13 @@ public final class DanmakuAiMatcher {
                     Danmaku item;
                     do {
                         int index = next.getAndIncrement();
-                        if (index >= candidates.size()) { if (remaining.decrementAndGet() == 0) resumeVerification(query); return; }
+                        if (index >= candidates.size()) {
+                            if (remaining.decrementAndGet() == 0) {
+                                verificationBatches.decrementAndGet();
+                                resumeVerification(query);
+                            }
+                            return;
+                        }
                         item = candidates.get(index);
                     } while (!attemptedDocuments.add(item.getUrl()));
                     Danmaku selected = item;
@@ -190,6 +202,7 @@ public final class DanmakuAiMatcher {
         void resumeVerification(String query) {
             if (done.get()) return;
             if (discovery == null) { fail(); return; }
+            if (!watchingVerification.compareAndSet(false, true)) return;
             // A matching title is not a usable document. Keep in-flight direct catalogues
             // alive and open backups when the first provider's IDs are stale/unavailable.
             future = WORKER.submit(() -> {
@@ -199,8 +212,11 @@ public final class DanmakuAiMatcher {
                         List<Danmaku> rows = discovery.snapshot();
                         List<Danmaku> next = ranked(verificationContext, rows).stream()
                                 .filter(item -> !attemptedDocuments.contains(item.getUrl())).toList();
-                        if (!next.isEmpty()) { verify(query, next, rows); return; }
-                        if (discovery.finished()) { fail(); return; }
+                        // At most two batches (four documents), including stalled first
+                        // choices. Do not fail because discovery ended while a valid
+                        // document is still downloading.
+                        if (!next.isEmpty() && verificationBatches.get() < 2) verify(query, next, rows);
+                        if (discovery.finished() && verificationBatches.get() == 0) { fail(); return; }
                         Thread.sleep(100);
                     }
                 } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
@@ -288,6 +304,7 @@ public final class DanmakuAiMatcher {
 
         void cleanup() {
             App.removeCallbacks(deadline);
+            if (verificationHedge != null) App.removeCallbacks(verificationHedge);
             if (client != null) client.cancel();
             for (NativeDanmaku.Job search : searches) search.cancel();
             for (DanmakuDocumentCache.Ticket ticket : documents) ticket.cancel();

@@ -1,0 +1,23 @@
+
+com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest:...
+Error in liveBahamutDirectLink(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:706)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveDirectLink(DanmakuSearchInstrumentedTest.java:413)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveBahamutDirectLink(DanmakuSearchInstrumentedTest.java:399)
+.
+
+Time: 33.928
+There was 1 failure:
+1) liveBahamutDirectLink(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:706)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveDirectLink(DanmakuSearchInstrumentedTest.java:413)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveBahamutDirectLink(DanmakuSearchInstrumentedTest.java:399)
+
+FAILURES!!!
+Tests run: 5,  Failures: 1
+
+

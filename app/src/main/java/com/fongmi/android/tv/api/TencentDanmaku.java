@@ -13,12 +13,10 @@ import okhttp3.*;
 /** Direct public Tencent lookup; independent queues and a complete-document commit boundary. */
 public final class TencentDanmaku {
     private static final ExecutorService SEARCH = Executors.newFixedThreadPool(2);
-    private static final ExecutorService DOCUMENTS = Executors.newFixedThreadPool(2);
-    private static final ExecutorService SEGMENTS = Executors.newFixedThreadPool(4);
     private static final ScheduledExecutorService TIMER = Executors.newSingleThreadScheduledExecutor();
     private static final OkHttpClient CLIENT = new OkHttpClient.Builder()
             .connectTimeout(5, TimeUnit.SECONDS).readTimeout(10, TimeUnit.SECONDS)
-            .callTimeout(12, TimeUnit.SECONDS).retryOnConnectionFailure(false).build();
+            .callTimeout(12, TimeUnit.SECONDS).retryOnConnectionFailure(true).build();
     private static final String SEARCH_URL = "https://pbaccess.video.qq.com/trpc.videosearch.mobile_search.MultiTerminalSearch/MbSearch?vplatform=2";
     private static final String EPISODES_URL = "https://pbaccess.video.qq.com/trpc.universal_backend_service.page_server_rpc.PageServer/GetPageData?video_appid=3000010&vversion_name=8.2.96&vversion_platform=2";
     private record Catalogue(long created, List<Danmaku> rows) { }
@@ -118,37 +116,12 @@ public final class TencentDanmaku {
     }
 
     static NativeDanmaku.Job document(String source, IntConsumer progress, IqiyiDanmaku.Callback<byte[]> callback, OkHttpClient client) {
-        Job job = new Job(40000, client);
-        job.start(DOCUMENTS, () -> {
+        var job = new NativeDanmakuRequest(75000, "https://v.qq.com/", client);
+        job.start(NativeDanmakuRequest.DOCUMENTS, () -> {
             String id = TencentDanmakuCodec.videoId(source);
-            List<String> urls = TencentDanmakuCodec.segments(job.json("https://dm.video.qq.com/barrage/base/" + id, null, 512_000), id);
-            List<List<IqiyiDanmakuCodec.Comment>> segments = new ArrayList<>(Collections.nCopies(urls.size(), null));
-            AtomicInteger next = new AtomicInteger(), done = new AtomicInteger(), textSize = new AtomicInteger();
-            List<Future<?>> workers = new ArrayList<>();
-            int perSegment = Math.min(600, 150_000 / urls.size());
-            for (int i = 0; i < Math.min(4, urls.size()); i++) workers.add(job.submit(SEGMENTS, () -> {
-                for (int index; (index = next.getAndIncrement()) < urls.size();) {
-                    try {
-                        String data;
-                        try { data = job.json(urls.get(index), null, 2_000_000); }
-                        catch (IOException first) {
-                            // A long episode has hundreds of segments. Retry a transient transport
-                            // failure once within the same deadline, never commit a partial timeline.
-                            job.check(); data = job.json(urls.get(index), null, 2_000_000);
-                        }
-                        var comments = TencentDanmakuCodec.comments(data, perSegment);
-                        int chars = 0; for (var comment : comments) chars += comment.text().length();
-                        if (textSize.addAndGet(chars) > 8 * 1024 * 1024) throw new IOException("Tencent comment text exceeds limit");
-                        synchronized (segments) { segments.set(index, comments); }
-                        progress.accept(done.incrementAndGet() * 95 / urls.size());
-                    } catch (IOException error) { throw new java.io.UncheckedIOException(error); }
-                }
-            }));
-            for (Future<?> worker : workers) worker.get(job.remaining(), TimeUnit.MILLISECONDS);
-            job.check();
-            List<IqiyiDanmakuCodec.Comment> all = new ArrayList<>();
-            for (var segment : segments) all.addAll(segment);
-            return IqiyiDanmakuCodec.document(all);
+            List<String> urls = TencentDanmakuCodec.segments(job.text("https://dm.video.qq.com/barrage/base/" + id), id);
+            return job.segments(urls.size(), progress, index ->
+                    TencentDanmakuCodec.comments(new String(job.bytes(urls.get(index), 2_000_000), StandardCharsets.UTF_8), 600));
         }, callback);
         return job;
     }

@@ -1,0 +1,9 @@
+
+com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest:.
+com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest:..
+
+Time: 29.949
+
+OK (3 tests)
+
+

@@ -84,6 +84,7 @@ public final class VodPlaybackMedia {
             @Override
             public void onFound(Danmaku danmaku, java.util.List<Danmaku> catalogue) {
                 if (!isCurrentIdentity(player, identity)) return;
+                cancelRestore(player);
                 String query = preferred == null || preferred.isVideoLink()
                         ? DanmakuQuery.from(title).searchTitle() : preferred.query();
                 DanmakuManualMatchStore.get().remember(matchContext, query, danmaku, catalogue);
@@ -93,6 +94,13 @@ public final class VodPlaybackMedia {
             @Override
             public void onFailure(DanmakuApi.SearchFailure failure) {
                 if (!isCurrentIdentity(player, identity)) return;
+                synchronized (RESTORE_DOWNLOADS) {
+                    var restoring = RESTORE_DOWNLOADS.get(player);
+                    if (restoring instanceof RestoreAttempt attempt && !attempt.resolved) {
+                        attempt.deferredFailure = failure;
+                        return; // Discovery failure must not cancel a still-healthy saved document.
+                    }
+                }
                 DanmakuStatus.Failure reason = switch (failure) {
                     case NO_MATCH -> DanmakuStatus.Failure.NO_MATCH;
                     case NETWORK -> DanmakuStatus.Failure.NETWORK;
@@ -163,7 +171,8 @@ public final class VodPlaybackMedia {
                 // serves its document. Verify it before mounting; on 404/5xx/empty XML, discard
                 // only that episode and transparently resolve the same confirmed season through
                 // the remaining providers.
-                DanmakuDocumentCache.Ticket restore = DanmakuDocumentCache.load(cached.getUri(), new DanmakuDocumentCache.Listener() {
+                RestoreAttempt restore = new RestoreAttempt(resolveFresh);
+                restore.ticket = DanmakuDocumentCache.load(cached.getUri(), new DanmakuDocumentCache.Listener() {
                     @Override
                     public void onProgress(android.net.Uri source, int percent) {
                         if (isCurrentIdentity(player, identity)) {
@@ -173,26 +182,56 @@ public final class VodPlaybackMedia {
 
                     @Override
                     public void onReady(android.net.Uri source, android.net.Uri local) {
-                        if (!isCurrentIdentity(player, identity)) return;
-                        synchronized (RESTORE_DOWNLOADS) { RESTORE_DOWNLOADS.remove(player); }
+                        if (restore.cancelled || !isCurrentIdentity(player, identity)) return;
+                        cancelRestore(player);
+                        DanmakuApi.cancel(); // Saved document won; do not accept a late failure from refresh.
                         apply.accept(cached);
                     }
 
                     @Override
                     public void onFailure(android.net.Uri source, java.io.IOException error) {
-                        if (!isCurrentIdentity(player, identity)) return;
+                        if (restore.cancelled || !isCurrentIdentity(player, identity)) return;
+                        restore.resolved = true;
+                        com.fongmi.android.tv.App.removeCallbacks(restore.hedge);
                         synchronized (RESTORE_DOWNLOADS) { RESTORE_DOWNLOADS.remove(player); }
                         DanmakuDocumentCache.invalidate(source);
                         DanmakuManualMatchStore.get().forgetEpisode(matchContext);
                         player.notifyDanmakuStatus(DanmakuStatus.matching());
-                        resolveFresh.run();
+                        if (restore.deferredFailure != null) callback.onFailure(restore.deferredFailure);
+                        else restore.startFallback();
                     }
                 });
+                if (!preferred.isVideoLink()) com.fongmi.android.tv.App.post(restore.hedge, 5000);
                 synchronized (RESTORE_DOWNLOADS) {
                     if (isCurrentIdentity(player, identity)) RESTORE_DOWNLOADS.put(player, restore);
                     else restore.cancel();
                 }
             }
+        }
+    }
+
+    private static void cancelRestore(PlayerManager player) {
+        synchronized (RESTORE_DOWNLOADS) {
+            var restore = RESTORE_DOWNLOADS.remove(player);
+            if (restore != null) restore.cancel();
+        }
+    }
+
+    private static final class RestoreAttempt implements DanmakuDocumentCache.Ticket {
+        DanmakuDocumentCache.Ticket ticket;
+        final Runnable refresh, hedge = this::startFallback;
+        boolean started, resolved, cancelled;
+        DanmakuApi.SearchFailure deferredFailure;
+        RestoreAttempt(Runnable refresh) { this.refresh = refresh; }
+        void startFallback() {
+            if (cancelled || started) return;
+            started = true;
+            refresh.run();
+        }
+        @Override public void cancel() {
+            cancelled = true;
+            com.fongmi.android.tv.App.removeCallbacks(hedge);
+            if (ticket != null) ticket.cancel();
         }
     }
 

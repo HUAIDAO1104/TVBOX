@@ -124,7 +124,15 @@ public class DanmakuAiMatchingInstrumentedTest {
         assertAlternativeCatalogue(false);
     }
 
+    @Test public void stalledAiCandidateCannotBlockHealthyBackup() throws Exception {
+        assertAlternativeCatalogue(true, true);
+    }
+
     private void assertAlternativeCatalogue(boolean useBackup) throws Exception {
+        assertAlternativeCatalogue(useBackup, false);
+    }
+
+    private void assertAlternativeCatalogue(boolean useBackup, boolean stall) throws Exception {
         try (var direct = new MockWebServer(); var backup = new MockWebServer()) {
             direct.start(); backup.start();
             AtomicInteger wrongDownloads = new AtomicInteger();
@@ -135,7 +143,8 @@ public class DanmakuAiMatchingInstrumentedTest {
                         return model("{\"query\":\"回退电视剧\",\"episode\":\"第14集\"}");
                     if (request.getPath().startsWith("/search"))
                         return new MockResponse().setBody(App.gson().toJson(List.of(row(direct, name, "expired"))));
-                    return new MockResponse().setResponseCode(404);
+                    return stall ? new MockResponse().setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.NO_RESPONSE)
+                            : new MockResponse().setResponseCode(404);
                 }
             });
             backup.setDispatcher(new Dispatcher() {

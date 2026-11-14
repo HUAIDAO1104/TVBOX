@@ -1,0 +1,16 @@
+{
+  "leanback": [
+    {
+      "id": "InlinedApi",
+      "severity": "Warning",
+      "message": "Field requires API level 26 (current min is 24): `android.provider.Settings#ACTION_MANAGE_UNKNOWN_APP_SOURCES`"
+    }
+  ],
+  "mobile": [
+    {
+      "id": "InlinedApi",
+      "severity": "Warning",
+      "message": "Field requires API level 26 (current min is 24): `android.provider.Settings#ACTION_MANAGE_UNKNOWN_APP_SOURCES`"
+    }
+  ]
+}

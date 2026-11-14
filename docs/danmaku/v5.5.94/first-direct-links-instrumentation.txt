@@ -1,0 +1,88 @@
+com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest:
+Error in liveYoukuDirectLink(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at org.junit.Assert.assertNotNull(Assert.java:723)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveDirectLink(DanmakuSearchInstrumentedTest.java:416)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveYoukuDirectLink(DanmakuSearchInstrumentedTest.java:396)
+
+Error in liveBilibiliDirectLink(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at org.junit.Assert.assertNotNull(Assert.java:723)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveDirectLink(DanmakuSearchInstrumentedTest.java:416)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveBilibiliDirectLink(DanmakuSearchInstrumentedTest.java:395)
+
+Error in liveIqiyiDirectLink(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at org.junit.Assert.assertNotNull(Assert.java:723)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveDirectLink(DanmakuSearchInstrumentedTest.java:416)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveIqiyiDirectLink(DanmakuSearchInstrumentedTest.java:398)
+
+Error in liveBahamutDirectLink(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:700)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveDirectLink(DanmakuSearchInstrumentedTest.java:407)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveBahamutDirectLink(DanmakuSearchInstrumentedTest.java:399)
+
+Error in liveTencentDirectLink(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at org.junit.Assert.assertNotNull(Assert.java:723)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveDirectLink(DanmakuSearchInstrumentedTest.java:416)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveTencentDirectLink(DanmakuSearchInstrumentedTest.java:397)
+
+
+Time: 42.801
+There were 5 failures:
+1) liveYoukuDirectLink(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at org.junit.Assert.assertNotNull(Assert.java:723)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveDirectLink(DanmakuSearchInstrumentedTest.java:416)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveYoukuDirectLink(DanmakuSearchInstrumentedTest.java:396)
+2) liveBilibiliDirectLink(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at org.junit.Assert.assertNotNull(Assert.java:723)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveDirectLink(DanmakuSearchInstrumentedTest.java:416)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveBilibiliDirectLink(DanmakuSearchInstrumentedTest.java:395)
+3) liveIqiyiDirectLink(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at org.junit.Assert.assertNotNull(Assert.java:723)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveDirectLink(DanmakuSearchInstrumentedTest.java:416)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveIqiyiDirectLink(DanmakuSearchInstrumentedTest.java:398)
+4) liveBahamutDirectLink(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:700)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveDirectLink(DanmakuSearchInstrumentedTest.java:407)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveBahamutDirectLink(DanmakuSearchInstrumentedTest.java:399)
+5) liveTencentDirectLink(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at org.junit.Assert.assertNotNull(Assert.java:723)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveDirectLink(DanmakuSearchInstrumentedTest.java:416)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveTencentDirectLink(DanmakuSearchInstrumentedTest.java:397)
+
+FAILURES!!!
+Tests run: 5,  Failures: 5

@@ -1,0 +1,56 @@
+com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest:.............
+com.fongmi.android.tv.api.DanmakuNetworkInstrumentedTest:.
+com.fongmi.android.tv.api.DanmakuCatalogueInstrumentedTest:.....
+com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest:.......
+com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest:...
+com.fongmi.android.tv.playback.vod.DanmakuAiMatchingInstrumentedTest:..........
+com.fongmi.android.tv.player.DanmakuClockInstrumentedTest:.
+com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest:
+Error in liveMangoAutomaticAndManualBonusThenDirectLink(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:688)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveMangoAutomaticAndManualBonusThenDirectLink(DanmakuSearchInstrumentedTest.java:403)
+.......
+com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest:
+Error in mangoAutomaticCommentsSurviveLongTimelineAndViewLifecycle(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest):
+java.lang.AssertionError: Timed out: comments at 600000 on composed screen
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:223)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.awaitScreenComments(PlatformPlaybackInstrumentedTest.java:179)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:117)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.mangoAutomaticCommentsSurviveLongTimelineAndViewLifecycle(PlatformPlaybackInstrumentedTest.java:79)
+
+Error in tencentAutomaticCommentsSurviveLongTimelineAndViewLifecycle(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest):
+java.lang.AssertionError: Timed out: comments at 600000 on composed screen
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:223)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.awaitScreenComments(PlatformPlaybackInstrumentedTest.java:179)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:117)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.tencentAutomaticCommentsSurviveLongTimelineAndViewLifecycle(PlatformPlaybackInstrumentedTest.java:83)
+
+
+Time: 221.501
+There were 3 failures:
+1) liveMangoAutomaticAndManualBonusThenDirectLink(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:688)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveMangoAutomaticAndManualBonusThenDirectLink(DanmakuSearchInstrumentedTest.java:403)
+2) mangoAutomaticCommentsSurviveLongTimelineAndViewLifecycle(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+java.lang.AssertionError: Timed out: comments at 600000 on composed screen
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:223)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.awaitScreenComments(PlatformPlaybackInstrumentedTest.java:179)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:117)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.mangoAutomaticCommentsSurviveLongTimelineAndViewLifecycle(PlatformPlaybackInstrumentedTest.java:79)
+3) tencentAutomaticCommentsSurviveLongTimelineAndViewLifecycle(com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest)
+java.lang.AssertionError: Timed out: comments at 600000 on composed screen
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.await(PlatformPlaybackInstrumentedTest.java:223)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.awaitScreenComments(PlatformPlaybackInstrumentedTest.java:179)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.automaticTimeline(PlatformPlaybackInstrumentedTest.java:117)
+	at com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest.tencentAutomaticCommentsSurviveLongTimelineAndViewLifecycle(PlatformPlaybackInstrumentedTest.java:83)
+
+FAILURES!!!
+Tests run: 54,  Failures: 3

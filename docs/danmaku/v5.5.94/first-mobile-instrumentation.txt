@@ -1,0 +1,105 @@
+com.fongmi.android.tv.api.DanmakuRoutingInstrumentedTest:.............
+com.fongmi.android.tv.api.DanmakuNetworkInstrumentedTest:.
+com.fongmi.android.tv.api.DanmakuCatalogueInstrumentedTest:.....
+com.fongmi.android.tv.api.TencentDanmakuInstrumentedTest:.......
+com.fongmi.android.tv.api.PlatformDanmakuInstrumentedTest:...
+com.fongmi.android.tv.playback.vod.DanmakuAiMatchingInstrumentedTest:..........
+com.fongmi.android.tv.player.DanmakuClockInstrumentedTest:.
+com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest:
+Error in liveMangoAutomaticAndManualBonus(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:696)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.submitSearch(DanmakuSearchInstrumentedTest.java:666)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:633)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveMangoAutomaticAndManualBonus(DanmakuSearchInstrumentedTest.java:374)
+.
+Error in stalledSavedEpisodeRefreshesWithoutWaitingForOldUrl(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:696)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.submitSearch(DanmakuSearchInstrumentedTest.java:666)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:633)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.stalledSavedEpisodeRefreshesWithoutWaitingForOldUrl(DanmakuSearchInstrumentedTest.java:220)
+
+Error in savedAutomaticRestoreCannotOverwriteANewerManualChoice(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:696)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.submitSearch(DanmakuSearchInstrumentedTest.java:666)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:633)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.savedAutomaticRestoreCannotOverwriteANewerManualChoice(DanmakuSearchInstrumentedTest.java:236)
+
+Error in manualFailureRecoversTheConfirmedMovieOrPartAcrossProviders(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:696)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.submitSearch(DanmakuSearchInstrumentedTest.java:666)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:633)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.manualFailureRecoversTheConfirmedMovieOrPartAcrossProviders(DanmakuSearchInstrumentedTest.java:203)
+
+Error in liveSeasonFourAndMovieAutomaticThenManualSelection(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:696)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.submitSearch(DanmakuSearchInstrumentedTest.java:666)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:633)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveSeasonFourAndMovieAutomaticThenManualSelection(DanmakuSearchInstrumentedTest.java:350)
+.
+Error in externalLinkCancelsOldRestoreFailureAndEnablesRendering(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest):
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:696)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.submitSearch(DanmakuSearchInstrumentedTest.java:666)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:633)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.externalLinkCancelsOldRestoreFailureAndEnablesRendering(DanmakuSearchInstrumentedTest.java:256)
+
+com.fongmi.android.tv.ui.activity.PlatformPlaybackInstrumentedTest:..
+
+Time: 202.954
+There were 6 failures:
+1) liveMangoAutomaticAndManualBonus(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:696)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.submitSearch(DanmakuSearchInstrumentedTest.java:666)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:633)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveMangoAutomaticAndManualBonus(DanmakuSearchInstrumentedTest.java:374)
+2) stalledSavedEpisodeRefreshesWithoutWaitingForOldUrl(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:696)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.submitSearch(DanmakuSearchInstrumentedTest.java:666)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:633)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.stalledSavedEpisodeRefreshesWithoutWaitingForOldUrl(DanmakuSearchInstrumentedTest.java:220)
+3) savedAutomaticRestoreCannotOverwriteANewerManualChoice(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:696)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.submitSearch(DanmakuSearchInstrumentedTest.java:666)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:633)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.savedAutomaticRestoreCannotOverwriteANewerManualChoice(DanmakuSearchInstrumentedTest.java:236)
+4) manualFailureRecoversTheConfirmedMovieOrPartAcrossProviders(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:696)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.submitSearch(DanmakuSearchInstrumentedTest.java:666)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:633)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.manualFailureRecoversTheConfirmedMovieOrPartAcrossProviders(DanmakuSearchInstrumentedTest.java:203)
+5) liveSeasonFourAndMovieAutomaticThenManualSelection(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:696)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.submitSearch(DanmakuSearchInstrumentedTest.java:666)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:633)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.liveSeasonFourAndMovieAutomaticThenManualSelection(DanmakuSearchInstrumentedTest.java:350)
+6) externalLinkCancelsOldRestoreFailureAndEnablesRendering(com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest)
+java.lang.AssertionError: UI condition timed out
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.await(DanmakuSearchInstrumentedTest.java:696)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.submitSearch(DanmakuSearchInstrumentedTest.java:666)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.openPanel(DanmakuSearchInstrumentedTest.java:633)
+	at com.fongmi.android.tv.ui.dialog.DanmakuSearchInstrumentedTest.externalLinkCancelsOldRestoreFailureAndEnablesRendering(DanmakuSearchInstrumentedTest.java:256)
+
+FAILURES!!!
+Tests run: 54,  Failures: 6

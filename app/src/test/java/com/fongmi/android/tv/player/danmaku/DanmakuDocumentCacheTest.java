@@ -18,16 +18,16 @@ public class DanmakuDocumentCacheTest {
     public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     @Test
-    public void onlyMaterialisesImmutableCommentDocuments() {
+    public void materialisesAllRemoteDocumentsBeforeRendering() {
         assertTrue(DanmakuDocumentCache.isCacheable(
                 "https://example.com/api/v2/comment/123?format=xml"));
         assertTrue(DanmakuDocumentCache.isCacheable("iqiyi-danmaku://video/2586684050154100"));
         assertFalse(DanmakuDocumentCache.isCacheable("iqiyi-danmaku://video/not-an-id"));
         assertTrue(DanmakuDocumentCache.isCacheable(
                 "https://example.com/api/v1/comment/123.xml"));
-        assertFalse(DanmakuDocumentCache.isCacheable(
-                "https://example.com/api/v2/search/episodes?anime=123"));
-        assertFalse(DanmakuDocumentCache.isCacheable(
+        assertFalse(DanmakuDocumentCache.isCacheable("file:///tmp/local.xml"));
+        assertTrue(DanmakuDocumentCache.isCacheable("https://example.com/custom/comments.xml"));
+        assertTrue(DanmakuDocumentCache.isCacheable(
                 "https://example.com/danmaku/native?id=123"));
     }
 

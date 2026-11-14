@@ -1,7 +1,6 @@
 package com.fongmi.android.tv.player.danmaku;
 
 import com.fongmi.android.tv.App;
-import com.github.catvod.net.OkHttp;
 
 import java.io.File;
 import java.util.Locale;
@@ -34,14 +33,15 @@ public final class DanmakuHttp {
     }
 
     private static OkHttpClient createClient() {
-        OkHttpClient.Builder builder = OkHttp.player().newBuilder()
+        OkHttpClient.Builder builder = new OkHttpClient.Builder()
                 .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .writeTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .callTimeout(CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                // The shared player client can retry a slow route invisibly. For a large XML
-                // document that turns one bad request into a minute-long blank danmaku layer.
-                .retryOnConnectionFailure(false)
+                // Use system TLS/DNS and a separate dispatcher; source plugins may replace
+                // the player's DNS, proxy or interceptors. Alternate IPs/stale pooled
+                // connections can recover, but the same 45 s call budget still applies.
+                .retryOnConnectionFailure(true)
                 .addNetworkInterceptor(chain -> {
                     Response response = chain.proceed(chain.request());
                     if (!response.isSuccessful() || !isImmutableCommentUrl(chain.request().url().toString())) {
