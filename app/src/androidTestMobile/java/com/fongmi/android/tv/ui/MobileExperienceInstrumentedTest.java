@@ -302,12 +302,24 @@ public class MobileExperienceInstrumentedTest {
             picker.onItemClick(adapter.getItems().get(10));
         });
         await(() -> { boolean[] selected = {false}; onActivity(value, a -> selected[0] = a.getEpisodePickerFlags().get(0).getEpisodes().stream().anyMatch(e -> e.isSelected() && e.getName().contains("111"))); return selected[0]; });
-        onActivity(value, a -> { assertTrue(a.findViewById(R.id.detailActions).isShown()); a.findViewById(R.id.more).performClick(); });
+        onActivity(value, a -> {
+            assertTrue(a.findViewById(R.id.previousEpisode).isShown());
+            a.findViewById(R.id.previousEpisode).performClick();
+            assertTrue(((TextView) a.findViewById(R.id.currentEpisode)).getText().toString().contains("110"));
+            a.findViewById(R.id.nextEpisode).performClick();
+            assertTrue(((TextView) a.findViewById(R.id.currentEpisode)).getText().toString().contains("111"));
+            a.findViewById(R.id.currentEpisode).performClick();
+        });
         SystemClock.sleep(250);
         onActivity(value, a -> {
             View sheet = a.getSupportFragmentManager().findFragmentByTag("episode_picker").requireView();
             TabLayout ranges = sheet.findViewById(R.id.ranges);
             assertEquals(2, ranges.getSelectedTabPosition());
+            RecyclerView grid = sheet.findViewById(R.id.episode);
+            View current = grid.getLayoutManager().findViewByPosition(10);
+            assertNotNull(current);
+            assertTrue(current.isSelected());
+            assertTrue(current.getTop() >= grid.getPaddingTop() && current.getBottom() <= grid.getHeight());
             ranges.selectTab(ranges.getTabAt(0)); sheet.findViewById(R.id.locate).performClick();
             assertEquals(2, ranges.getSelectedTabPosition());
             sheet.findViewById(R.id.reverse).performClick();
@@ -334,7 +346,10 @@ public class MobileExperienceInstrumentedTest {
             assertTrue(sheet.findViewById(R.id.sourceSection).isShown());
             RecyclerView list = sheet.findViewById(R.id.episode);
             int[] xy = new int[2]; list.getLocationOnScreen(xy);
-            bounds[0] = xy[0]; bounds[1] = xy[1]; bounds[2] = list.getWidth(); bounds[3] = list.getHeight();
+            android.graphics.Rect visible = new android.graphics.Rect(); assertTrue(list.getLocalVisibleRect(visible));
+            bounds[0] = xy[0] + visible.left; bounds[1] = xy[1] + visible.top;
+            bounds[2] = visible.width(); bounds[3] = visible.height();
+            android.util.Log.i("MobileQA", "Grid on screen " + xy[0] + "," + xy[1] + " visible=" + visible + " height=" + list.getHeight());
             assertTrue("Episode viewport must remain usable", list.getHeight() > 48 * a.getResources().getDisplayMetrics().density);
         });
         scrollEpisodesToEnd(value, bounds);

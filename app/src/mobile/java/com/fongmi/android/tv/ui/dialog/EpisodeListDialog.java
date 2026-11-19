@@ -33,6 +33,8 @@ public class EpisodeListDialog extends MobileSheetDialog implements FlagAdapter.
     private FlagAdapter flagAdapter;
     private List<Episode> episodes = Collections.emptyList();
     private boolean updatingRanges;
+    private int pageAnchor;
+    private boolean focusCurrent;
 
     public interface Listener {
         List<Flag> getEpisodePickerFlags();
@@ -70,8 +72,15 @@ public class EpisodeListDialog extends MobileSheetDialog implements FlagAdapter.
         binding.episodePane.setLayoutParams(new android.widget.LinearLayout.LayoutParams(shortWindow ? 0 : -1, shortWindow ? -1 : 0, 1));
         binding.title.setMaxLines(shortWindow ? 1 : 2);
         binding.count.setVisibility(shortWindow ? View.GONE : View.VISIBLE);
-        binding.episode.post(() -> { if (binding != null) updateColumns(); });
+
     }
+
+    private final View.OnLayoutChangeListener sizeChanged = (view, l, t, r, b, oldL, oldT, oldR, oldB) -> {
+        if (r - l == oldR - oldL && b - t == oldB - oldT) return;
+        view.post(() -> { if (binding != null) positionPage(); });
+    };
+
+
     private void updateColumns() {
         int longest = episodeAdapter.getItems().stream().mapToInt(e -> EpisodeAdapter.displayName(e).length()).max().orElse(2);
         float scale = getResources().getConfiguration().fontScale;
@@ -88,6 +97,7 @@ public class EpisodeListDialog extends MobileSheetDialog implements FlagAdapter.
         binding.flag.setAdapter(flagAdapter = new FlagAdapter(this));
         binding.episode.setLayoutManager(new GridLayoutManager(requireContext(), 3));
         binding.episode.setItemAnimator(null);
+        binding.episode.addOnLayoutChangeListener(sizeChanged);
         binding.episode.setAdapter(episodeAdapter = new EpisodeAdapter(this, ViewType.GRID));
         reload();
     }
@@ -161,13 +171,31 @@ public class EpisodeListDialog extends MobileSheetDialog implements FlagAdapter.
         int start = Math.min(page * PAGE_SIZE, episodes.size());
         List<Episode> items = episodes.subList(start, Math.min(start + PAGE_SIZE, episodes.size()));
         episodeAdapter.addAll(items);
+        pageAnchor = locate ? episodeAdapter.getPosition() : 0;
+        focusCurrent = locate;
+        positionPage();
+    }
+
+    private void positionPage() {
         updateColumns();
-        binding.episode.scrollToPosition(locate ? episodeAdapter.getPosition() : 0);
+        RecyclerView list = binding.episode;
+        GridLayoutManager grid = (GridLayoutManager) list.getLayoutManager();
+        grid.scrollToPositionWithOffset(pageAnchor, focusCurrent && pageAnchor > 0 ? list.getHeight() / 3 : 0);
+        if (focusCurrent && !list.isInTouchMode()) {
+            androidx.core.view.OneShotPreDrawListener.add(list, () -> {
+                View current = grid.findViewByPosition(pageAnchor);
+                if (focusCurrent && current != null) current.requestFocus();
+            });
+        }
     }
     private Listener listener() { return (Listener) requireActivity(); }
     @Override public void onDismiss(@NonNull DialogInterface dialog) {
         super.onDismiss(dialog);
         if (getActivity() instanceof Listener host) host.onEpisodePickerDismissed();
     }
-    @Override public void onDestroyView() { super.onDestroyView(); binding = null; }
+    @Override public void onDestroyView() {
+        binding.episode.removeOnLayoutChangeListener(sizeChanged);
+        super.onDestroyView();
+        binding = null;
+    }
 }

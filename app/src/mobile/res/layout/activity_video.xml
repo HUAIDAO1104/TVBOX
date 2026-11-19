@@ -12,6 +12,11 @@
       <com.google.android.material.button.MaterialButton android:id="@+id/detailCast" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="投屏" app:icon="@drawable/ic_mobile_cast" android:paddingHorizontal="4dp" android:visibility="gone" />
       <com.google.android.material.button.MaterialButton android:id="@+id/detailSettings" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="设置" app:icon="@drawable/ic_mobile_settings" android:paddingHorizontal="4dp" android:visibility="gone" />
     </LinearLayout>
+    <LinearLayout android:id="@+id/episodeShortcuts" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="12dp" android:visibility="gone">
+      <com.google.android.material.button.MaterialButton android:id="@+id/previousEpisode" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:text="@string/play_prev" app:icon="@drawable/exo_icon_previous" />
+      <com.google.android.material.button.MaterialButton android:id="@+id/currentEpisode" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:maxLines="1" android:ellipsize="end" app:icon="@drawable/ic_mobile_down" app:iconGravity="textEnd" />
+      <com.google.android.material.button.MaterialButton android:id="@+id/nextEpisode" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:text="@string/play_next" app:icon="@drawable/exo_icon_next" />
+    </LinearLayout>
     <TextView android:id="@+id/playbackStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="16dp" android:paddingBottom="8dp" android:textColor="@color/mobile_muted" android:textSize="12sp" android:maxLines="2" android:ellipsize="end" android:accessibilityLiveRegion="polite" android:visibility="gone" />
   </LinearLayout>
   <androidx.swiperefreshlayout.widget.SwipeRefreshLayout android:id="@+id/swipeLayout" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_below="@id/detailActions">

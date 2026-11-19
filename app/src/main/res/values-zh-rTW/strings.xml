@@ -355,4 +355,11 @@
     <string name="danmaku_ai_models_missing">目前選擇未在列表中傳回，可下拉更換或保留原設定。</string>
     <string name="danmaku_ai_models_empty">服務商未傳回可用的對話模型，保留原選擇，可重試。</string>
     <string name="danmaku_ai_models_failed">模型列表載入失敗，保留原選擇，請重新整理後再試。</string>
+    <string name="skip_segments">跳過片頭片尾</string>
+    <string name="skip_intro">片頭</string>
+    <string name="skip_outro">片尾</string>
+    <string name="skip_auto">自動辨識章節</string>
+    <string name="skip_off">關閉</string>
+    <string name="skip_mark_intro">片頭在此結束 · %1$s</string>
+    <string name="skip_mark_outro">片尾從此開始 · %1$s</string>
 </resources>

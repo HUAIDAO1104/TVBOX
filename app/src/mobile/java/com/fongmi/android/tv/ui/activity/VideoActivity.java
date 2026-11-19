@@ -356,6 +356,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.detailKeep.setOnClickListener(v -> { if (mHistory != null) onKeep(); });
         mBinding.detailSource.setOnClickListener(v -> { if (mVod != null && mHistory != null) onChange(); });
         mBinding.detailFull.setOnClickListener(v -> { if (mVod != null && playbackReady) enterFullscreen(); });
+        mBinding.previousEpisode.setOnClickListener(v -> checkPrev());
+        mBinding.currentEpisode.setOnClickListener(v -> onEpisodes());
+        mBinding.nextEpisode.setOnClickListener(v -> checkNext());
         mBinding.more.setOnClickListener(view -> onMore());
         mBinding.actor.setOnClickListener(view -> onActor());
         mBinding.content.setOnClickListener(view -> onContent());
@@ -692,6 +695,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     @Override
     public void renderEpisodeSelection(Episode item) {
+        updateEpisodeShortcuts();
         androidx.fragment.app.Fragment picker = getSupportFragmentManager().findFragmentByTag("episode_picker");
         if (picker instanceof EpisodeListDialog episodes) episodes.refreshCurrentEpisode();
         notifyItemChanged(mBinding.episode, mEpisodeAdapter);
@@ -917,6 +921,22 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.more.setVisibility(items.isEmpty() ? View.GONE : View.VISIBLE);
         mBinding.more.setText("全部 " + items.size() + " 集");
         mEpisodeAdapter.addAll(items);
+        updateEpisodeShortcuts();
+    }
+
+    private void updateEpisodeShortcuts() {
+        int size = mEpisodeAdapter.getItemCount();
+        mBinding.episodeShortcuts.setVisibility(size > 1 ? View.VISIBLE : View.GONE);
+        if (size < 2) return;
+        int index = mEpisodeAdapter.getPosition();
+        boolean backwards = mHistory != null && mHistory.isRevPlay() != mHistory.isRevSort();
+        boolean previous = backwards ? index < size - 1 : index > 0;
+        boolean next = backwards ? index > 0 : index < size - 1;
+        mBinding.previousEpisode.setEnabled(previous);
+        mBinding.nextEpisode.setEnabled(next);
+        mBinding.control.prev.setEnabled(previous);
+        mBinding.control.next.setEnabled(next);
+        mBinding.currentEpisode.setText(mEpisodeAdapter.getActivated().getName());
     }
 
     private void setQualityVisible(boolean visible) {
@@ -1132,7 +1152,12 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void setEnding(long ending) {
         mVod.setEnding(ending);
+        mVod.syncHistory();
         mBinding.control.action.ending.setText(ending <= 0 ? getString(R.string.play_ed) : Util.timeMs(mHistory.getEnding()));
+    }
+
+    public void showSkipSegments() {
+        com.fongmi.android.tv.ui.dialog.SkipSegmentsDialog.show(this, mHistory, player(), this::setOpening, this::setEnding);
     }
 
     private void onOpening() {
@@ -1150,6 +1175,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void setOpening(long opening) {
         mVod.setOpening(opening);
+        mVod.syncHistory();
         mBinding.control.action.opening.setText(opening <= 0 ? getString(R.string.play_op) : Util.timeMs(mHistory.getOpening()));
     }
 
@@ -1542,7 +1568,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         long duration = player().getDuration();
         if (position < 0 || duration <= 0) return;
         if(position>=duration*0.9)markWatched();
-        mVod.onTimeChanged(time, position, duration);
+        mVod.onTimeChanged(time, position, duration, player());
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -1603,7 +1629,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void onPlay() {
-        if (mHistory != null && isEnded()) controller().seekTo(mHistory.getOpening());
+        if (mHistory != null && isEnded()) controller().seekTo(Math.max(0, mHistory.getOpening()));
         if (!player().isEmpty() && isIdle()) controller().prepare();
         controller().play();
     }

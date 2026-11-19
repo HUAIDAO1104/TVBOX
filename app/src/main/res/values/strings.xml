@@ -381,4 +381,11 @@
     <string name="danmaku_ai_models_missing">The provider did not list your current model. Choose another or keep the saved choice.</string>
     <string name="danmaku_ai_models_empty">No chat models returned. Your selection is kept; refresh to retry.</string>
     <string name="danmaku_ai_models_failed">Could not load models. Your selection is kept; refresh to retry.</string>
+    <string name="skip_segments">Skip intro and credits</string>
+    <string name="skip_intro">Intro</string>
+    <string name="skip_outro">End credits</string>
+    <string name="skip_auto">Automatic (chapter markers)</string>
+    <string name="skip_off">Off</string>
+    <string name="skip_mark_intro">Intro ends here · %1$s</string>
+    <string name="skip_mark_outro">Credits start here · %1$s</string>
 </resources>

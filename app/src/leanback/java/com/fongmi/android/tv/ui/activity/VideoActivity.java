@@ -462,6 +462,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         mBinding.control.action.opening.setDownListener(this::onOpeningSub);
         mBinding.control.action.text.setUpListener(this::onSubtitleClick);
         mBinding.control.action.text.setDownListener(this::onSubtitleClick);
+        mBinding.control.action.skipSegments.setOnClickListener(v -> showSkipSegments());
         mBinding.control.action.next.setOnClickListener(view -> checkNext());
         mBinding.control.action.episodes.setOnClickListener(view -> onEpisodes());
         mBinding.control.action.prev.setOnClickListener(view -> checkPrev());
@@ -600,6 +601,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         List<View> controls = new ArrayList<>();
         addVisiblePlaybackControl(controls, mBinding.control.action.next);
         addVisiblePlaybackControl(controls, mBinding.control.action.episodes);
+        addVisiblePlaybackControl(controls, mBinding.control.action.skipSegments);
         addVisiblePlaybackControl(controls, mBinding.control.action.playPause);
         addVisiblePlaybackControl(controls, mBinding.control.action.rewind);
         addVisiblePlaybackControl(controls, mBinding.control.action.forward);
@@ -1823,6 +1825,10 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         mVod.refresh();
     }
 
+    public void showSkipSegments() {
+        com.fongmi.android.tv.ui.dialog.SkipSegmentsDialog.show(this, mHistory, player(), this::setOpening, this::setEnding);
+    }
+
     private void onOpening() {
         long position = player().getPosition();
         long duration = player().getDuration();
@@ -1844,6 +1850,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     private void setOpening(long opening) {
         mVod.setOpening(opening);
+        mVod.syncHistory();
         mBinding.control.action.opening.setText(opening <= 0 ? getString(R.string.play_op) : Util.timeMs(mHistory.getOpening()));
     }
 
@@ -1868,6 +1875,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     private void setEnding(long ending) {
         mVod.setEnding(ending);
+        mVod.syncHistory();
         mBinding.control.action.ending.setText(ending <= 0 ? getString(R.string.play_ed) : Util.timeMs(mHistory.getEnding()));
     }
 
@@ -2398,7 +2406,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         long position = player().getPosition();
         long duration = player().getDuration();
         if (position < 0 || duration <= 0) return;
-        mVod.onTimeChanged(time, position, duration);
+        mVod.onTimeChanged(time, position, duration, player());
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -2448,7 +2456,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     private void onPlay() {
-        if (mHistory != null && isEnded()) controller().seekTo(mHistory.getOpening());
+        if (mHistory != null && isEnded()) controller().seekTo(Math.max(0, mHistory.getOpening()));
         if (!player().isEmpty() && isIdle()) controller().prepare();
         controller().play();
     }

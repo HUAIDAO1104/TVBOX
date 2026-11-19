@@ -178,7 +178,10 @@ public class Flag implements Parcelable, Diffable<Flag> {
         for (Episode item : items) {
             if (item == null || item.isBlockedPlaybackEntry() || episodes.contains(item)) continue;
             item.setIndex(next++);
-            if (rev) episodes.add(0, item);
+            if (rev) {
+                episodes.add(0, item);
+                if (position >= 0) position++;
+            }
             else episodes.add(item);
         }
     }

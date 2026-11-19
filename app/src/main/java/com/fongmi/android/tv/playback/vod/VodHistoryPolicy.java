@@ -65,6 +65,8 @@ public class VodHistoryPolicy {
     }
 
     public long startPositionMs(History history) {
-        return history == null ? C.TIME_UNSET : Math.max(history.getOpening(), history.getPosition());
+        // A per-series opening may be longer than a trailer or bonus episode.
+        // Apply it when the current media duration becomes known.
+        return history == null ? C.TIME_UNSET : history.getPosition();
     }
 }

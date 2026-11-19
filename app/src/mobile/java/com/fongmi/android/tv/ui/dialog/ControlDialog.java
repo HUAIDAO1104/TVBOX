@@ -86,6 +86,7 @@ public class ControlDialog extends MobileSheetDialog implements ParseAdapter.OnC
     }
 
     public interface Host {
+        void showSkipSegments();
         ActivityVideoBinding playbackBinding();
         History playbackHistory();
         PlayerManager playbackPlayer();
@@ -136,6 +137,10 @@ public class ControlDialog extends MobileSheetDialog implements ParseAdapter.OnC
     protected void initEvent() {
         if (player == null || history == null) return;
         binding.close.setOnClickListener(v -> dismiss());
+        binding.skipSegments.setOnClickListener(v -> {
+            if (requireActivity() instanceof Host host) host.showSkipSegments();
+            dismiss();
+        });
         binding.preciseSeek.setOnClickListener(v->{PreciseSeekDialog.show(requireActivity(),player.getPlayer());dismiss();});
         binding.mediaInfo.setOnClickListener(v -> dismiss(parent.control.info));
         binding.advancedToggle.setOnClickListener(v -> {
