@@ -340,19 +340,13 @@ public class MobileExperienceInstrumentedTest {
         }
         onActivity(value, a -> a.findViewById(R.id.more).performClick());
         SystemClock.sleep(500);
-        int[] bounds = new int[4];
         onActivity(value, a -> {
             View sheet = a.getSupportFragmentManager().findFragmentByTag("episode_picker").requireView();
             assertTrue(sheet.findViewById(R.id.sourceSection).isShown());
             RecyclerView list = sheet.findViewById(R.id.episode);
-            int[] xy = new int[2]; list.getLocationOnScreen(xy);
-            android.graphics.Rect visible = new android.graphics.Rect(); assertTrue(list.getLocalVisibleRect(visible));
-            bounds[0] = xy[0] + visible.left; bounds[1] = xy[1] + visible.top;
-            bounds[2] = visible.width(); bounds[3] = visible.height();
-            android.util.Log.i("MobileQA", "Grid on screen " + xy[0] + "," + xy[1] + " visible=" + visible + " height=" + list.getHeight());
             assertTrue("Episode viewport must remain usable", list.getHeight() > 48 * a.getResources().getDisplayMetrics().density);
         });
-        scrollEpisodesToEnd(value, bounds);
+        scrollEpisodesToEnd(value);
         screenshot("episodes-page-one-end");
         onActivity(value, a -> {
             RecyclerView list = a.getSupportFragmentManager().findFragmentByTag("episode_picker").requireView().findViewById(R.id.episode);
@@ -361,7 +355,7 @@ public class MobileExperienceInstrumentedTest {
             tabs.selectTab(tabs.getTabAt(2));
         });
         SystemClock.sleep(250);
-        scrollEpisodesToEnd(value, bounds);
+        scrollEpisodesToEnd(value);
         float[] point = new float[2];
         onActivity(value, a -> {
             RecyclerView list = a.getSupportFragmentManager().findFragmentByTag("episode_picker").requireView().findViewById(R.id.episode);
@@ -479,15 +473,28 @@ public class MobileExperienceInstrumentedTest {
         });
     }
 
-    private void scrollEpisodesToEnd(ActivityScenario<VideoActivity> value, int[] bounds) {
+    private void scrollEpisodesToEnd(ActivityScenario<VideoActivity> value) {
         for (int i = 0; i < 40; i++) {
+            android.graphics.Rect bounds = new android.graphics.Rect();
             boolean[] more = {false};
-            onActivity(value, a -> {
-                RecyclerView list = a.getSupportFragmentManager().findFragmentByTag("episode_picker").requireView().findViewById(R.id.episode);
-                more[0] = list.canScrollVertically(1);
+            await(() -> {
+                boolean[] visible = {false};
+                onActivity(value, a -> {
+                    RecyclerView list = a.getSupportFragmentManager().findFragmentByTag("episode_picker").requireView().findViewById(R.id.episode);
+                    more[0] = list.canScrollVertically(1);
+                    // Rotation, sheet expansion and page changes can move the viewport.
+                    int[] xy = new int[2];
+                    list.getLocationOnScreen(xy);
+                    if (!list.getLocalVisibleRect(bounds)) return;
+                    bounds.offset(xy[0], xy[1]);
+                    android.graphics.Rect window = new android.graphics.Rect();
+                    list.getWindowVisibleDisplayFrame(window);
+                    visible[0] = bounds.intersect(window) && bounds.width() > 0 && bounds.height() >= list.getHeight() / 2;
+                });
+                return visible[0];
             });
             if (!more[0]) return;
-            touchSwipe(bounds[0] + bounds[2] / 2f, bounds[1] + bounds[3] * .85f, bounds[1] + bounds[3] * .15f);
+            touchSwipe(bounds.exactCenterX(), bounds.top + bounds.height() * .75f, bounds.top + bounds.height() * .25f);
         }
         fail("List must reach its end with real gestures");
     }
