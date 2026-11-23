@@ -5,6 +5,7 @@
     </com.google.android.material.appbar.MaterialToolbar>
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="20dp" android:paddingEnd="8dp" android:gravity="center_vertical">
         <TextView android:id="@+id/status" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:textSize="12sp" android:textColor="@color/mobile_muted" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/groupView" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:text="合并版本" />
         <com.google.android.material.button.MaterialButton android:id="@+id/sources" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:text="范围" app:icon="@drawable/ic_mobile_settings" android:contentDescription="选择搜索范围" />
     </LinearLayout>
     <com.google.android.material.progressindicator.LinearProgressIndicator android:id="@+id/progress" android:layout_width="match_parent" android:layout_height="2dp" android:indeterminate="true" />

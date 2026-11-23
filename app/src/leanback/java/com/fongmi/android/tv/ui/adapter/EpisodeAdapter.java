@@ -24,6 +24,14 @@ public class EpisodeAdapter extends RecyclerView.Adapter<EpisodeAdapter.ViewHold
     private int nextFocusUp = View.NO_ID;
     private int nextFocusDown = View.NO_ID;
 
+    private java.util.Set<String> watched = java.util.Set.of();
+
+    public void setWatched(java.util.Set<String> episodes) {
+        watched = java.util.Set.copyOf(episodes);
+    }
+
+    public boolean isWatched(String episode) { return watched.contains(episode); }
+
     public EpisodeAdapter(OnClickListener listener) {
         mListener = listener;
         mItems = new ArrayList<>();
@@ -148,8 +156,9 @@ public class EpisodeAdapter extends RecyclerView.Adapter<EpisodeAdapter.ViewHold
         });
         String rawName = SearchDisplayName.removeEmoji(item.getDesc().concat(item.getName()));
         String displayName = EpisodeDisplayName.format(rawName);
-        holder.binding.text.setText(displayName);
-        holder.binding.text.setContentDescription(displayName);
+        boolean seen = watched.contains(item.getName());
+        holder.binding.text.setText(seen && !item.isSelected() ? "✓ " + displayName : displayName);
+        holder.binding.text.setContentDescription(displayName + (item.isSelected() ? " · 正在播放" : seen ? " · 已看" : ""));
         holder.binding.getRoot().setOnClickListener(v -> mListener.onItemClick(item));
     }
 

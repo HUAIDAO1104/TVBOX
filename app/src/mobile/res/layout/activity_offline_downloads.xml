@@ -2,7 +2,8 @@
   <com.google.android.material.appbar.MaterialToolbar android:id="@+id/mobileToolbar" android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" app:title="我的下载" app:titleTextColor="@color/mobile_text">
     <com.google.android.material.button.MaterialButton android:id="@+id/manage" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:layout_gravity="end" android:text="管理" />
   </com.google.android.material.appbar.MaterialToolbar>
-  <LinearLayout android:id="@+id/overview" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="16dp" android:layout_marginBottom="12dp" android:padding="16dp" android:orientation="vertical" android:background="@drawable/mobile_panel">
+  <com.google.android.material.button.MaterialButton android:id="@+id/storageToggle" style="@style/Mobile.Action" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="start|center_vertical" android:layout_marginHorizontal="16dp" android:text="存储与下载设置" app:icon="@drawable/ic_mobile_settings" />
+  <LinearLayout android:visibility="gone" android:id="@+id/overview" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="16dp" android:layout_marginBottom="12dp" android:padding="16dp" android:orientation="vertical" android:background="@drawable/mobile_panel">
     <TextView android:id="@+id/storage" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="离线空间" android:textSize="20sp" android:textColor="@color/mobile_text" android:fontFamily="sans-serif-medium" />
     <TextView android:id="@+id/storageHint" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="正在读取存储空间" android:textSize="12sp" android:textColor="@color/mobile_text" android:layout_marginTop="6dp" />
     <com.google.android.material.progressindicator.LinearProgressIndicator android:id="@+id/storageProgress" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" app:trackCornerRadius="2dp" app:trackThickness="3dp" app:trackStopIndicatorSize="0dp" app:trackColor="#38414E" />
@@ -27,4 +28,17 @@
     <com.google.android.material.button.MaterialButton android:id="@+id/resumeSelected" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="继续" app:icon="@drawable/ic_mobile_play" />
     <com.google.android.material.button.MaterialButton android:id="@+id/deleteSelected" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="删除" app:icon="@drawable/ic_offline_delete" android:textColor="@color/mobile_accent" />
   </LinearLayout>
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/navigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="64dp"
+        android:visibility="gone"
+        android:background="@color/mobile_surface"
+        app:elevation="0dp" app:itemActiveIndicatorStyle="@style/Mobile.NavIndicator"
+        app:itemIconTint="@color/selector_nav"
+        app:labelVisibilityMode="labeled"
+        app:itemTextColor="@color/selector_nav"
+        app:itemHorizontalTranslationEnabled="false"
+        app:menu="@menu/menu_nav" />
 </LinearLayout>

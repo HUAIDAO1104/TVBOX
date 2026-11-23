@@ -7,16 +7,8 @@
     <include android:id="@+id/progress" layout="@layout/view_progress" android:layout_width="match_parent" android:layout_height="match_parent" />
   </FrameLayout>
   <LinearLayout android:id="@+id/detailActions" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_below="@id/video" android:orientation="vertical" android:background="@color/mobile_surface">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="8dp" android:visibility="gone">
-      <com.google.android.material.button.MaterialButton android:id="@+id/detailFull" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="全屏" app:icon="@drawable/ic_mobile_full" android:paddingHorizontal="4dp" android:visibility="gone" />
-      <com.google.android.material.button.MaterialButton android:id="@+id/detailCast" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="投屏" app:icon="@drawable/ic_mobile_cast" android:paddingHorizontal="4dp" android:visibility="gone" />
-      <com.google.android.material.button.MaterialButton android:id="@+id/detailSettings" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="设置" app:icon="@drawable/ic_mobile_settings" android:paddingHorizontal="4dp" android:visibility="gone" />
-    </LinearLayout>
-    <LinearLayout android:id="@+id/episodeShortcuts" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="12dp" android:visibility="gone">
-      <com.google.android.material.button.MaterialButton android:id="@+id/previousEpisode" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:text="@string/play_prev" app:icon="@drawable/exo_icon_previous" />
-      <com.google.android.material.button.MaterialButton android:id="@+id/currentEpisode" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:maxLines="1" android:ellipsize="end" app:icon="@drawable/ic_mobile_down" app:iconGravity="textEnd" />
-      <com.google.android.material.button.MaterialButton android:id="@+id/nextEpisode" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:text="@string/play_next" app:icon="@drawable/exo_icon_next" />
-    </LinearLayout>
+
+
     <TextView android:id="@+id/playbackStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="16dp" android:paddingBottom="8dp" android:textColor="@color/mobile_muted" android:textSize="12sp" android:maxLines="2" android:ellipsize="end" android:accessibilityLiveRegion="polite" android:visibility="gone" />
   </LinearLayout>
   <androidx.swiperefreshlayout.widget.SwipeRefreshLayout android:id="@+id/swipeLayout" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_below="@id/detailActions">
@@ -32,6 +24,7 @@
           <TextView android:id="@+id/remark" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" />
           <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="16dp" android:gravity="center_vertical">
             <TextView android:id="@+id/site" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:ellipsize="end" android:maxLines="1" android:textColor="@color/mobile_muted" android:textSize="12sp" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/lineToggle" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp" android:text="线路" android:visibility="gone" />
             <com.google.android.material.button.MaterialButton android:id="@+id/detailSource" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="换源" app:icon="@drawable/ic_mobile_source" android:paddingHorizontal="8dp" />
           </LinearLayout>
           <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginHorizontal="16dp" android:layout_marginBottom="8dp" android:background="@color/mobile_surface" />
@@ -40,6 +33,11 @@
             <com.google.android.material.button.MaterialButton android:id="@+id/detailDownload" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="下载" app:icon="@drawable/ic_mobile_download" android:paddingHorizontal="4dp" />
             <com.google.android.material.button.MaterialButton android:id="@+id/more" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="wrap_content" android:visibility="gone" android:text="全部选集" app:icon="@drawable/ic_mobile_chevron" app:iconGravity="textEnd" />
           </LinearLayout>
+    <LinearLayout android:id="@+id/episodeShortcuts" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="12dp" android:visibility="gone">
+      <com.google.android.material.button.MaterialButton android:id="@+id/previousEpisode" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:text="@string/play_prev" app:icon="@drawable/exo_icon_previous" />
+      <com.google.android.material.button.MaterialButton android:id="@+id/currentEpisode" style="@style/Mobile.Action" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:maxLines="1" android:ellipsize="end" app:icon="@drawable/ic_mobile_down" app:iconGravity="textEnd" />
+      <com.google.android.material.button.MaterialButton android:id="@+id/nextEpisode" style="@style/Mobile.Action" android:layout_width="wrap_content" android:layout_height="48dp" android:text="@string/play_next" app:icon="@drawable/exo_icon_next" />
+    </LinearLayout>
           <androidx.recyclerview.widget.RecyclerView android:id="@+id/flag" android:layout_width="match_parent" android:layout_height="wrap_content" android:nestedScrollingEnabled="false" android:clipToPadding="false" android:paddingHorizontal="16dp" app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" android:orientation="horizontal" />
           <com.google.android.material.textview.MaterialTextView android:id="@+id/quality_text" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_marginTop="16dp" android:layout_marginEnd="16dp" android:text="@string/detail_quality" android:textColor="@color/mobile_text" android:textSize="16sp" android:visibility="gone" tools:visibility="visible" />
           <androidx.recyclerview.widget.RecyclerView android:id="@+id/quality" android:nestedScrollingEnabled="false" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:clipChildren="false" android:clipToPadding="false" android:orientation="horizontal" android:paddingStart="16dp" android:paddingEnd="16dp" android:visibility="gone" app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" tools:visibility="visible" />

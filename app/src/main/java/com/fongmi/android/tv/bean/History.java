@@ -7,7 +7,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.media3.common.C;
 import androidx.room.Entity;
-import androidx.room.PrimaryKey;
+
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.Constant;
@@ -22,15 +22,13 @@ import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
-@Entity
+@Entity(primaryKeys = {"cid", "key"})
 public class History implements Diffable<History> {
 
     static final int MAX_EPISODE_URL_LENGTH = 16 * 1024;
 
     @NonNull
-    @PrimaryKey
     @SerializedName("key")
     private String key;
     @SerializedName("vodPic")
@@ -110,13 +108,25 @@ public class History implements Diffable<History> {
     }
 
     public static void sync(List<History> targets) {
-        targets.forEach(target -> {
-            List<History> items = findByName(target.getVodName());
-            if (items.isEmpty()) target.cid(VodConfig.getCid()).save();
-            else {
-                long latestTime = items.stream().mapToLong(History::getCreateTime).max().orElse(0L);
-                if (target.getCreateTime() > latestTime) target.cid(VodConfig.getCid()).merge(items, true).save();
+        sync(VodConfig.getCid(), targets, false);
+    }
+
+    public static int sync(int cid, List<History> targets, boolean replace) {
+        AppDatabase db = AppDatabase.get();
+        return db.runInTransaction(() -> {
+            if (replace) db.getHistoryDao().delete(cid);
+            int changes = 0;
+            for (History incoming : targets) {
+                if (incoming == null || incoming.key == null || !incoming.key.contains(AppDatabase.SYMBOL)
+                        || incoming.key.endsWith(AppDatabase.SYMBOL) || incoming.getVodName().isEmpty()) continue;
+                incoming.setKey(com.fongmi.android.tv.history.HistoryKey.local(com.fongmi.android.tv.history.HistoryKey.content(incoming.key), cid));
+                History local = db.getHistoryDao().find(cid, incoming.key);
+                if (local != null && local.createTime >= incoming.createTime) continue;
+                incoming.setEpisodeUrl(incoming.getEpisodeUrl());
+                db.getHistoryDao().insertOrUpdate(incoming.cid(cid));
+                changes++;
             }
+            return changes;
         });
     }
 
@@ -267,11 +277,11 @@ public class History implements Diffable<History> {
     }
 
     public String getSiteKey() {
-        return getKey().split(AppDatabase.SYMBOL)[0];
+        return getKey().split(AppDatabase.SYMBOL, 2)[0];
     }
 
     public String getVodId() {
-        return getKey().split(AppDatabase.SYMBOL)[1];
+        return com.fongmi.android.tv.history.HistoryKey.vodId(getKey());
     }
 
     public Flag getFlag() {
@@ -294,39 +304,19 @@ public class History implements Diffable<History> {
         return isRevPlay() ? R.string.play_backward_hint : R.string.play_forward_hint;
     }
 
-    private boolean shouldMerge(History item, boolean force) {
-        if (!force && getKey().equals(item.getKey())) return false;
-        if (getDuration() <= 0 || item.getDuration() <= 0) return true;
-        return Math.abs(getDuration() - item.getDuration()) <= TimeUnit.MINUTES.toMillis(10);
-    }
-
-    private History copyTo(History item) {
-        if (getOpening() > 0) item.setOpening(getOpening());
-        if (getEnding() > 0) item.setEnding(getEnding());
-        if (getSpeed() != 1) item.setSpeed(getSpeed());
-        return this;
+    public boolean unfinished() {
+        return position > 0 && duration > position && duration - position > Math.min(30000L, duration / 20);
     }
 
     public boolean canSave() {
-        return getPosition() > 0 && getDuration() > 0;
+        return getPosition() >= 0 && getDuration() > 0;
     }
 
     public boolean canSync() {
-        return System.currentTimeMillis() - getUpdateTime() > 5000;
-    }
-
-    public History merge() {
-        merge(false);
-        return this;
-    }
-
-    private History merge(boolean force) {
-        return merge(findByName(getVodName()), force);
-    }
-
-    private History merge(List<History> items, boolean force) {
-        for (History item : items) if (item.shouldMerge(this, force)) item.copyTo(this).delete();
-        return this;
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (updateTime != 0 && now - updateTime < 5000) return false;
+        updateTime = now;
+        return true;
     }
 
     public void replace(String key) {
@@ -335,17 +325,22 @@ public class History implements Diffable<History> {
     }
 
     public History save(int cid) {
-        return cid(cid).merge(true).save();
+        if (key != null && key.contains(AppDatabase.SYMBOL))
+            setKey(com.fongmi.android.tv.history.HistoryKey.local(com.fongmi.android.tv.history.HistoryKey.content(key), cid));
+        return cid(cid).save();
     }
 
     public History save() {
-        updateTime = System.currentTimeMillis();
-        AppDatabase.get().getHistoryDao().insertOrUpdate(this);
+        AppDatabase db = AppDatabase.get();
+        db.runInTransaction(() -> {
+            History previous = db.getHistoryDao().find(cid, key);
+            if (previous == null || previous.createTime <= createTime) db.getHistoryDao().insertOrUpdate(this);
+        });
         return this;
     }
 
     public History delete() {
-        AppDatabase.get().getHistoryDao().delete(VodConfig.getCid(), getKey());
+        AppDatabase.get().getHistoryDao().delete(getCid(), getKey());
         AppDatabase.get().getTrackDao().delete(getKey());
         return this;
     }
@@ -354,18 +349,6 @@ public class History implements Diffable<History> {
         if (flags.isEmpty()) return;
         setVodFlag(flags.get(0).getFlag());
         if (!flags.get(0).getEpisodes().isEmpty()) setVodRemarks(flags.get(0).getEpisodes().get(0).getName());
-        for (History item : findByName(getVodName())) {
-            if (getPosition() > 0) break;
-            for (Flag flag : flags) {
-                Episode episode = flag.find(item.getVodRemarks(), true);
-                if (episode == null) continue;
-                item.copyTo(this);
-                setVodFlag(flag.getFlag());
-                setPosition(item.getPosition());
-                setVodRemarks(episode.getName());
-                break;
-            }
-        }
     }
 
     @Override

@@ -24,6 +24,7 @@ public class SearchAdapter extends BaseDiffAdapter<Hit, SearchAdapter.ViewHolder
     public interface OnClickListener {
 
         void onItemClick(Vod item);
+        String sourceLabel(Vod item);
     }
 
     @NonNull
@@ -39,7 +40,7 @@ public class SearchAdapter extends BaseDiffAdapter<Hit, SearchAdapter.ViewHolder
         holder.binding.resultActions.setOrientation(large?android.widget.LinearLayout.VERTICAL:android.widget.LinearLayout.HORIZONTAL);
         holder.binding.site.setLayoutParams(new android.widget.LinearLayout.LayoutParams(large?ViewGroup.LayoutParams.MATCH_PARENT:0,ViewGroup.LayoutParams.WRAP_CONTENT,large?0:1));
         holder.binding.name.setText(item.getName());
-        holder.binding.site.setText(com.fongmi.android.tv.ui.search.SearchDisplayName.clean(item.getSiteName()));
+        holder.binding.site.setText(listener.sourceLabel(item));
         String metadata = java.util.stream.Stream.of(item.getYear(), item.getArea(), item.getTypeName()).filter(v -> v != null && !v.isEmpty()).collect(java.util.stream.Collectors.joining(" · "));
         holder.binding.metadata.setText(metadata);
         holder.binding.metadata.setVisibility(metadata.isEmpty() ? View.GONE : View.VISIBLE);

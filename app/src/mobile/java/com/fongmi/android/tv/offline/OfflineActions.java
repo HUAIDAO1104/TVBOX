@@ -22,7 +22,7 @@ public final class OfflineActions {
         new MaterialAlertDialogBuilder(activity).setTitle("下载当前集")
                 .setMessage(meta.title + "\n" + meta.episode + "\n\n" + (meta.danmaku.isEmpty() ?
                         "当前没有选中弹幕。可先返回播放器选择弹幕，或下载后导入弹幕 XML。" : "会一并保存当前选中的弹幕和外挂字幕。")
-                        + "\n下载完成后，可在“我的 → 下载管理”中离线播放。")
+                        + "\n下载完成后，可在首页的“下载”中离线播放。")
                 .setNegativeButton("取消", null).setPositiveButton("下载", (dialog, which) -> {
                     requestNotification(activity);
                     Toast.makeText(activity, "正在读取下载信息…", Toast.LENGTH_SHORT).show();

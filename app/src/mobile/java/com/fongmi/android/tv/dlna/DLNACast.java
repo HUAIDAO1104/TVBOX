@@ -42,6 +42,8 @@ public final class DLNACast {
     private volatile boolean completed;
     private volatile boolean failed;
     private final CastStartupGate startup = new CastStartupGate();
+    private java.util.function.Consumer<String> progress = ignored -> {};
+    private boolean compatibility;
     private long startTime;
     private boolean finishing;
 
@@ -51,6 +53,14 @@ public final class DLNACast {
         this.failure = failure;
     }
     public DLNACast(CastVideo video, Runnable runnable) { this(video, runnable, Notify::show); }
+
+    public void cast(Device item, boolean compatibility, java.util.function.Consumer<String> progress) {
+        this.compatibility = compatibility;
+        this.progress = progress;
+        cast(item);
+    }
+
+    private void status(String text) { App.post(() -> { if (active()) progress.accept(text); }); }
 
     public void cast(Device item) {
         startTime = System.nanoTime();
@@ -65,7 +75,10 @@ public final class DLNACast {
                 Task.execute(() -> {
                     try {
                         CastProxy.relay().prepare(session);
-                        if (active()) control.execute(uriAction(control, service));
+                        if (active()) {
+                            status("已连接 · 正在向电视发送播放地址");
+                            control.execute(uriAction(control, service));
+                        }
                     } catch (Exception e) {
                         fail("视频转发准备失败，请更换线路或检查网络后重试");
                     }
@@ -79,6 +92,8 @@ public final class DLNACast {
     }
 
     /** Closing the sheet after success must not tear down the active media relay. */
+    public String relayUri() { return session == null ? "" : session.url(); }
+
     public void cancel() {
         if (completed) return;
         cancelled = true;
@@ -107,10 +122,10 @@ public final class DLNACast {
     }
 
     private SetAVTransportURI uriAction(ControlPoint control, RemoteService service) {
-        return new SetAVTransportURI(service, session.url(), buildMetaData()) {
+        return new SetAVTransportURI(service, session.url(), compatibility ? "" : buildMetaData()) {
             @Override
             public void success(ActionInvocation i) {
-                if (active()) control.execute(playAction(control, service));
+                if (active()) { status("地址已接收 · 等待电视请求视频"); control.execute(playAction(control, service)); }
             }
 
             @Override
@@ -188,12 +203,13 @@ public final class DLNACast {
 
     private void observed(ControlPoint control, RemoteService service, boolean playing, long seconds) {
         if (!active() || finishing) return;
+        if (session.hasMedia()) status(seconds > 0 ? "电视播放进度已推进" : "正在传输视频 · 等待电视回报播放进度");
         if (!startup.observe(System.nanoTime() / 1_000_000L, session.hasMedia(), playing, seconds)) {
             App.post(() -> pollPlayback(control, service), 500);
             return;
         }
         finishing = true;
-        if (startup.shouldResume(session.canSeek(), video.position()) && service.getAction("Seek") != null) {
+        if (!compatibility && startup.shouldResume(session.canSeek(), video.position()) && service.getAction("Seek") != null) {
             control.execute(new Seek(service, SeekMode.REL_TIME, formatMs(video.position())) {
                 @Override public void success(ActionInvocation invocation) { App.post(DLNACast.this::complete); }
                 @Override public void failure(ActionInvocation invocation, UpnpResponse response, String message) { App.post(DLNACast.this::complete); }

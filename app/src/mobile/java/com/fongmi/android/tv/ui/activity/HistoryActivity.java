@@ -12,6 +12,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.viewbinding.ViewBinding;
 
+import com.fongmi.android.tv.history.HistoryLink;
 import com.fongmi.android.tv.Product;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.History;
@@ -50,6 +51,7 @@ public class HistoryActivity extends BaseActivity implements HistoryAdapter.OnCl
     protected void initView(Bundle savedInstanceState) {
         setSupportActionBar(mBinding.toolbar);
         setRecyclerView();
+        if (savedInstanceState == null && getIntent().getBooleanExtra("pair", false)) mBinding.toolbar.post(this::onSync);
         getHistory();
         mBinding.search.addTextChangedListener(new android.text.TextWatcher() {
             public void beforeTextChanged(CharSequence s,int st,int c,int a){}
@@ -77,8 +79,41 @@ public class HistoryActivity extends BaseActivity implements HistoryAdapter.OnCl
         });
     }
 
+    private final androidx.activity.result.ActivityResultLauncher<Intent> scanner = registerForActivityResult(
+            new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null)
+                    HistoryLink.pair(result.getData().getStringExtra("address"), this::syncResult);
+            });
+
+    public static void startSync(android.app.Activity activity) {
+        activity.startActivity(new Intent(activity, HistoryActivity.class).putExtra("pair", true));
+    }
+
     private void onSync() {
-        SyncDialog.create().history().show(this);
+        boolean paired = HistoryLink.paired();
+        String[] actions = paired ? new String[]{"立即同步", "更换电视", "解除配对", "旧版设备手动同步"}
+                : new String[]{"扫描电视配对码", "旧版设备手动同步"};
+        String status = HistoryLink.status();
+        new MaterialAlertDialogBuilder(this).setTitle(status.isEmpty() ? "跨设备续播" : status)
+                .setItems(actions, (d, i) -> {
+                    if (paired && i == 0) HistoryLink.sync(this::syncResult);
+                    else if (i == (paired ? 1 : 0)) scanner.launch(new Intent(this, ScanActivity.class));
+                    else if (paired && i == 2) {
+                        HistoryLink.forget();
+                        syncResult("已解除配对");
+                    } else SyncDialog.create().history().show(this);
+                }).show();
+    }
+
+    private void syncResult(String text) {
+        if (isFinishing() || isDestroyed()) return;
+        com.fongmi.android.tv.utils.Notify.show(text);
+        var item = HistoryLink.conflict();
+        if (item == null) return;
+        new MaterialAlertDialogBuilder(this).setTitle("选择要保留的观看记录").setMessage(item.description())
+                .setNegativeButton("稍后", null)
+                .setNeutralButton("使用电视", (d, i) -> HistoryLink.resolve(item, false, this::syncResult))
+                .setPositiveButton("使用手机", (d, i) -> HistoryLink.resolve(item, true, this::syncResult)).show();
     }
 
     private void onDelete() {

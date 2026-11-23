@@ -158,6 +158,18 @@ public class AppDatabaseMigrationTest {
         database.close();
     }
 
+    @Test
+    public void migration38To39ScopesHistoryWithoutDroppingProgress() throws Exception {
+        SupportSQLiteDatabase db = helper.createDatabase(TEST_DB, 38);
+        insertCoreFixtures(db);
+        db.close();
+        db = helper.runMigrationsAndValidate(TEST_DB, 39, true, Migrations.MIGRATION_38_39);
+        assertCoreFixtures(db);
+        db.execSQL("INSERT INTO History SELECT `key`,vodPic,vodName,vodFlag,vodRemarks,episodeUrl,revSort,revPlay,createTime,opening,ending,position,duration,speed,scale,2 FROM History WHERE cid=0");
+        assertEquals(2, scalarInt(db, "SELECT COUNT(*) FROM History WHERE `key`='history-key'"));
+        db.close();
+    }
+
     private static void insertVersion21Fixtures(SupportSQLiteDatabase database) {
         database.execSQL("INSERT INTO Config (id,type,time,url,json,name,home,parse) VALUES (1,0,123,'https://fixture.invalid/config.json','{}','Fixture config','home','')");
         database.execSQL("INSERT INTO Keep (`key`,siteName,vodName,vodPic,createTime,type,cid) VALUES ('keep-key','fixture-site','Fixture keep','poster',123,0,0)");

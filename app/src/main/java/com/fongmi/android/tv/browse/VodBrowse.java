@@ -138,7 +138,7 @@ class VodBrowse {
         history.setPosition(position);
         history.setDuration(duration);
         history.setCreateTime(System.currentTimeMillis());
-        if (history.canSave()) Task.execute(() -> history.merge().save());
+        new com.fongmi.android.tv.playback.vod.VodHistoryPolicy().save(history);
         return true;
     }
 

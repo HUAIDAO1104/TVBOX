@@ -5,6 +5,7 @@ import com.fongmi.android.tv.App;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
@@ -23,13 +24,20 @@ public final class UpdateClient {
     }
 
     public static UpdateManifest fetch() throws IOException {
-        List<String> urls = UpdateSource.manifestCandidates();
-        if (urls.isEmpty()) throw new IOException("No update source configured");
-        ExecutorService executor = Executors.newFixedThreadPool(Math.min(4, urls.size()));
+        List<Callable<UpdateManifest>> sources = new ArrayList<>();
+        for (String url : UpdateSource.manifestCandidates()) sources.add(() -> fetch(url));
+        return newestAvailable(sources, SOURCE_TIMEOUT_MS + 1000);
+    }
+
+    static UpdateManifest newestAvailable(List<Callable<UpdateManifest>> sources, long timeoutMs) throws IOException {
+        if (sources.isEmpty()) throw new IOException("No update source configured");
+        // Start the official endpoint alongside the mirrors. A fast cached manifest may lag a release.
+        ExecutorService executor = Executors.newFixedThreadPool(sources.size());
         CompletionService<UpdateManifest> completion = new ExecutorCompletionService<>(executor);
         List<Future<UpdateManifest>> futures = new ArrayList<>();
-        for (String url : urls) futures.add(completion.submit(() -> fetch(url)));
-        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(SOURCE_TIMEOUT_MS + 1_000L);
+        for (var source : sources) futures.add(completion.submit(source));
+        UpdateManifest newest = null;
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMs);
         IOException last = new IOException("Update source unavailable");
         try {
             for (int i = 0; i < futures.size(); i++) {
@@ -38,7 +46,8 @@ public final class UpdateClient {
                 Future<UpdateManifest> future = completion.poll(remaining, TimeUnit.NANOSECONDS);
                 if (future == null) break;
                 try {
-                    return future.get();
+                    UpdateManifest received = future.get();
+                    if (newest == null || received.versionCode() > newest.versionCode()) newest = received;
                 } catch (Exception error) {
                     last = new IOException("Update source unavailable", error);
                 }
@@ -50,6 +59,7 @@ public final class UpdateClient {
             for (Future<UpdateManifest> future : futures) future.cancel(true);
             executor.shutdownNow();
         }
+        if (newest != null) return newest;
         throw last;
     }
 

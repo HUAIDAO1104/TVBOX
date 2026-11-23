@@ -33,6 +33,22 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
     private String active = "";
     private boolean updatingTabs;
     private boolean opening;
+    private boolean grouped;
+    private final Map<List<String>, List<SearchRowsViewModel.Hit>> editions = new LinkedHashMap<>();
+    private final Set<String> watched = new HashSet<>();
+
+    private List<String> edition(Vod item) {
+        if (item.isFolder() || item.getYear().isEmpty() || item.getTypeName().isEmpty())
+            return List.of(item.getSiteKey(), item.getId(), item.getName());
+        return List.of(item.getName(), item.getYear(), item.getTypeName(), item.getArea());
+    }
+
+    @Override public String sourceLabel(Vod item) {
+        String source = SearchDisplayName.clean(item.getSiteName());
+        int count = editions.getOrDefault(edition(item), List.of()).size();
+        return (watched.contains(item.getSiteKey() + "@@@" + item.getId()) ? "上次观看 · " : "")
+                + source + (grouped && count > 1 ? " · " + count + " 个版本" : "");
+    }
     private SearchProgress progress = SearchProgress.idle();
     private int renderGeneration;
     public static CollectFragment newInstance(String keyword) {
@@ -53,6 +69,13 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
         binding.editQuery.setOnClickListener(v -> {
             Bundle result = new Bundle(); result.putBoolean("edit", true); getParentFragmentManager().setFragmentResult("result", result);
             getParentFragmentManager().popBackStack();
+        });
+        grouped = requireContext().getSharedPreferences("search-view", 0).getBoolean("group", false);
+        binding.groupView.setOnClickListener(v -> {
+            grouped = !grouped;
+            requireContext().getSharedPreferences("search-view", 0).edit().putBoolean("group", grouped).apply();
+            positions.clear();
+            renderRows(false);
         });
         adapter = new SearchAdapter(this);
         adapter.setStateRestorationPolicy(androidx.recyclerview.widget.RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY);
@@ -159,8 +182,17 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
     private void renderRows(boolean restore) {
         if (binding == null) return;
         String key = active; int generation = ++renderGeneration;
-        adapter.setItems(rows.getOrDefault(key, List.of()), () -> {
+        List<SearchRowsViewModel.Hit> visible = rows.getOrDefault(key, List.of());
+        editions.clear();
+        binding.groupView.setText(grouped ? "逐条显示" : "合并版本");
+        if (grouped) {
+            for (var hit : visible) editions.computeIfAbsent(edition(hit.vod()), ignored -> new ArrayList<>()).add(hit);
+            visible = editions.values().stream().map(group -> group.stream().filter(hit ->
+                    watched.contains(hit.vod().getSiteKey() + "@@@" + hit.vod().getId())).findFirst().orElse(group.get(0))).toList();
+        }
+        adapter.setItems(visible, () -> {
             if (binding == null || generation != renderGeneration || !active.equals(key)) return;
+            if (adapter.getItemCount() > 0) adapter.notifyItemRangeChanged(0, adapter.getItemCount(), "sources");
             if (restore) {
                 Parcelable position = positions.get(key);
                 if (position != null) binding.recycler.getLayoutManager().onRestoreInstanceState(position);
@@ -185,11 +217,31 @@ public class CollectFragment extends BaseFragment implements SearchAdapter.OnCli
     }
     @Override public void onItemClick(Vod item) {
         if (opening) return;
+        List<SearchRowsViewModel.Hit> variants = editions.getOrDefault(edition(item), List.of());
+        if (grouped && variants.size() > 1) {
+            String[] labels = variants.stream().map(hit -> SearchDisplayName.clean(hit.vod().getSiteName()) + " · "
+                    + hit.vod().getRemarks() + (watched.contains(hit.vod().getSiteKey() + "@@@" + hit.vod().getId()) ? " · 上次观看" : "")).toArray(String[]::new);
+            new androidx.appcompat.app.AlertDialog.Builder(requireContext()).setTitle(item.getName())
+                    .setItems(labels, (d, i) -> openResult(variants.get(i).vod())).show();
+        } else openResult(item);
+    }
+
+    private void openResult(Vod item) {
         opening = true;
         if (item.isFolder()) FolderActivity.start(requireActivity(), item.getSiteKey(), Result.folder(item));
         else VideoActivity.collect(requireActivity(), item.getSiteKey(), item.getId(), item.getName(), item.getPic());
     }
-    @Override public void onResume() { super.onResume(); opening = false; }
+    @Override public void onResume() { super.onResume(); opening = false;
+        if (adapter == null) return;
+        com.fongmi.android.tv.utils.Task.execute(() -> {
+            var history = History.get();
+            com.fongmi.android.tv.App.post(() -> {
+                if (binding == null) return;
+                watched.clear();
+                history.forEach(h -> watched.add(com.fongmi.android.tv.history.HistoryKey.content(h.getKey())));
+                renderRows(false);
+            });
+        }); }
     @Override public void onDestroyView() {
         super.onDestroyView();
         // Rotation retains the ViewModel/session. Leaving the result route cancels its work.

@@ -38,6 +38,7 @@ public class MobileExperienceTest {
     private boolean previousDanmaku;
     private float previousSpeed;
     private androidx.core.os.LocaleListCompat previousLocales;
+    private com.fongmi.android.tv.bean.Config previousConfig;
     @Before public void setup() throws Exception {
         context=ApplicationProvider.getApplicationContext();
         context.getSharedPreferences("mobile-watchlist-v1",0).edit().clear().commit();
@@ -61,6 +62,9 @@ public class MobileExperienceTest {
                 return response.setBody(new Buffer().write(video,start,end-start+1));
             }
         });server.start();
+        previousConfig = VodConfig.get().getConfig();
+        // Each origin serves a different library, even though the fixtures reuse video ids.
+        VodConfig.get().config(com.fongmi.android.tv.bean.Config.find(server.url("/fixture").toString(), "Offline fixture", 0));
         sitesField=VodConfig.class.getDeclaredField("sites");sitesField.setAccessible(true);oldSites=sitesField.get(VodConfig.get());
         Site site=new Gson().fromJson("{\"key\":\"mobile-ui-fixture\",\"name\":\"本地测试片库\",\"type\":1,\"api\":\""+server.url("/api")+"\"}",Site.class);
         sitesField.set(VodConfig.get(),new ArrayList<>(java.util.List.of(site)));
@@ -72,6 +76,7 @@ public class MobileExperienceTest {
         main(()->{androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(previousLocales);com.fongmi.android.tv.setting.DanmakuSetting.putLoad(previousDanmaku);com.fongmi.android.tv.setting.PlayerSetting.putSpeed(previousSpeed);});
         main(()->{context.stopService(new Intent(context,OfflineBatchService.class));for(OfflineBatchQueue.Job j:OfflineBatchQueue.get(context).jobs())OfflineBatchQueue.get(context).remove(j.id);store.manager.removeAllDownloads();});
         if(sitesField!=null)sitesField.set(VodConfig.get(),oldSites);
+        VodConfig.get().config(previousConfig);
         if(server!=null)server.shutdown();
     }
     private static void main(Runnable action){InstrumentationRegistry.getInstrumentation().runOnMainSync(action);}
@@ -127,7 +132,12 @@ public class MobileExperienceTest {
     @Test public void realScrubPreviewAndUnifiedCaptionPanelWork()throws Exception{
         Intent intent=new Intent(context,VideoActivity.class).putExtra("key","mobile-ui-fixture").putExtra("id","mobile-ui-fixture").putExtra("name","星河旅途");
         ActivityScenario<VideoActivity> activity=ActivityScenario.launch(intent);screen=activity;AtomicReference<VideoActivity> ref=new AtomicReference<>();activity.onActivity(ref::set);
-        waitFor(()->onMain(()->ref.get().playbackPlayer()!=null&&ref.get().playbackPlayer().getDuration()>0&&ref.get().offlineFlag()!=null),30000);
+        waitFor(()->onMain(()->{
+            var player = ref.get().playbackPlayer();
+            var item = player == null ? null : player.getCurrentMediaItem();
+            return item != null && item.localConfiguration != null && item.localConfiguration.uri.getPort() == server.getPort()
+                    && player.getDuration() > 0 && ref.get().offlineFlag() != null;
+        }),30000);
         activity.onActivity(a->{a.playbackPlayer().pause();if(a.playbackBinding().control.getRoot().getVisibility()!=View.VISIBLE)a.onSingleTap();a.onSeeking(2000);});
         waitFor(()->onMain(()->ref.get().playbackBinding().control.previewImage.getDrawable()!=null),12000);screenshot("scrub-real-frame");
         activity.onActivity(a->{a.onSeekEnd(2000);assertEquals(View.GONE,a.playbackBinding().control.scrubPreview.getVisibility());PreciseSeekDialog.show(a,a.playbackPlayer().getPlayer());});
@@ -174,6 +184,9 @@ public class MobileExperienceTest {
             waitFor(()->onMain(()->{for(androidx.fragment.app.Fragment f:ref.get().getSupportFragmentManager().getFragments())if(f instanceof com.fongmi.android.tv.ui.fragment.CollectFragment&&f.getView()!=null){androidx.recyclerview.widget.RecyclerView list=f.requireView().findViewById(R.id.recycler);return list!=null&&list.getAdapter()!=null&&list.getAdapter().getItemCount()==2&&!((com.fongmi.android.tv.ui.adapter.SearchAdapter)list.getAdapter()).getItem(0).isSameItem(((com.fongmi.android.tv.ui.adapter.SearchAdapter)list.getAdapter()).getItem(1));}return false;}),30000);
             screenshot("search-by-source-large-text");
             search.onActivity(a->{for(androidx.fragment.app.Fragment f:a.getSupportFragmentManager().getFragments())if(f instanceof com.fongmi.android.tv.ui.fragment.CollectFragment&&f.getView()!=null){androidx.recyclerview.widget.RecyclerView list=f.requireView().findViewById(R.id.recycler);list.findViewHolderForAdapterPosition(0).itemView.performClick();}});
+            waitFor(() -> onMain(() -> com.fongmi.android.tv.App.activity() instanceof VideoActivity), 10000);
+            main(() -> com.fongmi.android.tv.App.activity().finish());
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
         }finally{com.fongmi.android.tv.setting.Setting.putSearchSources(searchScope,previousSources);if(screen!=null){screen.close();screen=null;}main(keep::delete);InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand("settings put system font_scale "+previous).close();Thread.sleep(500);}
     }
     @Test public void offlinePreviewAndCaptionPanelUseOnlyLocalFiles()throws Exception{

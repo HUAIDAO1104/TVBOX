@@ -156,6 +156,10 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
 
     @Override
     protected void initEvent() {
+        binding.groupView.setOnClickListener(view -> {
+            getPreferences(0).edit().putBoolean("groupEditions", !getPreferences(0).getBoolean("groupEditions", false)).apply();
+            submitWorks();
+        });
         binding.stop.setOnClickListener(view -> {
             if (progress.running()) viewModel.stopSearch();
             else showSearchActions();
@@ -596,7 +600,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
             viewModel.prioritizeSearch(site -> matchesSourceFamily(site, preferred));
         }
         updateSourceFamilyLane();
-        workAdapter.replace(aggregator.snapshot());
+        workAdapter.replace(visibleWorks());
         submitWorks();
         renderState(resolveState(progress));
         Parcelable scrollState = familyScrollStates.get(activeSourceFamily);
@@ -618,6 +622,21 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         return (int) vodBySource.values().stream().map(vod -> vod.getSiteKey()).distinct().count();
     }
 
+    private List<SearchWork> visibleWorks() {
+        List<SearchWork> raw = aggregator.snapshot();
+        boolean all = SOURCE_FAMILY_ALL.equals(activeSourceFamily);
+        binding.groupView.setVisibility(all ? View.VISIBLE : View.GONE);
+        boolean group = getPreferences(0).getBoolean("groupEditions", false);
+        binding.groupView.setText(group ? "逐条显示" : "合并版本");
+        if (!group || !all) return raw;
+        Map<String, SearchWork> visible = new LinkedHashMap<>();
+        for (SearchWork work : raw) {
+            SearchWork edition = alternatives(work);
+            visible.putIfAbsent(edition.stableId(), edition);
+        }
+        return List.copyOf(visible.values());
+    }
+
     private void submitWorks() {
         View currentFocus = getCurrentFocus();
         RecyclerView.ViewHolder focusedHolder = currentFocus == null
@@ -626,10 +645,10 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
                 && focusedHolder.getBindingAdapterPosition() != RecyclerView.NO_POSITION;
         String focused = focusedWorkId();
         String focusedSource = focusedWorkSourceId();
-        workAdapter.submit(aggregator.snapshot(), () -> {
+        workAdapter.submit(visibleWorks(), () -> {
         if (isFinishing() || isDestroyed()) return;
         binding.resultSummary.setText(getString(R.string.search_v2_result_summary,
-                aggregator.workCount(), visibleSiteCount()));
+                workAdapter.getItemCount(), visibleSiteCount()));
         if (focused != null) selectedWorkId = focused;
         if (focusedSource != null) selectedSourceId = focusedSource;
         updateOpenPanel();
@@ -639,6 +658,21 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
             focusWork(focused, focusedSource);
         }
         });
+    }
+
+    private Map<List<String>, Long> recentPlayback = Map.of();
+
+    @Override public long watchedAt(SearchSource source) {
+        if (source == null) return 0;
+        Vod vod = allVodBySource.get(source.stableId());
+        if (vod == null || vod.getSite() == null) return 0;
+        String url = vod.getSite().getConfigUrl();
+        if (url.isEmpty() && vod.getSite().getRepositoryId() == 0) url = VodConfig.getUrl();
+        return url == null ? 0 : recentPlayback.getOrDefault(List.of(url, source.siteKey(), source.vodId()), 0L);
+    }
+
+    private List<SearchSource> sourceOrder(SearchWork work) {
+        return alternatives(work).rankedSources().stream().sorted(java.util.Comparator.comparingLong(this::watchedAt).reversed()).toList();
     }
 
     private void updateOpenPanel() {
@@ -654,7 +688,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         panelWorkId = work.stableId();
         selectedWorkId = work.stableId();
         binding.sourceTitle.setText(getString(R.string.search_v2_source_title, work.displayTitle()));
-        boolean changed = sourceAdapter.submit(alternatives(work).rankedSources(), work.recommendedSource(), work.displayTitle());
+        boolean changed = sourceAdapter.submit(sourceOrder(work), work.recommendedSource(), work.displayTitle());
         if (changed) restoreSourceFocus(focusedSource);
     }
 
@@ -796,7 +830,8 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         if (work == null || work.recommendedSource() == null) return;
         selectedWorkId = work.stableId();
         selectedSourceId = work.recommendedSource().stableId();
-        openSource(work.recommendedSource());
+        if (work.sourceCount() > 1) onShowSources(work);
+        else openSource(work.recommendedSource());
     }
 
     @Override
@@ -806,7 +841,7 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
         selectedSourceId = sourceAnchor(work);
         panelWorkId = work.stableId();
         binding.sourceTitle.setText(getString(R.string.search_v2_source_title, work.displayTitle()));
-        sourceAdapter.submit(alternatives(work).rankedSources(), work.recommendedSource(), work.displayTitle());
+        sourceAdapter.submit(sourceOrder(work), work.recommendedSource(), work.displayTitle());
         binding.sourceScrim.setVisibility(View.VISIBLE);
         binding.sourcePanel.setVisibility(View.VISIBLE);
         binding.sourcePanel.bringToFront();
@@ -1089,6 +1124,20 @@ public class CollectActivity extends BaseActivity implements SearchWorkAdapter.L
     protected void onResume() {
         super.onResume();
         openingSource = false;
+        com.fongmi.android.tv.utils.Task.execute(() -> {
+            Map<List<String>, Long> recent = new LinkedHashMap<>();
+            for (var config : com.fongmi.android.tv.bean.Config.findUrls()) {
+                if (config.getUrl() == null) continue;
+                for (var h : com.fongmi.android.tv.bean.History.get(config.getId()))
+                    recent.put(List.of(config.getUrl(), h.getSiteKey(), h.getVodId()), h.getCreateTime());
+            }
+            com.fongmi.android.tv.App.post(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                recentPlayback = recent;
+                if (workAdapter != null) workAdapter.notifyItemRangeChanged(0, workAdapter.getItemCount(), "history");
+                updateOpenPanel();
+            });
+        });
     }
 
     @Override

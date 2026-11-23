@@ -90,6 +90,22 @@
                 tools:text="正在搜索" />
 
             <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/groupView"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/selector_search_v2_action"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:nextFocusDown="@id/resultRecycler"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:textColor="@color/search_v2_action_text"
+                android:textSize="12sp"
+                android:text="合并版本" />
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/sourceFilter"
                 android:layout_width="wrap_content"
                 android:layout_height="32dp"

@@ -33,6 +33,7 @@ public final class OfflineDownloadsActivity extends BaseActivity {
     private final Map<String,Long> rates = new HashMap<>();
     private final Adapter adapter = new Adapter();
     private int filter, sorting;
+    private boolean storageExpanded;
     private final Set<String> expanded = new HashSet<>();
     private final List<Object> display = new ArrayList<>();
     private static final String[] SORTS = {"最近添加", "影片名称", "占用空间"};
@@ -60,8 +61,25 @@ public final class OfflineDownloadsActivity extends BaseActivity {
         boolean removing() { return download!=null && download.state==Download.STATE_REMOVING; }
     }
     public static void start(Context context) { context.startActivity(new Intent(context, OfflineDownloadsActivity.class)); }
+    public static void tasks(Context context) {
+        context.startActivity(new Intent(context, OfflineDownloadsActivity.class).putExtra("filter", 1));
+    }
     @Override protected ViewBinding getBinding() { return binding = ActivityOfflineDownloadsBinding.inflate(getLayoutInflater()); }
     @Override protected void initView(Bundle state) {
+        filter = getIntent().getIntExtra("filter", getIntent().getBooleanExtra("tabRoot", false) ? 2 : 0);
+        if (getIntent().getBooleanExtra("tabRoot", false)) {
+            binding.navigation.setVisibility(View.VISIBLE);
+            binding.navigation.setSelectedItemId(R.id.offlineLibrary);
+            binding.navigation.setOnItemSelectedListener(item -> {
+                if (item.getItemId() == R.id.offlineLibrary) return true;
+                startActivity(new Intent(this, HomeActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                        .putExtra("homeTab", item.getItemId()));
+                finish();
+                return true;
+            });
+        }
+        storageExpanded = state != null && state.getBoolean("storageExpanded");
+        binding.storageToggle.setOnClickListener(v -> { storageExpanded = !storageExpanded; refresh(); });
         store = OfflineStore.get(this); queue=OfflineBatchQueue.get(this);
         sorting=getPreferences(0).getInt("sorting",0); if(sorting<0||sorting>=SORTS.length)sorting=0;
         if (state != null) {
@@ -99,6 +117,7 @@ public final class OfflineDownloadsActivity extends BaseActivity {
     @Override protected void onStop() { handler.removeCallbacks(tick); super.onStop(); }
     @Override protected void onBackInvoked() { if(editing){editing=false;selected.clear();refresh();}else super.onBackInvoked(); }
     @Override protected void onSaveInstanceState(Bundle state) {
+        state.putBoolean("storageExpanded", storageExpanded);
         state.putStringArrayList("expanded",new ArrayList<>(expanded));state.putString("importId",importId);state.putInt("filter",filter);state.putBoolean("editing",editing);
         state.putStringArrayList("selected",new ArrayList<>(selected));state.putString("search",binding.search.getText().toString());super.onSaveInstanceState(state);
     }
@@ -132,7 +151,8 @@ public final class OfflineDownloadsActivity extends BaseActivity {
         binding.storage.setText(size(used)+"  已下载");binding.storageHint.setText(completed+" 集可离线观看 · 设备可用 "+size(free));
         binding.storageProgress.setProgress(total>0?(int)Math.min(100,used*100/total):0);
         binding.manage.setText(editing?"完成":"管理");binding.manage.setEnabled(editing||!all.isEmpty());
-        binding.overview.setVisibility(editing||getResources().getConfiguration().screenHeightDp<500?View.GONE:View.VISIBLE);binding.selectionBar.setVisibility(editing?View.VISIBLE:View.GONE);binding.batchBar.setVisibility(editing?View.VISIBLE:View.GONE);
+        binding.storageToggle.setVisibility(editing ? View.GONE : View.VISIBLE);
+        binding.overview.setVisibility(!editing && storageExpanded ? View.VISIBLE : View.GONE);binding.selectionBar.setVisibility(editing?View.VISIBLE:View.GONE);binding.batchBar.setVisibility(editing?View.VISIBLE:View.GONE);
         binding.selectionCount.setText("已选 "+selected.size()+" 项");binding.selectAll.setText(!visible.isEmpty()&&selected.containsAll(visible)?"取消全选":"全选当前列表");
         boolean pause=false,resume=false;for(Row r:items)if(selected.contains(r.id)){pause|=!r.complete()&&!r.paused()&&!r.failed()&&!r.removing();resume|=r.paused()||r.failed();}
         binding.pauseSelected.setEnabled(pause);binding.resumeSelected.setEnabled(resume);binding.deleteSelected.setEnabled(!selected.isEmpty());rebuildGroups();adapter.notifyDataSetChanged();
@@ -235,14 +255,17 @@ public final class OfflineDownloadsActivity extends BaseActivity {
             h.view.action.setEnabled(!r.removing());h.view.action.setContentDescription(r.complete()?"离线播放":r.failed()?"重试下载":r.paused()?"继续下载":"暂停下载");
             float percent=r.download==null?-1:r.download.getPercentDownloaded();
             boolean indeterminate=(r.job!=null&&r.job.state==OfflineBatchQueue.PREPARING)||(r.download!=null&&percent<0&&r.download.state==Download.STATE_DOWNLOADING);
-            h.view.progress.setVisibility(r.job!=null&&r.job.state!=OfflineBatchQueue.PREPARING?View.GONE:View.VISIBLE);
+            h.view.progress.setVisibility(r.complete()||r.job!=null&&r.job.state!=OfflineBatchQueue.PREPARING?View.GONE:View.VISIBLE);
             h.view.progress.setIndeterminate(indeterminate);if(!indeterminate)h.view.progress.setProgress(r.complete()?100:(int)Math.max(0,percent));
             if(r.download==null){h.view.size.setText(r.paused()?"继续后将重新获取片源":r.failed()?"重试后将重新获取片源":"准备完成后将自动开始下载");h.view.extras.setText(r.meta.danmaku.isEmpty()?"弹幕未匹配 · 可在下载后导入":"将同时保存已匹配的弹幕");}
             else{
                 Download d=r.download;long speed=d.state==Download.STATE_DOWNLOADING?rates.getOrDefault(r.id,0L):0;
                 String bytes=size(d.getBytesDownloaded())+(d.contentLength>0?" / "+size(d.contentLength):"");
                 String detail=speed>0?" · "+size(speed)+"/s":percent>=0&&!r.complete()?" · "+(int)percent+"%":"";
-                h.view.size.setText(bytes+detail);h.view.extras.setText(store.extrasStatus(d));
+                long resume = r.complete() ? store.position(d.request.id) : 0;
+                String saved = resume > 0 ? "续播 " + android.text.format.DateUtils.formatElapsedTime(resume / 1000) : size(d.getBytesDownloaded());
+                h.view.size.setText(r.complete() ? saved : bytes + detail);
+                h.view.extras.setText(store.extrasStatus(d));
             }
             h.view.getRoot().setContentDescription(r.meta.title+" "+r.meta.episode+"，"+state(r)+(editing?(selected.contains(r.id)?"，已选择":"，未选择"):""));
             h.view.getRoot().setOnClickListener(v->{if(editing){if(!selected.add(r.id))selected.remove(r.id);refresh();}else if(r.complete())action(r);else manage(r);});

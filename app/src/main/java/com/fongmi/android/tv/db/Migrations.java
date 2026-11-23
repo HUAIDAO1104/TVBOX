@@ -277,4 +277,27 @@ public class Migrations {
             database.execSQL("ALTER TABLE `RepositoryItem` ADD COLUMN `errorMessage` TEXT NOT NULL DEFAULT ''");
         }
     };
+    public static final Migration MIGRATION_38_39 = new Migration(38, 39) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("CREATE TABLE History_Backup (`key` TEXT NOT NULL, `vodPic` TEXT, `vodName` TEXT, `vodFlag` TEXT, `vodRemarks` TEXT, `episodeUrl` TEXT, `revSort` INTEGER NOT NULL, `revPlay` INTEGER NOT NULL, `createTime` INTEGER NOT NULL, `opening` INTEGER NOT NULL, `ending` INTEGER NOT NULL, `position` INTEGER NOT NULL, `duration` INTEGER NOT NULL, `speed` REAL NOT NULL, `scale` INTEGER NOT NULL, `cid` INTEGER NOT NULL, PRIMARY KEY(`cid`, `key`))");
+            database.execSQL("INSERT INTO History_Backup SELECT `key`, `vodPic`, `vodName`, `vodFlag`, `vodRemarks`, `episodeUrl`, `revSort`, `revPlay`, `createTime`, `opening`, `ending`, `position`, `duration`, `speed`, `scale`, `cid` FROM History");
+            // Older manual imports could keep the sender's local id in the key. Re-key by
+            // destination config. If an exact counterpart already exists keep its newest progress.
+            try (android.database.Cursor rows = database.query("SELECT `key`,cid FROM History ORDER BY createTime ASC")) {
+                while (rows.moveToNext()) {
+                    String old = rows.getString(0);
+                    int cid = rows.getInt(1);
+                    if (!old.contains("@@@")) continue;
+                    String corrected = com.fongmi.android.tv.history.HistoryKey.local(com.fongmi.android.tv.history.HistoryKey.content(old), cid);
+                    if (old.equals(corrected)) continue;
+                    database.execSQL("DELETE FROM History_Backup WHERE cid=? AND `key`=? AND createTime <= (SELECT createTime FROM History_Backup WHERE cid=? AND `key`=?)",
+                            new Object[]{cid, old, cid, corrected});
+                    database.execSQL("UPDATE OR REPLACE History_Backup SET `key`=? WHERE cid=? AND `key`=?", new Object[]{corrected, cid, old});
+                }
+            }
+            database.execSQL("DROP TABLE History");
+            database.execSQL("ALTER TABLE History_Backup RENAME TO History");
+        }
+    };
 }

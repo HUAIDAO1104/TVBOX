@@ -102,8 +102,11 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     @Override
     protected void initEvent() {
         mBinding.continueEntry.setOnClickListener(v -> {
-            if (recentHistory != null) com.fongmi.android.tv.ui.activity.VideoActivity.start(requireActivity(), recentHistory.getSiteKey(), recentHistory.getVodId(), recentHistory.getVodName(), recentHistory.getVodPic());
+            if (recentHistory == null) SearchActivity.start(requireActivity());
+            else com.fongmi.android.tv.ui.activity.VideoActivity.start(requireActivity(), recentHistory.getSiteKey(), recentHistory.getVodId(), recentHistory.getVodName(), recentHistory.getVodPic());
         });
+        mBinding.castController.setOnClickListener(v -> com.fongmi.android.tv.dlna.ActiveCast.show(requireActivity(), null));
+        mBinding.updates.setOnClickListener(v -> com.fongmi.android.tv.ui.activity.WatchlistActivity.start(requireActivity()));
         mBinding.searchEntry.setOnClickListener(v -> SearchActivity.start(requireActivity()));
         mBinding.liveEntry.setOnClickListener(v -> LiveActivity.start(requireActivity()));
         mBinding.configEntry.setOnClickListener(this::onSite);
@@ -181,11 +184,21 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     private void loadRecentHistory() {
         com.fongmi.android.tv.utils.Task.execute(() -> {
             List<com.fongmi.android.tv.bean.History> items = com.fongmi.android.tv.bean.History.get();
+            long updates = com.fongmi.android.tv.watch.WatchlistStore.get(com.fongmi.android.tv.App.get()).followed().stream()
+                    .filter(entry -> entry.cid == VodConfig.getCid() && !entry.fresh.isEmpty()).count();
             com.fongmi.android.tv.App.post(() -> {
                 if (mBinding == null || !isAdded()) return;
-                recentHistory = items.isEmpty() ? null : items.get(0);
-                mBinding.continueEntry.setVisibility(recentHistory == null ? View.GONE : View.VISIBLE);
-                if (recentHistory != null) mBinding.continueEntry.setText(getString(R.string.mobile_history) + " · " + recentHistory.getVodName() + "  " + recentHistory.getVodRemarks());
+                var casting = com.fongmi.android.tv.dlna.ActiveCast.get();
+                mBinding.castController.setVisibility(casting == null ? View.GONE : View.VISIBLE);
+                if (casting != null) mBinding.castController.setText("投屏控制 · " + casting.label());
+                recentHistory = items.stream().filter(com.fongmi.android.tv.bean.History::unfinished).findFirst().orElse(null);
+                mBinding.updates.setText(updates > 0 ? "追剧 · " + updates + " 部更新" : "追剧");
+                mBinding.resumePoster.setVisibility(recentHistory == null ? View.GONE : View.VISIBLE);
+                if (recentHistory == null) mBinding.continueEntry.setText("找一部想看的影片");
+                else {
+                    com.fongmi.android.tv.utils.ImgUtil.load(recentHistory.getVodName(), recentHistory.getVodPic(), mBinding.resumePoster);
+                    mBinding.continueEntry.setText("继续观看 · " + recentHistory.getVodName() + "\n" + recentHistory.getVodRemarks() + " · 已看 " + recentHistory.getPosition() / 60000 + " 分钟");
+                }
             });
         });
     }
@@ -275,7 +288,11 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onRefreshEvent(RefreshEvent event) {
         switch (event.getType()) {
+            case HISTORY:
+                loadRecentHistory();
+                break;
             case HOME:
+                loadRecentHistory();
                 setTitle();
             case SIZE:
                 homeContent();

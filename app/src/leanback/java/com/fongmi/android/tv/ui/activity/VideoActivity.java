@@ -66,6 +66,7 @@ import com.fongmi.android.tv.repository.RepositorySiteResolver;
 import com.fongmi.android.tv.service.PlaybackService;
 import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.setting.PlayerSetting;
+import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.adapter.ArrayAdapter;
 import com.fongmi.android.tv.ui.adapter.EpisodeAdapter;
 import com.fongmi.android.tv.ui.adapter.FlagAdapter;
@@ -970,6 +971,9 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     @Override
     public void renderFlagSelection(Flag item) {
         if (item == null || item.isBlockedPlaybackSource()) return;
+        watchedSource = getHistoryKey() + "\n" + item.getFlag();
+        mEpisodeAdapter.setWatched(Setting.isIncognito() ? java.util.Set.of()
+                : getSharedPreferences("tv_seen_episodes", MODE_PRIVATE).getStringSet(watchedSource, java.util.Set.of()));
         int position = mFlagAdapter.indexOf(item);
         if (position >= 0 && mBinding.flag.getSelectedPosition() != position) {
             mBinding.flag.setSelectedPosition(position);
@@ -1018,6 +1022,14 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         boolean visible = !mQuickAdapter.isEmpty();
         mBinding.quick.setVisibility(visible ? View.VISIBLE : View.GONE);
         mBinding.quickTitle.setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
+    @Override
+    public void chooseHistory(String[] choices, java.util.function.IntConsumer selected) {
+        new androidx.appcompat.app.AlertDialog.Builder(this).setTitle("使用其他来源的同名影片进度？")
+                .setItems(choices, (d, i) -> selected.accept(i))
+                .setNegativeButton("从头播放", (d, i) -> selected.accept(-1))
+                .setOnCancelListener(d -> selected.accept(-1)).show();
     }
 
     @Override
@@ -1435,7 +1447,8 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         }
         String episode = EpisodeDisplayName.compactActionLabel(mHistory.getVodRemarks());
         if (mHistory.getPosition() > 0) {
-            mBinding.primary.setText(TextUtils.isEmpty(episode) ? getString(R.string.detail_v2_resume_plain) : getString(R.string.detail_v2_resume, episode));
+            String label = TextUtils.isEmpty(episode) ? getString(R.string.detail_v2_resume_plain) : getString(R.string.detail_v2_resume, episode);
+            mBinding.primary.setText(label + " · " + android.text.format.DateUtils.formatElapsedTime(mHistory.getPosition() / 1000));
         } else {
             mBinding.primary.setText(R.string.detail_v2_play_now);
         }
@@ -2400,12 +2413,27 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         App.post(this::hideControl, 100);
     }
 
+    private String watchedSource;
+
+    private void markWatched(long position, long duration) {
+        if (watchedSource == null || mHistory == null || mVod.awaitingEpisode() || position < duration * 0.9 || Setting.isIncognito()) return;
+        String episode = mHistory.getVodRemarks();
+        if (episode.isEmpty() || mEpisodeAdapter.isWatched(episode)) return;
+        var prefs = getSharedPreferences("tv_seen_episodes", MODE_PRIVATE);
+        var seen = new java.util.HashSet<>(prefs.getStringSet(watchedSource, java.util.Set.of()));
+        seen.add(episode);
+        prefs.edit().putStringSet(watchedSource, seen).apply();
+        mEpisodeAdapter.setWatched(seen);
+        mEpisodeAdapter.refreshSelection();
+    }
+
     @Override
     public void onTimeChanged(long time) {
         if (!isOwner() || !player().isVod()) return;
         long position = player().getPosition();
         long duration = player().getDuration();
         if (position < 0 || duration <= 0) return;
+        markWatched(position, duration);
         mVod.onTimeChanged(time, position, duration, player());
     }
 

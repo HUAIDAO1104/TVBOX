@@ -84,6 +84,10 @@ public interface VodPlaybackHost {
 
     void renderHistory(History history);
 
+    default void chooseHistory(String[] choices, java.util.function.IntConsumer selected) {
+        selected.accept(-1);
+    }
+
     void renderUseParse(boolean useParse);
 
     void renderArtwork(String url);

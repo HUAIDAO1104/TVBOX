@@ -211,9 +211,12 @@ public class MobileExperienceInstrumentedTest {
         var value = ActivityScenario.launch(HomeActivity.class); scenario = value;
         onActivity(value, a -> {
             var nav = (com.google.android.material.bottomnavigation.BottomNavigationView) a.findViewById(R.id.navigation);
-            assertEquals(3, nav.getMenu().size()); assertEquals("首页", nav.getMenu().getItem(0).getTitle().toString());
+            assertEquals(4, nav.getMenu().size()); assertNotNull(nav.getMenu().findItem(R.id.offlineLibrary)); assertEquals("首页", nav.getMenu().getItem(0).getTitle().toString());
             nav.setSelectedItemId(R.id.library);
-            assertNotNull(a.findViewById(R.id.tabs));
+            assertEquals("追剧", nav.getMenu().findItem(R.id.library).getTitle());
+            var libraryTabs = (com.google.android.material.tabs.TabLayout) a.findViewById(R.id.tabs);
+            assertEquals("在追", libraryTabs.getTabAt(libraryTabs.getSelectedTabPosition()).getText());
+            assertTrue("Pairing must remain reachable with an empty library", a.findViewById(R.id.sync).isShown());
             nav.setSelectedItemId(R.id.setting); assertTrue(a.findViewById(R.id.cloud).isShown());
         }); screenshot("mine");
         onActivity(value, a -> ((com.google.android.material.bottomnavigation.BottomNavigationView) a.findViewById(R.id.navigation)).setSelectedItemId(R.id.library)); screenshot("library");
@@ -234,8 +237,8 @@ public class MobileExperienceInstrumentedTest {
     }
     @Test public void videoStartsInPortraitAndOneBackExitsFullscreen() throws Exception {
         var value = ActivityScenario.<VideoActivity>launch(new Intent(App.get(), VideoActivity.class).putExtra("key", "push_agent").putExtra("id", server.url("/video.mp4").toString()).putExtra("name", "手机播放体验测试")); scenario = value;
-        await(() -> { boolean[] ready = {false}; onActivity(value, a -> ready[0] = a.findViewById(R.id.detailFull).isEnabled()); return ready[0]; });
-        onActivity(value, a -> { assertTrue(a.findViewById(R.id.detailActions).isShown()); a.findViewById(R.id.detailFull).performClick(); assertEquals(View.GONE, a.findViewById(R.id.detailActions).getVisibility()); });
+        await(() -> { boolean[] ready = {false}; onActivity(value, a -> ready[0] = a.findViewById(R.id.fullscreen).isEnabled()); return ready[0]; });
+        onActivity(value, a -> { assertTrue(a.findViewById(R.id.detailActions).isShown()); a.findViewById(R.id.fullscreen).performClick(); assertEquals(View.GONE, a.findViewById(R.id.detailActions).getVisibility()); });
         SystemClock.sleep(1000); screenshot("player-fullscreen");
         onActivity(value, a -> a.getOnBackPressedDispatcher().onBackPressed());
         onActivity(value, a -> { assertFalse(a.isFinishing()); assertEquals(View.VISIBLE, a.findViewById(R.id.detailActions).getVisibility()); });
@@ -334,7 +337,7 @@ public class MobileExperienceInstrumentedTest {
         var value = ActivityScenario.<VideoActivity>launch(new Intent(App.get(), VideoActivity.class).putExtra("key", "fast").putExtra("id", "1").putExtra("name", "真实触摸选集")); scenario = value;
         await(() -> { boolean[] ready = {false}; onActivity(value, a -> ready[0] = ((TextView) a.findViewById(R.id.more)).getText().toString().contains("120")); return ready[0]; });
         if ("true".equals(InstrumentationRegistry.getArguments().getString("qaFullscreen"))) {
-            onActivity(value, a -> a.findViewById(R.id.detailFull).performClick());
+            onActivity(value, a -> a.findViewById(R.id.fullscreen).performClick());
             SystemClock.sleep(2500);
             onActivity(value, a -> assertEquals("Explicit fullscreen must stay landscape", android.content.res.Configuration.ORIENTATION_LANDSCAPE, a.getResources().getConfiguration().orientation));
         }
@@ -376,9 +379,10 @@ public class MobileExperienceInstrumentedTest {
         onActivity(value, a -> {
             int[] film = new int[2], toolbar = new int[2];
             a.findViewById(R.id.video).getLocationOnScreen(film);
-            a.findViewById(R.id.detailCast).getLocationOnScreen(toolbar);
-            assertTrue(a.findViewById(R.id.detailCast).isShown());
-            assertTrue(toolbar[1] >= film[1] + a.findViewById(R.id.video).getHeight());
+            if (!a.findViewById(R.id.control).isShown()) a.onSingleTap();
+            a.findViewById(R.id.control).findViewById(R.id.cast).getLocationOnScreen(toolbar);
+            assertTrue(a.findViewById(R.id.cast).isShown());
+            assertTrue(toolbar[1] >= film[1] && toolbar[1] < film[1] + a.findViewById(R.id.video).getHeight());
             a.findViewById(R.id.contentToggle).performClick();
             assertEquals(Integer.MAX_VALUE, ((TextView)a.findViewById(R.id.content)).getMaxLines());
             assertEquals(View.GONE, a.findViewById(R.id.actor).getVisibility());
@@ -387,7 +391,7 @@ public class MobileExperienceInstrumentedTest {
             assertEquals(2, ((TextView)a.findViewById(R.id.content)).getMaxLines());
         });
         screenshot("playback-hierarchy");
-        onActivity(value, a -> a.findViewById(R.id.detailCast).performClick());
+        onActivity(value, a -> a.findViewById(R.id.cast).performClick());
         await(() -> { boolean[] open = {false}; onActivity(value, a -> open[0] = a.getSupportFragmentManager().getFragments().stream().anyMatch(f -> f instanceof com.fongmi.android.tv.ui.dialog.CastDialog && f.getView() != null)); return open[0]; });
         value.recreate();
         await(() -> { boolean[] ready = {false}; onActivity(value, a -> ready[0] = a.playbackHistory() != null && !a.playbackPlayer().isEmpty() && a.getSupportFragmentManager().getFragments().stream().anyMatch(f -> f instanceof com.fongmi.android.tv.ui.dialog.CastDialog && f.getView() != null)); return ready[0]; });
@@ -457,7 +461,7 @@ public class MobileExperienceInstrumentedTest {
             assertSame(content, panel[0].getParent());
             int[] xy = new int[2]; page.getLocationOnScreen(xy);
             assertTrue("Provider progress has its own reserved space", panel[0].getTop() >= xy[1] + page.getHeight() - page.getPaddingBottom());
-            a.findViewById(R.id.detailFull).performClick();
+            a.findViewById(R.id.fullscreen).performClick();
         });
         SystemClock.sleep(700);
         onActivity(value, a -> {
@@ -515,8 +519,8 @@ public class MobileExperienceInstrumentedTest {
 
     @Test public void playbackSettingsExposeSpeedAndAdvancedOptionsWithoutLeavingVideo() {
         var value = ActivityScenario.<VideoActivity>launch(new Intent(App.get(), VideoActivity.class).putExtra("key", "fast").putExtra("id", "1").putExtra("name", "播放设置体验")); scenario = value;
-        await(() -> { boolean[] ready = {false}; onActivity(value, a -> ready[0] = a.playbackHistory() != null && a.findViewById(R.id.detailFull).isEnabled()); return ready[0]; });
-        onActivity(value, a -> a.findViewById(R.id.detailSettings).performClick());
+        await(() -> { boolean[] ready = {false}; onActivity(value, a -> ready[0] = a.playbackHistory() != null && a.findViewById(R.id.fullscreen).isEnabled()); return ready[0]; });
+        onActivity(value, a -> a.findViewById(R.id.setting).performClick());
         SystemClock.sleep(250);
         onActivity(value, a -> {
             Fragment dialog = a.getSupportFragmentManager().getFragments().stream().filter(f -> f instanceof com.fongmi.android.tv.ui.dialog.ControlDialog).findFirst().orElseThrow();

@@ -20,6 +20,21 @@ public class UpdateSourceTest {
     }
 
     @Test
+    public void slowFreshManifestWinsAgainstCachedMirrorAndUnreachableEndpoint() throws Exception {
+        var gson = new com.google.gson.Gson();
+        var cached = UpdateManifest.parse(gson, "{\"versionCode\":651,\"versionName\":\"5.5.100\"}");
+        var published = UpdateManifest.parse(gson, "{\"versionCode\":652,\"versionName\":\"5.5.101\"}");
+        var mirrorReturned = new java.util.concurrent.CountDownLatch(1);
+        var result = UpdateClient.newestAvailable(List.of(
+                () -> { mirrorReturned.countDown(); return cached; },
+                () -> { mirrorReturned.await(); return published; },
+                () -> { throw new java.io.IOException("offline"); },
+                () -> { new java.util.concurrent.CountDownLatch(1).await(); return cached; }
+        ), 1000);
+        assertEquals(652, result.versionCode());
+    }
+
+    @Test
     public void declaredMirrorsTakePriorityAndDuplicatesAreRemoved() {
         String github = "https://github.com/HUAIDAO1104/TVBOX/releases/latest/download/app.apk";
         List<String> candidates = UpdateSource.mirrorFirst(github, List.of("https://download.example.com/app.apk", "https://download.example.com/app.apk"));

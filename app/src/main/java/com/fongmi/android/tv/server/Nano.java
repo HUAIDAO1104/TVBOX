@@ -74,6 +74,8 @@ public class Nano extends NanoHTTPD {
     public Response serve(IHTTPSession session) {
         String url = session.getUri().trim();
         if (!com.fongmi.android.tv.App.isSearchProcess() && (url.equals("/ai-setup") || url.startsWith("/ai-setup/"))) return AiSetup.serve(session);
+        if (!App.isSearchProcess() && com.fongmi.android.tv.history.HistoryPeer.PATH.equals(url))
+            return com.fongmi.android.tv.history.HistoryPeer.serve(session);
         Map<String, String> files = new HashMap<>();
         if (session.getMethod() == Method.POST) parse(session, files);
         if (url.startsWith("/tvbus")) return ok(LiveConfig.getResp());

@@ -117,6 +117,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     private boolean cachedHistoryShown;
     private List<History> cachedHistories = new ArrayList<>();
     private boolean brandSplashDismissed;
+    private boolean initialFocusPending;
     private boolean brandSplashMotionStarted;
     private boolean brandSplashDismissRequested;
     private boolean systemSplashExited;
@@ -160,6 +161,10 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     @Override
     protected void initView(Bundle savedInstanceState) {
         restoreState(savedInstanceState);
+        initialFocusPending = savedInstanceState == null;
+        binding.historyRecycler.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
+            if (initialFocusPending) v.post(this::focusInitialContent);
+        });
         pageController = new HomePageController(binding, homeState);
         featuredController = new HomeFeaturedController(binding, this);
         setRecyclerViews();
@@ -190,6 +195,12 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
 
     @Override
     protected void initEvent() {
+        binding.historyShortcut.setOnClickListener(view -> HistoryActivity.start(this));
+        binding.liveShortcut.setOnClickListener(view -> new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("电视直播").setItems(new String[]{"继续上次频道", "收藏频道", "当前频道节目单"}, (dialog, index) ->
+                        LiveActivity.start(this, index)).show());
+        bindUtilityFocus(binding.historyShortcut);
+        bindUtilityFocus(binding.liveShortcut);
         binding.search.setOnClickListener(view -> SearchActivity.start(this));
         binding.config.setOnClickListener(view -> openConfig());
         binding.config.setOnLongClickListener(view -> {
@@ -554,9 +565,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
             binding.brandSplash.setClickable(false);
             binding.brandSplash.setFocusable(false);
             binding.brandSplash.setOnKeyListener(null);
-            if (isFinishing() || isDestroyed() || !hasWindowFocus()) return;
-            View current = getCurrentFocus();
-            if (current == null || current == binding.brandSplash) binding.search.requestFocus();
+            focusInitialContent();
         }).start();
     }
 
@@ -679,12 +688,35 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
         else if (homeState.getPage() == HomeState.Page.HOME && !homeAvailable) pageController.showEmpty();
     }
 
+    private void focusInitialContent() {
+        if (!initialFocusPending || isFinishing() || isDestroyed() || !hasWindowFocus()
+                || binding.brandSplash.getVisibility() == View.VISIBLE || !homeState.isHome()) return;
+        if (historyAdapter.getItemCount() > 0 && binding.historyRecycler.isShown()) {
+            var first = binding.historyRecycler.findViewHolderForAdapterPosition(0);
+            binding.historyRecycler.setSelectedPosition(0);
+            if (first != null && first.itemView.requestFocus()) initialFocusPending = false;
+        } else if (!focusContentFromTop() && getCurrentFocus() == null) {
+            binding.search.requestFocus();
+        }
+    }
+
+    @Override public void onWindowFocusChanged(boolean focused) {
+        super.onWindowFocusChanged(focused);
+        if (focused && binding != null && initialFocusPending) binding.getRoot().post(this::focusInitialContent);
+    }
+
+    @Override public boolean dispatchTouchEvent(android.view.MotionEvent event) {
+        if (event.getActionMasked() == android.view.MotionEvent.ACTION_DOWN) initialFocusPending = false;
+        return super.dispatchTouchEvent(event);
+    }
+
     private void updateHistory(List<History> items) {
         List<History> safe = items == null ? List.of() : items;
-        List<History> recent = new ArrayList<>(safe.subList(0, Math.min(3, safe.size())));
+        List<History> recent = safe.stream().filter(History::unfinished).limit(3).toList();
         historyAdapter.submit(recent);
         binding.historySection.setVisibility(recent.isEmpty() ? View.GONE : View.VISIBLE);
         if (recent.isEmpty()) historyAdapter.setDeleteMode(false);
+        if (initialFocusPending) binding.historyRecycler.post(this::focusInitialContent);
     }
 
     private void updateHeroFocusTarget(boolean hasHistory, boolean hasRecommendations) {
@@ -929,6 +961,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
 
     @Override
     public void onNavClick(HomeNavItem item) {
+        if (navPreview != null) binding.nav.removeCallbacks(navPreview);
         if (item.isHome()) {
             showHome(false);
         } else if (item.isMore()) {
@@ -940,7 +973,18 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
 
     @Override
     public void onNavFocus(HomeNavItem item) {
+        if (navPreview != null) binding.nav.removeCallbacks(navPreview);
         if (item == null || item.isMore()) return;
+        navPreview = () -> {
+            if (!binding.nav.hasFocus() || isFinishing() || isDestroyed()) return;
+            previewCategory(item);
+        };
+        binding.nav.postDelayed(navPreview, 260);
+    }
+
+    private Runnable navPreview;
+
+    private void previewCategory(HomeNavItem item) {
         if (item.isHome()) {
             if (!homeState.isHome()) showHome(true);
         } else if (!item.id().equals(homeState.getSelectedCategoryId())) {
@@ -1111,7 +1155,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     }
 
     private boolean isTopFocus(View current) {
-        return current != null && (current == binding.search || current == binding.config || current == binding.settings || binding.nav.findContainingItemView(current) != null);
+        return current != null && (current == binding.search || current == binding.historyShortcut || current == binding.liveShortcut || current == binding.config || current == binding.settings || binding.nav.findContainingItemView(current) != null);
     }
 
     private boolean focusContentFromTop() {
@@ -1127,6 +1171,8 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        if (event.getAction() == KeyEvent.ACTION_DOWN && binding != null
+                && binding.brandSplash.getVisibility() != View.VISIBLE) initialFocusPending = false;
         if (event.getAction() == KeyEvent.ACTION_DOWN
                 && (event.getKeyCode() == KeyEvent.KEYCODE_SEARCH
                 || event.getKeyCode() == KeyEvent.KEYCODE_VOICE_ASSIST
@@ -1192,6 +1238,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
 
     @Override
     protected void onDestroy() {
+        if (navPreview != null) binding.nav.removeCallbacks(navPreview);
         binding.getRoot().removeCallbacks(deferredStartup);
         featuredController.destroy();
         DLNARendererService.stop(this);

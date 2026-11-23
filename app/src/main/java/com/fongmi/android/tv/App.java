@@ -31,6 +31,7 @@ public class App extends Application implements Application.ActivityLifecycleCal
 
     private Activity activity;
     private Hook hook;
+    private int startedActivities;
 
     public App() {
         instance = this;
@@ -92,6 +93,7 @@ public class App extends Application implements Application.ActivityLifecycleCal
             return;
         }
         Notify.createChannel();
+        Task.execute(com.fongmi.android.tv.history.HistoryPeer::startIfPaired);
         registerActivityLifecycleCallbacks(this);
         // Keystore access, Room creation/migrations and repository bootstrap all touch disk.
         // None of them is required to draw the first frame, so keep them off the main thread.
@@ -159,9 +161,11 @@ public class App extends Application implements Application.ActivityLifecycleCal
 
     @Override
     public void onActivityStarted(@NonNull Activity activity) {
+        if (++startedActivities == 1) com.fongmi.android.tv.history.HistoryLink.foreground(true);
     }
 
     @Override
     public void onActivityStopped(@NonNull Activity activity) {
+        if (--startedActivities == 0) com.fongmi.android.tv.history.HistoryLink.foreground(false);
     }
 }

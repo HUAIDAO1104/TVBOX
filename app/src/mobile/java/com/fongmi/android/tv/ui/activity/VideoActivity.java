@@ -278,7 +278,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     @Override
     protected void onServiceConnected() {
         playbackReady = true;
-        mBinding.detailFull.setEnabled(true);
+        mBinding.control.fullscreen.setEnabled(true);
         mBinding.detailDownload.setEnabled(true);
         checkLand();
         checkId();
@@ -311,7 +311,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         super.initView(savedInstanceState);
         ViewCompat.setOnApplyWindowInsetsListener(mBinding.getRoot(), (v, insets) -> setStatusBar(insets));
         mKeyDown = CustomKeyDown.create(this, mBinding.player);
-        mBinding.detailFull.setEnabled(false);
+        mBinding.control.fullscreen.setEnabled(false);
         mBinding.detailDownload.setEnabled(false);
         mFrameParams = mBinding.video.getLayoutParams();
         mFrameParams.height = Math.round(getResources().getDisplayMetrics().widthPixels * 9f / 16f);
@@ -345,17 +345,15 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
             public void onScrubStop(androidx.media3.ui.TimeBar bar,long position,boolean canceled){scrubPreview.hide();mBinding.control.center.setVisibility(View.VISIBLE);}
         });
         getSeekView().setOnLongClickListener(v->{if(playbackReady)com.fongmi.android.tv.ui.dialog.PreciseSeekDialog.show(this,player().getPlayer());return true;});
-        mBinding.detailCast.setOnClickListener(v -> onCast());
         mBinding.detailDownload.setOnClickListener(v -> onDownload());
         mBinding.control.download.setOnClickListener(v -> onDownload());
         mBinding.control.fullscreen.setOnClickListener(v -> { if (playbackReady) { if (isFullscreen()) exitFullscreen(); else enterFullscreen(); } });
         mBinding.contentToggle.setOnClickListener(v -> toggleSynopsis());
-        mBinding.detailSettings.setOnClickListener(v -> { if (mHistory != null && playbackReady) onSetting(); });
         mBinding.detailFollow.setOnClickListener(v->followShow());
         mBinding.detailFollow.setOnLongClickListener(v->{WatchlistActivity.start(this);return true;});
         mBinding.detailKeep.setOnClickListener(v -> { if (mHistory != null) onKeep(); });
+        mBinding.lineToggle.setOnClickListener(v -> setLinesExpanded(mBinding.flag.getVisibility() != View.VISIBLE));
         mBinding.detailSource.setOnClickListener(v -> { if (mVod != null && mHistory != null) onChange(); });
-        mBinding.detailFull.setOnClickListener(v -> { if (mVod != null && playbackReady) enterFullscreen(); });
         mBinding.previousEpisode.setOnClickListener(v -> checkPrev());
         mBinding.currentEpisode.setOnClickListener(v -> onEpisodes());
         mBinding.nextEpisode.setOnClickListener(v -> checkNext());
@@ -654,7 +652,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         }).setNegativeButton("取消",null).show();return true;
     }
     private void markWatched(){
-        if(watchId==null||com.fongmi.android.tv.setting.Setting.isIncognito()||mHistory==null)return;
+        if(watchId==null||mVod.awaitingEpisode()||com.fongmi.android.tv.setting.Setting.isIncognito()||mHistory==null)return;
         var store=com.fongmi.android.tv.watch.WatchlistStore.get(this);var entry=store.find(watchId);
         if(entry!=null&&!entry.watched.contains(mHistory.getVodRemarks())){store.watched(watchId,mHistory.getVodRemarks(),true);mEpisodeAdapter.notifyDataSetChanged();}
     }
@@ -676,8 +674,15 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     @Override
     public void renderFlags(List<Flag> items) {
-        mBinding.flag.setVisibility(items.isEmpty() ? View.GONE : View.VISIBLE);
         mFlagAdapter.addAll(items);
+        mBinding.lineToggle.setVisibility(mFlagAdapter.getItemCount() > 1 ? View.VISIBLE : View.GONE);
+        setLinesExpanded(false);
+    }
+
+    private void setLinesExpanded(boolean expanded) {
+        boolean show = expanded && mFlagAdapter != null && mFlagAdapter.getItemCount() > 1;
+        mBinding.flag.setVisibility(show ? View.VISIBLE : View.GONE);
+        mBinding.lineToggle.setText(show ? "收起线路" : "线路");
     }
 
     @Override
@@ -689,6 +694,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     public void renderFlagSelection(Flag item) {
         if (item == null || item.isBlockedPlaybackSource()) return;
         if(watchId!=null&&watchId.equals(com.fongmi.android.tv.watch.WatchlistStore.id(com.fongmi.android.tv.api.config.VodConfig.getCid(),getKey(),getId())))com.fongmi.android.tv.watch.WatchlistStore.get(this).useFlag(watchId,item);
+        mBinding.site.setText(displayName(getSite().getName()) + " · " + displayName(item.getShow()));
         notifyItemChanged(mBinding.flag, mFlagAdapter);
         scrollToPosition(mBinding.flag, mFlagAdapter.getPosition());
     }
@@ -724,6 +730,14 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     public void renderSources(List<Vod> items) {
         mQuickAdapter.addAll(items);
         mBinding.quick.setVisibility(mQuickAdapter.isEmpty() ? View.GONE : View.VISIBLE);
+    }
+
+    @Override
+    public void chooseHistory(String[] choices, java.util.function.IntConsumer selected) {
+        new androidx.appcompat.app.AlertDialog.Builder(this).setTitle("使用其他来源的同名影片进度？")
+                .setItems(choices, (d, i) -> selected.accept(i))
+                .setNegativeButton("从头播放", (d, i) -> selected.accept(-1))
+                .setOnCancelListener(d -> selected.accept(-1)).show();
     }
 
     @Override
@@ -985,7 +999,24 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
     @Override public History castHistory() { return mHistory; }
 
+    public void resumeCast(History source) {
+        if (mHistory == null || !source.getVodRemarks().equals(mHistory.getVodRemarks())) {
+            VideoActivity.cast(this, source);
+            return;
+        }
+        mHistory.setPosition(source.getPosition());
+        onRefresh();
+    }
+
     private void onCast() {
+        if (com.fongmi.android.tv.dlna.ActiveCast.get() != null) {
+            com.fongmi.android.tv.dlna.ActiveCast.show(this, this::chooseReceiver);
+            return;
+        }
+        chooseReceiver();
+    }
+
+    private void chooseReceiver() {
         if (!playbackReady || mHistory == null || player().isEmpty()) {
             showInlinePlaybackMessage("视频地址准备好后即可投屏");
             return;
@@ -1285,6 +1316,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void showError(String text) {
+        setLinesExpanded(true);
         mBinding.widget.error.setVisibility(View.VISIBLE);
         mBinding.widget.error.setText(text);
         hideProgress();
@@ -1673,7 +1705,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     @Override
     public void onCasted() {
-        player().stop();
+        player().pause();
+        showInlinePlaybackMessage("已发送到电视，点投屏图标可控制或回到手机播放");
     }
 
     @Override

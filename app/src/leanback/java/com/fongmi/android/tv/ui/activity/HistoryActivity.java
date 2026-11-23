@@ -52,6 +52,7 @@ public final class HistoryActivity extends BaseActivity implements HistoryAdapte
 
     @Override
     protected void initEvent() {
+        binding.sync.setOnClickListener(view -> showPairing());
         binding.clear.setOnClickListener(view -> new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("清空观看历史？").setMessage("将删除当前配置的全部观看记录，此操作无法撤销。")
                 .setNegativeButton(android.R.string.cancel, null)
@@ -69,6 +70,34 @@ public final class HistoryActivity extends BaseActivity implements HistoryAdapte
                 }).show());
     }
 
+    @org.greenrobot.eventbus.Subscribe(threadMode = org.greenrobot.eventbus.ThreadMode.MAIN)
+    public void onHistoryRefresh(com.fongmi.android.tv.event.RefreshEvent event) {
+        if (event.getType() == com.fongmi.android.tv.event.RefreshEvent.Type.HISTORY) loadHistory();
+    }
+
+    private void showPairing() {
+        Task.execute(() -> {
+            String code = com.fongmi.android.tv.history.HistoryPeer.pairingCode();
+            var qr = code.isEmpty() ? null : com.fongmi.android.tv.utils.QRCode.getStandardBitmap(code, 420);
+            App.post(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                var dialog = new androidx.appcompat.app.AlertDialog.Builder(this).setTitle("手机与电视续播")
+                        .setNegativeButton("关闭", null);
+                if (qr == null) dialog.setMessage("请连接局域网并关闭无痕模式，然后重新打开配对。");
+                else {
+                    var image = new android.widget.ImageView(this);
+                    image.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+                    image.setAdjustViewBounds(true);
+                    image.setMaxHeight(com.fongmi.android.tv.utils.ResUtil.dp2px(172));
+                    image.setImageBitmap(qr);
+                    dialog.setView(image).setMessage("手机打开观看历史，点同步并扫描此码。两端使用相同点播订阅后，可自动续播。")
+                            .setNeutralButton("解除配对", (d, w) -> com.fongmi.android.tv.history.HistoryPeer.forget());
+                }
+                dialog.show();
+            });
+        });
+    }
+
     private void loadHistory() {
         int generation = ++loadGeneration;
         Task.execute(() -> {
@@ -77,7 +106,8 @@ public final class HistoryActivity extends BaseActivity implements HistoryAdapte
                 if (generation != loadGeneration || isFinishing() || isDestroyed()) return;
                 adapter.submit(items);
                 binding.clear.setEnabled(!items.isEmpty());
-                binding.progressLayout.showContent(true, items.size());
+                binding.progressLayout.showContent();
+                binding.emptyHint.setVisibility(items.isEmpty() ? android.view.View.VISIBLE : android.view.View.GONE);
                 if (!Util.isMobile() && !items.isEmpty() && getCurrentFocus() == null) {
                     binding.recycler.requestFocus();
                 }

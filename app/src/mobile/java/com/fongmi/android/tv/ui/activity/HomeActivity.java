@@ -92,6 +92,12 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
     }
 
     private void checkAction(Intent intent) {
+        if (intent.hasExtra("homeTab")) {
+            int tab = intent.getIntExtra("homeTab", R.id.vod);
+            intent.removeExtra("homeTab");
+            mBinding.navigation.setSelectedItemId(tab);
+            return;
+        }
         if (Intent.ACTION_SEND.equals(intent.getAction())) {
             VideoActivity.push(this, intent.getStringExtra(Intent.EXTRA_TEXT));
         } else if (Intent.ACTION_VIEW.equals(intent.getAction()) && intent.getData() != null) {
@@ -215,6 +221,10 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.offlineLibrary) {
+            startActivity(new Intent(this, OfflineDownloadsActivity.class).putExtra("tabRoot", true));
+            return false;
+        }
         if (item.getItemId() == R.id.setting) return mManager.change(1);
         if (item.getItemId() == R.id.vod) return mManager.change(0);
         if (item.getItemId() == R.id.library) return mManager.change(6);

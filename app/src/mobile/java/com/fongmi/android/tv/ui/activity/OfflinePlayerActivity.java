@@ -43,6 +43,8 @@ public final class OfflinePlayerActivity extends BaseActivity {
     private ExoPlayer player;
     private DanmakuPlaybackSync sync;
     private String id;
+    private com.fongmi.android.tv.bean.History onlineHistory;
+    private long initialPosition;
     private com.google.android.material.bottomsheet.BottomSheetDialog accessDialog;
     private com.fongmi.android.tv.player.preview.ScrubPreview scrubPreview;
     private boolean showDanmaku = true;
@@ -125,7 +127,26 @@ public final class OfflinePlayerActivity extends BaseActivity {
         binding.player.setPlayer(player); sync.bind(player);
         binding.player.onResume();
         if (store.danmaku(id).isFile()) binding.player.setDanmakuSource(Uri.fromFile(store.danmaku(id)));
-        player.setMediaItem(store.mediaItem(download)); player.seekTo(store.position(id)); player.prepare(); player.play();
+        initialPosition = store.position(id);
+        onlineHistory = null;
+        if (meta.historyConfig >= 0 && meta.historyKey != null && !meta.historyKey.isEmpty()
+                && com.fongmi.android.tv.bean.Config.find(meta.historyConfig) != null
+                && !com.fongmi.android.tv.setting.Setting.isIncognito()) {
+            onlineHistory = com.fongmi.android.tv.db.AppDatabase.get().getHistoryDao().find(meta.historyConfig, meta.historyKey);
+            if (onlineHistory == null) {
+                onlineHistory = new com.fongmi.android.tv.bean.History();
+                onlineHistory.setKey(meta.historyKey);
+                onlineHistory.setCid(meta.historyConfig);
+            } else if (meta.episode.equals(onlineHistory.getVodRemarks()) && onlineHistory.unfinished()) {
+                initialPosition = onlineHistory.getPosition();
+            }
+            onlineHistory.setVodName(meta.title);
+            onlineHistory.setVodPic(meta.poster);
+            onlineHistory.setVodFlag(meta.sourceName);
+            onlineHistory.setVodRemarks(meta.episode);
+            onlineHistory.setEpisodeUrl("");
+        }
+        player.setMediaItem(store.mediaItem(download)); player.seekTo(initialPosition); player.prepare(); player.play();
         binding.danmaku.setContentDescription(showDanmaku ? "弹幕已开启" : "弹幕已关闭");
             binding.danmaku.setIconResource(showDanmaku ? com.fongmi.android.tv.R.drawable.ic_control_danmaku_on : com.fongmi.android.tv.R.drawable.ic_control_danmaku_off);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -139,6 +160,13 @@ public final class OfflinePlayerActivity extends BaseActivity {
         if(scrubPreview!=null)scrubPreview.hide();
         if (player != null) {
             store.position(id, player.getPlaybackState() == Player.STATE_ENDED ? 0 : player.getCurrentPosition());
+            if (onlineHistory != null && player.getDuration() > 0 && player.getCurrentPosition() != initialPosition
+                    && !com.fongmi.android.tv.setting.Setting.isIncognito()) {
+                onlineHistory.setPosition(player.getCurrentPosition());
+                onlineHistory.setDuration(player.getDuration());
+                onlineHistory.setCreateTime(Math.max(System.currentTimeMillis(), onlineHistory.getCreateTime() + 1));
+                new com.fongmi.android.tv.playback.vod.VodHistoryPolicy().save(onlineHistory, true);
+            }
             sync.bind(null); binding.player.setPlayer(null); player.release(); player = null;
         }
         binding.player.onPause(); getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);

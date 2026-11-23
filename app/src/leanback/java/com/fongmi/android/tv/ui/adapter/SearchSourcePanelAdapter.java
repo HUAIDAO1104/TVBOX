@@ -22,6 +22,7 @@ import java.util.List;
 public final class SearchSourcePanelAdapter extends RecyclerView.Adapter<SearchSourcePanelAdapter.ViewHolder> {
 
     public interface Listener {
+        default long watchedAt(SearchSource source) { return 0L; }
         void onOpen(SearchSource source);
 
         void onClose();
@@ -104,7 +105,7 @@ public final class SearchSourcePanelAdapter extends RecyclerView.Adapter<SearchS
             case UNAVAILABLE -> R.string.search_v2_source_unavailable;
             case UNKNOWN -> R.string.search_v2_source_unknown;
         };
-        holder.binding.name.setText(site);
+        holder.binding.name.setText(listener.watchedAt(source) > 0 ? "上次观看 · " + site : site);
         holder.binding.repository.setText(holder.itemView.getContext().getString(
                 R.string.search_v2_source_repository, repository, config));
         holder.binding.rawTitle.setText(holder.itemView.getContext().getString(

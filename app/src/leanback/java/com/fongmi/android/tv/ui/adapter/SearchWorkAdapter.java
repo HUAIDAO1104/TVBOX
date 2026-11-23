@@ -30,6 +30,7 @@ public final class SearchWorkAdapter extends RecyclerView.Adapter<SearchWorkAdap
     private static final Pattern EXTRA_SPACE = Pattern.compile("\\s+");
 
     public interface Listener {
+        default long watchedAt(SearchSource source) { return 0L; }
         void onOpen(SearchWork work);
 
         void onShowSources(SearchWork work);
@@ -170,7 +171,7 @@ public final class SearchWorkAdapter extends RecyclerView.Adapter<SearchWorkAdap
         holder.binding.meta.setVisibility(meta.isEmpty() ? View.GONE : View.VISIBLE);
         holder.binding.update.setText(update);
         holder.binding.update.setVisibility(update.isEmpty() ? View.GONE : View.VISIBLE);
-        holder.binding.source.setText(sourceName);
+        holder.binding.source.setText(listener.watchedAt(recommended) > 0 ? "上次观看 · " + sourceName : sourceName);
         int count = recommended == null ? work.sourceCount() : sourceCounts.getOrDefault(recommended.stableId(), work.sourceCount());
         holder.binding.sourceCount.setText(holder.itemView.getContext().getResources().getQuantityString(
                 R.plurals.search_v2_card_source_count, count, count));

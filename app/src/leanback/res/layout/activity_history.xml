@@ -32,11 +32,29 @@
                 android:textStyle="bold" />
 
             <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/sync"
+                style="@style/DetailV2.Button.Secondary"
+                android:layout_marginEnd="8dp"
+                android:nextFocusDown="@id/recycler"
+                android:text="手机同步" />
+
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/clear"
                 style="@style/DetailV2.Button.Secondary"
                 android:nextFocusDown="@id/recycler"
                 android:text="@string/history_clear_all" />
         </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <TextView
+            android:id="@+id/emptyHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="40dp"
+            android:gravity="center"
+            android:text="尚无观看记录，连接手机后即可在这里续播"
+            android:textColor="@color/tv_text_secondary"
+            android:textSize="18sp"
+            android:visibility="gone" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler"

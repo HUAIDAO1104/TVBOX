@@ -18,6 +18,8 @@ public final class OfflineMetadata {
     public int episodeOrder;
     public String groupKey() { return showId == null || showId.isEmpty() ? "legacy:" + title : showId; }
     public String sourceId = "";
+    public String historyKey = "";
+    public int historyConfig = -1;
     public String danmaku = "";
     public Map<String, String> headers = new TreeMap<>();
     public List<Subtitle> subtitles = new ArrayList<>();

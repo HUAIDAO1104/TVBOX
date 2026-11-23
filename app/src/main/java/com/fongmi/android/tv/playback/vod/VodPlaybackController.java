@@ -243,7 +243,8 @@ public class VodPlaybackController {
 
     public void saveHistory(boolean exit, long time, long position, long duration) {
         History history = exit ? historyForExit() : currentHistory();
-        if (position > 0 && duration > 0) historyPolicy.updateTime(history, time, position, duration);
+        // During a line or episode change the player may still expose the previous media clock.
+        if (!awaitingEpisode() && position >= 0 && duration > 0) historyPolicy.updateTime(history, time, position, duration);
         historyPolicy.save(history, exit);
     }
 
@@ -251,8 +252,10 @@ public class VodPlaybackController {
         historyPolicy.sync(currentHistory());
     }
 
+    public boolean awaitingEpisode() { return state.getPendingRequest() != null; }
+
     public void onTimeChanged(long time, long position, long duration, PlayerManager player) {
-        if (state.getPendingRequest() != null) return;
+        if (awaitingEpisode()) return;
         History history = currentHistory();
         historyPolicy.updateTime(history, time, position, duration);
         if (history == null || !player.isPlaying()) return;
@@ -340,9 +343,40 @@ public class VodPlaybackController {
             // and could open a same-id item from an unrelated source.
             if (!host.isFromCollect()) fallbackPolicy.emptyFlag();
         } else {
-            selectFlag(state.getHistory().getFlag(), true);
-            if (state.getHistory().isRevSort()) reverseEpisode(true);
+            History target = state.getHistory();
+            List<History> alternatives = target.getCreateTime() > 0 || !host.getVodMark().isEmpty()
+                    || com.fongmi.android.tv.setting.Setting.isIncognito() ? List.of()
+                    : History.findByName(target.getVodName()).stream().filter(History::unfinished)
+                    .filter(h -> !h.getKey().equals(target.getKey()) && matchingFlag(h) != null).toList();
+            if (alternatives.isEmpty()) startDetail(target, null);
+            else host.chooseHistory(variants(alternatives), chosen -> {
+                if (!host.isHostFinishing() && state.getHistory() == target)
+                    startDetail(target, chosen < 0 ? null : alternatives.get(chosen));
+            });
         }
+    }
+
+    private String[] variants(List<History> alternatives) {
+        return alternatives.stream().map(h -> h.getSiteName() + " · " + h.getVodRemarks()
+                + " · " + h.getPosition() / 60000 + " 分钟").toArray(String[]::new);
+    }
+
+    private Flag matchingFlag(History candidate) {
+        return state.getFlags().stream().filter(flag -> !flag.isBlockedPlaybackSource()
+                && flag.getEpisodes().stream().anyMatch(ep -> !ep.isBlockedPlaybackEntry()
+                && ep.matchesName(candidate.getEpisode()))).findFirst().orElse(null);
+    }
+
+    private void startDetail(History target, History selected) {
+        Flag flag = selected == null ? null : matchingFlag(selected);
+        if (flag != null) {
+            target.setVodFlag(flag.getFlag());
+            target.setVodRemarks(selected.getVodRemarks());
+            target.setPosition(selected.getPosition());
+            host.renderHistory(target);
+        }
+        selectFlag(target.getFlag(), true);
+        if (target.isRevSort()) reverseEpisode(true);
     }
 
     private void requestPlayer(Flag flag, Episode episode) {

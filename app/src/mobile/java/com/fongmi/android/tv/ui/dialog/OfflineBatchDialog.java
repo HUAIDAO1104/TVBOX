@@ -78,7 +78,7 @@ public final class OfflineBatchDialog extends MobileSheetDialog {
             for(int i=start;i<Math.min(start+5,episodes.size());i++) if(!existing.contains(id(episodes.get(i)))) selected.add(id(episodes.get(i)));
             update();
         });
-        binding.manager.setOnClickListener(v -> { OfflineDownloadsActivity.start(requireContext()); dismiss(); });
+        binding.manager.setOnClickListener(v -> { OfflineDownloadsActivity.tasks(requireContext()); dismiss(); });
         binding.download.setOnClickListener(v -> submit());
     }
     private String id(Episode e) { return OfflineBatchQueue.identity(site,video,flag.getFlag(),e.getUrl()); }
@@ -111,6 +111,8 @@ public final class OfflineBatchDialog extends MobileSheetDialog {
                 job.meta=OfflineActions.metadata(player); job.meta.title=title; job.meta.episode=e.getName(); job.meta.sourceId=job.id;
                 job.resolvedUrl=current.localConfiguration.uri.toString(); job.mime=current.localConfiguration.mimeType;
             }
+            job.meta.historyConfig = com.fongmi.android.tv.api.config.VodConfig.getCid();
+            job.meta.historyKey = com.fongmi.android.tv.history.HistoryKey.local(site + "@@@" + video, job.meta.historyConfig);
             job.meta.showId=OfflineMetadata.id(com.fongmi.android.tv.api.config.VodConfig.getCid()+"\n"+site+"\n"+video,java.util.Collections.emptyMap());
             job.meta.poster=host.offlinePoster();job.meta.sourceName=flag.getFlag();job.meta.episodeOrder=e.getIndex();job.meta.addedAt=System.currentTimeMillis();
             jobs.add(job);
@@ -119,7 +121,7 @@ public final class OfflineBatchDialog extends MobileSheetDialog {
         int count=OfflineBatchQueue.get(requireContext()).add(jobs,existing);
         OfflineBatchService.kick(requireContext());
         Toast.makeText(requireContext(), count>0?"已加入 "+count+" 集，正在准备下载":"所选剧集已加入下载或暂不支持离线保存",Toast.LENGTH_LONG).show();
-        OfflineDownloadsActivity.start(requireContext()); dismiss();
+        OfflineDownloadsActivity.tasks(requireContext()); dismiss();
     }
     private final class Adapter extends RecyclerView.Adapter<Holder> {
         @NonNull public Holder onCreateViewHolder(@NonNull ViewGroup p,int type) {

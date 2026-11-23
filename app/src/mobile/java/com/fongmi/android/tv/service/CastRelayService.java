@@ -85,6 +85,7 @@ public final class CastRelayService extends Service {
 
     @Override public void onDestroy() {
         handler.removeCallbacks(checkIdle);
+        com.fongmi.android.tv.dlna.ActiveCast.relayEnded();
         CastProxy.relay().stop();
         if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
         if (wifiLock != null && wifiLock.isHeld()) wifiLock.release();

@@ -163,6 +163,18 @@ public class OfflineDownloadTest {
         assertEquals(1, store.mediaItem(download).localConfiguration.subtitleConfigurations.size());
     }
 
+    // A short fixture can finish between UI-thread samples. Also accept completed playback
+    // when the decoder actually rendered multiple frames and the playback clock advanced.
+    private static boolean playedOfflineVideo(Player player) {
+        if (!(player instanceof androidx.media3.exoplayer.ExoPlayer exo)
+                || player.getPlayerError() != null || player.getCurrentPosition() <= 2500) return false;
+        if (player.isPlaying()) return true;
+        var frames = exo.getVideoDecoderCounters();
+        if (frames == null || player.getPlaybackState() != Player.STATE_ENDED) return false;
+        frames.ensureUpdated();
+        return frames.renderedOutputBufferCount >= 2;
+    }
+
     @Test public void hlsPlaylistAndAllSegmentsAreAvailableOffline() throws Exception {
         String id = enqueue("/video.m3u8", metadata()); complete(id);
         int before = requests.get();
@@ -170,7 +182,7 @@ public class OfflineDownloadTest {
             assertArrayEquals(path, content.get(path), cached(id, path, 0, -1));
         content.clear();
         try (ActivityScenario<OfflinePlayerActivity> playback = ActivityScenario.launch(new Intent(context, OfflinePlayerActivity.class).putExtra("id", id))) {
-            await(() -> { AtomicBoolean playing = new AtomicBoolean(); playback.onActivity(a -> { Player p = ((PlayerView)a.findViewById(R.id.player)).getPlayer(); playing.set(p != null && p.isPlaying() && p.getCurrentPosition() > 2500); }); return playing.get(); }, 20000);
+            await(() -> { AtomicBoolean playing = new AtomicBoolean(); playback.onActivity(a -> { Player p = ((PlayerView)a.findViewById(R.id.player)).getPlayer(); playing.set(playedOfflineVideo(p)); }); return playing.get(); }, 20000);
         }
         assertEquals(before, requests.get()); assertEquals(0, rejected.get());
     }
@@ -188,7 +200,7 @@ public class OfflineDownloadTest {
                     await(() -> { AtomicBoolean playing = new AtomicBoolean(); playback.onActivity(a -> {
                         Player p = ((PlayerView)a.findViewById(R.id.player)).getPlayer();
                         if (p != null) state.set("state=" + p.getPlaybackState() + ", position=" + p.getCurrentPosition() + ", buffered=" + p.getBufferedPosition() + ", playWhenReady=" + p.getPlayWhenReady() + ", suppression=" + p.getPlaybackSuppressionReason() + ", error=" + p.getPlayerError());
-                        playing.set(p != null && p.isPlaying() && p.getCurrentPosition() > 2500);
+                        playing.set(playedOfflineVideo(p));
                     }); return playing.get(); }, 20000);
                 } catch (AssertionError e) { throw new AssertionError(path + ": " + state.get(), e); }
             }

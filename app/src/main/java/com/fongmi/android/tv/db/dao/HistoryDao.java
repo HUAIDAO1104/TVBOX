@@ -18,6 +18,9 @@ public abstract class HistoryDao extends BaseDao<History> {
             + "'' AS episodeUrl, revSort, revPlay, createTime, opening, ending, position, duration, "
             + "speed, scale, cid";
 
+    @Query("SELECT " + SAFE_COLUMNS + " FROM History WHERE cid = :cid AND `key` > :after ORDER BY `key` LIMIT 32")
+    public abstract List<History> page(int cid, String after);
+
     @Query("SELECT * FROM History")
     public abstract List<History> findAll();
 

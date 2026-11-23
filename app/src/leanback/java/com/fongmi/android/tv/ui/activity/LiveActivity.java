@@ -105,7 +105,11 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
     private int count;
 
     public static void start(Context context) {
-        context.startActivity(new Intent(context, LiveActivity.class).putExtra("empty", LiveConfig.isEmpty()));
+        start(context, 0);
+    }
+
+    public static void start(Context context, int section) {
+        context.startActivity(new Intent(context, LiveActivity.class).putExtra("empty", LiveConfig.isEmpty()).putExtra("section", section));
     }
 
     private boolean isEmpty() {
@@ -287,7 +291,16 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
         List<Group> items = new ArrayList<>();
         for (Group group : live.getGroups()) (group.isHidden() ? mHides : items).add(group);
         mGroupAdapter.addAll(items);
-        setPosition(LiveConfig.get().findKeepPosition(items));
+        boolean favorites = getIntent().getIntExtra("section", 0) == 1;
+        if (favorites) getIntent().removeExtra("section");
+        if (favorites && !items.isEmpty() && items.get(0).isKeep() && !items.get(0).getChannel().isEmpty()) {
+            setPosition(new int[]{0, 0});
+            showUI();
+        } else {
+            setPosition(LiveConfig.get().findKeepPosition(items));
+            if (favorites) { showUI(); Notify.show("尚未收藏频道，长按频道即可收藏"); }
+            if (getIntent().getIntExtra("section", 0) == 2) showUI();
+        }
     }
 
     private void setWidth(Live live) {
@@ -688,6 +701,7 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
     private void setInfo() {
         mViewModel.getEpg(mChannel);
         mBinding.widget.play.setText("");
+        mBinding.widget.nextProgram.setVisibility(View.GONE);
         mBinding.widget.name.setMaxEms(48);
         mChannel.loadLogo(mBinding.widget.logo);
         mBinding.widget.title.setSelected(true);
@@ -705,10 +719,21 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
         EpgData data = epg.getEpgData();
         boolean hasTitle = !data.getTitle().isEmpty();
         mEpgDataAdapter.addAll(epg.getList());
+        if (getIntent().getIntExtra("section", 0) == 2 && mChannel != null) {
+            getIntent().removeExtra("section");
+            showUI();
+            if (epg.getList().isEmpty()) Notify.show("此频道暂无节目单");
+            else showEpg(mChannel);
+        }
         if (hasTitle) mBinding.widget.title.setText(getString(R.string.detail_title,
                 SearchDisplayName.removeEmoji(mChannel.getShow()), SearchDisplayName.removeEmoji(data.getTitle())));
         mBinding.widget.name.setMaxEms(hasTitle ? 12 : 48);
         mBinding.widget.play.setText(data.format());
+        int current = epg.getInRange();
+        EpgData next = current >= 0 && current + 1 < epg.getList().size() ? epg.getList().get(current + 1) : null;
+        boolean showNext = next != null && !next.getTitle().isEmpty();
+        mBinding.widget.nextProgram.setVisibility(showNext ? View.VISIBLE : View.GONE);
+        if (showNext) mBinding.widget.nextProgram.setText("接下来  " + next.getStart() + "  " + next.getTitle());
         setWidth(epg);
         setMetadata();
     }

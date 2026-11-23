@@ -15,11 +15,14 @@ import com.fongmi.android.tv.utils.Task;
 
 public class VodHistoryPolicy {
 
+    private String lastSubmitted = "";
+
     public History findOrCreate(String key, String mark, Vod item) {
         History history = History.find(key);
+        lastSubmitted = history == null ? "" : history.toString();
         history = history == null ? create(key, item) : history;
         if (!TextUtils.isEmpty(mark)) history.setVodRemarks(mark);
-        if (Setting.isIncognito() && history.getKey().equals(key)) history.delete();
+
         history.setVodName(item.getName());
         return history;
     }
@@ -38,14 +41,24 @@ public class VodHistoryPolicy {
     }
 
     public void save(History history, boolean exit) {
-        if (history != null && history.canSave() && !Setting.isIncognito()) Task.execute(() -> {
-            history.merge().save();
-            if (exit) RefreshEvent.history();
+        if (history == null || !history.canSave() || Setting.isIncognito()) return;
+        String data = history.toString();
+        boolean changed = !data.equals(lastSubmitted);
+        if (!changed && !exit) return;
+        lastSubmitted = data;
+        History snapshot = changed ? History.objectFrom(data) : null;
+        Task.execute(() -> {
+            if (Setting.isIncognito()) return;
+            if (snapshot != null) snapshot.save();
+            if (exit) {
+                RefreshEvent.history();
+                com.fongmi.android.tv.history.HistoryLink.afterSave();
+            }
         });
     }
 
     public void sync(History history) {
-        if (history != null && !Setting.isIncognito()) Task.execute(history::save);
+        save(history);
     }
 
     public void updateEpisode(History history, Flag flag, Episode episode) {
@@ -58,7 +71,8 @@ public class VodHistoryPolicy {
 
     public void updateTime(History history, long time, long position, long duration) {
         if (history == null || position < 0 || duration <= 0) return;
-        history.setCreateTime(time);
+        if (history.getPosition() == position && history.getDuration() == duration) return;
+        history.setCreateTime(Math.max(time, history.getCreateTime() + 1));
         history.setPosition(position);
         history.setDuration(duration);
         if (history.canSave() && history.canSync()) sync(history);

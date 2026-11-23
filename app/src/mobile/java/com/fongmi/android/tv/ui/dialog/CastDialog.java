@@ -51,6 +51,7 @@ public class CastDialog extends MobileSheetDialog implements DeviceAdapter.OnCli
     private CastVideo video;
     private String historyJson;
     private boolean fm;
+    private Device receiver;
     private Call castCall;
     private DLNACast dlnaCast;
     private final java.util.Map<String, Device> discovered = new java.util.LinkedHashMap<>();
@@ -187,6 +188,8 @@ public class CastDialog extends MobileSheetDialog implements DeviceAdapter.OnCli
     private void onCasted() {
         if (binding == null || !(getActivity() instanceof Listener host)) return;
         connecting = false; App.removeCallbacks(connectionTimeout);
+        if (getActivity() instanceof Host playerHost && receiver != null)
+            com.fongmi.android.tv.dlna.ActiveCast.begin(receiver, playerHost.castHistory(), dlnaCast == null ? "" : dlnaCast.relayUri());
         host.onCasted();
         dismiss();
     }
@@ -225,6 +228,7 @@ public class CastDialog extends MobileSheetDialog implements DeviceAdapter.OnCli
         if (getActivity() instanceof Host host) { video = host.castVideo(); history(host.castHistory()); }
         if (video == null) { binding.status.setText("视频尚未准备好，请返回播放页重试"); return; }
         if (connecting) return;
+        receiver = item;
         connecting = true; discovering = false;
         int generation = ++castGeneration;
         App.post(connectionTimeout, item.isDLNA() ? 45000 : 15000);
@@ -236,7 +240,9 @@ public class CastDialog extends MobileSheetDialog implements DeviceAdapter.OnCli
             dlnaCast = new DLNACast(video, () -> { if (generation == castGeneration) onCasted(); }, message -> {
                 if (binding != null && generation == castGeneration) { connecting = false; App.removeCallbacks(connectionTimeout); binding.status.setText(message); }
             });
-            dlnaCast.cast(item);
+            dlnaCast.cast(item, binding.compatible.isChecked(), status -> {
+                if (binding != null && generation == castGeneration && connecting) binding.status.setText(status);
+            });
         }
         else { castCall = OkHttp.newCall(client, item.getIp().concat("/action?do=cast"), requestBody()); castCall.enqueue(this); }
     }
@@ -258,7 +264,7 @@ public class CastDialog extends MobileSheetDialog implements DeviceAdapter.OnCli
     public void onDestroyView() {
         super.onDestroyView();
         DLNACastManager.get().setDeviceListener(null);
-        DLNACastManager.get().release(requireActivity());
+        if (com.fongmi.android.tv.dlna.ActiveCast.get() == null || receiver == null || !receiver.isDLNA()) DLNACastManager.get().release(requireActivity());
         scanTask.stop();
         castGeneration++; connecting = false;
         App.removeCallbacks(discoveryFinished, connectionTimeout);

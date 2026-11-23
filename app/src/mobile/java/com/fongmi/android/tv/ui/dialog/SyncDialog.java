@@ -165,22 +165,21 @@ public class SyncDialog extends BaseBottomSheetDialog implements DeviceAdapter.O
     public boolean onLongClick(Device item) {
         String mode = binding.mode.getTag().toString();
         if (mode.equals("0")) return false;
-        if (mode.equals("2")) deleteLocal();
-        String force = mode.equals("1") ? "&force=true" : "";
+        if (mode.equals("2") && type.equals("keep")) return false;
+        String force = mode.equals("1") ? "&force=true" : "&replaceReceived=true";
         OkHttp.newCall(client, String.format(Locale.getDefault(), "%s/action?do=sync&mode=%s&type=%s%s", item.getIp(), mode, type, force), body.build()).enqueue(getCallback());
         return true;
-    }
-
-    private void deleteLocal() {
-        if (type.equals("keep")) Keep.deleteAll();
-        if (type.equals("history")) History.delete(VodConfig.getCid());
     }
 
     private Callback getCallback() {
         return new Callback() {
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) {
-                App.post(() -> onSuccess());
+                try (response) {
+                    if (response.isSuccessful() && response.body() != null && "OK".equals(response.body().string()))
+                        App.post(() -> { if (isAdded()) onSuccess(); });
+                    else App.post(() -> Notify.show("同步未完成，请检查接收设备"));
+                } catch (IOException e) { onFailure(call, e); }
             }
 
             @Override

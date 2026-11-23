@@ -42,7 +42,11 @@ public class Action implements Process {
     public Response doResponse(IHTTPSession session, String url, Map<String, String> files) {
         Map<String, String> params = session.getParms();
         String param = params.get("do");
-        if (!TextUtils.isEmpty(param)) doJob(param, params);
+        try {
+            if (!TextUtils.isEmpty(param)) doJob(param, params);
+        } catch (RuntimeException e) {
+            return Nano.error("同步未完成，请检查接收设备");
+        }
         return Nano.ok();
     }
 
@@ -134,6 +138,7 @@ public class Action implements Process {
 
     private void onSync(Map<String, String> params) {
         String type = params.get("type");
+        if ("history".equals(type) && com.fongmi.android.tv.setting.Setting.isIncognito()) throw new IllegalStateException();
         boolean force = Objects.equals(params.get("force"), "true");
         String mode = Objects.requireNonNullElse(params.get("mode"), "0");
         if (params.get("device") != null && (mode.equals("0") || mode.equals("2"))) {
@@ -149,9 +154,11 @@ public class Action implements Process {
 
     private void post(Device device, String type, FormBody.Builder body) {
         try {
-            OkHttp.newCall(OkHttp.client(Constant.TIMEOUT_SYNC), device.getIp().concat("/action?do=sync&mode=0&type=" + type), body.build()).execute();
+            try (okhttp3.Response response = OkHttp.newCall(OkHttp.client(Constant.TIMEOUT_SYNC), device.getIp().concat("/action?do=sync&mode=0&type=" + type), body.build()).execute()) {
+                if (!response.isSuccessful() || response.body() == null || !"OK".equals(response.body().string())) throw new java.io.IOException("设备同步失败 " + response.code());
+            }
         } catch (Exception e) {
-            App.post(() -> Notify.show(e.getMessage()));
+            throw new IllegalStateException("设备未确认写入", e);
         }
     }
 
@@ -161,10 +168,11 @@ public class Action implements Process {
             if (config.getUrl() == null) config = Config.vod();
             FormBody.Builder body = new FormBody.Builder();
             body.add("config", config.toString());
+            if ("true".equals(params.get("replaceReceived"))) body.add("force", "true");
             body.add("targets", App.gson().toJson(History.get(config.getId())));
             post(device, "history", body);
         } catch (Exception e) {
-            App.post(() -> Notify.show(e.getMessage()));
+            throw new IllegalStateException("设备未确认写入", e);
         }
     }
 
@@ -175,7 +183,7 @@ public class Action implements Process {
             body.add("configs", App.gson().toJson(Config.findUrls()));
             post(device, "keep", body);
         } catch (Exception e) {
-            App.post(() -> Notify.show(e.getMessage()));
+            throw new IllegalStateException("设备未确认写入", e);
         }
     }
 
@@ -183,29 +191,8 @@ public class Action implements Process {
         Config config = Config.find(Config.objectFrom(params.get("config")));
         List<History> targets = History.arrayFrom(params.get("targets"));
         if (config.getUrl() == null) return;
-        if (config.getUrl().equals(VodConfig.getUrl())) {
-            if (force) History.delete(config.getId());
-            History.sync(targets);
-            RefreshEvent.history();
-        } else {
-            VodConfig.load(config, getCallback(targets, force, config.getId()));
-        }
-    }
-
-    private Callback getCallback(List<History> targets, boolean force, int cid) {
-        return new Callback() {
-            @Override
-            public void success() {
-                if (force) History.delete(cid);
-                History.sync(targets);
-                RefreshEvent.history();
-            }
-
-            @Override
-            public void error(String msg) {
-                Notify.show(msg);
-            }
-        };
+        History.sync(config.getId(), targets, force);
+        RefreshEvent.history();
     }
 
     private void syncKeep(Map<String, String> params, boolean force) {
