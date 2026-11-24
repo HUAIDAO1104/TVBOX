@@ -138,7 +138,7 @@ public class Action implements Process {
 
     private void onSync(Map<String, String> params) {
         String type = params.get("type");
-        if ("history".equals(type) && com.fongmi.android.tv.setting.Setting.isIncognito()) throw new IllegalStateException();
+        if ("history".equals(type) && (com.fongmi.android.tv.setting.Setting.isIncognito() || !com.fongmi.android.tv.history.AccountSession.profile().isEmpty())) throw new IllegalStateException();
         boolean force = Objects.equals(params.get("force"), "true");
         String mode = Objects.requireNonNullElse(params.get("mode"), "0");
         if (params.get("device") != null && (mode.equals("0") || mode.equals("2"))) {
@@ -169,7 +169,7 @@ public class Action implements Process {
             FormBody.Builder body = new FormBody.Builder();
             body.add("config", config.toString());
             if ("true".equals(params.get("replaceReceived"))) body.add("force", "true");
-            body.add("targets", App.gson().toJson(History.get(config.getId())));
+            body.add("targets", App.gson().toJson(History.guestHistory(config.getId())));
             post(device, "history", body);
         } catch (Exception e) {
             throw new IllegalStateException("设备未确认写入", e);

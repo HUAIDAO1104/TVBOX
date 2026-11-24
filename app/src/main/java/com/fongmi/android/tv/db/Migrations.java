@@ -300,4 +300,12 @@ public class Migrations {
             database.execSQL("ALTER TABLE History_Backup RENAME TO History");
         }
     };
+    public static final Migration MIGRATION_39_40 = new Migration(39, 40) {
+        @Override public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("CREATE TABLE History_Backup (`key` TEXT NOT NULL, `vodPic` TEXT, `vodName` TEXT, `vodFlag` TEXT, `vodRemarks` TEXT, `episodeUrl` TEXT, `revSort` INTEGER NOT NULL, `revPlay` INTEGER NOT NULL, `createTime` INTEGER NOT NULL, `opening` INTEGER NOT NULL, `ending` INTEGER NOT NULL, `position` INTEGER NOT NULL, `duration` INTEGER NOT NULL, `speed` REAL NOT NULL, `scale` INTEGER NOT NULL, `cid` INTEGER NOT NULL, `profile` TEXT NOT NULL DEFAULT '', PRIMARY KEY(`profile`, `cid`, `key`))");
+            db.execSQL("INSERT INTO History_Backup SELECT `key`, vodPic, vodName, vodFlag, vodRemarks, episodeUrl, revSort, revPlay, createTime, opening, ending, position, duration, speed, scale, cid, '' FROM History");
+            db.execSQL("DROP TABLE History");
+            db.execSQL("ALTER TABLE History_Backup RENAME TO History");
+        }
+    };
 }

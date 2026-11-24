@@ -76,6 +76,10 @@ public final class HistoryActivity extends BaseActivity implements HistoryAdapte
     }
 
     private void showPairing() {
+        if (!com.fongmi.android.tv.history.AccountSession.profile().isEmpty()) {
+            PddAccountActivity.start(this);
+            return;
+        }
         Task.execute(() -> {
             String code = com.fongmi.android.tv.history.HistoryPeer.pairingCode();
             var qr = code.isEmpty() ? null : com.fongmi.android.tv.utils.QRCode.getStandardBitmap(code, 420);

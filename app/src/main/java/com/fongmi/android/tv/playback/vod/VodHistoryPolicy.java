@@ -47,6 +47,7 @@ public class VodHistoryPolicy {
         if (!changed && !exit) return;
         lastSubmitted = data;
         History snapshot = changed ? History.objectFrom(data) : null;
+        if (snapshot != null) snapshot.setProfile(history.getProfile());
         Task.execute(() -> {
             if (Setting.isIncognito()) return;
             if (snapshot != null) snapshot.save();

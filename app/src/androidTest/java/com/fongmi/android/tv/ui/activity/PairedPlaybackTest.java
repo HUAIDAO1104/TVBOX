@@ -9,6 +9,7 @@ import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Config;
 import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.history.HistoryKey;
+import com.fongmi.android.tv.history.AccountSession;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import java.io.File;
 import java.nio.file.Files;
@@ -35,12 +36,19 @@ public class PairedPlaybackTest {
         String key = HistoryKey.local("push_agent@@@" + id, cid);
         boolean first = stage.equals("mediaPhoneStart");
         boolean television = stage.equals("mediaTV");
-        if (!first && !television) {
+        String account = args.getString("accountUser", "");
+        if (!account.isEmpty() && (television || first)) {
+            assertTrue(com.fongmi.android.tv.BuildConfig.ACCOUNT_SERVICE_URL.isEmpty());
+            boolean existing = args.getString("accountFixture", "").equals("personal");
+            String password = existing ? "fixture-local-accounts-test" : "test-" + account;
+            AccountSession.login("http://127.0.0.1:18782", account, password, first && !existing);
+        }
+        if (!first && (!television || !account.isEmpty())) {
             // Coming back to the app must pull the TV rewind without pressing a sync button.
             try (var home = ActivityScenario.launch(HomeActivity.class)) {
                 for (int i = 0; i < 180; i++) {
                     History received = History.find(key);
-                    if (received != null && Math.abs(received.getPosition() - 18000) < 6000) break;
+                    if (received != null && Math.abs(received.getPosition() - (television ? 68000 : 18000)) < 6000) break;
                     SystemClock.sleep(100);
                 }
             }
@@ -50,6 +58,8 @@ public class PairedPlaybackTest {
             assertNotNull("synced record exists before opening player", prior);
             assertTrue("persisted resume: " + prior.getPosition(), Math.abs(prior.getPosition() - (television ? 68000 : 18000)) < 6000);
         }
+        var acknowledgements = context.getSharedPreferences(account.isEmpty() ? "paired_history" : "pdd_account", 0);
+        String previousRevision = acknowledged(acknowledgements, HistoryKey.content(key));
         int engine = PlayerSetting.getEngine();
         PlayerSetting.putEngine(PlayerSetting.ENGINE_EXO);
         try (ActivityScenario<VideoActivity> screen = ActivityScenario.launch(new Intent(context, VideoActivity.class)
@@ -68,15 +78,11 @@ public class PairedPlaybackTest {
         for (int i = 0; i < 60; i++) {
             History saved = History.find(key);
             if (saved != null && Math.abs(saved.getPosition() - target) < 6500) {
-                if (first) {
+                if (first || (television && !account.isEmpty())) {
                     // Wait for the exit-triggered exchange to acknowledge the new video.
-                    var prefs = context.getSharedPreferences("paired_history", 0);
-                    String content = HistoryKey.content(key);
                     for (int j = 0; j < 180; j++) {
-                        boolean ack = prefs.getAll().entrySet().stream().anyMatch(entry ->
-                                entry.getKey().startsWith("common.") && com.google.gson.JsonParser
-                                .parseString((String) entry.getValue()).getAsJsonObject().has(content));
-                        if (ack) return;
+                        String ack = acknowledged(acknowledgements, HistoryKey.content(key));
+                        if (!ack.isEmpty() && !previousRevision.equals(ack)) return;
                         SystemClock.sleep(100);
                     }
                     fail("phone exit did not sync its playback record");
@@ -86,6 +92,13 @@ public class PairedPlaybackTest {
             SystemClock.sleep(100);
         }
         fail("player exit did not persist the expected position");
+    }
+
+    private static String acknowledged(android.content.SharedPreferences prefs, String key) {
+        String config = okio.ByteString.encodeUtf8("https://fixture.invalid/paired-history-v2").sha256().base64();
+        String field = "common." + AccountSession.profile() + config;
+        var index = com.google.gson.JsonParser.parseString(prefs.getString(field, "{}")).getAsJsonObject();
+        return index.has(key) ? index.get(key).getAsString() : "";
     }
 
     private static long position(ActivityScenario<VideoActivity> screen, long minimum) {

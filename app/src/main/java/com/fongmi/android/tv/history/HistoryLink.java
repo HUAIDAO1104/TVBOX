@@ -47,6 +47,16 @@ public final class HistoryLink {
     public static Conflict conflict() { return conflict; }
     public static boolean paired() { return !HistoryPeer.prefs().getString("peer", "").isEmpty(); }
 
+    static synchronized void accountChanged() {
+        conflict = null;
+        status = "";
+    }
+
+    private static String identity() {
+        String profile = AccountSession.profile();
+        return profile.isEmpty() ? HistoryPeer.prefs().getString("peer", "") : "account/" + profile;
+    }
+
     public static synchronized void forget() {
         HistoryPeer.forget();
         conflict = null;
@@ -72,6 +82,7 @@ public final class HistoryLink {
                 // Prove that the TV holds the scanned key before replacing an existing pairing.
                 call(uri, cfg.getUrl(), "index", new JsonObject());
                 synchronized (HistoryLink.class) {
+                    if (!AccountSession.profile().isEmpty()) throw new IOException("当前正在使用账号续播");
                     if (!code.equals(HistoryPeer.prefs().getString("peer", ""))) forget();
                     if (!HistoryPeer.prefs().edit().putString("peer", code).commit()) throw new IOException("未能保存配对");
                 }
@@ -106,22 +117,34 @@ public final class HistoryLink {
         }
     }
 
+    private static JsonObject exchange(AccountHistoryRemote cloud, URI uri, String config, String op, JsonObject data) throws Exception {
+        if (Setting.isIncognito()) throw new IOException("无痕模式下暂停历史同步");
+        return cloud == null ? call(uri, config, op, data) : cloud.call(op, data);
+    }
+
     private static String rev(JsonObject index, String key) {
         return index.has(key) ? index.get(key).getAsString() : MISSING;
     }
 
     private static void run(Conflict choice, boolean preferPhone, Consumer<String> done) {
-        String code = HistoryPeer.prefs().getString("peer", "");
         try {
-            URI uri = endpoint(code);
+            String code, profile;
+            AccountSession.Login login;
+            synchronized (HistoryLink.class) {
+                code = identity();
+                profile = AccountSession.profile();
+                login = AccountSession.current();
+            }
+            URI uri = login == null ? endpoint(code) : null;
             Config cfg = current();
             String config = cfg.getUrl();
             int cid = cfg.getId();
-            SharedPreferences prefs = HistoryPeer.prefs();
-            String commonKey = "common." + HistoryPeer.hash(config);
+            AccountHistoryRemote cloud = login == null ? null : new AccountHistoryRemote(login, config);
+            SharedPreferences prefs = login == null ? HistoryPeer.prefs() : AccountSession.prefs();
+            String commonKey = "common." + profile + HistoryPeer.hash(config);
             JsonObject common = JsonParser.parseString(prefs.getString(commonKey, "{}")).getAsJsonObject();
-            JsonObject remote = call(uri, config, "index", new JsonObject()).getAsJsonObject("index");
-            JsonObject local = HistoryPeer.index(cid);
+            JsonObject remote = exchange(cloud, uri, config, "index", new JsonObject()).getAsJsonObject("index");
+            JsonObject local = HistoryPeer.index(profile, cid);
             Set<String> keys = new LinkedHashSet<>(local.keySet());
             keys.addAll(remote.keySet());
             keys.addAll(common.keySet());
@@ -136,16 +159,16 @@ public final class HistoryLink {
                 data.addProperty("key", key);
                 History here = null, there = null;
                 if (decision != HistoryReconcile.Decision.SAME) {
-                    here = HistoryPeer.read(cid, key);
+                    here = HistoryPeer.read(profile, cid, key);
                     if (!HistoryPeer.revision(here).equals(phone)) { pending++; continue; }
                     if (decision != HistoryReconcile.Decision.PUSH) {
-                        there = App.gson().fromJson(call(uri, config, "read", data.deepCopy()).get("row"), History.class);
+                        there = App.gson().fromJson(exchange(cloud, uri, config, "read", data.deepCopy()).get("row"), History.class);
                         if (!HistoryPeer.revision(there).equals(tv)) { pending++; continue; }
                     }
                 }
                 if (decision == HistoryReconcile.Decision.CONFLICT) {
                     Conflict found = new Conflict(key, config, phone, tv, (here == null ? there : here).getVodName()
-                            + "\n手机 · " + describe(here) + "\n电视 · " + describe(there));
+                            + (cloud == null ? "\n手机 · " : "\n本设备 · ") + describe(here) + (cloud == null ? "\n电视 · " : "\n账号 · ") + describe(there));
                     if (found.equals(choice)) decision = preferPhone ? HistoryReconcile.Decision.PUSH : HistoryReconcile.Decision.PULL;
                     else {
                         if (first == null) first = found;
@@ -157,13 +180,13 @@ public final class HistoryLink {
                 if (decision == HistoryReconcile.Decision.PUSH) {
                     data.addProperty("expected", tv);
                     data.add("row", App.gson().toJsonTree(here));
-                    if (!call(uri, config, "write", data).get("applied").getAsBoolean()) { pending++; continue; }
+                    if (!exchange(cloud, uri, config, "write", data).get("applied").getAsBoolean()) { pending++; continue; }
                     changed++;
                 } else if (decision == HistoryReconcile.Decision.PULL) {
                     History value = there;
                     synchronized (HistoryLink.class) {
                         checkPeer(code);
-                        if (!AppDatabase.get().runInTransaction(() -> HistoryPeer.apply(cid, key, phone, value))) { pending++; continue; }
+                        if (!AppDatabase.get().runInTransaction(() -> HistoryPeer.apply(profile, cid, key, phone, value))) { pending++; continue; }
                     }
                     RefreshEvent.history();
                     agreed = tv;
@@ -194,7 +217,7 @@ public final class HistoryLink {
     }
 
     private static void checkPeer(String code) throws IOException {
-        if (Setting.isIncognito() || !code.equals(HistoryPeer.prefs().getString("peer", ""))) throw new IOException("配对或隐私设置已变更");
+        if (Setting.isIncognito() || !code.equals(identity())) throw new IOException("配对或隐私设置已变更");
     }
 
     private static String describe(History row) {
@@ -205,7 +228,7 @@ public final class HistoryLink {
 
     private static String message(Exception e) {
         return e instanceof java.net.SocketException || e instanceof java.io.InterruptedIOException
-                ? "电视暂时离线，连接同一局域网后会自动重试" : "同步未完成 · " + (e.getMessage() == null ? "请重新扫描电视配对码" : e.getMessage());
+                ? (AccountSession.profile().isEmpty() ? "电视暂时离线，连接同一局域网后会自动重试" : "账号服务暂时离线，联网后会自动重试") : "同步未完成 · " + (e.getMessage() == null ? "请重新扫描电视配对码" : e.getMessage());
     }
 
     private static void finish(String text, Consumer<String> done) {
@@ -214,7 +237,7 @@ public final class HistoryLink {
     }
 
     public static void sync(Consumer<String> done) {
-        if (!paired()) return;
+        if (identity().isEmpty()) return;
         if (!RUNNING.compareAndSet(false, true)) {
             if (done != null) App.post(() -> done.accept("正在同步观看历史"));
             return;
@@ -227,10 +250,10 @@ public final class HistoryLink {
     // An exchange already in flight may have indexed the history before the final save.
     // Always queue one more pass for an exit, even when the app is leaving the foreground.
     public static void afterSave() {
-        if (!paired() || !SAVE_QUEUED.compareAndSet(false, true)) return;
+        if (identity().isEmpty() || !SAVE_QUEUED.compareAndSet(false, true)) return;
         WORK.execute(() -> {
             SAVE_QUEUED.set(false);
-            if (paired() && !Setting.isIncognito()) run(null, false, null);
+            if (!identity().isEmpty() && !Setting.isIncognito()) run(null, false, null);
         });
     }
 
@@ -244,7 +267,7 @@ public final class HistoryLink {
     }
 
     private static void tick() {
-        if (paired() && !Setting.isIncognito()) sync(null);
+        if (!identity().isEmpty() && !Setting.isIncognito()) sync(null);
         App.post(TICK, 15000);
     }
 }

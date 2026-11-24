@@ -35,7 +35,7 @@ public final class HistoryPeer {
     }
 
     public static synchronized String pairingCode() {
-        if (Setting.isIncognito()) return "";
+        if (Setting.isIncognito() || !AccountSession.profile().isEmpty()) return "";
         Server.get().start();
         String address = Server.get().getAddress();
         if (address.isEmpty()) return "";
@@ -70,28 +70,37 @@ public final class HistoryPeer {
         } catch (java.security.NoSuchAlgorithmException e) { throw new AssertionError(e); }
     }
 
-    static JsonObject index(int cid) {
+    static JsonObject index(int cid) { return index("", cid); }
+
+    static JsonObject index(String profile, int cid) {
         JsonObject result = new JsonObject();
         String after = "";
         while (true) {
-            List<History> page = AppDatabase.get().getHistoryDao().page(cid, after);
+            List<History> page = AppDatabase.get().getHistoryDao().pageScoped(profile, cid, after);
             for (History item : page) result.addProperty(HistoryKey.content(item.getKey()), revision(item));
             if (page.size() < 32) return result;
             after = page.get(page.size() - 1).getKey();
         }
     }
 
-    static History read(int cid, String key) {
-        return AppDatabase.get().getHistoryDao().find(cid, HistoryKey.local(key, cid));
+    static History read(int cid, String key) { return read("", cid, key); }
+
+    static History read(String profile, int cid, String key) {
+        return AppDatabase.get().getHistoryDao().findScoped(profile, cid, HistoryKey.local(key, cid));
     }
 
     // Both the comparison and the write run inside the caller's Room transaction.
     static boolean apply(int cid, String key, String expected, History value) {
-        if (!revision(read(cid, key)).equals(expected)) return false;
-        if (value == null) AppDatabase.get().getHistoryDao().delete(cid, HistoryKey.local(key, cid));
+        return apply("", cid, key, expected, value);
+    }
+
+    static boolean apply(String profile, int cid, String key, String expected, History value) {
+        if (!revision(read(profile, cid, key)).equals(expected)) return false;
+        if (value == null) AppDatabase.get().getHistoryDao().deleteScoped(profile, cid, HistoryKey.local(key, cid));
         else {
             if (!key.equals(HistoryKey.content(value.getKey())) || value.getVodName().isEmpty() || key.indexOf("@@@") <= 0
                     || key.endsWith("@@@")) throw new IllegalArgumentException("影片记录不完整");
+            value.setProfile(profile);
             value.setKey(HistoryKey.local(key, cid));
             value.setEpisodeUrl(value.getEpisodeUrl());
             AppDatabase.get().getHistoryDao().insertOrUpdate(value.cid(cid));
@@ -131,7 +140,7 @@ public final class HistoryPeer {
             new DataInputStream(session.getInputStream()).readFully(body);
             synchronized (HistoryPeer.class) {
                 String key = prefs().getString("receiverKey", "");
-                if (Setting.isIncognito() || key.isEmpty()) throw new IOException();
+                if (Setting.isIncognito() || !AccountSession.profile().isEmpty() || key.isEmpty()) throw new IOException();
                 String json = HistoryCipher.open(key, "request", new String(body, StandardCharsets.US_ASCII));
                 JsonObject request = JsonParser.parseString(json).getAsJsonObject();
                 JsonObject response = handle(request);

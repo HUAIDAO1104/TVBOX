@@ -114,6 +114,7 @@ public class SettingActivity extends FocusSafeSettingsActivity implements Config
     protected void initEvent() {
         mBinding.vod.setOnClickListener(this::onVod);
         mBinding.repository.setOnClickListener(v -> RepositoryActivity.start(this));
+        mBinding.pddAccount.setOnClickListener(v -> PddAccountActivity.start(this));
         mBinding.cloudAccount.setOnClickListener(v -> CloudAccountActivity.start(this));
         mBinding.cloudPriority.setOnClickListener(this::setCloudPriority);
         mBinding.doh.setOnClickListener(this::setDoh);

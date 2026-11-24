@@ -117,6 +117,7 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
     protected void initEvent() {
         mBinding.downloads.setOnClickListener(v -> com.fongmi.android.tv.ui.activity.OfflineDownloadsActivity.start(requireActivity()));
         mBinding.repository.setOnClickListener(v -> com.fongmi.android.tv.ui.activity.RepositoryActivity.start(requireActivity()));
+        mBinding.pddAccount.setOnClickListener(v -> com.fongmi.android.tv.ui.activity.PddAccountActivity.start(requireActivity()));
         mBinding.cloud.setOnClickListener(v -> com.fongmi.android.tv.ui.activity.CloudAccountActivity.start(requireActivity()));
         mBinding.vod.setOnClickListener(this::onVod);
         mBinding.doh.setOnClickListener(this::setDoh);

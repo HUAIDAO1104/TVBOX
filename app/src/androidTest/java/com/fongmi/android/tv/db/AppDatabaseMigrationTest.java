@@ -176,6 +176,19 @@ public class AppDatabaseMigrationTest {
         database.execSQL("INSERT INTO History (`key`,vodPic,vodName,vodFlag,vodRemarks,episodeUrl,revSort,revPlay,createTime,opening,ending,position,duration,speed,player,scale,cid) VALUES ('history-key','poster','Fixture history','line','Episode 8','episode-url',0,0,123,0,0,456,1000,1.0,2,0,0)");
     }
 
+    @Test public void migration39To40KeepsGuestProgressAndSeparatesProfiles() throws Exception {
+        SupportSQLiteDatabase db = helper.createDatabase(TEST_DB, 39);
+        insertCoreFixtures(db);
+        db.close();
+        db = helper.runMigrationsAndValidate(TEST_DB, 40, true, Migrations.MIGRATION_39_40);
+        assertCoreFixtures(db);
+        assertEquals("", scalarString(db, "SELECT profile FROM History"));
+        db.execSQL("INSERT INTO History SELECT `key`,vodPic,vodName,vodFlag,vodRemarks,episodeUrl,revSort,revPlay,createTime,opening,ending,12,duration,speed,scale,cid,'account2' FROM History WHERE profile=''");
+        assertEquals(456, scalarInt(db, "SELECT position FROM History WHERE profile=''"));
+        assertEquals(12, scalarInt(db, "SELECT position FROM History WHERE profile='account2'"));
+        db.close();
+    }
+
     private static void insertCoreFixtures(SupportSQLiteDatabase database) {
         database.execSQL("INSERT INTO Config (id,type,time,url,json,name,logo,home,parse) VALUES (1,0,123,'https://fixture.invalid/config.json','{}','Fixture config','','home','')");
         database.execSQL("INSERT INTO Keep (`key`,siteName,vodName,vodPic,createTime,type,cid) VALUES ('keep-key','fixture-site','Fixture keep','poster',123,0,0)");

@@ -67,7 +67,7 @@ public class SyncDialog extends BaseBottomSheetDialog implements DeviceAdapter.O
     public SyncDialog history() {
         body.add("device", Device.get().toString());
         body.add("config", Config.vod().toString());
-        body.add("targets", App.gson().toJson(History.get()));
+        body.add("targets", App.gson().toJson(History.guestHistory(com.fongmi.android.tv.api.config.VodConfig.getCid())));
         return type("history");
     }
 

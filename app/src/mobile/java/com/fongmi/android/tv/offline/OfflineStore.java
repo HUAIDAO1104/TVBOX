@@ -82,8 +82,18 @@ public final class OfflineStore {
         context.getSharedPreferences("offline", 0).edit().putBoolean("wifi", wifi).apply();
         DownloadService.sendSetRequirements(context, OfflineDownloadService.class, requirements(wifi), false);
     }
-    public long position(String id) { return context.getSharedPreferences("offline", 0).getLong("position." + id, 0); }
-    public void position(String id, long value) { context.getSharedPreferences("offline", 0).edit().putLong("position." + id, value).apply(); }
+    private String positionKey(String id, String profile) {
+        return profile.isEmpty() ? "position." + id : "accountPosition." + profile + "." + id;
+    }
+    public long position(String id) {
+        return context.getSharedPreferences("offline", 0).getLong(positionKey(id, com.fongmi.android.tv.history.AccountSession.profile()), 0);
+    }
+    public void position(String id, long value) {
+        position(id, com.fongmi.android.tv.history.AccountSession.profile(), value);
+    }
+    public void position(String id, String profile, long value) {
+        context.getSharedPreferences("offline", 0).edit().putLong(positionKey(id, profile), value).apply();
+    }
 
     public DataSource.Factory upstream(OfflineMetadata meta) {
         Map<String, String> headers = new HashMap<>(meta.headers);
@@ -378,7 +388,12 @@ public final class OfflineStore {
                 dir.delete();
             }
             video.remove();
-            context.getSharedPreferences("offline", 0).edit().remove("position." + request.id).apply();
+            var prefs = context.getSharedPreferences("offline", 0);
+            var edit = prefs.edit().remove("position." + request.id);
+            for (String key : prefs.getAll().keySet()) {
+                if (key.startsWith("accountPosition.") && key.endsWith("." + request.id)) edit.remove(key);
+            }
+            edit.apply();
         }
     }
 }

@@ -7,6 +7,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.media3.common.C;
 import androidx.room.Entity;
+import androidx.room.ColumnInfo;
+import com.fongmi.android.tv.history.AccountSession;
 
 
 import com.fongmi.android.tv.App;
@@ -23,7 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-@Entity(primaryKeys = {"cid", "key"})
+@Entity(primaryKeys = {"profile", "cid", "key"})
 public class History implements Diffable<History> {
 
     static final int MAX_EPISODE_URL_LENGTH = 16 * 1024;
@@ -62,6 +64,15 @@ public class History implements Diffable<History> {
     @SerializedName("cid")
     private int cid;
 
+    @NonNull
+    @ColumnInfo(defaultValue = "''")
+    private transient String profile = AccountSession.profile();
+
+    @NonNull
+    public String getProfile() { return profile; }
+
+    public void setProfile(@NonNull String profile) { this.profile = profile; }
+
     private transient long updateTime;
 
     public History() {
@@ -91,6 +102,10 @@ public class History implements Diffable<History> {
         return AppDatabase.get().getHistoryDao().find(cid, System.currentTimeMillis() - Constant.HISTORY_TIME);
     }
 
+    public static List<History> guestHistory(int cid) {
+        return AppDatabase.get().getHistoryDao().findScoped("", cid, System.currentTimeMillis() - Constant.HISTORY_TIME);
+    }
+
     public static History find(String key) {
         return AppDatabase.get().getHistoryDao().find(VodConfig.getCid(), key);
     }
@@ -114,14 +129,15 @@ public class History implements Diffable<History> {
     public static int sync(int cid, List<History> targets, boolean replace) {
         AppDatabase db = AppDatabase.get();
         return db.runInTransaction(() -> {
-            if (replace) db.getHistoryDao().delete(cid);
+            if (replace) db.getHistoryDao().deleteScoped("", cid);
             int changes = 0;
             for (History incoming : targets) {
                 if (incoming == null || incoming.key == null || !incoming.key.contains(AppDatabase.SYMBOL)
                         || incoming.key.endsWith(AppDatabase.SYMBOL) || incoming.getVodName().isEmpty()) continue;
                 incoming.setKey(com.fongmi.android.tv.history.HistoryKey.local(com.fongmi.android.tv.history.HistoryKey.content(incoming.key), cid));
-                History local = db.getHistoryDao().find(cid, incoming.key);
+                History local = db.getHistoryDao().findScoped("", cid, incoming.key);
                 if (local != null && local.createTime >= incoming.createTime) continue;
+                incoming.setProfile("");
                 incoming.setEpisodeUrl(incoming.getEpisodeUrl());
                 db.getHistoryDao().insertOrUpdate(incoming.cid(cid));
                 changes++;
@@ -333,14 +349,14 @@ public class History implements Diffable<History> {
     public History save() {
         AppDatabase db = AppDatabase.get();
         db.runInTransaction(() -> {
-            History previous = db.getHistoryDao().find(cid, key);
+            History previous = db.getHistoryDao().findScoped(profile, cid, key);
             if (previous == null || previous.createTime <= createTime) db.getHistoryDao().insertOrUpdate(this);
         });
         return this;
     }
 
     public History delete() {
-        AppDatabase.get().getHistoryDao().delete(getCid(), getKey());
+        AppDatabase.get().getHistoryDao().deleteScoped(profile, getCid(), getKey());
         AppDatabase.get().getTrackDao().delete(getKey());
         return this;
     }

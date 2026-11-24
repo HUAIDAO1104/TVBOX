@@ -45,6 +45,7 @@ public final class OfflinePlayerActivity extends BaseActivity {
     private String id;
     private com.fongmi.android.tv.bean.History onlineHistory;
     private long initialPosition;
+    private String playbackProfile;
     private com.google.android.material.bottomsheet.BottomSheetDialog accessDialog;
     private com.fongmi.android.tv.player.preview.ScrubPreview scrubPreview;
     private boolean showDanmaku = true;
@@ -122,11 +123,12 @@ public final class OfflinePlayerActivity extends BaseActivity {
         player.setHandleAudioBecomingNoisy(true);
         player.addListener(new Player.Listener() {
             @Override public void onPlayerError(PlaybackException error) { binding.status.setText("本地视频缺失、损坏或格式不支持，请返回下载管理重新下载或换用其他线路"); }
-            @Override public void onPlaybackStateChanged(int state) { if (state == Player.STATE_ENDED) store.position(id, 0); }
+            @Override public void onPlaybackStateChanged(int state) { if (state == Player.STATE_ENDED) store.position(id, playbackProfile, 0); }
         });
         binding.player.setPlayer(player); sync.bind(player);
         binding.player.onResume();
         if (store.danmaku(id).isFile()) binding.player.setDanmakuSource(Uri.fromFile(store.danmaku(id)));
+        playbackProfile = com.fongmi.android.tv.history.AccountSession.profile();
         initialPosition = store.position(id);
         onlineHistory = null;
         if (meta.historyConfig >= 0 && meta.historyKey != null && !meta.historyKey.isEmpty()
@@ -159,7 +161,7 @@ public final class OfflinePlayerActivity extends BaseActivity {
         if(accessDialog!=null){accessDialog.dismiss();accessDialog=null;}
         if(scrubPreview!=null)scrubPreview.hide();
         if (player != null) {
-            store.position(id, player.getPlaybackState() == Player.STATE_ENDED ? 0 : player.getCurrentPosition());
+            store.position(id, playbackProfile, player.getPlaybackState() == Player.STATE_ENDED ? 0 : player.getCurrentPosition());
             if (onlineHistory != null && player.getDuration() > 0 && player.getCurrentPosition() != initialPosition
                     && !com.fongmi.android.tv.setting.Setting.isIncognito()) {
                 onlineHistory.setPosition(player.getCurrentPosition());

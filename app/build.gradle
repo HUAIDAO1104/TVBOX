@@ -2,6 +2,7 @@ plugins {
     alias libs.plugins.android.application
 }
 
+def personalAccountUrl = "https://pianduoduo-account-sync.chu-skin1.chatgpt.site"
 def localProps = new Properties()
 rootProject.file('local.properties').withInputStream {
     localProps.load(it)
@@ -19,8 +20,13 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // Keep compatibility fixes on a strictly newer version so TV installers do not retain
         // the previous APK while preserving its database for the migration chain below.
-        versionCode 652
-        versionName "5.5.101"
+        versionCode 653
+        versionName "5.5.102"
+        def accountUrl = providers.gradleProperty("accountServiceUrl").orElse("").get()
+        if (accountUrl && !(accountUrl ==~ /https:\/\/[a-zA-Z0-9.-]+(:[0-9]+)?(\/[a-zA-Z0-9_~.\/-]*)?/))
+            throw new GradleException("accountServiceUrl must be an HTTPS service URL")
+        buildConfigField "String", "PERSONAL_ACCOUNT_URL", groovy.json.JsonOutput.toJson(personalAccountUrl)
+        buildConfigField "String", "ACCOUNT_SERVICE_URL", groovy.json.JsonOutput.toJson(accountUrl)
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
@@ -82,6 +88,8 @@ android {
 
     buildTypes {
         release {
+            def endpoint = providers.gradleProperty("accountServiceUrl").orNull ?: personalAccountUrl
+            buildConfigField "String", "ACCOUNT_SERVICE_URL", groovy.json.JsonOutput.toJson(endpoint)
             minifyEnabled = true
             shrinkResources = true
             signingConfig = signingConfigs.release

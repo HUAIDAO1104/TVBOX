@@ -90,6 +90,10 @@ public class HistoryActivity extends BaseActivity implements HistoryAdapter.OnCl
     }
 
     private void onSync() {
+        if (!com.fongmi.android.tv.history.AccountSession.profile().isEmpty()) {
+            PddAccountActivity.start(this);
+            return;
+        }
         boolean paired = HistoryLink.paired();
         String[] actions = paired ? new String[]{"立即同步", "更换电视", "解除配对", "旧版设备手动同步"}
                 : new String[]{"扫描电视配对码", "旧版设备手动同步"};
