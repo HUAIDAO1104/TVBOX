@@ -1,0 +1,461 @@
+name: Publish v5.5.103 phone and TV update
+
+on:
+  push:
+    branches: [codex/fix/mobile-dlna-upgrade]
+    paths: [.github/workflows/publish-v5.5.103-ota.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: publish-v5.5.103-ota
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Apply tested Android source and verify its digest
+        run: |
+          set -euo pipefail
+          base=040a2768200f7f52f2404d59306c3b6768678da8
+          digest=6965e3bbb4efed6e49ba41adc6bdd3dbdb79877f15cfd85d329a7caf4620d178
+          workflow=.github/workflows/publish-v5.5.103-ota.yml
+          git fetch origin codex/fix/mobile-dlna-upgrade
+          git checkout --detach FETCH_HEAD
+          git diff --binary --full-index "$base" HEAD -- . ":(exclude)$workflow" > "$RUNNER_TEMP/current.diff"
+          if [ ! -s "$RUNNER_TEMP/current.diff" ]; then
+            base64 --decode <<'REVIEWED_SOURCE' | gzip -dc > "$RUNNER_TEMP/source.patch"
+          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
+          qWNurVQrloq1xGrPzwgq5H8AbTCiGwPFAAA=
+          REVIEWED_SOURCE
+            echo "$digest  $RUNNER_TEMP/source.patch" | sha256sum --check
+            git apply --index --check "$RUNNER_TEMP/source.patch"
+            git apply --index "$RUNNER_TEMP/source.patch"
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Fix account sign-in and add phone-approved TV login'
+            git push origin HEAD:codex/fix/mobile-dlna-upgrade
+          fi
+          git diff --binary --full-index "$base" HEAD -- . ":(exclude)$workflow" > "$RUNNER_TEMP/current.diff"
+          echo "$digest  $RUNNER_TEMP/current.diff" | sha256sum --check
+          git rev-parse HEAD > source-commit.txt
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Prepare Android build tools
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-37.0' 'build-tools;37.0.0'
+          # Use the JDK selected above; preserve the project's IDE-specific criteria.
+          mv gradle/gradle-daemon-jvm.properties "$RUNNER_TEMP/gradle-daemon-jvm.properties"
+          cat > "$RUNNER_TEMP/mobile-upgrade.init.gradle" <<'GRADLE'
+          allprojects {
+              tasks.withType(Test).configureEach {
+                  systemProperty 'robolectric.dependency.dir', new File(System.getenv('RUNNER_TEMP'), 'robolectric-sdk').absolutePath
+                  systemProperty 'robolectric.offline', 'true'
+              }
+              plugins.withId('com.android.application') { android.buildToolsVersion = '37.0.0' }
+              plugins.withId('com.android.library') { android.buildToolsVersion = '37.0.0' }
+              plugins.withId('com.chaquo.python') {
+                  chaquopy.defaultConfig.pip.options '--index-url', 'https://pypi.org/simple'
+                  chaquopy.defaultConfig.pip.options '--extra-index-url', 'https://chaquo.com/pypi-13.1'
+                  chaquopy.defaultConfig.pip.options '--find-links', new File(System.getenv('RUNNER_TEMP'), 'android-python-wheels').absolutePath
+              }
+          }
+          GRADLE
+
+      - name: Fetch verified Android Python wheels
+        run: |
+          mkdir -p "$RUNNER_TEMP/android-python-wheels"
+          cd "$RUNNER_TEMP/android-python-wheels"
+          cat > SHA256SUMS <<'WHEELS'
+          811547210b01eefb0fb850fd35bd27b53a00a76b9466b8c03e049b7e8175004b  chaquopy_libcxx-180000-0-py3-none-android_24_arm64_v8a.whl
+          7082afa716eb1960852d432a73c90f40b017fbd83de7c427760a29f60b6169cc  chaquopy_libcxx-180000-0-py3-none-android_24_armeabi_v7a.whl
+          d4134ea2c0f632372a436ee54467f30d5f7744c2e9ea83ffc3edb9080ddff6c1  chaquopy_libxml2-2.9.8-2-py3-none-android_16_armeabi_v7a.whl
+          f8a7adf4f565e4cec6add811a9886be2191e8214913987dce24a3bb522dcb4e3  chaquopy_libxml2-2.9.8-2-py3-none-android_21_arm64_v8a.whl
+          a7b58f9627c68555a592d6295e8f79542035e358d0b35b14da7b0dc599ef1962  chaquopy_libxslt-1.1.32-2-py3-none-android_16_armeabi_v7a.whl
+          0526c414fc0af6f02b9e922042c79e3aa0e3c28fe093de3a38d834755ffc2a27  chaquopy_libxslt-1.1.32-2-py3-none-android_21_arm64_v8a.whl
+          3cd17d5b607accd9c6d92b79dd93388b9661da46e8bae6baed9f1dd4732f3076  lxml-5.3.0-0-cp310-cp310-android_24_arm64_v8a.whl
+          be03590d8aa1dca946375b646fa93d3a6ba5e2c89084abc35244d4c7c6e3ee31  lxml-5.3.0-0-cp310-cp310-android_24_armeabi_v7a.whl
+          8c9a9e983fee98565c305ac3f6a6d6e2ca90ccbc302eabd1ec5c521c047e5274  pycryptodome-3.21.0-0-cp310-cp310-android_24_arm64_v8a.whl
+          ae645325c2883ef84dd5dc7933760f889b06a8f8786facdf354a0c7f7d65c755  pycryptodome-3.21.0-0-cp310-cp310-android_24_armeabi_v7a.whl
+          6ec5eb9e25f4177257b2348d3a68708e2cba07fa3da4171d872979aca0fe969f  ujson-5.11.0-0-cp310-cp310-android_24_arm64_v8a.whl
+          8778731ebb168f94003cc8c202c80692ba64ad5e0c5775af4a9b309c8f4495fe  ujson-5.11.0-0-cp310-cp310-android_24_armeabi_v7a.whl
+          WHEELS
+          while read -r digest wheel; do
+            package="${wheel%%-*}"
+            package="${package//_/-}"
+            curl --fail --location --retry 3 --max-time 120 "https://chaquo.com/pypi-13.1/$package/$wheel" -o "$wheel"
+          done < SHA256SUMS
+          sha256sum --check SHA256SUMS
+
+      - name: Restore existing release signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_BASE64"
+          test -n "$KEY_ALIAS"
+          test -n "$STORE_PASSWORD"
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+          printf 'storeFile=%s\nkeyAlias=%s\nstorePassword=%s\nkeyPassword=%s\n' \
+            "$RUNNER_TEMP/release.keystore" "$KEY_ALIAS" "$STORE_PASSWORD" "$KEY_PASSWORD" > local.properties
+          keytool -exportcert -keystore "$RUNNER_TEMP/release.keystore" -alias "$KEY_ALIAS" \
+            -storepass:env STORE_PASSWORD -file "$RUNNER_TEMP/signing-public.der"
+          echo "b8ed9c579e8671d24f6d4d18b296528ca655c627fa437f57a217450c0b548aa7  $RUNNER_TEMP/signing-public.der" | sha256sum --check
+
+      - name: Install decoder used by integration tests
+        run: |
+          if [ ! -x /usr/bin/ffmpeg ]; then
+            sudo apt-get -o Acquire::Retries=2 update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          ffmpeg -version
+
+      - name: Fetch the pinned Android 35 Robolectric runtime
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/robolectric-sdk"
+          cd "$RUNNER_TEMP/robolectric-sdk"
+          version=15-robolectric-13954326-i7
+          jar="android-all-instrumented-$version.jar"
+          artifact="org/robolectric/android-all-instrumented/$version/$jar"
+          for central in https://maven-central.storage-download.googleapis.com/maven2 https://repo.maven.apache.org/maven2; do
+            if curl -fsSL --retry 2 --connect-timeout 10 --max-time 150 "$central/$artifact" -o "$jar" && echo "06c4c8602d6db7486266a982bc55834ed6dfebd62a0b88daca204139ecf142cb  $jar" | sha256sum --check; then
+              break
+            fi
+          done
+          echo "06c4c8602d6db7486266a982bc55834ed6dfebd62a0b88daca204139ecf142cb  $jar" | sha256sum --check
+
+      - name: Verify phone and TV regression suites
+        env:
+          CAST_FFMPEG: /usr/bin/ffmpeg
+        run: |
+          bash gradlew --no-daemon --max-workers=2 -I "$RUNNER_TEMP/mobile-upgrade.init.gradle" \
+            :app:testMobileArm64_v8aDebugUnitTest :app:testLeanbackArm64_v8aDebugUnitTest 
+          python3 - <<'TESTS'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          roots = [ET.parse(p).getroot() for p in Path('app/build/test-results').rglob('TEST-*.xml')]
+          assert roots
+          assert all(int(r.get('failures', 0)) == 0 and int(r.get('errors', 0)) == 0 for r in roots)
+          assert sum(int(r.get('tests', 0)) for r in roots) >= 867
+          assert all(r.get('name', '').endswith('BilibiliDanmakuLiveTest') for r in roots if int(r.get('skipped', 0)))
+          print('Full mobile unit and integration suite passed.')
+          TESTS
+
+      - name: Enable hardware virtualization for Android tests
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Verify offline playback and seeking on Android
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot
+          script: |
+            adb shell getprop ro.product.cpu.abilist | grep arm64-v8a
+            bash gradlew --no-daemon --max-workers=2 -I "$RUNNER_TEMP/mobile-upgrade.init.gradle" :app:connectedMobileArm64_v8aDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.fongmi.android.tv.offline.OfflineDownloadTest,com.fongmi.android.tv.offline.MobileExperienceTest
+
+      - name: Check Android device test results
+        run: |
+          python3 - <<'TESTS'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          roots = [ET.parse(p).getroot() for p in Path('app/build/outputs/androidTest-results').rglob('TEST-*.xml')]
+          assert roots and sum(int(r.get('tests', 0)) for r in roots) >= 19
+          assert all(int(r.get('failures', 0)) == 0 and int(r.get('errors', 0)) == 0 and int(r.get('skipped', 0)) == 0 for r in roots)
+          print('Android download, offline video/danmaku/subtitle, seek, pause/resume and removal tests passed.')
+          TESTS
+
+      - name: Build all four original signed APKs
+        run: |
+          bash gradlew --no-daemon --max-workers=2 -I "$RUNNER_TEMP/mobile-upgrade.init.gradle" \
+            :app:assembleMobileArm64_v8aRelease :app:assembleMobileArmeabi_v7aRelease \
+            :app:assembleLeanbackArm64_v8aRelease :app:assembleLeanbackArmeabi_v7aRelease
+          bash gradlew --no-daemon --max-workers=2 -I "$RUNNER_TEMP/mobile-upgrade.init.gradle" -PandroidApiCheck :app:lintMobileArm64_v8aRelease
+
+      - name: Verify all four original upgrade packages
+        run: |
+          set -euo pipefail
+          APKSIGNER="$ANDROID_SDK_ROOT/build-tools/37.0.0/apksigner"
+          AAPT="$ANDROID_SDK_ROOT/build-tools/37.0.0/aapt"
+          mkdir -p dist verification
+          for product in mobile leanback; do
+            for abi in arm64_v8a armeabi_v7a; do
+              apk="$(find app/build/outputs/apk -path "*/release/$product-$abi.apk" -print -quit)"
+              test -f "$apk"
+              cp "$apk" "dist/pianduoduo-$product-$abi-v5.5.103.apk"
+            done
+          done
+          for apk in dist/*.apk; do
+            name="$(basename "$apk" .apk)"
+            "$APKSIGNER" verify --verbose --print-certs --min-sdk-version 23 "$apk" > "verification/$name-signature.txt"
+            actual="$(sed -n 's/.*certificate SHA-256 digest: //p' "verification/$name-signature.txt" | sort -u)"
+            test "$actual" = b8ed9c579e8671d24f6d4d18b296528ca655c627fa437f57a217450c0b548aa7
+            grep -q 'Verified using v1 scheme (JAR signing): true' "verification/$name-signature.txt"
+            grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' "verification/$name-signature.txt"
+            grep -q 'Verified using v3 scheme (APK Signature Scheme v3): true' "verification/$name-signature.txt"
+            "$AAPT" dump badging "$apk" > "verification/$name-metadata.txt"
+            grep -q "^package: name='com.fongmi.android.tv' versionCode='654' versionName='5.5.103'" "verification/$name-metadata.txt"
+            ! grep -q '^application-debuggable' "verification/$name-metadata.txt"
+            python3 scripts/check_android_io_compat.py "$apk"
+          done
+
+      - name: Generate the shared mobile and TV update manifest
+        run: |
+          python3 scripts/generate_update_manifest.py \
+            --repo "$GITHUB_REPOSITORY" --version-code 654 --version-name 5.5.103 --tag v5.5.103 \
+            --notes '电视支持手机扫码确认登录，改进账号登录错误提示，并更新手机与电视的账号页。' \
+            --asset leanback-armeabi_v7a=dist/pianduoduo-leanback-armeabi_v7a-v5.5.103.apk \
+            --asset leanback-arm64_v8a=dist/pianduoduo-leanback-arm64_v8a-v5.5.103.apk \
+            --asset mobile-armeabi_v7a=dist/pianduoduo-mobile-armeabi_v7a-v5.5.103.apk \
+            --asset mobile-arm64_v8a=dist/pianduoduo-mobile-arm64_v8a-v5.5.103.apk \
+            --output dist/latest.json
+          (cd dist && sha256sum *.apk latest.json > SHA256SUMS.txt)
+          cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
+          - 手机和电视使用原有片多多账号即可登录。新版区分密码错误、网络连接失败与网关错误，并提供网页登录。
+          - 电视进入「设置 → 片多多账号」显示二维码。已登录的手机进入「我的 → 片多多账号 → 扫码登录电视」，核对识别码后确认。也可以用手机相机扫码，在官方账号网页登录并确认。
+          - 二维码三分钟内有效，每次只可授权一台电视。两端的观看历史继续随同一个账号同步。
+          - 提供手机和电视的 32 位、64 位原签名更新包，可在应用内检查更新。
+          NOTES
+          printf '\nSource: %s\n' "$(cat source-commit.txt)" >> "$RUNNER_TEMP/release-notes.md"
+
+      - name: Upload verification records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TVBOX-v5.5.103-OTA-verification
+          path: |
+            verification/
+            source-commit.txt
+            app/build/test-results/
+            app/build/outputs/androidTest-results/
+            app/build/reports/lint-results-mobileArm64_v8aRelease.*
+            dist/latest.json
+            dist/SHA256SUMS.txt
+          if-no-files-found: warn
+
+      - name: Stage and verify release assets before making latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v5.5.103 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo 'v5.5.103 already exists; refusing to replace published packages.' >&2
+            exit 1
+          fi
+          gh release create v5.5.103 dist/*.apk dist/latest.json dist/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" --draft \
+            --target "$(cat source-commit.txt)" \
+            --title 'v5.5.103 · 电视扫码登录与账号页更新' \
+            --notes-file "$RUNNER_TEMP/release-notes.md"
+          # A draft does not have a public tag yet. Resolve it from the authenticated release list.
+          release_id="$(gh api "repos/$GITHUB_REPOSITORY/releases" --jq '.[] | select(.tag_name == "v5.5.103" and .draft == true) | .id')"
+          test -n "$release_id"
+          gh api "repos/$GITHUB_REPOSITORY/releases/$release_id" > "$RUNNER_TEMP/staged-release.json"
+          python3 - <<'VERIFY'
+          import hashlib, json, os
+          from pathlib import Path
+          release = json.loads((Path(os.environ['RUNNER_TEMP']) / 'staged-release.json').read_text())
+          assert release['draft'] and not release['prerelease']
+          remote = {a['name']: a for a in release['assets']}
+          local = {p.name: p for p in Path('dist').iterdir() if p.is_file()}
+          assert remote.keys() == local.keys()
+          for name, path in local.items():
+              assert remote[name]['size'] == path.stat().st_size, name
+              assert remote[name]['digest'] == 'sha256:' + hashlib.sha256(path.read_bytes()).hexdigest(), name
+          manifest = json.loads(Path('dist/latest.json').read_text())
+          assert manifest['versionCode'] == 654 and manifest['versionName'] == '5.5.103'
+          assert len(manifest['apks']) == 4
+          for asset in manifest['apks'].values():
+              assert remote[asset['fileName']]['digest'] == 'sha256:' + asset['sha256']
+              assert remote[asset['fileName']]['size'] == asset['size']
+          print('All six release assets match; mobile and TV OTA manifest verified.')
+          VERIFY
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$release_id" -F draft=false -f make_latest=true > /dev/null
+          echo '### Published v5.5.103 (654) with verified mobile and TV OTA assets' >> "$GITHUB_STEP_SUMMARY"
+          echo 'https://github.com/HUAIDAO1104/TVBOX/releases/tag/v5.5.103' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove signing material
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/release.keystore" local.properties
