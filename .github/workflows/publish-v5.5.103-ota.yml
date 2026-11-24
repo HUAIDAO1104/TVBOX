@@ -67,6 +67,7 @@ jobs:
               tasks.withType(Test).configureEach {
                   systemProperty 'robolectric.dependency.dir', new File(System.getenv('RUNNER_TEMP'), 'robolectric-sdk').absolutePath
                   systemProperty 'robolectric.offline', 'true'
+                  testLogging { exceptionFormat = 'full' }
               }
               plugins.withId('com.android.application') { android.buildToolsVersion = '37.0.0' }
               plugins.withId('com.android.library') { android.buildToolsVersion = '37.0.0' }
@@ -121,15 +122,18 @@ jobs:
             -storepass:env STORE_PASSWORD -file "$RUNNER_TEMP/signing-public.der"
           echo "b8ed9c579e8671d24f6d4d18b296528ca655c627fa437f57a217450c0b548aa7  $RUNNER_TEMP/signing-public.der" | sha256sum --check
 
-      - name: Install the verified Linux decoder for integration tests
+      - name: Install Ubuntu's FFmpeg for integration tests
         run: |
           set -euo pipefail
-          wheel="$RUNNER_TEMP/imageio-ffmpeg.whl"
-          curl -fsSL --retry 3 --max-time 120 'https://files.pythonhosted.org/packages/a0/2d/43c8522a2038e9d0e7dbdf3a61195ecc31ca576fb1527a528c877e87d973/imageio_ffmpeg-0.6.0-py3-none-manylinux2014_x86_64.whl' -o "$wheel"
-          echo "c7e46fcec401dd990405049d2e2f475e2b397779df2519b544b8aab515195282  $wheel" | sha256sum --check
-          unzip -p "$wheel" 'imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-*' > "$RUNNER_TEMP/ffmpeg"
-          chmod +x "$RUNNER_TEMP/ffmpeg"
-          "$RUNNER_TEMP/ffmpeg" -version
+          if [ ! -x /usr/bin/ffmpeg ]; then
+            apt_options=(-o Acquire::Retries=2 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20)
+            if [ -s /etc/apt/sources.list.d/ubuntu.sources ]; then
+              apt_options+=(-o Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=-)
+            fi
+            sudo apt-get "${apt_options[@]}" update -qq
+            sudo apt-get "${apt_options[@]}" install -y --no-install-recommends ffmpeg
+          fi
+          /usr/bin/ffmpeg -version
 
       - name: Fetch the pinned Android 35 Robolectric runtime
         run: |
@@ -148,7 +152,7 @@ jobs:
 
       - name: Verify phone and TV regression suites
         env:
-          CAST_FFMPEG: ${{ runner.temp }}/ffmpeg
+          CAST_FFMPEG: /usr/bin/ffmpeg
         run: |
           bash gradlew --no-daemon --max-workers=2 -I "$RUNNER_TEMP/mobile-upgrade.init.gradle" \
             :app:testMobileArm64_v8aDebugUnitTest :app:testLeanbackArm64_v8aDebugUnitTest 
