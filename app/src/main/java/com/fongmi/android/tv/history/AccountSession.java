@@ -89,7 +89,13 @@ public final class AccountSession {
         credentials.addProperty("password", password);
         if (register && !activation.isEmpty() && BuildConfig.PERSONAL_ACCOUNT_URL.equals(server)) credentials.addProperty("activation", activation);
         JsonObject result = post(server, null, register ? "register" : "login", credentials);
-        Login login = new Login(server, result);
+        accept(server, result);
+    }
+
+    public static void accept(String server, JsonObject result) throws IOException {
+        Login login;
+        try { login = new Login(server, result); }
+        catch (RuntimeException e) { throw new IOException("登录回复缺少有效的账号信息，请重试"); }
         synchronized (HistoryLink.class) {
             String id = HistoryPeer.hash(server + "/" + login.id);
             if (!prefs().edit().putString("profile", id).putString("username", login.username)
@@ -128,20 +134,64 @@ public final class AccountSession {
         }
     }
 
+    public static boolean hasDeviceLogin(String server) {
+        return BuildConfig.PERSONAL_ACCOUNT_URL.equals(server) ||
+                (BuildConfig.DEBUG && server.startsWith("http://127.0.0.1:"));
+    }
+
+    public static JsonObject deviceRequest(String server, String operation, String key, String value) throws IOException {
+        if (!hasDeviceLogin(server)) throw new IOException("该账号服务不支持扫码登录");
+        JsonObject input = new JsonObject();
+        if (key != null) input.addProperty(key, value);
+        return post(server, null, "pair/" + operation, input);
+    }
+
+    /** Revoke a ticket redeemed just as its TV screen closed or switched login methods. */
+    public static void discardDeviceSession(String server, JsonObject result) {
+        if (!hasDeviceLogin(server)) return;
+        try {
+            Login unused = new Login(server, result);
+            post(server, unused.token, "logout", new JsonObject());
+        } catch (IOException | RuntimeException ignored) { }
+    }
+
+    public static void approve(String scan) throws IOException {
+        Login login = current();
+        if (login == null) throw new IOException("请先登录片多多账号");
+        JsonObject data = new JsonObject();
+        data.addProperty("scan", scan);
+        post(login.server, login.token, "pair/approve", data);
+    }
+
+    public static final class ServiceError extends IOException {
+        public final int status;
+        ServiceError(int status, String message) { super(message); this.status = status; }
+    }
+
     static JsonObject post(String server, String token, String route, JsonObject data) throws IOException {
-        Request.Builder request = new Request.Builder().url(server + "/v1/" + route)
+        Request.Builder request = new Request.Builder().url(server + "/v1/" + route).header("Accept", "application/json")
                 .post(RequestBody.create(JSON, data.toString()));
         if (token != null) request.header("Authorization", "Bearer " + token);
         try (var response = NET.newCall(request.build()).execute()) {
+            int code = response.code();
             var body = response.body();
-            if (body == null || body.contentLength() > HistoryPeer.MAX_PACKET || body.source().request(HistoryPeer.MAX_PACKET + 1L))
-                throw new IOException("账号服务响应异常");
-            JsonObject value = JsonParser.parseString(body.string()).getAsJsonObject();
+            String content = response.header("Content-Type", "").toLowerCase(Locale.ROOT);
+            if (body == null || !content.contains("json")) {
+                String message = code == 429 ? "请求过于频繁，请稍后再试"
+                        : code == 403 || code == 451 ? "当前网络的登录请求被网关拒绝"
+                        : code >= 500 ? "账号服务暂时不可用，请稍后重试" : "网络返回了网页，请检查网络或使用网页登录";
+                throw new ServiceError(code, message + "（HTTP " + code + "）");
+            }
+            if (body.contentLength() > HistoryPeer.MAX_PACKET || body.source().request(HistoryPeer.MAX_PACKET + 1L))
+                throw new ServiceError(code, "账号服务返回的数据过大");
+            JsonObject value;
+            try { value = JsonParser.parseString(body.string()).getAsJsonObject(); }
+            catch (RuntimeException e) { throw new ServiceError(code, "账号服务返回的数据不完整（HTTP " + code + "）"); }
             if (!response.isSuccessful()) {
-                String error = value.has("error") ? value.get("error").getAsString() : "账号服务暂不可用";
-                throw new IOException(error.length() > 100 ? "账号服务暂不可用" : error);
+                String error = value.has("error") && value.get("error").isJsonPrimitive() ? value.get("error").getAsString() : "账号服务暂不可用";
+                throw new ServiceError(code, error.length() > 100 ? "账号服务暂不可用" : error);
             }
             return value;
-        } catch (RuntimeException e) { throw new IOException("账号服务响应异常"); }
+        }
     }
 }

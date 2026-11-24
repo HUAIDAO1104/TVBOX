@@ -1,31 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true">
-    <LinearLayout android:id="@+id/accountPanel"
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal" android:orientation="vertical"
-        android:paddingStart="24dp" android:paddingEnd="24dp" android:paddingTop="24dp" android:paddingBottom="32dp">
-        <Button android:id="@+id/back" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="返回" />
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:layout_marginTop="16dp" android:text="片多多账号" android:textSize="28sp" android:textStyle="bold" />
-        <TextView android:id="@+id/summary" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:layout_marginTop="8dp" android:layout_marginBottom="16dp" android:textSize="16sp" />
-        <LinearLayout android:id="@+id/form" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
-            <EditText android:id="@+id/server" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:minHeight="48dp" android:singleLine="true" android:inputType="textUri" android:hint="自建账号服务地址（HTTPS）" />
-            <EditText android:id="@+id/username" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:minHeight="48dp" android:singleLine="true" android:inputType="textNoSuggestions" android:maxLength="32" android:hint="账号名" />
-            <EditText android:id="@+id/password" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:minHeight="48dp" android:singleLine="true" android:inputType="textPassword" android:saveEnabled="false" android:maxLength="128" android:hint="密码" />
-            <Button android:id="@+id/login" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="登录" />
-            <Button android:id="@+id/register" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="注册新账号" />
-        </LinearLayout>
-        <LinearLayout android:id="@+id/accountActions" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
-            <Button android:id="@+id/sync" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="立即同步" />
-            <Button android:id="@+id/importGuest" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="导入本机游客历史" />
-            <Button android:id="@+id/logout" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="退出账号" />
-        </LinearLayout>
-        <TextView android:id="@+id/feedback" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:accessibilityLiveRegion="polite" android:layout_marginTop="12dp" android:textSize="15sp" />
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" android:background="#101318">
+  <LinearLayout android:id="@+id/accountPanel" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:orientation="vertical" android:padding="20dp" android:focusableInTouchMode="true">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
+      <ImageButton android:id="@+id/back" android:layout_width="48dp" android:layout_height="48dp" android:background="@drawable/account_secondary" android:src="@drawable/ic_danmaku_back" android:contentDescription="返回"/>
+      <TextView android:id="@+id/brand" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="片多多" android:layout_marginStart="12dp" android:textSize="16sp" android:fontFamily="sans-serif-medium" android:textColor="#FF97A5"/>
     </LinearLayout>
+    <TextView style="@style/AccountHeading" android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/title" android:layout_marginTop="16dp" android:textSize="30sp"/>
+    <TextView style="@style/AccountHint" android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/summary" android:layout_marginTop="4dp"/>
+    <LinearLayout android:id="@+id/columns" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="18dp" android:orientation="vertical" android:baselineAligned="false">
+      <LinearLayout android:id="@+id/qrCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/account_surface" android:padding="18dp" android:orientation="vertical" android:gravity="center_horizontal" android:visibility="gone">
+        <TextView style="@style/AccountHeading" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="手机扫码登录" android:gravity="center"/>
+        <ImageView android:id="@+id/qr" android:layout_width="176dp" android:layout_height="176dp" android:layout_marginTop="12dp" android:contentDescription="电视登录二维码" android:background="#FFFFFF" android:scaleType="fitCenter"/>
+        <TextView style="@style/AccountHint" android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/qrHint" android:layout_marginTop="8dp" android:gravity="center" android:accessibilityLiveRegion="polite"/>
+        <android.widget.Button android:id="@+id/refreshQr" style="@style/AccountButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="刷新二维码" android:layout_marginTop="10dp"/>
+      </LinearLayout>
+      <LinearLayout android:id="@+id/form" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/account_surface" android:padding="18dp" android:orientation="vertical">
+        <TextView style="@style/AccountHeading" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="密码登录" />
+        <EditText android:id="@+id/server" style="@style/AccountInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:inputType="textUri" android:hint="账号服务地址（HTTPS）"/>
+        <TextView style="@style/AccountLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="账号名" android:layout_marginTop="12dp" android:labelFor="@id/username"/>
+        <EditText android:id="@+id/username" style="@style/AccountInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:inputType="textNoSuggestions" android:imeOptions="actionNext" android:maxLength="32" android:hint="输入账号名" android:autofillHints="username"/>
+        <TextView style="@style/AccountLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="密码" android:layout_marginTop="10dp" android:labelFor="@id/password"/>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:gravity="center_vertical">
+          <EditText android:id="@+id/password" style="@style/AccountInput" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:inputType="textPassword" android:imeOptions="actionDone" android:saveEnabled="false" android:maxLength="128" android:hint="输入密码" android:autofillHints="password"/>
+          <android.widget.Button android:id="@+id/reveal" style="@style/AccountButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="显示" android:layout_marginStart="6dp" android:contentDescription="显示密码"/>
+        </LinearLayout>
+        <android.widget.Button android:id="@+id/login" style="@style/AccountSubmit" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="登录" android:layout_marginTop="14dp"/>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp">
+          <android.widget.Button android:id="@+id/webLogin" style="@style/AccountButton" android:layout_width="0dp" android:layout_height="wrap_content" android:text="网页登录" android:layout_weight="1"/>
+          <android.widget.Button android:id="@+id/register" style="@style/AccountButton" android:layout_width="0dp" android:layout_height="wrap_content" android:text="激活账号" android:layout_marginStart="8dp" android:layout_weight="1"/>
+        </LinearLayout>
+      </LinearLayout>
+    </LinearLayout>
+    <LinearLayout android:id="@+id/accountActions" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:background="@drawable/account_surface" android:padding="18dp" android:orientation="vertical" android:visibility="gone">
+      <TextView style="@style/AccountHeading" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="设备与观看记录" />
+      <android.widget.Button android:id="@+id/scanTv" style="@style/AccountSubmit" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="扫码登录电视" android:layout_marginTop="14dp"/>
+      <android.widget.Button android:id="@+id/sync" style="@style/AccountButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="立即同步观看记录" android:layout_marginTop="8dp"/>
+      <android.widget.Button android:id="@+id/importGuest" style="@style/AccountButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="导入本机游客历史" android:layout_marginTop="8dp"/>
+      <android.widget.Button android:id="@+id/logout" style="@style/AccountButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="退出账号" android:layout_marginTop="14dp"/>
+    </LinearLayout>
+    <TextView style="@style/AccountHint" android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/feedback" android:layout_marginTop="12dp" android:accessibilityLiveRegion="polite" android:textColor="#FFD2D8"/>
+  </LinearLayout>
 </ScrollView>
