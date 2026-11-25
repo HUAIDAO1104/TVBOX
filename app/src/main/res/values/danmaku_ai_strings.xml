@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="danmaku_ai_title">AI-assisted matching</string>
-    <string name="danmaku_ai_note">When regular matching fails, AI cleans the title and chooses from real catalogues. Only title, year, type, episode and candidate names are sent directly to your provider. Provider usage charges apply.</string>
-    <string name="danmaku_ai_enabled">Enable AI fallback</string>
+    <string name="danmaku_ai_note">For automatic searches, AI cleans the title and release tags, then checks the episode against real catalogues. Only title, year, type, episode and candidate names are sent directly to your provider. Provider usage charges apply.</string>
+    <string name="danmaku_ai_enabled">Enable AI matching</string>
     <string name="danmaku_ai_base">Base URL</string>
     <string name="danmaku_ai_model">Model</string>
     <string name="danmaku_ai_key">API Key</string>
@@ -11,7 +11,7 @@
     <string name="danmaku_ai_save">Save</string>
     <string name="danmaku_ai_test">Test connection</string>
     <string name="danmaku_ai_clear">Remove key</string>
-    <string name="danmaku_ai_cleared">Key removed. AI fallback is off.</string>
+    <string name="danmaku_ai_cleared">Key removed. AI matching is off.</string>
     <string name="danmaku_ai_bad_url">Enter an HTTPS base URL without query parameters or login information.</string>
     <string name="danmaku_ai_bad_model">Choose a model from the dropdown.</string>
     <string name="danmaku_ai_bad_key">Enter an API key for this endpoint. Changing the endpoint requires a new key.</string>

@@ -115,21 +115,41 @@ public final class BilibiliDanmaku {
 
     static byte[] comments(NativeDanmakuRequest job, String cid, int seconds,
                            java.util.function.IntConsumer progress) throws Exception {
-        return job.segments((seconds + 359) / 360, progress, index -> {
-            // Keep this provider's paced queue separate: waiting here must not occupy the
-            // Tencent/Mango/iQiyi segment pool or block a healthy fallback.
-            awaitRequest(job);
-            try {
-                return PlatformDanmaku.biliComments(job.bytes("https://api.bilibili.com/x/v2/dm/web/seg.so?type=1&oid="
-                        + cid + "&segment_index=" + (index + 1), 4_000_000));
-            } catch (PlatformDanmaku.RejectedComments rejection) {
-                if (rejection.code.equals("-352") || rejection.code.equals("-412")) synchronized (REQUEST_START) {
-                    retryAfter = System.nanoTime() + TimeUnit.SECONDS.toNanos(60);
+        awaitRequest(job);
+        List<IqiyiDanmakuCodec.Comment> snapshot;
+        try {
+            snapshot = BilibiliCommentPool.parse(job.bytes("https://comment.bilibili.com/" + cid + ".xml", 8 * 1024 * 1024), cid);
+        } catch (IOException unavailable) {
+            job.check();
+            if (unavailable instanceof PlatformDanmaku.RejectedComments rejection) throw noteRefusal(rejection);
+            if (unavailable instanceof NativeDanmakuRequest.HttpFailure http &&
+                    (http.code == 401 || http.code == 403 || http.code == 412 || http.code == 429 || http.code == 451)) throw unavailable;
+            snapshot = List.of();
+        }
+        try {
+            return job.segments((seconds + 359) / 360, progress, index -> {
+                awaitRequest(job);
+                try {
+                    return PlatformDanmaku.biliComments(job.bytes("https://api.bilibili.com/x/v2/dm/web/seg.so?type=1&oid="
+                            + cid + "&segment_index=" + (index + 1), 4_000_000));
+                } catch (PlatformDanmaku.RejectedComments rejection) {
+                    throw noteRefusal(rejection);
                 }
-                throw rejection;
-            }
-        }, COMMENTS, 2);
+            }, COMMENTS, 2, snapshot, 150_000);
+        } catch (IOException unavailable) {
+            // Keep a complete independently fetched snapshot if a later segment fails.
+            job.check();
+            if (snapshot.isEmpty()) throw unavailable;
+            return IqiyiDanmakuCodec.document(snapshot);
+        }
     }
+    private static PlatformDanmaku.RejectedComments noteRefusal(PlatformDanmaku.RejectedComments rejection) {
+        if (rejection.code.equals("-352") || rejection.code.equals("-412")) synchronized (REQUEST_START) {
+            retryAfter = System.nanoTime() + TimeUnit.SECONDS.toNanos(60);
+        }
+        return rejection;
+    }
+
     private static void awaitRequest(NativeDanmakuRequest job) throws IOException {
         long wait;
         synchronized (REQUEST_START) {

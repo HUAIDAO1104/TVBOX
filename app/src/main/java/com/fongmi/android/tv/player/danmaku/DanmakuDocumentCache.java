@@ -311,6 +311,8 @@ public final class DanmakuDocumentCache {
 
     static String cacheKey(String source) {
         String value = Objects.toString(source, "");
+        if (com.fongmi.android.tv.api.BilibiliDanmaku.supports(value) || value.matches("https?://(?:www[.]|m[.])?bilibili[.]com/.*"))
+            value = "bilibili-pool-v2:" + value;
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256")
                     .digest(value.getBytes(StandardCharsets.UTF_8));

@@ -14,8 +14,14 @@ public class BilibiliTransportTest {
         try (var server = new MockWebServer()) {
             var times = new CopyOnWriteArrayList<Long>();
             var refuse = new AtomicBoolean();
+            var segmentOutage = new AtomicBoolean();
             server.setDispatcher(new okhttp3.mockwebserver.Dispatcher() {
                 public MockResponse dispatch(RecordedRequest request) {
+                    if (request.getPath().startsWith("/123.xml")) {
+                        if (!segmentOutage.get()) return new MockResponse().setResponseCode(404);
+                        return new MockResponse().setBody("<i><chatid>123</chatid><d p='1,1,25,1,0,0,0,42'>snapshot</d></i>");
+                    }
+                    if (segmentOutage.get()) return new MockResponse().setResponseCode(503);
                     times.add(System.nanoTime());
                     return refuse.get() ? new MockResponse().setBody("{\"code\":-352}")
                             : new MockResponse().setBody(new okio.Buffer().write(new byte[]{10,9,16,(byte)210,9,24,1,58,2,111,107}));
@@ -26,6 +32,13 @@ public class BilibiliTransportTest {
             run(client, false);
             assertEquals(3, times.size());
             for (int i = 1; i < times.size(); i++) assertTrue("Segment starts must be spaced", times.get(i) - times.get(i - 1) > TimeUnit.MILLISECONDS.toNanos(350));
+            segmentOutage.set(true);
+            var job = new NativeDanmakuRequest(5000, "https://www.bilibili.com/", client);
+            try {
+                byte[] fallback = BilibiliDanmaku.comments(job, "123", 360, value -> {});
+                assertTrue(new String(fallback, java.nio.charset.StandardCharsets.UTF_8).contains(">snapshot</d>"));
+            } finally { job.cancel(); }
+            segmentOutage.set(false);
             refuse.set(true);
             run(client, true);
             assertEquals("A provider refusal must stop pending segments and retries", 4, times.size());

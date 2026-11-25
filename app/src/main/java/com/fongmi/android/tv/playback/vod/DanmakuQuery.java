@@ -21,7 +21,7 @@ public final class DanmakuQuery {
 
     private static final String YEAR = "(?:19|20)\\d{2}";
     private static final String CATEGORY = "(?:国产(?:剧)?|国剧|大陆(?:剧)?|内地(?:剧)?|华语|港剧|台剧|美剧|英剧|韩剧|日剧|泰剧|海外剧|电视剧版|电视剧|剧版|连续剧|剧集|电影|综艺|动漫|动画|短剧)";
-    private static final String RELEASE = "(?:高清修复(?:版)?|蓝光修复(?:版)?|4k修复(?:版)?|修复版|4k|8k|2160p|1080p|720p|hdr(?:10)?|sdr|uhd|fhd|hd|bd|web[-_. ]?dl|blu[-_. ]?ray|杜比|蓝光|超清|高清|国语|粤语|普通话|中字|双语|中英双字|简中|繁中|字幕|全集|完结|已完结|完整版|无删减版?)";
+    private static final String RELEASE = "(?:臻彩(?:视听)?(?:版)?|真彩(?:视听)?(?:版)?|杜比视界|HDR10\\+|高清修复(?:版)?|蓝光修复(?:版)?|4k修复(?:版)?|修复版|4k|8k|2160p|1080p|720p|hdr(?:10)?|sdr|uhd|fhd|hd|bd|web[-_. ]?dl|blu[-_. ]?ray|杜比|蓝光|超清|高清|国语|粤语|普通话|中字|双语|中英双字|简中|繁中|字幕|全集|完结|已完结|完整版|无删减版?)";
     private static final String AGGREGATE_COUNT = "(?:[全共]\\s*\\d{1,4}\\s*集(?:\\s*全)?|\\d{1,4}\\s*集\\s*全)";
     private static final String UPDATE = "(?:更新|连载)(?:至|到)?\\s*(?:第)?\\s*\\d{1,4}\\s*集";
     private static final Pattern TRAILING_UPDATE = Pattern.compile("\\s*" + UPDATE + "\\s*$");

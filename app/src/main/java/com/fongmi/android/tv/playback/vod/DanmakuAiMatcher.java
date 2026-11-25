@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.*;
 /** AI normalizes metadata; real platform catalogues and episode guards decide what may load. */
 public final class DanmakuAiMatcher {
     public interface Callback {
-        void onFound(String query, Danmaku item, List<Danmaku> catalogue);
+        void onFound(String query, Danmaku item, List<Danmaku> catalogue, DanmakuMatchContext verifiedContext);
         void onFailure();
         default void onFailure(DanmakuStatus.Failure reason) { onFailure(); }
         void onProgress(int percent);
@@ -99,16 +99,23 @@ public final class DanmakuAiMatcher {
                 if (done.get()) return;
                 List<Danmaku> eligible = ranked(context, catalogue);
                 verificationContext = context;
-                // A precise result from the AI-cleaned query needs no second model round trip.
-                if (eligible.isEmpty() && !catalogue.isEmpty()) {
-                    List<Danmaku> choices = new ArrayList<>(catalogue);
+                // Let the model compare real candidates after title normalization. The catalogue
+                // and episode guards still decide whether the selection may play.
+                if (!catalogue.isEmpty()) {
+                    List<Danmaku> choices = new ArrayList<>(eligible.isEmpty() ? catalogue : eligible);
                     choices.sort(Comparator.comparingInt((Danmaku item) -> DanmakuMatch.displayScore(context.getTitle(),
                             context.getYear(), context.getType(), context.getEpisode(), item.getMatchName())).reversed());
                     choices = new ArrayList<>(choices.subList(0, Math.min(40, choices.size())));
                     stage = "select";
                     failure = DanmakuStatus.Failure.AI_NETWORK;
-                    response = client.complete(DanmakuAiProtocol.selection(original, query, choices.stream().map(Danmaku::getMatchName).toList()));
+                    try {
+                        response = client.complete(DanmakuAiProtocol.selection(original, query, choices.stream().map(Danmaku::getMatchName).toList()));
+                    } catch (IOException error) {
+                        if (!"response".equals(error.getMessage()) || eligible.isEmpty()) throw error;
+                        response = "";
+                    }
                     int selected = DanmakuAiProtocol.selectedIndex(response, choices.size());
+                    if (selected < 0 && DanmakuAiProtocol.object(response).has("id")) eligible = List.of();
                     if (selected >= 0) {
                         String episode = DanmakuAiProtocol.normalizedEpisode(response, context.getEpisode());
                         var normalized = new DanmakuMatchContext(context.getTitle(), context.getYear(), context.getType(), episode);
@@ -186,7 +193,7 @@ public final class DanmakuAiMatcher {
                         @Override public void onReady(android.net.Uri source, android.net.Uri local) {
                             if (!done.compareAndSet(false, true)) return;
                             cleanup();
-                            callback.onFound(query, selected, discovery == null ? catalogue : discovery.snapshot());
+                            callback.onFound(query, selected, discovery == null ? catalogue : discovery.snapshot(), verificationContext);
                         }
                         @Override public void onFailure(android.net.Uri source, IOException error) {
                             if (com.fongmi.android.tv.BuildConfig.DEBUG) android.util.Log.d("DanmakuAi", "Candidate document unavailable; trying equivalent alternatives");
@@ -210,6 +217,9 @@ public final class DanmakuAiMatcher {
                 try {
                     discovery.startBackup();
                     while (!done.get()) {
+                        // Observe completion before reading rows. A lookup publishes its last
+                        // rows before decrementing pending, including when a prior document failed.
+                        boolean cataloguesFinished = discovery.finished();
                         List<Danmaku> rows = discovery.snapshot();
                         List<Danmaku> next = ranked(verificationContext, rows).stream()
                                 .filter(item -> !attemptedDocuments.contains(item.getUrl())).toList();
@@ -217,7 +227,7 @@ public final class DanmakuAiMatcher {
                         // choices. Do not fail because discovery ended while a valid
                         // document is still downloading.
                         if (!next.isEmpty() && verificationBatches.get() < 2) verify(query, next, rows);
-                        if (discovery.finished() && verificationBatches.get() == 0) { fail(); return; }
+                        if (cataloguesFinished && verificationBatches.get() == 0) { fail(); return; }
                         Thread.sleep(100);
                     }
                 } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }

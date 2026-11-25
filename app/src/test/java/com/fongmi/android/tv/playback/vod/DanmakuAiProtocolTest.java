@@ -7,6 +7,14 @@ import java.util.List;
 public class DanmakuAiProtocolTest {
     private final DanmakuMatchContext drama = new DanmakuMatchContext("【剧版】喜剧之王（2026）更新至14集4K", "2026", "电视剧", "第14集");
 
+    @Test public void aiSeesOriginalReleaseTagAndKeepsTheSequelAndEpisode() {
+        var original = new DanmakuMatchContext("影片2（臻彩视听）", "2026", "电影", "第150集");
+        assertEquals(original.getTitle(), DanmakuAiProtocol.context("clean", original).get("title").getAsString());
+        assertEquals("影片2", DanmakuAiProtocol.query("{\"query\":\"影片2\"}", original));
+        assertEquals("", DanmakuAiProtocol.query("{\"query\":\"影片\"}", original));
+        assertEquals("第150集", DanmakuAiProtocol.matchingContext(original, "影片2", "").getEpisode());
+    }
+
     @Test public void acceptsCleanTitleWithoutAppendingEpisodeOrYear() {
         assertEquals("喜剧之王", DanmakuAiProtocol.query("{\"query\":\"喜剧之王\",\"confidence\":0.98}", drama));
         assertEquals("喜剧之王", DanmakuAiProtocol.query("```json\n{\"query\":\"喜剧之王\",\"confidence\":1}\n```", drama));

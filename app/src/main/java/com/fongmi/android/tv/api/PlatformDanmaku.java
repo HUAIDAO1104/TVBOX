@@ -173,15 +173,16 @@ public final class PlatformDanmaku {
         var root = new IqiyiDanmakuCodec.Proto(bytes, 0, bytes.length);
         while (root.next()) {
             if (root.field != 1 || root.wire != 2) continue;
-            var item = root.child(); long time = -1; int color = 0xffffff, mode = 1; String content = "";
+            var item = root.child(); long time = 0, id = 0; int color = 0xffffff, mode = 1; String content = "";
             while (item.next()) {
-                if (item.field == 2 && item.wire == 0) time = item.number;
+                if (item.field == 1 && item.wire == 0) id = item.number;
+                else if (item.field == 2 && item.wire == 0) time = item.number;
                 else if (item.field == 3 && item.wire == 0) mode = (int)item.number;
                 else if (item.field == 5 && item.wire == 0) color = (int)item.number;
                 else if (item.field == 7 && item.wire == 2) content = item.string();
             }
             if (time >= 0 && time <= 21600000 && mode >= 1 && mode <= 6 && !content.isBlank() && content.length() <= 500)
-                rows.add(new IqiyiDanmakuCodec.Comment(time / 1000d, color & 0xffffff, content));
+                rows.add(new IqiyiDanmakuCodec.Comment(time / 1000d, color & 0xffffff, content, id, mode));
         } return rows;
     }
     static Request youkuRequest(String vid, int segment, String token, long time) throws IOException {

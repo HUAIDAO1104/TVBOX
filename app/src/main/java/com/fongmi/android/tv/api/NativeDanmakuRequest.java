@@ -76,49 +76,63 @@ final class NativeDanmakuRequest implements NativeDanmaku.Job {
         return segments(count, progress, fetch, SEGMENTS, SEGMENT_CONCURRENCY);
     }
     byte[] segments(int count, IntConsumer progress, Segment fetch, ExecutorService pool, int concurrency) throws Exception {
+        return segments(count, progress, fetch, pool, concurrency, List.of(), 2000);
+    }
+    byte[] segments(int count, IntConsumer progress, Segment fetch, ExecutorService pool, int concurrency,
+                    List<IqiyiDanmakuCodec.Comment> snapshot, int perSegmentLimit) throws Exception {
         if (count < 1 || count > 720) throw new IOException("Invalid platform timeline");
         List<List<IqiyiDanmakuCodec.Comment>> values = new ArrayList<>(Collections.nCopies(count, null));
         AtomicInteger chars = new AtomicInteger();
         CompletionService<Void> completed = new ExecutorCompletionService<>(pool);
-        int limit = Math.min(2000, 150_000 / count), scheduled = 0, done = 0;
-        while (done < count) {
-            // Queue one segment per task, so another document can share the bounded pool.
-            // Long-lived workers previously monopolised all four slots for an entire film.
-            while (scheduled < count && scheduled - done < concurrency) {
-                final int index = scheduled++;
-                Future<?> worker = completed.submit(() -> {
-                    check(); List<IqiyiDanmakuCodec.Comment> rows;
-                    try { rows = fetch.get(index); }
-                    catch (IOException first) {
-                        // One bounded retry absorbs a transient segment failure; the original
-                        // overall deadline and complete-document boundary still apply.
-                        check();
-                        if (first instanceof PlatformDanmaku.RejectedComments) throw first;
-                        if (first instanceof HttpFailure http && http.code != 408 && http.code != 429 && http.code < 500) throw first;
-                        rows = fetch.get(index);
-                    }
-                    List<IqiyiDanmakuCodec.Comment> sampled = new ArrayList<>();
-                    int size = Math.min(limit, rows.size());
-                    for (int j = 0; j < size; j++) sampled.add(rows.get((int) ((long) j * rows.size() / size)));
-                    for (var row : sampled) if (chars.addAndGet(row.text().length()) > 8_000_000) throw new IOException("Comments exceed text limit");
-                    synchronized (values) { values.set(index, sampled); }
-                    return null;
-                });
-                tasks.add(worker);
-                if (finished.get()) worker.cancel(true);
+        int limit = Math.min(perSegmentLimit, (150_000 - snapshot.size()) / count), scheduled = 0, done = 0;
+        Set<Future<?>> pending = new HashSet<>();
+        try {
+            while (done < count) {
+                // Queue one segment per task, so another document can share the bounded pool.
+                // Long-lived workers previously monopolised all four slots for an entire film.
+                while (scheduled < count && scheduled - done < concurrency) {
+                    final int index = scheduled++;
+                    Future<?> worker = completed.submit(() -> {
+                        check(); List<IqiyiDanmakuCodec.Comment> rows;
+                        try { rows = fetch.get(index); }
+                        catch (IOException first) {
+                            // One bounded retry absorbs a transient segment failure; the original
+                            // overall deadline and complete-document boundary still apply.
+                            check();
+                            if (first instanceof PlatformDanmaku.RejectedComments) throw first;
+                            if (first instanceof HttpFailure http && http.code != 408 && http.code < 500) throw first;
+                            rows = fetch.get(index);
+                        }
+                        List<IqiyiDanmakuCodec.Comment> sampled = new ArrayList<>();
+                        int size = Math.min(limit, rows.size());
+                        for (int j = 0; j < size; j++) sampled.add(rows.get((int) ((long) j * rows.size() / size)));
+                        for (var row : sampled) if (chars.addAndGet(row.text().length()) > 8_000_000) throw new IOException("Comments exceed text limit");
+                        synchronized (values) { values.set(index, sampled); }
+                        return null;
+                    });
+                    tasks.add(worker);
+                    pending.add(worker);
+                    if (finished.get()) worker.cancel(true);
+                }
+                Future<Void> worker = completed.poll(remaining(), TimeUnit.MILLISECONDS);
+                if (worker == null) throw new java.net.SocketTimeoutException("Platform segments timed out");
+                try { worker.get(); }
+                catch (ExecutionException error) {
+                    if (error.getCause() instanceof IOException io) throw io;
+                    throw error;
+                } finally { tasks.remove(worker); pending.remove(worker); }
+                check(); progress.accept(++done * 95 / count);
             }
-            Future<Void> worker = completed.poll(remaining(), TimeUnit.MILLISECONDS);
-            if (worker == null) throw new java.net.SocketTimeoutException("Platform segments timed out");
-            try { worker.get(); }
-            catch (ExecutionException error) {
-                if (error.getCause() instanceof IOException io) throw io;
-                throw error;
-            } finally { tasks.remove(worker); }
-            check(); progress.accept(++done * 95 / count);
+        } finally {
+            if (!pending.isEmpty()) {
+                for (Future<?> worker : pending) { worker.cancel(true); tasks.remove(worker); }
+                for (Call call : calls) call.cancel();
+            }
         }
         check(); List<IqiyiDanmakuCodec.Comment> all = new ArrayList<>();
-        Set<String> seen = new HashSet<>();
-        for (var rows : values) for (var row : rows) if (seen.add(row.seconds() + "|" + row.color() + "|" + row.text())) all.add(row);
+        Set<Object> seen = new HashSet<>();
+        for (var row : snapshot) if (seen.add(row.identity())) all.add(row);
+        for (var rows : values) for (var row : rows) if (seen.add(row.identity())) all.add(row);
         return IqiyiDanmakuCodec.document(all);
     }
     public void cancel() { finished.set(true); cleanup(); }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="danmaku_ai_title">AI 辅助匹配</string>
-    <string name="danmaku_ai_note">常规匹配失败时，AI 清理片名并从真实弹幕目录中选择。仅发送片名、年份、类型、集数与候选名称；请求由设备直连你配置的服务商，费用由该服务商计算。</string>
+    <string name="danmaku_ai_note">自动搜索先用 AI 清理片名和片源标签，再由 AI 从真实目录中核对选集。仅发送片名、年份、类型、集数与候选名称；请求由设备直连你配置的服务商，费用由该服务商计算。</string>
     <string name="danmaku_ai_enabled">启用 AI 辅助匹配</string>
     <string name="danmaku_ai_base">接口地址（Base URL）</string>
     <string name="danmaku_ai_model">模型名称</string>

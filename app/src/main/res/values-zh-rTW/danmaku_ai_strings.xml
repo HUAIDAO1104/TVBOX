@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="danmaku_ai_title">AI 輔助配對</string>
-    <string name="danmaku_ai_note">一般配對失敗時，AI 整理片名並從真實彈幕目錄中選擇。僅傳送片名、年份、類型、集數與候選名稱；要求由裝置直連你設定的服務商，費用由該服務商計算。</string>
+    <string name="danmaku_ai_note">自動搜尋先由 AI 整理片名和片源標籤，再由 AI 從真實目錄核對選集。僅傳送片名、年份、類型、集數與候選名稱；要求由裝置直連你設定的服務商，費用由該服務商計算。</string>
     <string name="danmaku_ai_enabled">啟用 AI 輔助配對</string>
     <string name="danmaku_ai_base">介面位址（Base URL）</string>
     <string name="danmaku_ai_model">模型名稱</string>

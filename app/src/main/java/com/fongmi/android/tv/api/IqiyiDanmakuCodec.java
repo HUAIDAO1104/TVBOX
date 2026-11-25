@@ -137,7 +137,10 @@ public final class IqiyiDanmakuCodec {
         }
     }
 
-    public record Comment(double seconds, int color, String text) { }
+    public record Comment(double seconds, int color, String text, long id, int mode) {
+        public Comment(double seconds, int color, String text) { this(seconds, color, text, 0, 1); }
+        Object identity() { return id > 0 ? Long.valueOf(id) : this; }
+    }
 
     public static List<Comment> decode(byte[] compressed) throws IOException {
         byte[] bytes;
@@ -224,8 +227,8 @@ public final class IqiyiDanmakuCodec {
         StringBuilder xml = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?><i>");
         int id = 0;
         for (Comment comment : comments) {
-            xml.append("<d p=\"").append(comment.seconds).append(",1,25,").append(comment.color)
-                    .append(",0,0,0,").append(++id).append("\">");
+            xml.append("<d p=\"").append(comment.seconds).append(",").append(comment.mode).append(",25,").append(comment.color)
+                    .append(",0,0,0,").append(comment.id > 0 ? comment.id : ++id).append("\">");
             for (int offset = 0; offset < comment.text.length();) {
                 int cp = comment.text.codePointAt(offset);
                 offset += Character.charCount(cp);

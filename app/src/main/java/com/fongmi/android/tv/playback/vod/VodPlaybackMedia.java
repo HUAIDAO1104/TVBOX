@@ -91,11 +91,11 @@ public final class VodPlaybackMedia {
         } else if (episodeQuery.isEmpty()) {
             // Unknown complex labels cannot silently become the first playlist item.
             player.notifyDanmakuStatus(DanmakuStatus.failed(DanmakuStatus.Failure.NO_MATCH));
-        } else searchResolved(title, episodeName, year, type, player, identity, matchContext, false);
+        } else searchResolved(title, episodeName, year, type, player, identity, matchContext, true);
     }
 
     private static void searchResolved(String title, String episodeName, String year, String type, PlayerManager player,
-                                       String identity, DanmakuMatchContext matchContext, boolean interpreted) {
+                                       String identity, DanmakuMatchContext matchContext, boolean tryAi) {
         String episodeQuery = matchContext.getResolvedEpisode();
         DanmakuManualMatchStore.Selection preferred = DanmakuManualMatchStore.get().find(matchContext);
         java.util.function.Consumer<Danmaku> apply = danmaku -> {
@@ -106,6 +106,27 @@ public final class VodPlaybackMedia {
             // comments were attached to the current PlayerView.
             player.setDanmaku(danmaku, true);
         };
+        if (tryAi && (preferred == null || !preferred.isUserConfirmed())
+                && DanmakuAiMatcher.search(matchContext, new DanmakuAiMatcher.Callback() {
+            @Override public void onFound(String query, Danmaku item, java.util.List<Danmaku> catalogue, DanmakuMatchContext verifiedContext) {
+                if (!isCurrentIdentity(player, identity)) return;
+                applyAutomatic(player, identity, matchContext, preferred, query, item, catalogue, apply, null, verifiedContext);
+            }
+            @Override public void onFailure() { onFailure(DanmakuStatus.Failure.NO_MATCH); }
+            @Override public void onFailure(DanmakuStatus.Failure reason) {
+                if (!isCurrentIdentity(player, identity)) return;
+                if (reason == DanmakuStatus.Failure.AI_NETWORK || reason == DanmakuStatus.Failure.AI_ACCESS_DENIED
+                        || reason == DanmakuStatus.Failure.AI_INVALID_RESPONSE) {
+                    searchResolved(title, episodeName, year, type, player, identity, matchContext, false);
+                } else player.notifyDanmakuStatus(DanmakuStatus.failed(reason));
+            }
+            @Override public void onProgress(int percent) {
+                if (isCurrentIdentity(player, identity)) player.notifyDanmakuStatus(DanmakuStatus.downloading(percent));
+            }
+        })) {
+            player.notifyDanmakuStatus(DanmakuStatus.aiMatching());
+            return;
+        }
         DanmakuApi.SearchCallback callback = new DanmakuApi.SearchCallback() {
             @Override
             public void resolveCandidates(java.util.List<Danmaku> candidates, java.util.List<Danmaku> catalogue,
@@ -172,26 +193,6 @@ public final class VodPlaybackMedia {
                     case INVALID_RESPONSE -> DanmakuStatus.Failure.INVALID_RESPONSE;
                     case DOWNLOAD -> DanmakuStatus.Failure.DOWNLOAD;
                 };
-                if (!interpreted && failure != DanmakuApi.SearchFailure.DOWNLOAD
-                        && failure != DanmakuApi.SearchFailure.ACCESS_DENIED
-                        && DanmakuAiMatcher.search(matchingContext(preferred, matchContext), new DanmakuAiMatcher.Callback() {
-                    @Override public void onFound(String query, Danmaku item, java.util.List<Danmaku> catalogue) {
-                        if (!isCurrentIdentity(player, identity)) return;
-                        applyAutomatic(player, identity, matchContext, preferred, query, item, catalogue, apply);
-                    }
-                    @Override public void onFailure() {
-                        onFailure(DanmakuStatus.Failure.NO_MATCH);
-                    }
-                    @Override public void onFailure(DanmakuStatus.Failure aiFailure) {
-                        if (isCurrentIdentity(player, identity)) player.notifyDanmakuStatus(DanmakuStatus.failed(aiFailure));
-                    }
-                    @Override public void onProgress(int percent) {
-                        if (isCurrentIdentity(player, identity)) player.notifyDanmakuStatus(DanmakuStatus.downloading(percent));
-                    }
-                })) {
-                    player.notifyDanmakuStatus(DanmakuStatus.aiMatching());
-                    return;
-                }
                 player.notifyDanmakuStatus(DanmakuStatus.failed(reason));
             }
         };
@@ -310,6 +311,14 @@ public final class VodPlaybackMedia {
                                        DanmakuManualMatchStore.Selection preferred, String query, Danmaku selected,
                                        java.util.List<Danmaku> catalogue, java.util.function.Consumer<Danmaku> apply,
                                        Runnable refreshSaved) {
+        applyAutomatic(player, identity, context, preferred, query, selected, catalogue, apply, refreshSaved,
+                matchingContext(preferred, context));
+    }
+
+    private static void applyAutomatic(PlayerManager player, String identity, DanmakuMatchContext context,
+                                       DanmakuManualMatchStore.Selection preferred, String query, Danmaku selected,
+                                       java.util.List<Danmaku> catalogue, java.util.function.Consumer<Danmaku> apply,
+                                       Runnable refreshSaved, DanmakuMatchContext verifiedContext) {
         boolean confirmed = isConfirmed(preferred, context, selected);
         java.util.function.BiConsumer<Danmaku, java.util.List<Danmaku>> commit = (item, rows) -> {
             if (!isCurrentIdentity(player, identity)) return;
@@ -329,7 +338,7 @@ public final class VodPlaybackMedia {
             });
         };
         if ((!confirmed || !selected.hasVerifiedIdentity()) && com.fongmi.android.tv.api.BilibiliDanmaku.supports(selected.getUrl())) {
-            var matcher = new BilibiliPlaybackMatcher(player, matchingContext(preferred, context), commit, reason -> {
+            var matcher = new BilibiliPlaybackMatcher(player, verifiedContext, commit, reason -> {
                 if (!isCurrentIdentity(player, identity)) return;
                 synchronized (TIMELINE_MATCHES) { TIMELINE_MATCHES.remove(player); }
                 if (refreshSaved != null) {

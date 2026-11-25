@@ -255,7 +255,7 @@ public class DanmakuAiInstrumentedTest {
             var constructor = Class.forName(DanmakuAiMatcher.class.getName() + "$Job").getDeclaredConstructor(DanmakuAiMatcher.Callback.class);
             constructor.setAccessible(true);
             Object job = constructor.newInstance(new DanmakuAiMatcher.Callback() {
-                @Override public void onFound(String query, Danmaku item, List<Danmaku> catalogue) { selected.set(item); finished.countDown(); }
+                @Override public void onFound(String query, Danmaku item, List<Danmaku> catalogue, DanmakuMatchContext verifiedContext) { selected.set(item); finished.countDown(); }
                 @Override public void onFailure() { finished.countDown(); }
                 @Override public void onProgress(int percent) { }
             });
@@ -348,7 +348,7 @@ public class DanmakuAiInstrumentedTest {
         AtomicReference<Danmaku> found = new AtomicReference<>();
         AtomicReference<String> clean = new AtomicReference<>();
         assertTrue(DanmakuAiMatcher.search(new DanmakuMatchContext("喜剧之王【更新至14集】4K", "2026", "电视剧", "第14集"), new DanmakuAiMatcher.Callback() {
-            @Override public void onFound(String query, Danmaku item, List<Danmaku> catalogue) { clean.set(query); found.set(item); finished.countDown(); }
+            @Override public void onFound(String query, Danmaku item, List<Danmaku> catalogue, DanmakuMatchContext verifiedContext) { clean.set(query); found.set(item); finished.countDown(); }
             @Override public void onFailure() { finished.countDown(); }
             @Override public void onProgress(int percent) { }
         }));

@@ -195,12 +195,6 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
 
     @Override
     protected void initEvent() {
-        binding.historyShortcut.setOnClickListener(view -> HistoryActivity.start(this));
-        binding.liveShortcut.setOnClickListener(view -> new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("电视直播").setItems(new String[]{"继续上次频道", "收藏频道", "当前频道节目单"}, (dialog, index) ->
-                        LiveActivity.start(this, index)).show());
-        bindUtilityFocus(binding.historyShortcut);
-        bindUtilityFocus(binding.liveShortcut);
         binding.search.setOnClickListener(view -> SearchActivity.start(this));
         binding.config.setOnClickListener(view -> openConfig());
         binding.config.setOnLongClickListener(view -> {
@@ -1155,7 +1149,7 @@ public class HomeActivity extends BaseActivity implements HomeNavigationAdapter.
     }
 
     private boolean isTopFocus(View current) {
-        return current != null && (current == binding.search || current == binding.historyShortcut || current == binding.liveShortcut || current == binding.config || current == binding.settings || binding.nav.findContainingItemView(current) != null);
+        return current != null && (current == binding.search || current == binding.config || current == binding.settings || binding.nav.findContainingItemView(current) != null);
     }
 
     private boolean focusContentFromTop() {

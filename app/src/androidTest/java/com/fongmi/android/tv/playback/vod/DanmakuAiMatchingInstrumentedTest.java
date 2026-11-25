@@ -37,7 +37,7 @@ public class DanmakuAiMatchingInstrumentedTest {
         volatile Danmaku item;
         volatile DanmakuStatus.Failure error;
         volatile String query;
-        public void onFound(String query, Danmaku item, List<Danmaku> rows) { this.item = item; this.query = query; done.countDown(); }
+        public void onFound(String query, Danmaku item, List<Danmaku> rows, DanmakuMatchContext verifiedContext) { this.item = item; this.query = query; done.countDown(); }
         public void onFailure() { done.countDown(); }
         public void onFailure(DanmakuStatus.Failure reason) { error = reason; done.countDown(); }
         public void onProgress(int percent) { }
@@ -228,7 +228,7 @@ public class DanmakuAiMatchingInstrumentedTest {
                 DanmakuAiMatcher.start(new DanmakuMatchContext("目录电视剧第二季【4K】", "2026", "电视剧", "14(全38集)", "14"),
                         new DanmakuAiClient(server.url("/v1").toString(), "fixture", "fixture-key"), List.of(endpoint(server)), List.of(), result);
                 result.await(6); assertNotNull("failure="+result.error, result.item);
-                assertTrue(result.item.getUrl().contains("/correct14?")); assertEquals(1,modelCalls.get());
+                assertTrue(result.item.getUrl().contains("/correct14?")); assertEquals(2,modelCalls.get());
                 DanmakuAiMatcher.cancel();
             }
         }

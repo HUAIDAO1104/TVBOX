@@ -59,19 +59,6 @@
                 app:focusOutEnd="true"
                 app:focusOutFront="false" />
 
-            <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/historyShortcut"
-                style="@style/DetailV2.Button.Secondary"
-                android:layout_marginStart="4dp"
-                android:nextFocusDown="@id/play"
-                android:text="历史" />
-
-            <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/liveShortcut"
-                style="@style/DetailV2.Button.Secondary"
-                android:layout_marginStart="4dp"
-                android:nextFocusDown="@id/play"
-                android:text="直播" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/search"
