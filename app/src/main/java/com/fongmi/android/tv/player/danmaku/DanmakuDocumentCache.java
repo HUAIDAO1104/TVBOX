@@ -43,6 +43,8 @@ public final class DanmakuDocumentCache {
     static final long MAX_DOCUMENT_BYTES = 24L * 1024L * 1024L;
     static final long MAX_CACHE_BYTES = 64L * 1024L * 1024L;
     static final int MIN_DOCUMENT_BYTES = 32;
+    private static final long CACHE_TTL = TimeUnit.HOURS.toMillis(6);
+    private static final long FALLBACK_TTL = TimeUnit.MINUTES.toMillis(2);
 
     private static final Map<String, PendingDownload> DOWNLOADS = new HashMap<>();
 
@@ -220,6 +222,10 @@ public final class DanmakuDocumentCache {
         File target = fileFor(source);
         NativeDanmaku.Job job = NativeDanmaku.document(download.key, download::progress,
                 new IqiyiDanmaku.Callback<byte[]>() {
+                    @Override public void onFallbackSuccess(byte[] bytes) {
+                        download.fallbackOnly = true;
+                        onSuccess(bytes);
+                    }
                     @Override public void onSuccess(byte[] bytes) {
                         try {
                             // Each writer uses its own temporary file; a cancelled job cannot corrupt a replacement.
@@ -243,7 +249,7 @@ public final class DanmakuDocumentCache {
     }
 
     private static boolean isFresh(Uri source, File target) {
-        return isUsable(target) && System.currentTimeMillis() - target.lastModified() < TimeUnit.HOURS.toMillis(6);
+        return isUsable(target) && System.currentTimeMillis() - target.lastModified() < CACHE_TTL;
     }
 
     private static boolean scheduleRetry(PendingDownload download, IOException error) {
@@ -312,7 +318,7 @@ public final class DanmakuDocumentCache {
     static String cacheKey(String source) {
         String value = Objects.toString(source, "");
         if (com.fongmi.android.tv.api.BilibiliDanmaku.supports(value) || value.matches("https?://(?:www[.]|m[.])?bilibili[.]com/.*"))
-            value = "bilibili-pool-v2:" + value;
+            value = "bilibili-pool-v3:" + value;
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256")
                     .digest(value.getBytes(StandardCharsets.UTF_8));
@@ -409,6 +415,9 @@ public final class DanmakuDocumentCache {
                 partial.delete();
                 throw new IOException("Superseded danmaku document");
             }
+            // mtime governs both cache lifetime and eviction. Make a segment-only fallback
+            // immediately playable, but let the next visit recover the complete snapshot.
+            if (download.fallbackOnly) partial.setLastModified(System.currentTimeMillis() - CACHE_TTL + FALLBACK_TTL);
             if (target.exists() && !target.delete()) {
                 partial.delete();
                 throw new IOException("Unable to replace danmaku cache");
@@ -486,6 +495,7 @@ public final class DanmakuDocumentCache {
         private volatile Call call;
         private volatile NativeDanmaku.Job nativeJob;
         private volatile boolean cancelled;
+        private boolean fallbackOnly;
         private Runnable retryRunnable;
         private int retryCount;
         private int lastProgress = -1;

@@ -20,8 +20,8 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // Keep compatibility fixes on a strictly newer version so TV installers do not retain
         // the previous APK while preserving its database for the migration chain below.
-        versionCode 655
-        versionName "5.5.104"
+        versionCode 656
+        versionName "5.5.105"
         def accountUrl = providers.gradleProperty("accountServiceUrl").orElse("").get()
         if (accountUrl && !(accountUrl ==~ /https:\/\/[a-zA-Z0-9.-]+(:[0-9]+)?(\/[a-zA-Z0-9_~.\/-]*)?/))
             throw new GradleException("accountServiceUrl must be an HTTPS service URL")

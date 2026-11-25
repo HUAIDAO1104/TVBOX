@@ -1,11 +1,14 @@
 package com.fongmi.android.tv.api;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.function.IntConsumer;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
 import okhttp3.*;
 
 /** Bounded, cancellable transport for public catalogue/comment protocols. */
@@ -30,6 +33,8 @@ final class NativeDanmakuRequest implements NativeDanmaku.Job {
     private final Set<Call> calls = ConcurrentHashMap.newKeySet();
     private final Set<Future<?>> tasks = ConcurrentHashMap.newKeySet();
     private volatile Future<?> timer;
+    private boolean fallbackOnly;
+    void markFallbackOnly() { fallbackOnly = true; }
     NativeDanmakuRequest(long millis, String referer, OkHttpClient client) {
         this.client = client; this.referer = referer;
         deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(millis);
@@ -46,7 +51,11 @@ final class NativeDanmakuRequest implements NativeDanmaku.Job {
         submit(executor, () -> {
             try {
                 check(); T value = action.call(); check();
-                if (finished.compareAndSet(false, true)) { timer.cancel(false); callback.onSuccess(value); }
+                if (finished.compareAndSet(false, true)) {
+                    timer.cancel(false);
+                    if (fallbackOnly) callback.onFallbackSuccess(value);
+                    else callback.onSuccess(value);
+                }
             } catch (Exception e) {
                 if (finished.compareAndSet(false, true)) { cleanup(); callback.onFailure(e instanceof IOException ? (IOException) e : new IOException("Platform request failed", e)); }
             }
@@ -66,7 +75,18 @@ final class NativeDanmakuRequest implements NativeDanmaku.Job {
             check();
             try (Response response = call.execute()) {
                 if (!response.isSuccessful() || response.body() == null) throw new HttpFailure(response.code());
-                return IqiyiDanmakuCodec.readBounded(response.body().byteStream(), limit);
+                byte[] body = IqiyiDanmakuCodec.readBounded(response.body().byteStream(), limit);
+                if (!"deflate".equalsIgnoreCase(response.header("Content-Encoding"))) return body;
+                // OkHttp transparently handles gzip. The Bilibili XML CDN instead sends
+                // raw DEFLATE, while other servers use the RFC 1950 zlib wrapper.
+                int header = body.length >= 2 ? ((body[0] & 255) << 8) | (body[1] & 255) : 0;
+                boolean wrapped = (header & 0x0f00) == 0x0800 && (header >>> 12) <= 7 && header % 31 == 0;
+                Inflater inflater = new Inflater(!wrapped);
+                try (var stream = new InflaterInputStream(new ByteArrayInputStream(body), inflater)) {
+                    byte[] decoded = IqiyiDanmakuCodec.readBounded(stream, limit);
+                    if (!inflater.finished()) throw new IOException("Incomplete deflate response");
+                    return decoded;
+                } finally { inflater.end(); }
             }
         } finally { calls.remove(call); }
     }
@@ -85,6 +105,8 @@ final class NativeDanmakuRequest implements NativeDanmaku.Job {
         AtomicInteger chars = new AtomicInteger();
         CompletionService<Void> completed = new ExecutorCompletionService<>(pool);
         int limit = Math.min(perSegmentLimit, (150_000 - snapshot.size()) / count), scheduled = 0, done = 0;
+        boolean optional = !snapshot.isEmpty();
+        long cutoff = optional ? deadline - TimeUnit.SECONDS.toNanos(1) : deadline;
         Set<Future<?>> pending = new HashSet<>();
         try {
             while (done < count) {
@@ -96,8 +118,7 @@ final class NativeDanmakuRequest implements NativeDanmaku.Job {
                         check(); List<IqiyiDanmakuCodec.Comment> rows;
                         try { rows = fetch.get(index); }
                         catch (IOException first) {
-                            // One bounded retry absorbs a transient segment failure; the original
-                            // overall deadline and complete-document boundary still apply.
+                            // Retry transient failures once within the original deadline.
                             check();
                             if (first instanceof PlatformDanmaku.RejectedComments) throw first;
                             if (first instanceof HttpFailure http && http.code != 408 && http.code < 500) throw first;
@@ -114,12 +135,21 @@ final class NativeDanmakuRequest implements NativeDanmaku.Job {
                     pending.add(worker);
                     if (finished.get()) worker.cancel(true);
                 }
-                Future<Void> worker = completed.poll(remaining(), TimeUnit.MILLISECONDS);
-                if (worker == null) throw new java.net.SocketTimeoutException("Platform segments timed out");
+                long wait = Math.max(0, cutoff - System.nanoTime());
+                // If we already have an episode snapshot, a stalled supplemental feed
+                // should yield it before the player's five-second backup-source race.
+                if (optional) wait = Math.min(wait, TimeUnit.SECONDS.toNanos(2));
+                Future<Void> worker = completed.poll(wait, TimeUnit.NANOSECONDS);
+                if (worker == null) {
+                    if (optional) break;
+                    throw new java.net.SocketTimeoutException("Platform segments timed out");
+                }
                 try { worker.get(); }
                 catch (ExecutionException error) {
-                    if (error.getCause() instanceof IOException io) throw io;
-                    throw error;
+                    if (!(error.getCause() instanceof IOException io)) throw error;
+                    if (!optional) throw io;
+                    if (io instanceof PlatformDanmaku.RejectedComments || io instanceof HttpFailure http
+                            && http.code >= 400 && http.code < 500 && http.code != 404 && http.code != 408) break;
                 } finally { tasks.remove(worker); pending.remove(worker); }
                 check(); progress.accept(++done * 95 / count);
             }
@@ -132,8 +162,19 @@ final class NativeDanmakuRequest implements NativeDanmaku.Job {
         check(); List<IqiyiDanmakuCodec.Comment> all = new ArrayList<>();
         Set<Object> seen = new HashSet<>();
         for (var row : snapshot) if (seen.add(row.identity())) all.add(row);
-        for (var rows : values) for (var row : rows) if (seen.add(row.identity())) all.add(row);
-        return IqiyiDanmakuCodec.document(all);
+        synchronized (values) {
+            for (var rows : values) {
+                if (rows == null) continue;
+                for (var row : rows) if (seen.add(row.identity())) all.add(row);
+            }
+        }
+        try {
+            return IqiyiDanmakuCodec.document(all);
+        } catch (IOException tooLarge) {
+            if (!optional) throw tooLarge;
+            // A large combined feed must not invalidate the independent snapshot.
+            return IqiyiDanmakuCodec.document(new ArrayList<>(snapshot));
+        }
     }
     public void cancel() { finished.set(true); cleanup(); }
     private void cleanup() {

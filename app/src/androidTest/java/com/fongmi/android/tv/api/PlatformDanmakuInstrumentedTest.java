@@ -1,11 +1,15 @@
 package com.fongmi.android.tv.api;
 
 import static org.junit.Assert.*;
+import android.net.Uri;
+import androidx.media3.datasource.DefaultDataSource;
+import androidx.media3.ui.danmaku.DanmakuController;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import com.fongmi.android.tv.bean.Danmaku;
 import com.fongmi.android.tv.playback.vod.DanmakuMatch;
 import com.fongmi.android.tv.player.danmaku.FilteringBiliParser;
+import com.fongmi.android.tv.player.danmaku.DanmakuDocumentCache;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import java.io.*;
@@ -57,6 +61,43 @@ public class PlatformDanmakuInstrumentedTest {
                 new String[]{"qq-link", "https://v.qq.com/x/cover/mzc00200tjkzeps/y4101qnn3jo.html"},
                 new String[]{"iqiyi-link", "https://www.iqiyi.com/v_pp7j21xlp4.html"},
                 new String[]{"gamer-link", "https://ani.gamer.com.tw/animeVideo.php?sn=41645"})) checkDocument(spec[1], spec[0], 20);
+    }
+    @Test public void liveFanrenAnnualEpisodesKeepFullPoolThroughPlayerParser() throws Exception {
+        live();
+        String work = "凡人修仙传";
+        List<Danmaku> catalogue = waitFor(cb -> BilibiliDanmaku.search(work, work, "2020", "动漫", "第150集", cb));
+        Set<String> sources = new HashSet<>();
+        for (int number = 148; number <= 152; number++) {
+            String episode = "第" + number + "集";
+            var context = new com.fongmi.android.tv.playback.vod.DanmakuMatchContext(work, "2020", "动漫", episode);
+            var row = BilibiliDanmaku.chooseTimeline(BilibiliDanmaku.timelineCandidates(context, catalogue), 0);
+            assertNotNull(episode, row);
+            assertTrue(episode, sources.add(row.getUrl()));
+            DanmakuDocumentCache.invalidate(row.getUri());
+            Danmaku selected = waitFor(cb -> DanmakuApi.searchDetailed(work, "2020", "动漫", episode, new DanmakuApi.SearchCallback() {
+                public void onFound(Danmaku item, List<Danmaku> rows) { cb.onSuccess(item); }
+                public void onFailure(DanmakuApi.SearchFailure error) { cb.onFailure(new IOException(error.toString())); }
+            }));
+            assertEquals(episode, row.getUrl(), selected.getUrl());
+            Uri file = waitFor(cb -> DanmakuDocumentCache.load(selected.getUri(), new DanmakuDocumentCache.Listener() {
+                public void onReady(Uri source, Uri local) { cb.onSuccess(local); }
+                public void onFailure(Uri source, IOException error) { cb.onFailure(error); }
+            }));
+            var instrumentation = InstrumentationRegistry.getInstrumentation();
+            var controller = new DanmakuController();
+            try {
+                int mounted = this.<Integer>waitFor(cb -> instrumentation.runOnMainSync(() -> {
+                    controller.registerParser(FilteringBiliParser.INSTANCE);
+                    controller.setListener(new DanmakuController.Listener() {
+                        public void onLoadCompleted(Uri source, int count) { cb.onSuccess(count); }
+                        public void onLoadError(Uri source, IOException error) { cb.onFailure(error); }
+                    });
+                    controller.setDataSource(file, new DefaultDataSource.Factory(instrumentation.getTargetContext()));
+                }));
+                android.util.Log.i("BiliPoolQA", episode + " " + row.getUrl() + " mounted=" + mounted);
+                assertTrue(episode + " mounted=" + mounted, mounted >= 3000);
+            } finally { instrumentation.runOnMainSync(controller::release); }
+        }
     }
     private void checkDocument(String source, String key, int minimum) throws Exception {
         android.util.Log.i("Danmaku575QA", "loading " + key + " " + source);

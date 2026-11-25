@@ -41,6 +41,8 @@ public final class IqiyiDanmaku {
     public interface Callback<T> {
         /** A usable snapshot; more catalogue pages may still arrive. */
         default void onPartial(T value) { }
+        /** Final, usable result from a fallback feed. Retry the preferred feed on a later visit. */
+        default void onFallbackSuccess(T value) { onSuccess(value); }
         void onSuccess(T value);
         void onFailure(IOException error);
     }

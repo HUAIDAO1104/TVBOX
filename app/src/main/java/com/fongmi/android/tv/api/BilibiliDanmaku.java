@@ -20,7 +20,11 @@ public final class BilibiliDanmaku {
     private static final ExecutorService CACHE_LOOKUP = Executors.newSingleThreadExecutor();
     private static final ExecutorService COMMENTS = Executors.newFixedThreadPool(2);
     private static final Object REQUEST_START = new Object();
-    private static long nextRequest, retryAfter;
+    private static long nextRequest;
+    private enum Feed {
+        SNAPSHOT, SEGMENT;
+        long retryAfter;
+    }
     private static final Pattern EDITION = Pattern.compile("\\s*[(（]?((?:19|20)\\d{2}版|重制版)[)）]?$");
     private record Work(String id, String title) {}
     private record Page(int total, List<Work> works) {}
@@ -115,46 +119,40 @@ public final class BilibiliDanmaku {
 
     static byte[] comments(NativeDanmakuRequest job, String cid, int seconds,
                            java.util.function.IntConsumer progress) throws Exception {
-        awaitRequest(job);
+        awaitRequest(job, Feed.SNAPSHOT);
         List<IqiyiDanmakuCodec.Comment> snapshot;
         try {
             snapshot = BilibiliCommentPool.parse(job.bytes("https://comment.bilibili.com/" + cid + ".xml", 8 * 1024 * 1024), cid);
         } catch (IOException unavailable) {
             job.check();
-            if (unavailable instanceof PlatformDanmaku.RejectedComments rejection) throw noteRefusal(rejection);
+            if (unavailable instanceof PlatformDanmaku.RejectedComments rejection) throw noteRefusal(Feed.SNAPSHOT, rejection);
             if (unavailable instanceof NativeDanmakuRequest.HttpFailure http &&
                     (http.code == 401 || http.code == 403 || http.code == 412 || http.code == 429 || http.code == 451)) throw unavailable;
             snapshot = List.of();
         }
-        try {
-            return job.segments((seconds + 359) / 360, progress, index -> {
-                awaitRequest(job);
-                try {
-                    return PlatformDanmaku.biliComments(job.bytes("https://api.bilibili.com/x/v2/dm/web/seg.so?type=1&oid="
-                            + cid + "&segment_index=" + (index + 1), 4_000_000));
-                } catch (PlatformDanmaku.RejectedComments rejection) {
-                    throw noteRefusal(rejection);
-                }
-            }, COMMENTS, 2, snapshot, 150_000);
-        } catch (IOException unavailable) {
-            // Keep a complete independently fetched snapshot if a later segment fails.
-            job.check();
-            if (snapshot.isEmpty()) throw unavailable;
-            return IqiyiDanmakuCodec.document(snapshot);
-        }
+        if (snapshot.isEmpty()) job.markFallbackOnly();
+        return job.segments((seconds + 359) / 360, progress, index -> {
+            awaitRequest(job, Feed.SEGMENT);
+            try {
+                return PlatformDanmaku.biliComments(job.bytes("https://api.bilibili.com/x/v2/dm/web/seg.so?type=1&oid="
+                        + cid + "&segment_index=" + (index + 1), 4_000_000));
+            } catch (PlatformDanmaku.RejectedComments rejection) {
+                throw noteRefusal(Feed.SEGMENT, rejection);
+            }
+        }, COMMENTS, 2, snapshot, 150_000);
     }
-    private static PlatformDanmaku.RejectedComments noteRefusal(PlatformDanmaku.RejectedComments rejection) {
+    private static PlatformDanmaku.RejectedComments noteRefusal(Feed feed, PlatformDanmaku.RejectedComments rejection) {
         if (rejection.code.equals("-352") || rejection.code.equals("-412")) synchronized (REQUEST_START) {
-            retryAfter = System.nanoTime() + TimeUnit.SECONDS.toNanos(60);
+            feed.retryAfter = System.nanoTime() + TimeUnit.SECONDS.toNanos(60);
         }
         return rejection;
     }
 
-    private static void awaitRequest(NativeDanmakuRequest job) throws IOException {
+    private static void awaitRequest(NativeDanmakuRequest job, Feed feed) throws IOException {
         long wait;
         synchronized (REQUEST_START) {
             long now = System.nanoTime();
-            if (now < retryAfter) throw new PlatformDanmaku.RejectedComments("temporary cooldown after service refusal");
+            if (now < feed.retryAfter) throw new PlatformDanmaku.RejectedComments("temporary cooldown after service refusal");
             long start = Math.max(now, nextRequest);
             wait = start - now;
             nextRequest = start + TimeUnit.MILLISECONDS.toNanos(500);
@@ -163,7 +161,7 @@ public final class BilibiliDanmaku {
         catch (InterruptedException e) { Thread.currentThread().interrupt(); throw new java.io.InterruptedIOException("Cancelled Bilibili request"); }
         job.check();
         synchronized (REQUEST_START) {
-            if (System.nanoTime() < retryAfter) throw new PlatformDanmaku.RejectedComments("temporary cooldown after service refusal");
+            if (System.nanoTime() < feed.retryAfter) throw new PlatformDanmaku.RejectedComments("temporary cooldown after service refusal");
         }
     }
 

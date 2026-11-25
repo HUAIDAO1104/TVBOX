@@ -21,6 +21,9 @@ public class BilibiliTransportTest {
                         if (!segmentOutage.get()) return new MockResponse().setResponseCode(404);
                         return new MockResponse().setBody("<i><chatid>123</chatid><d p='1,1,25,1,0,0,0,42'>snapshot</d></i>");
                     }
+                    if (request.getPath().startsWith("/124.xml")) {
+                        return new MockResponse().setBody("<i><chatid>124</chatid><d p='1,1,25,1,0,0,0,43'>next episode</d></i>");
+                    }
                     if (segmentOutage.get()) return new MockResponse().setResponseCode(503);
                     times.add(System.nanoTime());
                     return refuse.get() ? new MockResponse().setBody("{\"code\":-352}")
@@ -44,19 +47,61 @@ public class BilibiliTransportTest {
             assertEquals("A provider refusal must stop pending segments and retries", 4, times.size());
             run(client, true);
             assertEquals("Immediate retry must respect the provider cooldown", 4, times.size());
+            var next = new NativeDanmakuRequest(5000, "https://www.bilibili.com/", client);
+            try {
+                byte[] bytes = BilibiliDanmaku.comments(next, "124", 1080, value -> {});
+                assertTrue(new String(bytes, java.nio.charset.StandardCharsets.UTF_8).contains(">next episode</d>"));
+                assertEquals(4, times.size());
+            } finally { next.cancel(); }
+        }
+    }
+
+    @Test public void officialSnapshotIsDecodedBeforeXmlParsingWithinTheExpandedLimit() throws Exception {
+        try (var server = new MockWebServer()) {
+            server.start();
+            var request = new NativeDanmakuRequest(5000, "", NativeDanmakuRequest.CLIENT);
+            StringBuilder xml = new StringBuilder("<i><chatid>124</chatid>");
+            for (int id = 1; id <= 3600; id++) {
+                xml.append("<d p='1,1,25,1,0,0,0,").append(id).append("'>同一时间</d>");
+            }
+            byte[] plain = xml.append("</i>").toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            try {
+                for (boolean raw : new boolean[]{true, false}) {
+                    var bytes = new java.io.ByteArrayOutputStream();
+                    var deflater = new java.util.zip.Deflater(6, raw);
+                    try (var compressed = new java.util.zip.DeflaterOutputStream(bytes, deflater)) {
+                        compressed.write(plain);
+                    } finally { deflater.end(); }
+                    for (int limit : new int[]{plain.length, plain.length - 1}) {
+                        server.enqueue(new MockResponse().setHeader("Content-Encoding", "deflate")
+                                .setBody(new okio.Buffer().write(bytes.toByteArray())));
+                        String url = server.url("/124.xml").toString();
+                        if (limit == plain.length) {
+                            assertEquals(3600, BilibiliCommentPool.parse(request.bytes(url, limit), "124").size());
+                        } else {
+                            assertThrows(IOException.class, () -> request.bytes(url, limit));
+                        }
+                    }
+                }
+            } finally { request.cancel(); }
         }
     }
     private static void run(OkHttpClient client, boolean rejected) throws Exception {
         var done = new CountDownLatch(1); var failure = new AtomicReference<IOException>();
+        var fallback = new AtomicBoolean();
         var job = new NativeDanmakuRequest(5000, "https://www.bilibili.com/", client);
         job.start(NativeDanmakuRequest.DOCUMENTS, () -> BilibiliDanmaku.comments(job, "123", 1080, value -> {}), new IqiyiDanmaku.Callback<byte[]>() {
             public void onSuccess(byte[] value) { done.countDown(); }
+            public void onFallbackSuccess(byte[] value) { fallback.set(true); onSuccess(value); }
             public void onFailure(IOException error) { failure.set(error); done.countDown(); }
         });
         try {
             assertTrue(done.await(6, TimeUnit.SECONDS));
             if (rejected) assertTrue(String.valueOf(failure.get()), failure.get() instanceof PlatformDanmaku.RejectedComments);
-            else assertNull(failure.get());
+            else {
+                assertNull(failure.get());
+                assertTrue("A segment-only result needs short cache lifetime", fallback.get());
+            }
         } finally { job.cancel(); }
     }
 }
